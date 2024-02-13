@@ -1,9 +1,9 @@
 import { parseAbi, decodeEventLog } from "viem";
 import React from "react";
 import {
-  useContractRead,
-  useContractWrite,
-  usePrepareContractWrite,
+  useReadContract,
+  useWriteContract,
+  useSimulateContract,
   usePublicClient,
   useBlockNumber,
 } from "wagmi";
@@ -21,7 +21,7 @@ const getContractAddress = (chainId) =>
 export const useProposalThreshold = () => {
   const chainId = useChainId();
 
-  const { data } = useContractRead({
+  const { data } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function proposalThreshold() public view returns (uint256)",
@@ -35,14 +35,16 @@ export const useProposalThreshold = () => {
 const useLatestProposalId = (accountAddress) => {
   const chainId = useChainId();
 
-  const { data, isSuccess } = useContractRead({
+  const { data, isSuccess } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function latestProposalIds(address account) public view returns (uint256)",
     ]),
     functionName: "latestProposalIds",
     args: [accountAddress],
-    enabled: accountAddress != null,
+    query: {
+      enabled: accountAddress != null,
+    },
   });
 
   if (!isSuccess) return undefined;
@@ -53,7 +55,7 @@ const useLatestProposalId = (accountAddress) => {
 export const useDynamicQuorum = (proposalId) => {
   const chainId = useChainId();
 
-  const { data, isSuccess } = useContractRead({
+  const { data, isSuccess } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function quorumVotes(uint256 proposalId) public view returns (uint256)",
@@ -73,30 +75,34 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
   const chainId = useChainId();
   const { data: blockNumber } = useBlockNumber({ watch: true, cache: 20_000 });
 
-  const { data: adjustedTotalSupply } = useContractRead({
+  const { data: adjustedTotalSupply } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function adjustedTotalSupply() public view returns (uint256)",
     ]),
     functionName: "adjustedTotalSupply",
   });
-  const { data: quorumParams } = useContractRead({
+  const { data: quorumParams } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function getDynamicQuorumParamsAt(uint256) public view returns (uint16, uint16, uint32)",
     ]),
     functionName: "getDynamicQuorumParamsAt",
     args: [blockNumber],
-    enabled: blockNumber != null,
+    query: {
+      enabled: blockNumber != null,
+    },
   });
-  const { data, isSuccess } = useContractRead({
+  const { data, isSuccess } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function dynamicQuorumVotes(uint256, uint256, (uint16, uint16, uint32)) public view returns (uint256)",
     ]),
     functionName: "dynamicQuorumVotes",
     args: [againstVotes, adjustedTotalSupply, quorumParams],
-    encoded: adjustedTotalSupply != null && quorumParams != null,
+    query: {
+      enabled: adjustedTotalSupply != null && quorumParams != null,
+    },
   });
 
   React.useEffect(() => {
@@ -111,14 +117,16 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
 const useProposalState = (proposalId) => {
   const chainId = useChainId();
 
-  const { data, isSuccess } = useContractRead({
+  const { data, isSuccess } = useReadContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function state(uint256 proposalId) external view returns (uint8)",
     ]),
     functionName: "state",
     args: [proposalId],
-    enabled: proposalId != null,
+    query: {
+      enabled: proposalId != null,
+    },
   });
 
   if (!isSuccess) return undefined;
@@ -185,37 +193,47 @@ export const useCastProposalVote = (
 
   const hasReason = reason != null && reason.trim() !== "";
 
-  const { config: castVoteConfig } = usePrepareContractWrite({
+  const {
+    data: castVoteSimulationResult,
+    isSuccess: castVoteSimulationSuccessful,
+  } = useSimulateContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function castRefundableVote(uint256 proposalId, uint8 support) external",
     ]),
     functionName: "castRefundableVote",
     args: [Number(proposalId), support],
-    enabled: enabled && support != null && !hasReason,
+    query: {
+      enabled: enabled && support != null && !hasReason,
+    },
   });
 
-  const { config: castVoteWithReasonConfig } = usePrepareContractWrite({
+  const {
+    data: castVoteWithReasonSimulationResult,
+    isSuccess: castVoteWithReasonSimulationSuccessful,
+  } = useSimulateContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
       "function castRefundableVoteWithReason(uint256 proposalId, uint8 support, string calldata reason) external",
     ]),
     functionName: "castRefundableVoteWithReason",
     args: [Number(proposalId), support, reason],
-    enabled: enabled && support != null && hasReason,
+    query: {
+      enabled: enabled && support != null && hasReason,
+    },
   });
 
-  const { writeAsync: writeCastVote } = useContractWrite(castVoteConfig);
-  const { writeAsync: writeCastVoteWithReason } = useContractWrite(
-    castVoteWithReasonConfig
-  );
+  const { writeContractAsync: writeContract } = useWriteContract();
 
-  const write = hasReason ? writeCastVoteWithReason : writeCastVote;
-
-  if (write == null) return null;
+  if (hasReason && !castVoteWithReasonSimulationSuccessful) return null;
+  if (!castVoteSimulationSuccessful) return null;
 
   return async () =>
-    write().then(({ hash }) => {
+    writeContract(
+      hasReason
+        ? castVoteWithReasonSimulationResult.request
+        : castVoteSimulationResult.request
+    ).then((hash) => {
       const voterId = accountAddress.toLowerCase();
 
       addOptimitisicProposalVote(proposalId, {
@@ -233,7 +251,7 @@ export const useCastProposalVote = (
         account: accountAddress,
       });
 
-      return { hash };
+      return hash;
     });
 };
 
@@ -244,13 +262,7 @@ export const useCreateProposal = () => {
   const chainId = useChainId();
   const registerEvent = useRegisterEvent();
 
-  const { writeAsync } = useContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
-    ]),
-    functionName: "propose",
-  });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   return async ({ description, transactions }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
@@ -258,10 +270,15 @@ export const useCreateProposal = () => {
       { chainId }
     );
 
-    return writeAsync({
+    return writeContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi([
+        "function propose(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
+      ]),
+      functionName: "propose",
       args: [targets, values, signatures, calldatas, description],
     })
-      .then(({ hash }) => {
+      .then((hash) => {
         registerEvent("Proposal successfully created", {
           account: accountAddress,
           hash,
@@ -290,13 +307,7 @@ export const useCreateProposalWithSignatures = () => {
   const chainId = useChainId();
   const registerEvent = useRegisterEvent();
 
-  const { writeAsync } = useContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function proposeBySigs((bytes sig, address signer, uint256 expirationTimestamp)[], address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
-    ]),
-    functionName: "proposeBySigs",
-  });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   return async ({ description, transactions, proposerSignatures }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
@@ -304,7 +315,12 @@ export const useCreateProposalWithSignatures = () => {
       { chainId }
     );
 
-    return writeAsync({
+    return writeContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi([
+        "function proposeBySigs((bytes sig, address signer, uint256 expirationTimestamp)[], address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description) public returns (uint256)",
+      ]),
+      functionName: "proposeBySigs",
       args: [
         proposerSignatures,
         targets,
@@ -314,7 +330,7 @@ export const useCreateProposalWithSignatures = () => {
         description,
       ],
     })
-      .then(({ hash }) => {
+      .then((hash) => {
         registerEvent("Proposal successfully created", {
           account: accountAddress,
           hash,
@@ -343,13 +359,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
   const chainId = useChainId();
   const registerEvent = useRegisterEvent();
 
-  const { writeAsync } = useContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function updateProposalBySigs(uint256 proposalId, (bytes sig, address signer, uint256 expirationTimestamp)[], address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory updateMessage) external",
-    ]),
-    functionName: "updateProposalBySigs",
-  });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   return async ({
     description,
@@ -362,7 +372,12 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
       { chainId }
     );
 
-    return writeAsync({
+    return writeContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi([
+        "function updateProposalBySigs(uint256 proposalId, (bytes sig, address signer, uint256 expirationTimestamp)[], address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory updateMessage) external",
+      ]),
+      functionName: "updateProposalBySigs",
       args: [
         proposalId,
         proposerSignatures,
@@ -373,7 +388,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
         description,
         updateMessage,
       ],
-    }).then(({ hash }) => {
+    }).then((hash) => {
       registerEvent("Proposal successfully updated", {
         account: accountAddress,
         hash,
@@ -392,34 +407,17 @@ export const useUpdateProposal = (proposalId) => {
 
   const contractAddress = getContractAddress(chainId);
 
-  const { writeAsync: updateProposal } = useContractWrite({
-    address: contractAddress,
-    abi: parseAbi([
-      "function updateProposal(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string updateMessage) external",
-    ]),
-    functionName: "updateProposal",
-  });
-
-  const { writeAsync: updateProposalDescription } = useContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function updateProposalDescription(uint256 proposalId, string memory description, string updateMessage) external",
-    ]),
-    functionName: "updateProposalDescription",
-  });
-
-  const { writeAsync: updateProposalTransactions } = useContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function updateProposalTransactions(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string updateMessage) external",
-    ]),
-    functionName: "updateProposalTransactions",
-  });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   return async ({ description, transactions, updateMessage }) => {
     const write = () => {
       if (transactions == null)
-        return updateProposalDescription({
+        return writeContract({
+          address: getContractAddress(chainId),
+          abi: parseAbi([
+            "function updateProposalDescription(uint256 proposalId, string memory description, string updateMessage) external",
+          ]),
+          functionName: "updateProposalDescription",
           args: [proposalId, description, updateMessage],
         });
 
@@ -429,7 +427,12 @@ export const useUpdateProposal = (proposalId) => {
       );
 
       if (description == null)
-        return updateProposalTransactions({
+        return writeContract({
+          address: getContractAddress(chainId),
+          abi: parseAbi([
+            "function updateProposalTransactions(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string updateMessage) external",
+          ]),
+          functionName: "updateProposalTransactions",
           args: [
             proposalId,
             targets,
@@ -440,7 +443,12 @@ export const useUpdateProposal = (proposalId) => {
           ],
         });
 
-      return updateProposal({
+      return writeContract({
+        address: contractAddress,
+        abi: parseAbi([
+          "function updateProposal(uint256 proposalId, address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string updateMessage) external",
+        ]),
+        functionName: "updateProposal",
         args: [
           proposalId,
           targets,
@@ -453,13 +461,13 @@ export const useUpdateProposal = (proposalId) => {
       });
     };
 
-    return write().then(({ hash }) => {
+    return write().then((hash) => {
       registerEvent("Proposal successfully updated", {
         proposalId,
         account: accountAddress,
         hash,
       });
-      return { hash };
+      return hash;
     });
   };
 };
@@ -471,25 +479,29 @@ export const useCancelProposal = (proposalId, { enabled = true } = {}) => {
   const chainId = useChainId();
   const registerEvent = useRegisterEvent();
 
-  const { config } = usePrepareContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi(["function cancel(uint256 proposalId) external"]),
-    functionName: "cancel",
-    args: [proposalId],
-    enabled,
-  });
-  const { writeAsync: write } = useContractWrite(config);
-
-  if (write == null) return null;
-
-  return () =>
-    write().then(({ hash }) => {
-      registerEvent("Proposal successfully canceled", {
-        account: accountAddress,
-        hash,
-      });
-      return publicClient.waitForTransactionReceipt({ hash });
+  const { data: simulationResult, isSuccess: simulationSuccessful } =
+    useSimulateContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi(["function cancel(uint256 proposalId) external"]),
+      functionName: "cancel",
+      args: [proposalId],
+      query: {
+        enabled,
+      },
     });
+
+  const { writeContractAsync: writeContract } = useWriteContract();
+
+  if (!simulationSuccessful) return null;
+
+  return async () => {
+    const hash = await writeContract(simulationResult.request);
+    registerEvent("Proposal successfully canceled", {
+      account: accountAddress,
+      hash,
+    });
+    return publicClient.waitForTransactionReceipt({ hash });
+  };
 };
 
 export const useQueueProposal = (proposalId, { enabled = true } = {}) => {
@@ -499,19 +511,22 @@ export const useQueueProposal = (proposalId, { enabled = true } = {}) => {
   const chainId = useChainId();
   const registerEvent = useRegisterEvent();
 
-  const { config } = usePrepareContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi(["function queue(uint256 proposalId) external"]),
-    functionName: "queue",
-    args: [proposalId],
-    enabled,
-  });
-  const { writeAsync: write } = useContractWrite(config);
+  const { data: simulationResult, isSuccess: simulationSuccessful } =
+    useSimulateContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi(["function queue(uint256 proposalId) external"]),
+      functionName: "queue",
+      args: [proposalId],
+      query: {
+        enabled,
+      },
+    });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
-  if (write == null) return null;
+  if (!simulationSuccessful) return null;
 
   return () =>
-    write().then(({ hash }) => {
+    writeContract(simulationResult.request).then((hash) => {
       registerEvent("Proposal successfully queued", {
         account: accountAddress,
         hash,
@@ -527,19 +542,22 @@ export const useExecuteProposal = (proposalId, { enabled = true } = {}) => {
   const chainId = useChainId();
   const registerEvent = useRegisterEvent();
 
-  const { config } = usePrepareContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi(["function execute(uint256 proposalId) external"]),
-    functionName: "execute",
-    args: [proposalId],
-    enabled,
-  });
-  const { writeAsync: write } = useContractWrite(config);
+  const { data: simulationResult, isSuccess: simulationSuccessful } =
+    useSimulateContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi(["function execute(uint256 proposalId) external"]),
+      functionName: "execute",
+      args: [proposalId],
+      query: {
+        enabled,
+      },
+    });
+  const { writeContractAsync: writeContract } = useWriteContract();
 
-  if (write == null) return null;
+  if (!simulationSuccessful) return null;
 
   return () =>
-    write().then(({ hash }) => {
+    writeContract(simulationResult.request).then((hash) => {
       registerEvent("Proposal successfully executed", {
         account: accountAddress,
         hash,
@@ -552,19 +570,20 @@ export const useCancelSignature = (signature) => {
   const publicClient = usePublicClient();
   const chainId = useChainId();
 
-  const { config } = usePrepareContractWrite({
-    address: getContractAddress(chainId),
-    abi: parseAbi(["function cancelSig(bytes calldata sig) external"]),
-    functionName: "cancelSig",
-    args: [signature],
-  });
+  const { data: simulationResult, isSuccess: simulationSuccessful } =
+    useSimulateContract({
+      address: getContractAddress(chainId),
+      abi: parseAbi(["function cancelSig(bytes calldata sig) external"]),
+      functionName: "cancelSig",
+      args: [signature],
+    });
 
-  const { writeAsync: write } = useContractWrite(config);
+  const { writeContractAsync: writeContract } = useWriteContract();
 
-  if (write == null) return null;
+  if (!simulationSuccessful) return null;
 
   return () =>
-    write().then(({ hash }) =>
+    writeContract(simulationResult.request).then((hash) =>
       publicClient.waitForTransactionReceipt({ hash })
     );
 };

@@ -3,12 +3,12 @@ import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { Small } from "./text";
 import Button from "@shades/ui-web/button";
-import { useWallet } from "@shades/common/wallet";
 import {
   useConnect,
-  useContractWrite,
-  usePrepareContractWrite,
-  useWaitForTransaction,
+  useAccount,
+  useWriteContract,
+  useSimulateContract,
+  useWaitForTransactionReceipt,
 } from "wagmi";
 import { useWalletFarcasterId } from "../hooks/farcord";
 import {
@@ -28,12 +28,15 @@ const { truncateAddress } = ethereumUtils;
 
 const TransferView = () => {
   const { reloadAccount } = useFarcasterAccount();
-  const { accountAddress } = useWallet();
+  const { address: accountAddress } = useAccount();
   const { data: fid } = useWalletFarcasterId(accountAddress);
 
-  const { connect, connectors, isLoading, pendingConnector } = useConnect({
-    chainId: DEFAULT_CHAIN_ID,
-  });
+  const {
+    connect,
+    connectors,
+    isPending: isLoading,
+    connectVariables,
+  } = useConnect();
 
   const [transferAddressFrom, setTransferAddressFrom] = React.useState(null);
   const [transferAddress, setTransferAddress] = React.useState(null);
@@ -50,21 +53,24 @@ const TransferView = () => {
   const hasRequiredTransferInput =
     Boolean(transferAddress) && isHex(transferAddress);
 
-  const { config, error: transferPrepareError } = usePrepareContractWrite({
-    address: ID_REGISTRY_ADDRESS,
-    abi: idRegistryAbi,
-    chainId: DEFAULT_CHAIN_ID,
-    functionName: "transfer",
-    args: [transferAddress, transferDeadline, transferSignature],
-    value: 0,
-    enabled: !!transferSignature && accountAddress == transferAddressFrom,
-  });
+  const { data: transferSimulationData, error: transferPrepareError } =
+    useSimulateContract({
+      address: ID_REGISTRY_ADDRESS,
+      abi: idRegistryAbi,
+      chainId: DEFAULT_CHAIN_ID,
+      functionName: "transfer",
+      args: [transferAddress, transferDeadline, transferSignature],
+      value: 0,
+      query: {
+        enabled: !!transferSignature && accountAddress == transferAddressFrom,
+      },
+    });
 
   // const isInsufficientFundsError = transferPrepareError?.walk(
   //   (e) => e instanceof InsufficientFundsError
   // );
 
-  const { writeAsync: submitTransferFid } = useContractWrite(config);
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   const createTransferSignature = async () => {
     if (!transferAddress) return;
@@ -97,7 +103,7 @@ const TransferView = () => {
   };
 
   const { isLoading: isTransferPending, isSuccess: isTransferSuccess } =
-    useWaitForTransaction({
+    useWaitForTransactionReceipt({
       hash: transferTransaction,
     });
 
@@ -144,23 +150,18 @@ const TransferView = () => {
               marginTop: "2rem",
             })}
           >
-            {connectors.map(
-              (connector) =>
-                connector.ready && (
-                  <Button
-                    size="medium"
-                    disabled={
-                      !connector.ready ||
-                      (isLoading && connector.id === pendingConnector?.id)
-                    }
-                    key={connector.id}
-                    onClick={() => connect({ connector })}
-                  >
-                    {connector.name}
-                    {!connector.ready && " (unsupported)"}
-                  </Button>
-                )
-            )}
+            {connectors.map((connector) => (
+              <ConnectButton
+                key={connector.id}
+                size="medium"
+                isConnecting={
+                  isLoading && connector.id === connectVariables?.connector?.id
+                }
+                onClick={() =>
+                  connect({ connector, chainId: DEFAULT_CHAIN_ID })
+                }
+              />
+            ))}
           </div>
         </div>
       ) : isTransferPending ? (
@@ -366,20 +367,22 @@ const TransferView = () => {
                 id="transfer-fid-form"
                 onSubmit={async (e) => {
                   e.preventDefault();
+
                   setPendingTransfer(true);
                   setTransferError(null);
-                  await submitTransferFid()
-                    .then((tx) => {
-                      setTransferTransaction(tx.hash);
-                    })
-                    .catch((e) => {
-                      console.error(e);
-                      setTransferError(e.message);
-                    })
-                    .finally(async () => {
-                      setPendingTransfer(false);
-                      await reloadAccount();
-                    });
+
+                  try {
+                    const { hash } = await writeContract(
+                      transferSimulationData.request
+                    );
+                    setTransferTransaction(hash);
+                  } catch (e) {
+                    console.error(e);
+                    setTransferError(e.message);
+                  } finally {
+                    setPendingTransfer(false);
+                    await reloadAccount();
+                  }
                 }}
                 css={css({
                   flex: 1,
@@ -536,6 +539,23 @@ const TransferView = () => {
         </>
       )}
     </div>
+  );
+};
+
+const ConnectButton = ({ connector, isConnecting, ...props }) => {
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    connector.getProvider().then((p) => {
+      setReady(p != null);
+    });
+  }, [connector]);
+
+  return (
+    <Button size="medium" disabled={isConnecting || !ready} {...props}>
+      {connector.name}
+      {!ready ? " (unsupported)" : isConnecting ? " (connecting)" : null}
+    </Button>
   );
 };
 

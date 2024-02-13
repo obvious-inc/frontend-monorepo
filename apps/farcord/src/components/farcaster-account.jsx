@@ -1,10 +1,9 @@
 import React from "react";
-import { useWallet } from "@shades/common/wallet";
 import { useWalletFarcasterId } from "../hooks/farcord";
 import { useCachedState } from "@shades/common/app";
 import { useLatestCallback } from "@shades/common/react";
 import useWalletEvent from "../hooks/wallet-event.js";
-import { useDisconnect } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { useNavigate } from "react-router-dom";
 
 export const createCacheKey = (address) =>
@@ -14,7 +13,7 @@ export const FarcasterAccountContext = React.createContext({});
 
 export const Provider = ({ children }) => {
   const navigate = useNavigate();
-  const { accountAddress: address } = useWallet();
+  const { address } = useAccount();
   const { disconnectAsync: disconnectWallet } = useDisconnect();
   const { data: walletFid } = useWalletFarcasterId(address);
   const [account, setAccount] = useCachedState("account");

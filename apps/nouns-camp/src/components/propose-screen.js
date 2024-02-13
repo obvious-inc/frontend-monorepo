@@ -21,7 +21,6 @@ import {
 } from "../hooks/drafts.js";
 import {
   useCreateProposal,
-  useCanCreateProposal,
   useProposalThreshold,
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
@@ -41,7 +40,7 @@ import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
 
-const ProposeScreen = ({ draftId }) => {
+const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -73,8 +72,6 @@ const ProposeScreen = ({ draftId }) => {
     connectedAccountAddress
   );
 
-  const canCreateProposal = useCanCreateProposal();
-
   const isTitleEmpty = draft.name.trim() === "";
   const isBodyEmpty =
     typeof draft.body === "string"
@@ -88,10 +85,7 @@ const ProposeScreen = ({ draftId }) => {
     enabled: hasRequiredInput && submitTargetType === "candidate",
   });
 
-  const createProposal = useCreateProposal({
-    enabled:
-      hasRequiredInput && canCreateProposal && submitTargetType === "candidate",
-  });
+  const createProposal = useCreateProposal();
 
   const usdcSumValue = draft.actions.reduce((sum, a) => {
     switch (a.type) {
@@ -168,7 +162,11 @@ const ProposeScreen = ({ draftId }) => {
                   await functionUtils.retryAsync(() => fetchProposal(res.id), {
                     retries: 100,
                   });
-                  navigate(`/proposals/${res.id}`, { replace: true });
+                  startNavigationTransition(() => {
+                    navigate(`/proposals/${res.id}`, {
+                      replace: true,
+                    });
+                  });
                   break;
                 }
 
@@ -182,12 +180,11 @@ const ProposeScreen = ({ draftId }) => {
                     () => fetchProposalCandidate(candidateId),
                     { retries: 100 }
                   );
-                  alert(
-                    `/candidates/${encodeURIComponent(candidateId)} ${res.slug}`
-                  );
 
-                  navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
-                    replace: true,
+                  startNavigationTransition(() => {
+                    navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
+                      replace: true,
+                    });
                   });
                   break;
                 }
@@ -478,9 +475,16 @@ export default ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { items: drafts, createItem: createDraft } = useDrafts();
 
+  const [hasPendingNavigationTransition, startNavigationTransition] =
+    React.useTransition();
+
   React.useEffect(() => {
-    if (draftId != null && draft === null) navigate("/", { replace: true });
-  }, [draftId, draft, navigate]);
+    if (hasPendingNavigationTransition) return;
+
+    if (draftId != null && draft === null) {
+      navigate("/", { replace: true });
+    }
+  }, [draftId, draft, navigate, hasPendingNavigationTransition]);
 
   const getFirstEmptyDraft = useLatestCallback(() =>
     drafts.find((draft) => {
@@ -512,5 +516,10 @@ export default ({ draftId }) => {
 
   if (draft == null) return null; // Spinner
 
-  return <ProposeScreen draftId={draftId} />;
+  return (
+    <ProposeScreen
+      draftId={draftId}
+      startNavigationTransition={startNavigationTransition}
+    />
+  );
 };

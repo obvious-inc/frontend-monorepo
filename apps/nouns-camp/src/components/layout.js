@@ -2,7 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
@@ -109,11 +109,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     disconnect: disconnectWallet,
     switchToMainnet: switchWalletToMainnet,
     isUnsupportedChain,
-    isShimmedDisconnect: isShimmedWalletDisconnect,
     isTestnet,
     isLoading: isLoadingWallet,
   } = useWallet();
-  const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
+  const connectedAccountDisplayName = useAccountDisplayName(
     connectedWalletAccountAddress
   );
 
@@ -375,15 +374,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       {
                         id: "disconnect",
                         children: [
-                          isShimmedWalletDisconnect
-                            ? {
-                                id: "request-wallet-access",
-                                label: "Connect a different account",
-                              }
-                            : {
-                                id: "disconnect-wallet",
-                                label: "Disconnect wallet",
-                              },
+                          {
+                            id: "disconnect-wallet",
+                            label: "Disconnect wallet",
+                          },
                         ],
                       },
                     ].filter(Boolean)}

@@ -1,8 +1,7 @@
 import React from "react";
-import { useConnect, useSwitchNetwork } from "wagmi";
+import { useConnect, useSwitchChain, useAccount } from "wagmi";
 import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 import Button from "@shades/ui-web/button";
-import { useWallet } from "@shades/common/wallet";
 import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import { Small } from "./text";
@@ -23,26 +22,20 @@ const LoginView = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  const { address: accountAddress, chain } = useAccount();
   const {
-    cancel: cancelWalletConnectionAttempt,
-    accountAddress,
-    chain,
-    isConnecting,
-  } = useWallet();
-  const { connect, connectors, isLoading, pendingConnector } = useConnect({
-    chainId: DEFAULT_CHAIN_ID,
-    onSuccess(data) {
-      track("Connect Wallet", {
-        account: data.account,
-        connector: data.connector?.name,
-      });
-    },
-  });
+    connect,
+    connectors,
+    isPending: isLoading,
+    variables: connectVariables,
+    reset: cancelConnectionAttempt,
+  } = useConnect();
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted } = useSigner();
 
-  const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
-  const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
+  const { switchChainAsync: switchChain } = useSwitchChain();
+  const switchToOptimismMainnet = () =>
+    switchChain({ chainId: DEFAULT_CHAIN_ID });
   const [isSwitchingToOptimism, setSwitchingToOptimism] = React.useState(false);
 
   const isCustodyWalletDialogOpen = searchParams.get("custody-wallet") != null;
@@ -87,7 +80,7 @@ const LoginView = () => {
           maxWidth: "50rem",
         })}
       >
-        {accountAddress == null && isConnecting ? (
+        {accountAddress == null && isLoading ? (
           <>
             <Spinner
               size="2.4rem"
@@ -98,7 +91,7 @@ const LoginView = () => {
             />
             <div>Requesting wallet address...</div>
             <Small>Check your wallet</Small>
-            <Button size="medium" onClick={cancelWalletConnectionAttempt}>
+            <Button size="medium" onClick={cancelConnectionAttempt}>
               Cancel
             </Button>
           </>
@@ -144,23 +137,30 @@ const LoginView = () => {
                 marginTop: "2rem",
               })}
             >
-              {connectors.map(
-                (connector) =>
-                  connector.ready && (
-                    <Button
-                      size="medium"
-                      disabled={
-                        !connector.ready ||
-                        (isLoading && connector.id === pendingConnector?.id)
+              {connectors.map((connector) => (
+                <ConnectButton
+                  key={connector.id}
+                  connector={connector}
+                  isConnecting={
+                    isLoading &&
+                    connector.id === connectVariables?.connector?.id
+                  }
+                  size="medium"
+                  onClick={() =>
+                    connect(
+                      { chainId: DEFAULT_CHAIN_ID, connector },
+                      {
+                        onSuccess(data) {
+                          track("Connect Wallet", {
+                            account: data.accounts[0],
+                            connector: connector.name,
+                          });
+                        },
                       }
-                      key={connector.id}
-                      onClick={() => connect({ connector })}
-                    >
-                      {connector.name}
-                      {!connector.ready && " (unsupported)"}
-                    </Button>
-                  )
-              )}
+                    )
+                  }
+                />
+              ))}
             </div>
 
             <Small css={css({ marginTop: "1rem", fontStyle: "italic" })}>
@@ -182,21 +182,21 @@ const LoginView = () => {
               .
             </Small>
 
-            {isConnecting && (
-              <>
-                <Spinner
-                  size="2.4rem"
-                  css={(t) => ({
-                    color: t.colors.textDimmed,
-                    margin: "0 auto 2rem",
-                  })}
-                />
-                <div style={{ marginBottom: "1rem" }}>
-                  Requesting wallet address...
-                </div>
-                <Small>Check your wallet</Small>
-              </>
-            )}
+            {/* {isConnecting && ( */}
+            {/*   <> */}
+            {/*     <Spinner */}
+            {/*       size="2.4rem" */}
+            {/*       css={(t) => ({ */}
+            {/*         color: t.colors.textDimmed, */}
+            {/*         margin: "0 auto 2rem", */}
+            {/*       })} */}
+            {/*     /> */}
+            {/*     <div style={{ marginBottom: "1rem" }}> */}
+            {/*       Requesting wallet address... */}
+            {/*     </div> */}
+            {/*     <Small>Check your wallet</Small> */}
+            {/*   </> */}
+            {/* )} */}
 
             <div
               css={(t) =>
@@ -466,6 +466,23 @@ const LoginView = () => {
         </Dialog>
       )}
     </div>
+  );
+};
+
+const ConnectButton = ({ connector, isConnecting, ...props }) => {
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    connector.getProvider().then((p) => {
+      setReady(p != null);
+    });
+  }, [connector]);
+
+  return (
+    <Button size="medium" disabled={isConnecting || !ready} {...props}>
+      {connector.name}
+      {!ready ? " (unsupported)" : isConnecting ? " (connectig)" : null}
+    </Button>
   );
 };
 

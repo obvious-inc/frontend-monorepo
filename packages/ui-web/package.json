@@ -37,7 +37,6 @@
     "./avatar": "./dist/avatar.js",
     "./account-avatar": "./dist/account-avatar.js",
     "./account-avatar-stack": "./dist/account-avatar-stack.js",
-    "./account-preview-popover-trigger": "./dist/account-preview-popover-trigger.js",
     "./channel-avatar": "./dist/channel-avatar.js",
     "./inline-user-button": "./dist/inline-user-button.js",
     "./inline-channel-button": "./dist/inline-channel-button.js",

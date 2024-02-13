@@ -1,9 +1,18 @@
 import React from "react";
 import NextLink from "next/link";
 import { isAddress } from "viem";
-import { useBlockNumber, useEnsAddress } from "wagmi";
+import { useBlockNumber, useEnsName, useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
+import {
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
+import { useCachedState } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
+import Select from "@shades/ui-web/select";
+import Button from "@shades/ui-web/button";
+import Spinner from "@shades/ui-web/spinner";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
@@ -19,20 +28,15 @@ import {
   useProposalCandidates,
   useProposals,
 } from "../store.js";
+import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import ActivityFeed_ from "./activity-feed.js";
-import { useAccountDisplayName, useCachedState } from "@shades/common/app";
 import AccountAvatar from "./account-avatar.js";
-import Select from "@shades/ui-web/select";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
-import Button from "@shades/ui-web/button";
-import Spinner from "@shades/ui-web/spinner";
-import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { VotingBar } from "./proposal-screen.js";
-import { array as arrayUtils } from "@shades/common/utils";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
@@ -261,9 +265,8 @@ const FeedTabContent = React.memo(({ visible, voterAddress }) => {
 const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
   const account = useAccount(voterAddress);
-  const { displayName: delegateDisplayName, ensName } = useAccountDisplayName(
-    account?.delegateId
-  );
+  const delegateDisplayName = useAccountDisplayName(account?.delegateId);
+  const { data: ensName } = useEnsName({ address: account?.delegateId });
 
   const delegate = useDelegate(voterAddress);
   const voteCount = delegate?.delegatedVotes ?? 0;
@@ -427,7 +430,8 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
 });
 
 const VoterHeader = ({ voterAddress }) => {
-  const { displayName, truncatedAddress } = useAccountDisplayName(voterAddress);
+  const displayName = useAccountDisplayName(voterAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(voterAddress);
 
   const allVoterNouns = useAllNounsByAccount(voterAddress);
 
@@ -770,7 +774,7 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
     ? addressOrEnsName
     : ensAddress;
 
-  const { displayName } = useAccountDisplayName(voterAddress);
+  const displayName = useAccountDisplayName(voterAddress);
 
   useDelegateFetch(voterAddress);
   useAccountFetch(voterAddress);
