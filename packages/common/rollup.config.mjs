@@ -30,17 +30,6 @@ const createConfig = ({ file, dependencies = [] }) => ({
 const entrypoints = [
   { file: "app.js", dependencies: ["viem", "react", "reselect", "zustand"] },
   { file: "apis.js" },
-  {
-    file: "wallet.js",
-    dependencies: [
-      "react",
-      "viem",
-      "viem/chains",
-      "viem/accounts",
-      "wagmi",
-      "wagmi/chains",
-    ],
-  },
   { file: "utils.js" },
   {
     file: "react.js",
@@ -52,8 +41,12 @@ const entrypoints = [
     ],
   },
   {
+    file: "ethereum-react/index.js",
+    dependencies: ["viem", "react", "wagmi"],
+  },
+  {
     file: "nouns/index.js",
-    dependencies: ["viem", "@nouns/assets", "@nouns/sdk"],
+    dependencies: ["@nouns/assets", "@nouns/sdk"],
   },
   { file: "emoji.js" },
   { file: "custom-emoji.js" },

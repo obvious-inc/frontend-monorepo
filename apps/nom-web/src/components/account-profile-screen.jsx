@@ -20,9 +20,9 @@ import {
   useAccount as useConnectedWalletAccount,
   usePublicClient as usePublicEthereumClient,
 } from "wagmi";
+import { mainnet } from "wagmi/chains";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   useSelectors,
   useActions,
@@ -30,7 +30,6 @@ import {
   useUserWithWalletAddress,
   useIsUserStarred,
   useChannelsWithMembers,
-  useAccountDisplayName,
 } from "@shades/common/app";
 import Button from "@shades/ui-web/button";
 import {
@@ -43,6 +42,9 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import Spinner from "@shades/ui-web/spinner";
 import { useDialog } from "../hooks/dialogs";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
+import useAccountDisplayName from "../hooks/account-display-name";
 import * as Tabs from "./tabs";
 import Delay from "./delay";
 import FormattedDate from "./formatted-date";
@@ -125,7 +127,7 @@ const useAccountTransactions = (accountAddress) => {
 
 const AccountProfileScreen = () => {
   const { ensNameOrEthereumAccountAddress } = useParams();
-  const publicEthereumClient = usePublicEthereumClient();
+  const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
   const isAddress = React.useMemo(
     () => isEthereumAccountAddress(ensNameOrEthereumAccountAddress),
     [ensNameOrEthereumAccountAddress]

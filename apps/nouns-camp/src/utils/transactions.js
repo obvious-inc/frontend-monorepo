@@ -329,7 +329,7 @@ export const unparse = (transactions, { chainId }) => {
     (acc, t) => {
       const append = (t) => ({
         targets: [...acc.targets, t.target],
-        values: [...acc.values, t.value],
+        values: [...acc.values, t.value?.toString()],
         signatures: [...acc.signatures, t.signature],
         calldatas: [...acc.calldatas, t.calldata],
       });

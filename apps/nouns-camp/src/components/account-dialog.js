@@ -1,15 +1,17 @@
 import { css } from "@emotion/react";
+import { useEnsName } from "wagmi";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
-import { useAccountDisplayName } from "@shades/common/app";
-import AccountAvatar from "./account-avatar.js";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-import NounAvatar from "./noun-avatar.js";
 import { useDelegate } from "../store.js";
 import { useNavigate } from "../hooks/navigation.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import AccountAvatar from "./account-avatar.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import NounAvatar from "./noun-avatar.js";
 
 const AccountDialog = ({ isOpen, close }) => (
   <Dialog
@@ -25,9 +27,12 @@ const AccountDialog = ({ isOpen, close }) => (
 
 const Content = ({ titleProps, dismiss }) => {
   const navigate = useNavigate();
+
   const { address: accountAddress } = useWallet();
-  const { displayName, ensName, truncatedAddress } =
-    useAccountDisplayName(accountAddress);
+  const displayName = useAccountDisplayName(accountAddress);
+  const { data: ensName } = useEnsName({ address: accountAddress });
+  const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
+
   const delegate = useDelegate(accountAddress);
   const currentQuorum = useCurrentDynamicQuorum();
 

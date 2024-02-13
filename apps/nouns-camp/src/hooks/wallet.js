@@ -1,7 +1,8 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { mainnet } from "wagmi/chains";
-import { useAccount, useConnect, useDisconnect, useSwitchNetwork } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import { array as arrayUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
@@ -34,49 +35,34 @@ export const Provider = ({ children }) => {
   );
 };
 
+const useReadyConnectors = () => {
+  const { connectors } = useConnect();
+  const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
+
+  React.useEffect(() => {
+    for (const c of connectors)
+      c.getProvider().then((p) => {
+        setReadyConnectorIds((ids) =>
+          p == null
+            ? ids.filter((id) => id !== c.id)
+            : arrayUtils.unique([...ids, c.id])
+        );
+      });
+  }, [connectors]);
+
+  return readyConnectorIds.map((id) => connectors.find((c) => c.id == id));
+};
+
 const ConnectDialog = ({ titleProps, dismiss }) => {
-  const { connector: connectedConnector } = useAccount();
+  const { connectAsync: connect, isPending, reset } = useConnect();
+  const connectors = useReadyConnectors();
 
-  const connectedConnectorId = connectedConnector?.id;
-
-  const isShimmedDisconnect =
-    connectedConnector?.options?.shimDisconnect ?? false;
-
-  const { connectAsync: connect, connectors, isLoading, reset } = useConnect();
-
-  const init = (id) => {
-    connect({ connector: connectors.find((c) => c.id === id) }).then(() => {
-      dismiss();
-    });
+  const init = async (connector) => {
+    await connect({ connector });
+    dismiss();
   };
 
-  console.log(connectedConnector);
-
-  const injectedConnector = connectors.find(
-    (c) => c.ready && c.id === "injected"
-  );
-
-  const coinbaseConnector = connectors.find(
-    (c) => c.ready && c.id === "coinbaseWallet"
-  );
-
-  const hasInjected = injectedConnector != null;
-
-  const injectedProvider = window.ethereum;
-
-  const injectedTitle = (() => {
-    if (!hasInjected) return null;
-    if (
-      injectedProvider.isRainbow &&
-      injectedProvider.isMetaMask &&
-      !injectedProvider.rainbowIsDefaultProvider
-    )
-      return "Metamask";
-    if (injectedProvider.isCoinbaseWallet) return "Coinbase";
-    return injectedConnector.name;
-  })();
-
-  if (isLoading)
+  if (isPending)
     return (
       <div
         style={{
@@ -89,7 +75,7 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
         }}
       >
         <div style={{ padding: "3rem" }}>
-          {isLoading ? <Spinner /> : "Connected"}
+          <Spinner />
         </div>
         <Button
           onClick={() => {
@@ -130,54 +116,21 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
       <main
         css={css({ display: "flex", flexDirection: "column", gap: "1rem" })}
       >
-        {hasInjected && (
-          <div>
-            <Button
-              fullWidth
-              onClick={() => {
-                init("injected");
-              }}
-              disabled={isShimmedDisconnect}
-            >
-              <em>{injectedTitle}</em> browser extension
-            </Button>
-            {isShimmedDisconnect && (
-              <div data-small style={{ padding: "0.8rem 0 1.2rem" }}>
-                {injectedTitle} is already connected. Disconnect or switch
-                account in your wallet app.
-              </div>
-            )}
-          </div>
-        )}
-
-        {coinbaseConnector != null && !injectedProvider?.isCoinbaseWallet && (
-          <div>
-            <Button
-              fullWidth
-              onClick={() => {
-                init("coinbaseWallet");
-              }}
-              disabled={connectedConnectorId === "coinbaseWallet"}
-            >
-              <em>Coinbase wallet</em>
-            </Button>
-            {connectedConnectorId === "coinbaseWallet" && (
-              <div data-small style={{ padding: "0.8rem 0 1.2rem" }}>
-                {injectedTitle} is already connected. Disconnect or switch
-                account in your wallet app.
-              </div>
-            )}
-          </div>
-        )}
-
-        <Button
-          fullWidth
-          onClick={() => {
-            init("walletConnect");
-          }}
-        >
-          <em>WalletConnect</em>
-        </Button>
+        {arrayUtils
+          // Injected wallets first
+          .sortBy({ value: (c) => c.type === "injected" }, connectors)
+          .map((c) => (
+            <div key={c.uid}>
+              <Button
+                fullWidth
+                onClick={() => {
+                  init(c);
+                }}
+              >
+                <em>{c.name}</em>
+              </Button>
+            </div>
+          ))}
       </main>
     </div>
   );
@@ -185,18 +138,19 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
-  const { address, connector: connectedConnector } = useAccount();
-  const { connect, connectors, isLoading: isConnecting, reset } = useConnect();
+  const { address } = useAccount();
+  const { connect, isPending: isConnecting, reset } = useConnect();
+  const connectors = useReadyConnectors();
   const { disconnectAsync: disconnect } = useDisconnect();
-  const { isLoading: isSwitchingNetwork, switchNetworkAsync: switchNetwork } =
-    useSwitchNetwork();
+  const { isLoading: isSwitchingNetwork, switchChainAsync: switchChain } =
+    useSwitchChain();
   const chainId = useChainId();
   const connectedChainId = useConnectedChainId();
 
   const isUnsupportedChain =
     connectedChainId != null && chainId !== connectedChainId;
 
-  const hasReadyConnector = connectors.some((c) => c.ready);
+  const hasReadyConnector = connectors.length > 0;
 
   const requestAccess = (connector) => {
     if (connector != null) {
@@ -204,10 +158,8 @@ export const useWallet = () => {
       return;
     }
 
-    const readyConnectors = connectors.filter((c) => c.ready);
-
-    if (readyConnectors.length === 1) {
-      connect({ connector: readyConnectors[0] });
+    if (connectors.length === 1) {
+      connect({ connector: connectors[0] });
       return;
     }
 
@@ -226,7 +178,7 @@ export const useWallet = () => {
           location.reload();
         }, 12_000);
 
-        switchNetwork(mainnet.id)
+        switchChain({ chainId: mainnet.id })
           .then(resolve, reject)
           .finally(() => {
             clearTimeout(timeoutHandle);
@@ -235,6 +187,5 @@ export const useWallet = () => {
     isLoading: isConnecting || isSwitchingNetwork,
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
-    isShimmedDisconnect: connectedConnector?.options?.shimDisconnect ?? false,
   };
 };

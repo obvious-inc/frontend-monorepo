@@ -1,7 +1,8 @@
 import React from "react";
 import { useEnsName, useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
-import { useAccountDisplayName } from "@shades/common/app";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
@@ -98,8 +99,8 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const delegate = useDelegate(accountAddress);
 
-  const { displayName, truncatedAddress } =
-    useAccountDisplayName(accountAddress);
+  const displayName = useAccountDisplayName(accountAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
 
   const { data: ensName } = useEnsName({ address: accountAddress });
   const { data: ensAvatarUrl } = useEnsAvatar({

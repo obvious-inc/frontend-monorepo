@@ -1,7 +1,9 @@
 import { decodeAbiParameters, toHex } from "viem";
-import { optimism } from "wagmi/chains";
+import { mainnet, optimism } from "wagmi/chains";
 
-export const DEFAULT_CHAIN_ID = optimism.id;
+export const OPTIMISM_MAINNET_CHAIN_ID = optimism.id;
+export const ETHEREUM_MAINNET_CHAIN_ID = mainnet.id;
+export const DEFAULT_CHAIN_ID = OPTIMISM_MAINNET_CHAIN_ID;
 
 export const ID_REGISTRY_ADDRESS = "0x00000000fc6c5f01fc30151999387bb99a9f489b";
 export const ID_GATEWAY_ADDRESS = "0x00000000fc25870c6ed6b6c7e41fb078b7656f69";

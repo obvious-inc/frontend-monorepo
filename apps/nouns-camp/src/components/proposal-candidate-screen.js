@@ -5,7 +5,11 @@ import addDaysToDate from "date-fns/addDays";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import NextLink from "next/link";
-import { notFound as nextNotFound } from "next/navigation";
+import {
+  notFound as nextNotFound,
+  useRouter,
+  usePathname,
+} from "next/navigation";
 import { css } from "@emotion/react";
 import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
@@ -36,7 +40,7 @@ import {
   useProposalFetch,
   useActiveProposalsFetch,
 } from "../store.js";
-import { useNavigate, useSearchParams } from "../hooks/navigation.js";
+import { useNavigate, useSearchParamToggleState } from "../hooks/navigation.js";
 import {
   useProposalThreshold,
   useCancelSignature,
@@ -76,31 +80,6 @@ const PromoteCandidateDialog = React.lazy(() =>
   import("./promote-candidate-dialog.js")
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
-
-const useSearchParamToggleState = (key, { replace = true } = {}) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const isToggled = searchParams.get(key) != null;
-
-  const toggle = React.useCallback(() => {
-    setSearchParams(
-      (params) => {
-        const newParams = new URLSearchParams(params);
-
-        if (newParams.get(key) == null) {
-          newParams.set(key, 1);
-          return newParams;
-        }
-
-        newParams.delete(key);
-        return newParams;
-      },
-      { replace }
-    );
-  }, [key, replace, setSearchParams]);
-
-  return [isToggled, toggle];
-};
 
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
@@ -145,7 +124,7 @@ const ProposalCandidateScreenContent = ({
   );
 
   const [isProposalUpdateDiffDialogOpen, toggleProposalUpdateDiffDialog] =
-    useSearchParamToggleState("diff");
+    useSearchParamToggleState("diff", { prefetch: true });
   const [hasPendingProposalUpdate, setPendingProposalUpdate] =
     React.useState(false);
   const submitProposalUpdate = useUpdateSponsoredProposalWithSignatures(
@@ -208,11 +187,15 @@ const ProposalCandidateScreenContent = ({
   const feedbackVoteCountExcludingAbstained =
     signals.votes.for + signals.votes.against;
 
-  const handleFormSubmit = async () =>
-    sendProposalFeedback().then(() => {
-      setPendingFeedback("");
-      setPendingSupport(null);
-    });
+  const handleFormSubmit = async () => {
+    // A contract simulation  takes a second to to do its thing after every
+    // argument change, so this might be null. This seems like a nicer
+    // behavior compared to disabling the submit button on every keystroke
+    if (sendProposalFeedback == null) return;
+    await sendProposalFeedback();
+    setPendingFeedback("");
+    setPendingSupport(null);
+  };
 
   const sponsorStatusCallout = (
     <Callout css={(t) => css({ fontSize: t.text.sizes.small })}>
@@ -936,14 +919,7 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
   const [isPending, setPending] = React.useState(false);
 
   const candidate = useProposalCandidate(candidateId);
-  const signCandidate = useSignProposalCandidate(
-    candidate.proposerId,
-    candidate.latestVersion.content,
-    {
-      expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
-      targetProposalId: candidate.latestVersion.targetProposalId,
-    }
-  );
+  const signCandidate = useSignProposalCandidate();
   const addSignatureToCandidate = useAddSignatureToProposalCandidate(
     candidate.proposerId,
     candidate.slug,
@@ -954,14 +930,24 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
       size="tiny"
       variant="primary"
       isLoading={isPending}
-      disabled={signCandidate == null || isPending}
+      disabled={isPending}
       onClick={async () => {
         setPending(true);
         try {
-          const signature = await signCandidate();
+          const expirationTimestamp = Math.floor(
+            expirationDate.getTime() / 1000
+          );
+          const signature = await signCandidate(
+            candidate.proposerId,
+            candidate.latestVersion.content,
+            {
+              expirationTimestamp,
+              targetProposalId: candidate.latestVersion.targetProposalId,
+            }
+          );
           await addSignatureToCandidate({
             signature,
-            expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
+            expirationTimestamp,
           });
         } catch (e) {
           if (e.message.startsWith("User rejected the request.")) return;
@@ -1022,14 +1008,7 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
 
   const hasPendingSubmit = submitState !== "idle";
 
-  const signCandidate = useSignProposalCandidate(
-    candidate.proposerId,
-    candidate.latestVersion.content,
-    {
-      expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
-      targetProposalId: candidate.latestVersion.targetProposalId,
-    }
-  );
+  const signCandidate = useSignProposalCandidate();
 
   const addSignatureToCandidate = useAddSignatureToProposalCandidate(
     candidate.proposerId,
@@ -1052,7 +1031,10 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitState("signing");
-          signCandidate()
+          signCandidate(candidate.proposerId, candidate.latestVersion.content, {
+            expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
+            targetProposalId: candidate.latestVersion.targetProposalId,
+          })
             .then((signature) => {
               setSubmitState("adding-signature");
               return addSignatureToCandidate({
@@ -1174,12 +1156,18 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
 
   useActiveProposalsFetch();
 
-  const [isEditDialogOpen, toggleEditDialog] =
-    useSearchParamToggleState("edit");
-  const [isSponsorDialogOpen, toggleSponsorDialog] =
-    useSearchParamToggleState("sponsor");
-  const [isProposeDialogOpen, toggleProposeDialog] =
-    useSearchParamToggleState("propose");
+  const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
+    "edit",
+    { prefetch: true, replace: true }
+  );
+  const [isSponsorDialogOpen, toggleSponsorDialog] = useSearchParamToggleState(
+    "sponsor",
+    { prefetch: true, replace: true }
+  );
+  const [isProposeDialogOpen, toggleProposeDialog] = useSearchParamToggleState(
+    "propose",
+    { prefetch: true, replace: true }
+  );
 
   const activeProposerIds = useProposals({ filter: "active" }).map(
     (p) => p.proposerId

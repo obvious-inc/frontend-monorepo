@@ -1,16 +1,14 @@
 import { isAddress as isEthereumAccountAddress } from "viem";
 import { normalize as normalizeEnsName } from "viem/ens";
-import { mainnet } from "viem/chains";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
-  WagmiConfig,
+  WagmiProvider,
+  http,
   createConfig as createWagmiConfig,
-  configureChains as configureWagmiChains,
   usePublicClient as usePublicEthereumClient,
 } from "wagmi";
-import { infuraProvider } from "wagmi/providers/infura";
-import { publicProvider } from "wagmi/providers/public";
-import { InjectedConnector } from "wagmi/connectors/injected";
-import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
+import { mainnet } from "wagmi/chains";
+import { safe, walletConnect } from "wagmi/connectors";
 import React from "react";
 import {
   BrowserRouter,
@@ -31,7 +29,6 @@ import {
   useCacheStore,
 } from "@shades/common/app";
 import { useMatchMedia } from "@shades/common/react";
-import { useWalletLogin, WalletLoginProvider } from "@shades/common/wallet";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import defaultTheme, {
   dark as darkTheme,
@@ -45,6 +42,9 @@ import { send as sendNotification } from "./utils/notifications";
 import useCommandCenter, {
   Provider as CommandCenterProvider,
 } from "./hooks/command-center";
+import useWalletLogin, {
+  Provider as WalletLoginProvider,
+} from "./hooks/wallet-login";
 import useWalletEvent from "./hooks/wallet-event";
 import useSetting from "./hooks/setting";
 import GlobalDialogs from "./components/global-dialogs";
@@ -73,40 +73,33 @@ const isNative = window.Native != null;
 const isReactNativeWebView = window.ReactNativeWebView != null;
 
 const isIFrame = window.parent && window.self && window.parent !== window.self;
+
 if (isIFrame) window.ethereum = new IFrameEthereumProvider();
 
-const { chains, publicClient } = configureWagmiChains(
-  [mainnet],
-  [
-    infuraProvider({ apiKey: import.meta.env.PUBLIC_INFURA_PROJECT_ID }),
-    publicProvider(),
-  ],
-  {
-    batch: {
-      multicall: {
-        wait: 250,
-        batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
-      },
-    },
-  }
-);
-
 const wagmiConfig = createWagmiConfig({
-  autoConnect: true,
-  publicClient,
+  chains: [mainnet],
   connectors: [
-    new InjectedConnector({
-      chains,
-      options: { isIFrame },
+    walletConnect({
+      projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
     }),
-    new WalletConnectConnector({
-      chains,
-      options: {
-        projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
-      },
-    }),
+    safe(),
   ],
+  transports: {
+    [mainnet.id]: http(
+      `https://eth-mainnet.g.alchemy.com/v2/${
+        import.meta.env.PUBLIC_ALCHEMY_API_KEY
+      }`
+    ),
+  },
+  batch: {
+    multicall: {
+      wait: 250,
+      batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
+    },
+  },
 });
+
+const queryClient = new QueryClient();
 
 const useSystemNotifications = () => {
   const navigate = useNavigate();
@@ -170,7 +163,7 @@ const useSystemNotifications = () => {
 const useUserEnsNames = () => {
   const actions = useActions();
   const selectors = useSelectors();
-  const publicEthereumClient = usePublicEthereumClient();
+  const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
 
   const { selectEnsName } = selectors;
 
@@ -364,7 +357,7 @@ const CommandCenter = () => {
 const RedirectDmIntent = () => {
   const { ensNameOrEthereumAccountAddress } = useParams();
   const navigate = useNavigate();
-  const publicEthereumClient = usePublicEthereumClient();
+  const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
 
   React.useEffect(() => {
     if (isEthereumAccountAddress(ensNameOrEthereumAccountAddress)) {
@@ -462,42 +455,44 @@ export default function LazyRoot() {
 
   return (
     <BrowserRouter>
-      <WagmiConfig config={wagmiConfig}>
-        <WalletLoginProvider
-          authenticate={({ message, signature, signedAt, address, nonce }) =>
-            login({ message, signature, signedAt, address, nonce })
-          }
-        >
-          <ThemeProvider theme={theme}>
-            <Tooltip.Provider delayDuration={300}>
-              <SidebarProvider>
-                <DialogsProvider>
-                  <CommandCenterProvider>
-                    <EmojiProvider
-                      loader={() =>
-                        Promise.all([
-                          import("@shades/common/custom-emoji").then(
-                            (m) => m.default
-                          ),
-                          import("@shades/common/emoji").then((m) =>
-                            m.default.filter(
-                              (e) =>
-                                e.unicode_version === "" ||
-                                parseFloat(e.unicode_version) <= 12
-                            )
-                          ),
-                        ]).then((sets) => sets.flat())
-                      }
-                    >
-                      <App />
-                    </EmojiProvider>
-                  </CommandCenterProvider>
-                </DialogsProvider>
-              </SidebarProvider>
-            </Tooltip.Provider>
-          </ThemeProvider>
-        </WalletLoginProvider>
-      </WagmiConfig>
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          <WalletLoginProvider
+            authenticate={({ message, signature, signedAt, address, nonce }) =>
+              login({ message, signature, signedAt, address, nonce })
+            }
+          >
+            <ThemeProvider theme={theme}>
+              <Tooltip.Provider delayDuration={300}>
+                <SidebarProvider>
+                  <DialogsProvider>
+                    <CommandCenterProvider>
+                      <EmojiProvider
+                        loader={() =>
+                          Promise.all([
+                            import("@shades/common/custom-emoji").then(
+                              (m) => m.default
+                            ),
+                            import("@shades/common/emoji").then((m) =>
+                              m.default.filter(
+                                (e) =>
+                                  e.unicode_version === "" ||
+                                  parseFloat(e.unicode_version) <= 12
+                              )
+                            ),
+                          ]).then((sets) => sets.flat())
+                        }
+                      >
+                        <App />
+                      </EmojiProvider>
+                    </CommandCenterProvider>
+                  </DialogsProvider>
+                </SidebarProvider>
+              </Tooltip.Provider>
+            </ThemeProvider>
+          </WalletLoginProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
     </BrowserRouter>
   );
 }

@@ -24,7 +24,6 @@ export { default as useMessageReactions } from "./hooks/message-reactions.js";
 export { default as useChannelMessagesFetcher } from "./hooks/channel-messages-fetcher.js";
 export { default as useChannelFetchEffects } from "./hooks/channel-fetch-effects.js";
 export { default as useMarkChannelReadEffects } from "./hooks/mark-channel-read-effects.js";
-export { default as useAccountDisplayName } from "./hooks/account-display-name.js";
 export * from "./hooks/ens.js";
 export * from "./hooks/me.js";
 export * from "./hooks/user.js";

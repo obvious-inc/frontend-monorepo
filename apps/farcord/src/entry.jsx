@@ -2,20 +2,12 @@ import "./polyfills";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { CacheStoreProvider, createCacheStore } from "@shades/common/app";
-import { ChainDataCacheContextProvider } from "./hooks/farcord";
-import {
-  WagmiConfig,
-  createConfig as createWagmiConfig,
-  configureChains as configureWagmiChains,
-  mainnet,
-} from "wagmi";
-import { optimism } from "wagmi/chains";
-import { infuraProvider } from "wagmi/providers/infura";
-import { publicProvider } from "wagmi/providers/public";
-import { InjectedConnector } from "wagmi/connectors/injected";
-import { WalletConnectConnector } from "wagmi/connectors/walletConnect";
-import { CoinbaseWalletConnector } from "wagmi/connectors/coinbaseWallet";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { WagmiProvider, http, createConfig as createWagmiConfig } from "wagmi";
+import { walletConnect, coinbaseWallet } from "wagmi/connectors";
+import { mainnet, optimism } from "wagmi/chains";
 import { inject as injectVercelAnalytics } from "@vercel/analytics";
+import { ChainDataCacheContextProvider } from "./hooks/farcord";
 
 import "./reset.css";
 import "./index.css";
@@ -32,46 +24,43 @@ try {
   console.warn(e);
 }
 
-const { chains, publicClient } = configureWagmiChains(
-  [optimism, mainnet],
-  [
-    infuraProvider({ apiKey: import.meta.env.PUBLIC_INFURA_PROJECT_ID }),
-    publicProvider(),
-  ]
-);
-
 const wagmiConfig = createWagmiConfig({
-  autoConnect: true,
-  publicClient,
+  chains: [mainnet, optimism],
   connectors: [
-    new InjectedConnector({ chains }),
-    new WalletConnectConnector({
-      chains,
-      options: {
-        projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
-      },
+    walletConnect({
+      projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
     }),
-    new CoinbaseWalletConnector({
-      chains,
-      options: {
-        appName: "Farcord",
-      },
-    }),
+    coinbaseWallet({ appName: "Farcord" }),
   ],
+  transports: {
+    [mainnet.id]: http(
+      `https://mainnet.infura.io/v3/${import.meta.env.PUBLIC_INFURA_PROJECT_ID}`
+    ),
+    [optimism.id]: http(
+      `https://optimism-mainnet.infura.io/v3/${
+        import.meta.env.PUBLIC_INFURA_PROJECT_ID
+      }`
+    ),
+    //
+  },
 });
+
+const queryClient = new QueryClient();
 
 createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
-    <WagmiConfig config={wagmiConfig}>
-      <ChainDataCacheContextProvider>
-        <CacheStoreProvider
-          store={createCacheStore({ storage: cacheStoreStorage })}
-        >
-          <React.Suspense fallback={null}>
-            <LazyApp />
-          </React.Suspense>
-        </CacheStoreProvider>
-      </ChainDataCacheContextProvider>
-    </WagmiConfig>
+    <WagmiProvider config={wagmiConfig}>
+      <QueryClientProvider client={queryClient}>
+        <ChainDataCacheContextProvider>
+          <CacheStoreProvider
+            store={createCacheStore({ storage: cacheStoreStorage })}
+          >
+            <React.Suspense fallback={null}>
+              <LazyApp />
+            </React.Suspense>
+          </CacheStoreProvider>
+        </ChainDataCacheContextProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
   </React.StrictMode>
 );

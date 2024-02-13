@@ -1,13 +1,7 @@
 import React from "react";
-import {
-  useConnect,
-  useAccount,
-  useEnsName,
-  useNetwork,
-  useSwitchNetwork,
-} from "wagmi";
+import { useConnect, useAccount, useEnsName, useSwitchChain } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
-import useLatestCallback from "../react/hooks/latest-callback.js";
+import { useLatestCallback } from "@shades/common/react";
 
 const ETHEREUM_MAINNET_CHAIN_ID = mainnetChain.id;
 
@@ -50,7 +44,7 @@ const useWallet = () => {
     connectAsync: connectWallet,
     reset: cancelConnectionAttempt,
     connectors,
-    isLoading,
+    isPending,
     // error,
   } = useConnect();
   const {
@@ -60,7 +54,7 @@ const useWallet = () => {
     // error,
     isConnecting,
   } = useAccount();
-  const { chain: activeChain } = useNetwork();
+  const { chain: activeChain } = useAccount();
 
   const { data: ensName } = useEnsName({
     address: accountAddress,
@@ -69,9 +63,27 @@ const useWallet = () => {
 
   useIFrameAutoConnect();
 
-  const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
+  const { switchChainAsync: switchChain } = useSwitchChain();
 
-  const firstReadyConnector = connectors.find((c) => c.ready);
+  const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
+
+  React.useEffect(() => {
+    for (const connector of connectors)
+      connector.getProvider().then((p) => {
+        if (p == null) {
+          setReadyConnectorIds((s) => s.filter((id) => id !== connector.id));
+          return;
+        }
+
+        setReadyConnectorIds((s) =>
+          s.includes(connector.id) ? s : [...s, connector.id]
+        );
+      });
+  }, [connectors]);
+
+  const firstReadyConnector = connectors.find((c) => {
+    return readyConnectorIds.find((id) => id === c.id);
+  });
 
   const connect = useLatestCallback(async () => {
     if (firstReadyConnector == null) throw new Error("No connector ready");
@@ -86,13 +98,13 @@ const useWallet = () => {
   });
 
   const switchToEthereumMainnet = () =>
-    switchNetwork(ETHEREUM_MAINNET_CHAIN_ID);
+    switchChain({ chainId: ETHEREUM_MAINNET_CHAIN_ID });
 
   return {
     accountAddress,
     accountEnsName: ensName,
     chain: activeChain,
-    isConnecting: isConnecting ?? isLoading,
+    isConnecting: isConnecting || isPending,
     canConnect: firstReadyConnector != null,
     error: connectError,
     connect,

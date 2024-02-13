@@ -1,5 +1,4 @@
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import React from "react";
 import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
@@ -7,7 +6,13 @@ import Avatar from "@shades/ui-web/avatar";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
-import { useSwitchNetwork, useDisconnect, useConnect } from "wagmi";
+import {
+  useAccount,
+  useEnsName,
+  useSwitchChain,
+  useDisconnect,
+  useConnect,
+} from "wagmi";
 import { toHex } from "viem";
 import Input from "@shades/ui-web/input";
 import { fetchCustodyAddressByUsername } from "../hooks/neynar";
@@ -22,7 +27,7 @@ import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 const { truncateAddress } = ethereumUtils;
 
 const WalletUser = () => {
-  const { accountAddress } = useWallet();
+  const { address: accountAddress } = useAccount();
   const { data: fid } = useWalletFarcasterId(accountAddress);
   const farcasterUser = useUserByFid(fid);
 
@@ -91,32 +96,23 @@ const AuthScreen = () => {
   const [custodyWalletAddress, setCustodyWalletAddress] = React.useState("");
   const isSmallScreen = useMatchMedia("(max-width: 800px)");
 
-  const {
-    cancel: cancelWalletConnectionAttempt,
-    canConnect: canConnectWallet,
-    accountAddress,
-    accountEnsName,
-    chain,
-    isConnecting,
-    // error: walletError,
-  } = useWallet();
+  const { address: accountAddress, chain } = useAccount();
+  const { data: accountEnsName } = useEnsName({ address: accountAddress });
 
   const {
     connect,
     connectors,
     error: walletError,
-    isLoading,
-    pendingConnector,
-  } = useConnect({
-    chainId: DEFAULT_CHAIN_ID,
-  });
-
-  const { error: loginError } = useWalletLogin();
+    isPending: isLoading,
+    variables: connectVariables,
+    reset: cancelWalletConnectionAttempt,
+  } = useConnect();
 
   const { disconnect: disconnectWallet } = useDisconnect();
 
-  const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
-  const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
+  const { switchChainAsync: switchChain } = useSwitchChain();
+  const switchToOptimismMainnet = () =>
+    switchChain({ chainId: DEFAULT_CHAIN_ID });
   const [isSwitchingToOptimism, setSwitchingToOptimism] = React.useState(false);
 
   const [waitingTransactionHash, setWaitingTransactionHash] =
@@ -141,7 +137,7 @@ const AuthScreen = () => {
   const [custodyWalletSearchError, setCustodyWalletAddressError] =
     React.useState(null);
 
-  const error = loginError ?? walletError ?? signerError;
+  const error = walletError ?? signerError;
 
   const handleCreateSignerClick = async () => {
     return createSigner().then((createdSigner) => {
@@ -191,7 +187,7 @@ const AuthScreen = () => {
       })}
       style={{ height: undefined }}
     >
-      {accountAddress == null && isConnecting ? (
+      {accountAddress == null && isLoading ? (
         <div>
           <Spinner
             size="2.4rem"
@@ -379,22 +375,18 @@ const AuthScreen = () => {
                   },
                 })}
               >
-                {connectors.map(
-                  (connector) =>
-                    connector.ready && (
-                      <Button
-                        disabled={!connector.ready}
-                        key={connector.id}
-                        onClick={() => connect({ connector })}
-                      >
-                        {connector.name}
-                        {!connector.ready && " (unsupported)"}
-                        {isLoading &&
-                          connector.id === pendingConnector?.id &&
-                          " (connecting)"}
-                      </Button>
-                    )
-                )}
+                {connectors.map((connector) => (
+                  <ConnectButton
+                    key={connector.id}
+                    isConnecting={
+                      isLoading &&
+                      connector.id === connectVariables?.connector?.id
+                    }
+                    onClick={() =>
+                      connect({ connector, chainId: DEFAULT_CHAIN_ID })
+                    }
+                  />
+                ))}
               </div>
               {custodyWalletAddress ? (
                 <>
@@ -542,7 +534,7 @@ const AuthScreen = () => {
               </p>
               <Button
                 size="larger"
-                disabled={!canConnectWallet}
+                disabled={accountAddress == null}
                 onClick={() => {
                   disconnectWallet();
                 }}
@@ -732,6 +724,23 @@ const AuthScreen = () => {
         </div>
       )}
     </div>
+  );
+};
+
+const ConnectButton = ({ connector, isConnecting, disabled, ...props }) => {
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    connector.getProvider().then((p) => {
+      setReady(p != null);
+    });
+  }, [connector]);
+
+  return (
+    <Button size="medium" disabled={disabled || !ready} {...props}>
+      {connector.name}
+      {!ready ? " (unsupported)" : isConnecting ? " (connecting)" : null}
+    </Button>
   );
 };
 

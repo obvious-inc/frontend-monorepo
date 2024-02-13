@@ -6,7 +6,7 @@ import {
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Spinner from "@shades/ui-web/spinner";
@@ -111,7 +111,7 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
               retries: 100,
             })
             .then(() => {
-              navigate(`/${res.id}`);
+              navigate(`/proposals/${res.id}`);
             });
         },
         (e) => {
@@ -410,7 +410,7 @@ const SignatureListBox = ({
 );
 
 const SignatureItemContent = ({ signature }) => {
-  const { displayName } = useAccountDisplayName(signature.signer.id);
+  const displayName = useAccountDisplayName(signature.signer.id);
   const votingPower = signature.signer.nounsRepresented.length;
   return (
     <div css={css({ display: "flex", alignItems: "center", gap: "1rem" })}>

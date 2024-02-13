@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { usePublicClient as usePublicEthereumClient } from "wagmi";
+import { mainnet } from "wagmi/chains";
 import { useActions, useSelectors, useMe } from "@shades/common/app";
 import { object as objectUtils } from "@shades/common/utils";
 import textCommands from "../commands/text";
@@ -14,7 +15,7 @@ const useCommands = ({ context, channelId } = {}) => {
   const actions = useActions();
   const selectors = useSelectors();
   const navigate = useNavigate();
-  const publicEthereumClient = usePublicEthereumClient();
+  const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
   const user = useMe();
 
   const commandDependencies = React.useMemo(

@@ -37,3 +37,41 @@ export const useSearchParams = () => {
 
   return [searchParams, set];
 };
+
+export const useSearchParamToggleState = (
+  key,
+  { replace = true, prefetch = false } = {}
+) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const isToggled = searchParams.get(key) != null;
+
+  const getToggledSearchParams = React.useCallback(
+    (params) => {
+      const newParams = new URLSearchParams(params);
+
+      if (newParams.get(key) == null) {
+        newParams.set(key, 1);
+        return newParams;
+      }
+
+      newParams.delete(key);
+      return newParams;
+    },
+    [key]
+  );
+
+  const toggle = React.useCallback(() => {
+    setSearchParams((params) => getToggledSearchParams(params), { replace });
+  }, [replace, getToggledSearchParams, setSearchParams]);
+
+  React.useEffect(() => {
+    if (!prefetch) return;
+    const newParams = getToggledSearchParams(searchParams);
+    router.prefetch(pathname + "?" + newParams);
+  }, [router, pathname, getToggledSearchParams, searchParams, prefetch]);
+
+  return [isToggled, toggle];
+};

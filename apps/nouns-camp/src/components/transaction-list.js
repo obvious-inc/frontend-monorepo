@@ -5,7 +5,7 @@ import { formatEther, formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -786,7 +786,7 @@ export const AddressDisplayNameWithTooltip = ({
   ...props
 }) => {
   const knownContract = useContract(address);
-  const { displayName } = useAccountDisplayName(address);
+  const displayName = useAccountDisplayName(address);
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild {...props}>

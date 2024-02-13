@@ -2,9 +2,11 @@ import { headers } from "next/headers";
 import Script from "next/script";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
+import { getStateFromCookie as getWagmiStateFromCookie } from "../wagmi-config.js";
 import metaConfig from "../metadata-config.js";
 import CacheStoreProvider from "../cache-store-provider.js";
 import ThemeProvider from "../theme-provider.js";
+import WagmiProvider from "../wagmi-provider.js";
 import GlobalStylesWrapper from "../global-styles-wrapper.js";
 import AppUpdateBanner from "../components/app-update-banner.js";
 
@@ -52,9 +54,11 @@ export const viewport = {
 
 const beforeInteractive = () => {
   try {
-    const theme = localStorage.getItem("ns:settings:theme");
-    if (theme != null)
-      document.documentElement.dataset.theme = JSON.parse(theme);
+    const rawThemePreference = localStorage.getItem("ns:settings:theme");
+    if (rawThemePreference != null) {
+      const themePreference = JSON.parse(rawThemePreference);
+      document.documentElement.dataset.theme = themePreference;
+    }
   } catch (e) {
     // Ignore
   }
@@ -101,7 +105,13 @@ export default function RootLayout({ children }) {
             <ThemeProvider>
               <GlobalStylesWrapper>
                 <AppUpdateBanner buildId={headers().get("x-build-id")} />
-                {children}
+                <WagmiProvider
+                  initialState={getWagmiStateFromCookie(
+                    headers().get("cookie")
+                  )}
+                >
+                  {children}
+                </WagmiProvider>
               </GlobalStylesWrapper>
             </ThemeProvider>
           </CacheStoreProvider>

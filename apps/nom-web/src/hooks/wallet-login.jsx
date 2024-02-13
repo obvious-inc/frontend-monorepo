@@ -6,7 +6,7 @@ import { mainnet } from "viem/chains";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { useSignMessage } from "wagmi";
 import React from "react";
-import useLatestCallback from "../react/hooks/latest-callback.js";
+import { useLatestCallback } from "@shades/common/react";
 
 const prepareLoginMessage = (address) => {
   const signedAt = new Date().toISOString();

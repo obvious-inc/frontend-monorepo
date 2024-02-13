@@ -1,48 +1,19 @@
-import { mainnet } from "../../../chains.js";
-import metaConfig from "../../../metadata-config.js";
-import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
+import { headers } from "next/headers";
 import {
   string as stringUtils,
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
+import metaConfig from "../../../metadata-config.js";
+import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
+import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
 import ProposalScreenClientWrapper from "./page.client.js";
 
 export const runtime = "edge";
 
-// // Paginate to prevent exceeding the 2MB cache limit on Vercel
-// const fetchProposals = async () => {
-//   const pageSize = 100;
-//   let proposals = [];
-//   let page = 0;
-
-//   while (page != null) {
-//     const data = await subgraphFetch({
-//       chainId: mainnet.id,
-//       query: `
-//         query {
-//           proposals(
-//             skip: ${page * pageSize},
-//             first: ${pageSize},
-//             orderBy: createdBlock,
-//             orderDirection: desc
-//           ) {
-//             id
-//             description
-//           }
-//         }`,
-//     });
-//     if (data.proposals == null || data.proposals.length === 0) break;
-//     proposals.push(...data.proposals);
-//     page = page + 1;
-//   }
-
-//   return proposals.map((p) => parseProposal(p, { chainId: mainnet.id }));
-// };
-
-const fetchProposal = async (id) => {
+const fetchProposal = async (id, { chainId }) => {
   const data = await subgraphFetch({
-    chainId: mainnet.id,
+    chainId,
     query: `
       query {
         proposal(id: ${id}) {
@@ -52,17 +23,14 @@ const fetchProposal = async (id) => {
       }`,
   });
   if (data?.proposal == null) return null;
-  return parseProposal(data.proposal, { chainId: mainnet.id });
+  return parseProposal(data.proposal, { chainId });
 };
 
-// export async function generateStaticParams() {
-//   const proposals = await fetchProposals();
-//   return proposals.map((p) => ({ id: p.id, proposal: p }));
-// }
-
 export async function generateMetadata({ params }) {
-  // const proposal = params.proposal ?? (await fetchProposal(params.id));
-  const proposal = await fetchProposal(params.id);
+  const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
+  const proposal = await fetchProposal(params.id, {
+    chainId: wagmiState.chainId,
+  });
 
   // Can’t notFound() here since we might be on a testnet
   if (proposal == null) return null;

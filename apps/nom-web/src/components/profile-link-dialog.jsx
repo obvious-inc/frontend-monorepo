@@ -3,7 +3,7 @@ import React from "react";
 import { useAccount } from "wagmi";
 import { css, useTheme } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useMe, useAccountDisplayName } from "@shades/common/app";
+import { useMe } from "@shades/common/app";
 import { Checkmark as CheckmarkIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
@@ -11,6 +11,7 @@ import Emoji from "@shades/ui-web/emoji";
 import Input from "@shades/ui-web/input";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
+import useAccountDisplayName from "../hooks/account-display-name";
 import QRCode from "./qr-code";
 
 const { truncateAddress } = ethereumUtils;

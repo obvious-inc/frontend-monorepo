@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { css } from "@emotion/react";
 import { message as messageUtils } from "@shades/common/utils";
 import { useActions, useAuth } from "@shades/common/app";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import Button from "@shades/ui-web/button";
 import { AddUser as AddUserIcon } from "@shades/ui-web/icons";
 import RichTextEditor, {
@@ -11,6 +10,8 @@ import RichTextEditor, {
 } from "@shades/ui-web/rich-text-editor";
 import Select from "@shades/ui-web/select";
 import { useDialog } from "../hooks/dialogs";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 
 const { createEmptyParagraphElement } = messageUtils;
 

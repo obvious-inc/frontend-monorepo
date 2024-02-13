@@ -9,7 +9,6 @@ import {
   useIsChannelStarred,
   useChannelHasOpenReadAccess,
 } from "@shades/common/app";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -29,6 +28,8 @@ import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { useDialog } from "../hooks/dialogs";
+import useWalletLogin from "../hooks/wallet-login";
+import useWallet from "../hooks/wallet";
 import NavBar from "./nav-bar";
 import Heading from "./heading";
 import RichText from "./rich-text";

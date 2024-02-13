@@ -105,7 +105,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
         { chainId }
       );
 
-      return areTransactionsEqual(transactions, persistedTransactions);
+      return !areTransactionsEqual(transactions, persistedTransactions);
     });
 
   const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;

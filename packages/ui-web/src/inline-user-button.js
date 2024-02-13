@@ -1,10 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
-import {
-  useUser,
-  useUserWithWalletAddress,
-  useAccountDisplayName,
-} from "@shades/common/app";
+import { useUser, useUserWithWalletAddress } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import InlineButton from "./inline-button.js";
 
 const InlineUserButton = React.forwardRef(
@@ -16,9 +13,10 @@ const InlineUserButton = React.forwardRef(
     const user =
       cachedUser ?? (walletAddress == null ? null : { walletAddress });
 
-    const { displayName: accountDisplayName } = useAccountDisplayName(
+    const accountDisplayName = useAccountDisplayName(
       user?.walletAddress ?? walletAddress
     );
+    const displayName = user?.displayName ?? accountDisplayName;
 
     const disabled = user?.deleted || user?.unknown;
 
@@ -26,7 +24,7 @@ const InlineUserButton = React.forwardRef(
       ? "Deleted user"
       : user?.unknown
       ? "Unknown user"
-      : accountDisplayName;
+      : displayName;
 
     return (
       // {children} need to be rendered to work in Slate editor

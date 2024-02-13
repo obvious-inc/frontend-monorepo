@@ -56,6 +56,7 @@ const addressByIdentifierByChainId = {
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
     "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
     "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
+    "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
   [goerli.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,

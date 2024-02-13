@@ -1,7 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useWallet } from "@shades/common/wallet";
-import { useSwitchNetwork } from "wagmi";
+import { useAccount, useSwitchChain, useSignTypedData } from "wagmi";
 import useFarcasterAccount from "./farcaster-account";
 import { Link, useNavigate } from "react-router-dom";
 import Avatar from "@shades/ui-web/avatar";
@@ -15,8 +14,10 @@ import {
   useUserData as useHubUserData,
 } from "../hooks/hub";
 import useSigner from "./signer";
-import { signTypedData } from "@wagmi/core";
-import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
+import {
+  DEFAULT_CHAIN_ID,
+  ETHEREUM_MAINNET_CHAIN_ID,
+} from "../utils/farcaster";
 import { addDays } from "date-fns";
 import FormattedDate from "./formatted-date";
 import Input from "@shades/ui-web/input";
@@ -174,10 +175,15 @@ const AccountPreview = ({ displayName, bio, username }) => {
 
 const ProfileView = () => {
   const navigate = useNavigate();
-  const { accountAddress, switchToEthereumMainnet, chain } = useWallet();
+  const { address: accountAddress, chain } = useAccount();
+  const { switchChainAsync: switchChain } = useSwitchChain();
 
-  const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
-  const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
+  const { signTypedDataAsync: signTypedData } = useSignTypedData();
+
+  const switchToEthereumMainnet = () =>
+    switchChain({ chainId: ETHEREUM_MAINNET_CHAIN_ID });
+  const switchToOptimismMainnet = () =>
+    switchChain({ chainId: DEFAULT_CHAIN_ID });
 
   const { fid } = useFarcasterAccount();
   const { signer, broadcasted: onChain } = useSigner();

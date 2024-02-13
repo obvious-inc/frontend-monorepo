@@ -35,7 +35,11 @@ import {
   useProposalCandidate,
   useDelegate,
 } from "../store.js";
-import { useNavigate, useSearchParams } from "../hooks/navigation.js";
+import {
+  useNavigate,
+  useSearchParams,
+  useSearchParamToggleState,
+} from "../hooks/navigation.js";
 import {
   useCancelProposal,
   useCastProposalVote,
@@ -396,7 +400,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const handleFormSubmit = async () => {
     if (currentFormAction === "vote") {
-      // A prepared contract write takes a second to to do its thing after every
+      // A contract simulation  takes a second to to do its thing after every
       // argument change, so this might be null. This seems like a nicer
       // behavior compared to disabling the submit button on every keystroke
       if (castProposalVote == null) return;
@@ -457,7 +461,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       </span>
                     </Callout>
                   )}
-                  {hasVotingStarted && (
+                  {hasVotingStarted && proposal.state != null && (
                     <Callout
                       icon={renderProposalStateIcon()}
                       css={(t) => css({ fontSize: t.text.sizes.base })}
@@ -488,7 +492,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       />
                     </Tooltip.Content>
                   </Tooltip.Root>
-                ) : (
+                ) : proposal.state != null ? (
                   <Callout
                     icon={renderProposalStateIcon()}
                     css={(t) =>
@@ -500,7 +504,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   >
                     {renderProposalStateText()}
                   </Callout>
-                )}
+                ) : null}
                 <Tabs.Root
                   aria-label="Proposal info"
                   defaultSelectedKey="activity"
@@ -1253,21 +1257,10 @@ const ProposalScreen = ({ proposalId }) => {
     enabled: isProposer || isSponsor,
   });
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const isDialogOpen = searchParams.get("edit") != null;
-
-  const openEditDialog = React.useCallback(() => {
-    setSearchParams({ edit: 1 });
-  }, [setSearchParams]);
-
-  const closeEditDialog = React.useCallback(() => {
-    setSearchParams((params) => {
-      const newParams = new URLSearchParams(params);
-      newParams.delete("edit");
-      return newParams;
-    });
-  }, [setSearchParams]);
+  const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
+    "edit",
+    { replace: true, prefetch: "true" }
+  );
 
   useProposalFetch(proposalId, {
     onError: (e) => {
@@ -1289,7 +1282,7 @@ const ProposalScreen = ({ proposalId }) => {
 
     if (isProposer && proposal.state === "updatable")
       actions.push({
-        onSelect: openEditDialog,
+        onSelect: toggleEditDialog,
         label: "Edit",
       });
 
@@ -1375,7 +1368,7 @@ const ProposalScreen = ({ proposalId }) => {
         )}
       </Layout>
 
-      {isDialogOpen && proposal != null && (
+      {isEditDialogOpen && proposal != null && (
         <ErrorBoundary
           onError={() => {
             reloadPageOnce();
@@ -1385,7 +1378,7 @@ const ProposalScreen = ({ proposalId }) => {
             <ProposalEditDialog
               proposalId={proposalId}
               isOpen
-              close={closeEditDialog}
+              close={toggleEditDialog}
             />
           </React.Suspense>
         </ErrorBoundary>

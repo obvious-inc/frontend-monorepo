@@ -7,7 +7,8 @@ import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName, useCachedState } from "@shades/common/app";
+import { useCachedState } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import {
   array as arrayUtils,
   object as objectUtils,
@@ -1178,9 +1179,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal?.proposerId
-  );
+  const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
 
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
@@ -1381,9 +1380,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
     { watch: false }
   );
 
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    candidate.proposerId
-  );
+  const authorAccountDisplayName = useAccountDisplayName(candidate.proposerId);
 
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
@@ -1633,7 +1630,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
 const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
+  const authorAccountDisplayName = useAccountDisplayName(
     connectedAccountAddress
   );
 

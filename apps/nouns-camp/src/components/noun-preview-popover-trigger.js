@@ -1,8 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useEnsName } from "wagmi";
 import { useFetch } from "@shades/common/react";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
@@ -198,10 +199,10 @@ const NounEvents = ({ nounId, contextAccount }) => {
 const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
   const transactionHash = event.id.split("_")[0];
-  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
-    useAccountDisplayName(event.newAccountId);
-  const { displayName: ownerDisplayName, ensName: ownerEns } =
-    useAccountDisplayName(noun.ownerId);
+  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
+  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const ownerDisplayName = useAccountDisplayName(noun.ownerId);
+  const { data: ownerEns } = useEnsName({ address: noun.ownerId });
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -293,12 +294,14 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
     sourceAddress: contextAccount,
   });
 
-  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
-    useAccountDisplayName(event.newAccountId);
-  const {
-    displayName: previousAccountDisplayName,
-    ensName: previousAccountEns,
-  } = useAccountDisplayName(event.previousAccountId);
+  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
+  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const previousAccountDisplayName = useAccountDisplayName(
+    event.previousAccountId
+  );
+  const { data: previousAccountEns } = useEnsName({
+    address: event.previousAccountId,
+  });
 
   const isDestinationAccount =
     contextAccount != null &&

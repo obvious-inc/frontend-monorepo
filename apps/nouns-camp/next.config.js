@@ -10,8 +10,10 @@ const ignoredModules = [
   "stream",
   "tty",
   "zlib",
-  // @walletconnect
+  // wagmi / @walletconnect
   "pino-pretty",
+  // wagmi / @metamask
+  "encoding",
 ];
 
 module.exports = {

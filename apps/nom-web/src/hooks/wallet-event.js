@@ -13,7 +13,7 @@ const useWalletEvent = (event, listener) => {
   const changeHandler = useLatestCallback((data) => {
     switch (event) {
       case "account-change": {
-        if (data.account) listener(data.account);
+        if (data.accounts) listener(data.accounts[0]);
         break;
       }
     }
@@ -30,11 +30,11 @@ const useWalletEvent = (event, listener) => {
 
   React.useEffect(() => {
     if (activeConnector == null) return;
-    activeConnector.on("change", changeHandler);
-    activeConnector.on("disconnect", disconnectHandler);
+    activeConnector.emitter.on("change", changeHandler);
+    activeConnector.emitter.on("disconnect", disconnectHandler);
     return () => {
-      activeConnector.off("change", changeHandler);
-      activeConnector.off("disconnect", disconnectHandler);
+      activeConnector.emitter.off("change", changeHandler);
+      activeConnector.emitter.off("disconnect", disconnectHandler);
     };
   }, [activeConnector, changeHandler, disconnectHandler]);
 };

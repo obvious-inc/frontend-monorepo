@@ -4,7 +4,6 @@ import {
   getNounData,
 } from "@nouns/assets";
 import { buildSVG } from "@nouns/sdk";
-import { pad as padHex } from "viem";
 
 const svgCacheBySeed = new Map();
 
@@ -35,8 +34,10 @@ const buildDataUriFromSvgString = (svgString) => {
   return `data:image/svg+xml;base64,${svgBase64}`;
 };
 
-const getPseudorandomAccountSeed = (accountAddress) =>
-  getNounSeedFromBlockHash(0, padHex(accountAddress));
+const getPseudorandomAccountSeed = (address) => {
+  const paddedAddress = `0x${address.replace("0x", "").padStart(32 * 2, "0")}`;
+  return getNounSeedFromBlockHash(0, paddedAddress);
+};
 
 export const buildAccountPlaceholderSvgString = (accountAddress, options) => {
   const seed = getPseudorandomAccountSeed(accountAddress);

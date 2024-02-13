@@ -1,7 +1,7 @@
 import React from "react";
 import { useFetch } from "@shades/common/react";
 import { array as arrayUtils } from "@shades/common/utils";
-import { useContractRead, useNetwork } from "wagmi";
+import { useReadContract, useChainId as useWagmiChainId } from "wagmi";
 import { channelsReducer } from "../reducers/channels";
 
 import { idRegistryAbi } from "../abis/farc-id-registry";
@@ -13,17 +13,12 @@ export const ChainDataCacheContext = React.createContext();
 export const ChainDataCacheDispatchContext = React.createContext();
 
 const farcasterChannelsFetch = () =>
-  fetch(`${import.meta.env.EDGE_API_BASE_URL}/channels`, {
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-    .then((result) => {
-      return result.json();
+  fetch(`${import.meta.env.EDGE_API_BASE_URL}/channels`)
+    .then((res) => {
+      if (res.ok) return res.json();
+      return Promise.reject(new Error(res.statusText));
     })
-    .then((data) => {
-      return data.channels;
-    });
+    .then((data) => data.channels);
 
 export const ChainDataCacheContextProvider = ({ children }) => {
   const [state, dispatch] = React.useReducer(channelsReducer, {
@@ -87,8 +82,8 @@ export const useFarcasterChannelByUrl = (channelUrl) => {
 };
 
 export const useChainId = () => {
-  const { chain } = useNetwork();
-  return chain?.id ?? DEFAULT_CHAIN_ID;
+  const chainId = useWagmiChainId();
+  return chainId ?? DEFAULT_CHAIN_ID;
 };
 
 export const useWalletFarcasterId = (walletAddress) => {
@@ -96,13 +91,15 @@ export const useWalletFarcasterId = (walletAddress) => {
     if (!walletAddress) return;
   }, [walletAddress]);
 
-  const { data, error } = useContractRead({
+  const { data, error } = useReadContract({
     address: ID_REGISTRY_ADDRESS,
     abi: idRegistryAbi,
     functionName: "idOf",
     args: [walletAddress],
     chainId: DEFAULT_CHAIN_ID,
-    enabled: !!walletAddress,
+    query: {
+      enabled: !!walletAddress,
+    },
   });
 
   const id = data == 0 ? null : data;

@@ -1,12 +1,15 @@
 import React from "react";
 import {
-  useContractWrite,
   useConnect,
-  useSwitchNetwork,
-  usePrepareContractWrite,
-  useContractReads,
-  useContractRead,
-  useWaitForTransaction,
+  useAccount,
+  useEnsName,
+  useSwitchChain,
+  useSimulateContract,
+  useWriteContract,
+  useWaitForTransactionReceipt,
+  useReadContracts,
+  useReadContract,
+  useSignTypedData,
 } from "wagmi";
 import {
   InsufficientFundsError,
@@ -27,8 +30,6 @@ import {
   STORAGE_REGISTRY_ADDRESS,
 } from "../utils/farcaster";
 import Button from "@shades/ui-web/button";
-import { useWallet } from "@shades/common/wallet";
-import { signTypedData } from "@wagmi/core";
 import { css } from "@emotion/react";
 import { bundlerRegistryAbi } from "../abis/farc-bundler";
 import { storageRegistryAbi } from "../abis/farc-storage-registry";
@@ -44,6 +45,8 @@ import useFarcasterAccount from "./farcaster-account";
 import { track } from "@vercel/analytics";
 
 const { truncateAddress } = ethereumUtils;
+
+const { EDGE_API_BASE_URL } = import.meta.env;
 
 const priceFormatter = new Intl.NumberFormat("en", {
   style: "currency",
@@ -89,22 +92,24 @@ const StepElement = ({ collapsed = false, title, children }) => {
 const RegisterView = () => {
   const navigate = useNavigate();
 
-  const {
-    cancel: cancelWalletConnectionAttempt,
-    accountAddress,
-    accountEnsName,
-    chain,
-    isConnecting,
-  } = useWallet();
+  const { address: accountAddress, chain } = useAccount();
+  const { data: accountEnsName } = useEnsName({ address: accountAddress });
 
   const { fid, reloadAccount } = useFarcasterAccount();
 
-  const { connect, connectors, isLoading, pendingConnector } = useConnect({
+  const {
+    connect,
+    connectors,
+    isLoading,
+    variables: connectVariables,
+    reset: cancelConnectionAttempt,
+  } = useConnect({
     chainId: DEFAULT_CHAIN_ID,
   });
 
-  const { switchNetworkAsync: switchNetwork } = useSwitchNetwork();
-  const switchToOptimismMainnet = () => switchNetwork(DEFAULT_CHAIN_ID);
+  const { switchChainAsync: switchChain } = useSwitchChain();
+  const switchToOptimismMainnet = () =>
+    switchChain({ chainId: DEFAULT_CHAIN_ID });
   const [isSwitchingToOptimism, setSwitchingToOptimism] = React.useState(false);
 
   const [deadline, setDeadline] = React.useState(null);
@@ -134,7 +139,7 @@ const RegisterView = () => {
 
   const { createSigner } = useSigner();
 
-  const { data: storagePrices } = useContractReads({
+  const { data: storagePrices } = useReadContracts({
     contracts: [
       {
         address: STORAGE_REGISTRY_ADDRESS,
@@ -149,20 +154,25 @@ const RegisterView = () => {
         functionName: "usdUnitPrice",
       },
     ],
-    enabled: true,
   });
 
-  const { data: hasFid } = useContractRead({
+  const { data: hasFid } = useReadContract({
     address: ID_REGISTRY_ADDRESS,
     abi: idRegistryAbi,
     chainId: DEFAULT_CHAIN_ID,
     functionName: "idOf",
     args: [accountAddress],
-    enabled: Boolean(registerTransaction),
-    watch: Boolean(registerTransaction),
+    query: {
+      enabled: Boolean(registerTransaction),
+      watch: Boolean(registerTransaction),
+    },
   });
 
-  const { config, error: registerPrepareError } = usePrepareContractWrite({
+  const {
+    data: registerAccountSimulationResult,
+    isSuccess: registerAccountSumulationSuccessful,
+    error: registerAccountSimulationError,
+  } = useSimulateContract({
     address: BUNDLER_CONTRACT_ADDRESS,
     abi: bundlerRegistryAbi,
     chainId: DEFAULT_CHAIN_ID,
@@ -173,14 +183,16 @@ const RegisterView = () => {
       Number(storageUnits - 1),
     ],
     value: storagePrices ? BigInt(storageUnits) * storagePrices?.[0].result : 0,
-    enabled: Boolean(signerSig && regSig && signer && storagePrices),
+    query: {
+      enabled: Boolean(signerSig && regSig && signer && storagePrices),
+    },
   });
 
-  const isInsufficientFundsError = registerPrepareError?.walk(
-    (e) => e instanceof InsufficientFundsError
-  );
+  const isInsufficientFundsError =
+    registerAccountSimulationError != null &&
+    registerError instanceof InsufficientFundsError;
 
-  const { writeAsync: registerNewAccount } = useContractWrite(config);
+  const { writeContractAsync: writeContract } = useWriteContract();
 
   useWalletEvent("disconnect", () => {
     setRegSig(null);
@@ -200,117 +212,104 @@ const RegisterView = () => {
     setDeadline(null);
   });
 
+  const { signTypedDataAsync: signTypedData } = useSignTypedData();
+
   const createRecoveryAddressSignature = async () => {
     if (!recoveryAddress) return;
 
     let oneDayFromNow = Math.floor(Date.now() / 1000) + 86400;
     setDeadline(oneDayFromNow);
 
-    await signTypedData({
-      domain: ID_GATEWAY_EIP_712_DOMAIN,
-      types: {
-        Register: ID_REGISTRATION_REQUEST_TYPE,
-      },
-      primaryType: "Register",
-      message: {
-        to: accountAddress,
-        recovery: recoveryAddress,
-        nonce: 0n,
-        deadline: Number(oneDayFromNow),
-      },
-    })
-      .then((sig) => {
-        setRegSig(sig);
-      })
-      .catch((e) => {
-        console.error(e);
-        setRecoveryError(e.message);
+    try {
+      const sig = await signTypedData({
+        domain: ID_GATEWAY_EIP_712_DOMAIN,
+        types: {
+          Register: ID_REGISTRATION_REQUEST_TYPE,
+        },
+        primaryType: "Register",
+        message: {
+          to: accountAddress,
+          recovery: recoveryAddress,
+          nonce: 0n,
+          deadline: Number(oneDayFromNow),
+        },
       });
+      setRegSig(sig);
+    } catch (e) {
+      console.error(e);
+      setRecoveryError(e.message);
+    }
   };
 
   const createSignerSignature = async () => {
-    return await createSigner()
-      .then(async (createdSigner) => {
-        setSigner(createdSigner);
-        await fetch(`${import.meta.env.EDGE_API_BASE_URL}/farc-app`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            key: createdSigner?.publicKey,
-            deadline: Number(deadline),
-          }),
-        })
-          .then(async (res) => {
-            return await res.json();
-          })
-          .then((data) => {
-            return data.data.signature;
-          })
-          .then(async (sig) => {
-            const res = await fetch(
-              `${import.meta.env.EDGE_API_BASE_URL}/farc-app`
-            );
-            const data = await res.json();
-            const metadata = encodeAbiParameters(KEY_METADATA_TYPE, [
-              {
-                requestFid: BigInt(data.data.fid),
-                requestSigner: data.data.address,
-                signature: sig,
-                deadline: Number(deadline),
-              },
-            ]);
+    try {
+      const createdSigner = await createSigner();
+      setSigner(createdSigner);
 
-            setSignerMetadata(metadata);
+      const [farcordSignatureResponse, farcordAccountResponse] =
+        await Promise.all([
+          fetch(`${EDGE_API_BASE_URL}/farc-app`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              key: createdSigner?.publicKey,
+              deadline: Number(deadline),
+            }),
+          }).then((res) => res.json()),
+          fetch(`${EDGE_API_BASE_URL}/farc-app`).then((res) => res.json()),
+        ]);
 
-            await signTypedData({
-              domain: KEY_GATEWAY_EIP_712_DOMAIN,
-              types: {
-                Add: KEY_REGISTRY_ADD_TYPE,
-              },
-              primaryType: "Add",
-              message: {
-                owner: accountAddress,
-                keyType: 1,
-                key: createdSigner?.publicKey,
-                metadataType: 1,
-                metadata: metadata,
-                nonce: 0n,
-                deadline: Number(deadline),
-              },
-            }).then(async (sig) => {
-              setSignerSig(sig);
-            });
-          });
-      })
-      .catch((e) => {
-        console.error(e);
-        setSignerError(e.message);
+      const metadata = encodeAbiParameters(KEY_METADATA_TYPE, [
+        {
+          requestFid: BigInt(farcordAccountResponse.data.fid),
+          requestSigner: farcordAccountResponse.data.address,
+          signature: farcordSignatureResponse.data.signature,
+          deadline: BigInt(deadline),
+        },
+      ]);
+
+      setSignerMetadata(metadata);
+
+      const sig = await signTypedData({
+        domain: KEY_GATEWAY_EIP_712_DOMAIN,
+        types: {
+          Add: KEY_REGISTRY_ADD_TYPE,
+        },
+        primaryType: "Add",
+        message: {
+          owner: accountAddress,
+          keyType: 1,
+          key: createdSigner?.publicKey,
+          metadataType: 1,
+          metadata: metadata,
+          nonce: 0n,
+          deadline: Number(deadline),
+        },
       });
+      setSignerSig(sig);
+    } catch (e) {
+      console.error(e);
+      setSignerError(e.message);
+    }
   };
 
   const createAccount = async () => {
-    await registerNewAccount()
-      .then((tx) => {
-        setRegisterTransaction(tx.hash);
-      })
-      .then(() => {
-        track("Account created", { account: accountAddress });
-      })
-      .catch((e) => {
-        console.error(e);
-        setRegisterError(e.message);
-      });
+    try {
+      const hash = await writeContract(registerAccountSimulationResult.request);
+      setRegisterTransaction(hash);
+      track("Account created", { account: accountAddress });
+    } catch (e) {
+      console.error(e);
+      setRegisterError(e.message);
+    }
   };
 
   const handleCreateSignerClick = async () => {
     setHasPendingSignerRequest(true);
     setSignerError(null);
     try {
-      await createSignerSignature().then(() =>
-        setHasPendingSignerRequest(false)
-      );
+      await createSignerSignature();
+      setHasPendingSignerRequest(false);
     } catch (e) {
       setSignerError(e.message);
       setHasPendingSignerRequest(false);
@@ -340,7 +339,7 @@ const RegisterView = () => {
     : "loading...";
 
   const { isLoading: isRegisterPending, isSuccess: isRegisterSuccess } =
-    useWaitForTransaction({
+    useWaitForTransactionReceipt({
       hash: registerTransaction,
     });
 
@@ -393,7 +392,7 @@ const RegisterView = () => {
           padding: "0 1rem",
         })}
       >
-        {accountAddress == null && isConnecting ? (
+        {accountAddress == null && isLoading ? (
           <>
             <Spinner
               size="2.4rem"
@@ -404,7 +403,7 @@ const RegisterView = () => {
             />
             <div>Requesting wallet address...</div>
             <Small>Check your wallet</Small>
-            <Button size="medium" onClick={cancelWalletConnectionAttempt}>
+            <Button size="medium" onClick={cancelConnectionAttempt}>
               Cancel
             </Button>
           </>
@@ -435,25 +434,32 @@ const RegisterView = () => {
                 // justifyContent: "center",
               })}
             >
-              {connectors.map(
-                (connector) =>
-                  connector.ready && (
-                    <Button
-                      size="medium"
-                      disabled={
-                        !connector.ready ||
-                        (isLoading && connector.id === pendingConnector?.id)
+              {connectors.map((connector) => (
+                <ConnectButton
+                  key={connector.id}
+                  connector={connector}
+                  isConnecting={
+                    isLoading &&
+                    connector.id === connectVariables?.connector?.id
+                  }
+                  size="medium"
+                  onClick={() =>
+                    connect(
+                      { chainId: DEFAULT_CHAIN_ID, connector },
+                      {
+                        onSuccess(data) {
+                          track("Connect Wallet", {
+                            account: data.accounts[0],
+                            connector: connector.name,
+                          });
+                        },
                       }
-                      key={connector.id}
-                      onClick={() => connect({ connector })}
-                    >
-                      {connector.name}
-                      {!connector.ready && " (unsupported)"}
-                    </Button>
-                  )
-              )}
+                    )
+                  }
+                />
+              ))}
             </div>
-            {isConnecting && (
+            {isLoading && (
               <>
                 <Spinner
                   size="2.4rem"
@@ -702,9 +708,11 @@ const RegisterView = () => {
                   e.preventDefault();
                   setHasPendingRecoveryRequest(true);
                   setRecoveryError(null);
-                  await createRecoveryAddressSignature().finally(() =>
-                    setHasPendingRecoveryRequest(false)
-                  );
+                  try {
+                    await createRecoveryAddressSignature();
+                  } finally {
+                    setHasPendingRecoveryRequest(false);
+                  }
                 }}
                 css={css({
                   flex: 1,
@@ -1022,7 +1030,10 @@ const RegisterView = () => {
                   );
                 }}
                 isLoading={hasPendingRegisterRequest}
-                disabled={hasPendingRegisterRequest || registerPrepareError}
+                disabled={
+                  hasPendingRegisterRequest ||
+                  !registerAccountSumulationSuccessful
+                }
               >
                 Register
               </Button>
@@ -1044,7 +1055,7 @@ const RegisterView = () => {
                 ).
               </Small>
 
-              {(registerError || registerPrepareError) && (
+              {(registerError || registerAccountSimulationError) && (
                 <Small
                   css={(t) =>
                     css({
@@ -1059,8 +1070,8 @@ const RegisterView = () => {
                 >
                   {isInsufficientFundsError
                     ? "Your wallet does not have enough funds. Make sure you have bridged some ETH to Optimism."
-                    : registerPrepareError
-                    ? registerPrepareError.message.slice(0, 300)
+                    : registerAccountSimulationError
+                    ? registerAccountSimulationError.message.slice(0, 300)
                     : registerError.slice(0, 200)}
                 </Small>
               )}
@@ -1069,6 +1080,23 @@ const RegisterView = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const ConnectButton = ({ connector, isConnecting, ...props }) => {
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    connector.getProvider().then((p) => {
+      setReady(p != null);
+    });
+  }, [connector]);
+
+  return (
+    <Button size="medium" disabled={isConnecting || !ready} {...props}>
+      {connector.name}
+      {!ready ? " (unsupported)" : isConnecting ? " (connectig)" : null}
+    </Button>
   );
 };
 
