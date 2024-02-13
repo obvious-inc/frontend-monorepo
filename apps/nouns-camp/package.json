@@ -30,7 +30,7 @@
     "webpack": "^5.90.1",
     "webpack-cli": "^5.1.4",
     "webpack-config": "workspace:0.0.0",
-    "webpack-dev-server": "^4.15.1"
+    "webpack-dev-server": "^5.0.0"
   },
   "dependencies": {
     "@emotion/react": "^11.11.3",
