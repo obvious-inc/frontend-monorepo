@@ -87,9 +87,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
-        <Script id="bundle-version">
-          {`// Bundle SHA: [${process.env.GIT_COMMIT_SHA}]`}
-        </Script>
         <Script
           id="load-theme"
           strategy="beforeInteractive"

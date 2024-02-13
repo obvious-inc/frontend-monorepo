@@ -20,6 +20,19 @@ module.exports = {
   compiler: {
     emotion: true,
   },
+  headers() {
+    return [
+      {
+        source: "/",
+        headers: [
+          {
+            key: "x-build-version",
+            value: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "Unknown",
+          },
+        ],
+      },
+    ];
+  },
   webpack(config, { dev, ...options }) {
     config.resolve.fallback = {
       ...config.resolve.fallback,

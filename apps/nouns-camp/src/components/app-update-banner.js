@@ -16,10 +16,17 @@ const AppUpdateBanner = () => {
 
   useFetch(
     () =>
-      fetch("/")
+      fetch("/", { method: "HEAD" }).then((res) => {
+        console.log("header build version", res.headers.get("x-build-version"));
+      }),
+    []
+  );
+
+  useFetch(
+    () =>
+      fetch("/status")
         .then((res) => res.text())
         .then((html) => {
-          console.log(html);
           if (html.includes(process.env.GIT_COMMIT_SHA)) return;
 
           console.log(
