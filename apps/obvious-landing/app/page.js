@@ -9,7 +9,13 @@ export default function Index() {
         justifyContent: "center",
       }}
     >
-      <img src="logo.gif" style={{ display: "block", width: "6.6rem" }} />
+      <a
+        href="https://app.nom.wtf"
+        rel="noreferrer"
+        style={{ display: "block" }}
+      >
+        <img src="logo.gif" style={{ display: "block", width: "6.6rem" }} />
+      </a>
     </div>
   );
 }
