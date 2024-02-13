@@ -43,8 +43,10 @@ const themeMap = {
 const defaultTheme = themeMap["light"];
 
 const useTheme = () => {
-  const [themeSetting] = useSetting("theme");
-  const systemPrefersDarkTheme = useMatchMedia("(prefers-color-scheme: dark)");
+  const [themePreference] = useSetting("theme");
+  const systemPrefersDarkColorScheme = useMatchMedia(
+    "(prefers-color-scheme: dark)"
+  );
 
   const theme = React.useMemo(() => {
     const resolveTheme = () => {
@@ -55,13 +57,15 @@ const useTheme = () => {
 
       if (specifiedTheme) return themeMap[specifiedTheme] ?? defaultTheme;
 
-      if (themeSetting === "system") {
+      if (themePreference === "system") {
         const themeName =
-          systemPrefersDarkTheme || config["xmas-effects"] ? "dark" : "light";
+          systemPrefersDarkColorScheme || config["xmas-effects"]
+            ? "dark"
+            : "light";
         return themeMap[themeName];
       }
 
-      return themeMap[themeSetting] ?? defaultTheme;
+      return themeMap[themePreference] ?? defaultTheme;
     };
 
     const theme = resolveTheme();
@@ -71,7 +75,7 @@ const useTheme = () => {
       sidebarWidth: "38rem",
       navBarHeight: "4.7rem",
     };
-  }, [themeSetting, systemPrefersDarkTheme]);
+  }, [themePreference, systemPrefersDarkColorScheme]);
 
   return theme;
 };

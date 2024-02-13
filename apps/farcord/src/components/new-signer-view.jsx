@@ -5,11 +5,9 @@ import { Small } from "./text";
 import Spinner from "@shades/ui-web/spinner";
 import Button from "@shades/ui-web/button";
 import { useMatchMedia } from "@shades/common/react";
-import { useWallet } from "@shades/common/wallet";
 import useSigner from "./signer";
-import { useConnect } from "wagmi";
+import { useConnect, useAccount } from "wagmi";
 import { useNavigate } from "react-router-dom";
-import { DEFAULT_CHAIN_ID } from "../utils/farcaster";
 import { track } from "@vercel/analytics";
 import useFarcasterAccount from "./farcaster-account";
 
@@ -19,12 +17,10 @@ const NewSignerView = () => {
   const navigate = useNavigate();
 
   const isSmallScreen = useMatchMedia("(max-width: 800px)");
-  const { accountAddress } = useWallet();
+  const { address: accountAddress } = useAccount();
 
   const { fid } = useFarcasterAccount();
-  const { error: walletError } = useConnect({
-    chainId: DEFAULT_CHAIN_ID,
-  });
+  const { error: walletError } = useConnect();
 
   const [waitingTransactionHash, setWaitingTransactionHash] =
     React.useState(null);

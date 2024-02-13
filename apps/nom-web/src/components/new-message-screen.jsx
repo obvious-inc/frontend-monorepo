@@ -1,13 +1,14 @@
 import { isAddress as isEthereumAccountAddress } from "viem";
 import React from "react";
-import { useAccount } from "wagmi";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import { css, useTheme } from "@emotion/react";
-import { motion } from "framer-motion";
 import {
+  useAccount,
   useEnsAddress,
   usePublicClient as usePublicEthereumClient,
 } from "wagmi";
+import { mainnet } from "wagmi/chains";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { css, useTheme } from "@emotion/react";
+import { motion } from "framer-motion";
 import {
   useListBox,
   useListBoxSection,
@@ -32,9 +33,7 @@ import {
   useDmChannelWithMember,
   useChannelMessagesFetcher,
   useChannelFetchEffects,
-  useAccountDisplayName,
 } from "@shades/common/app";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import {
   user as userUtils,
   channel as channelUtils,
@@ -57,8 +56,11 @@ import InlineChannelButton from "@shades/ui-web/inline-channel-button";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import { useDialog } from "../hooks/dialogs";
+import useAccountDisplayName from "../hooks/account-display-name";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useCommands from "../hooks/commands";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 import Combobox, {
   Item as ComboboxItem,
   Section as ComboboxSection,
@@ -111,7 +113,7 @@ const getIdentifiersOfType = (type, keys) =>
 
 const useFilteredAccounts = (query) => {
   const { fetchEnsData } = useActions();
-  const publicEthereumClient = usePublicEthereumClient();
+  const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
   const me = useMe();
   const { address: connectedWalletAccountAddress } = useAccount();
   const users = useAllUsers();
@@ -178,6 +180,7 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
 };
 
 const useExternalAccount = (ensNameOrWalletAddress) => {
+  // TODO: normalize?
   const { data: ensMatchWalletAddress } = useEnsAddress({
     name: /^.+\.eth$/.test(ensNameOrWalletAddress)
       ? ensNameOrWalletAddress
@@ -457,7 +460,7 @@ const createDefaultChannelName = async (accounts, { publicEthereumClient }) => {
 
 const NewMessageScreen = () => {
   const navigate = useNavigate();
-  const publicEthereumClient = usePublicEthereumClient();
+  const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
 
   const { status: authenticationStatus } = useAuth();
   const actions = useActions();

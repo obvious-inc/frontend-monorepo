@@ -1,13 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
-import {
-  useMe,
-  useActions,
-  useAuth,
-  useAccountDisplayName,
-} from "@shades/common/app";
+import { useMe, useActions, useAuth } from "@shades/common/app";
 import FormDialog from "@shades/ui-web/form-dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
+import useAccountDisplayName from "../hooks/account-display-name";
 
 const LazyLoginScreen = React.lazy(() => import("./login-screen"));
 

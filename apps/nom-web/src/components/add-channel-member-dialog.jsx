@@ -3,6 +3,7 @@ import { normalize as normalizeEnsName } from "viem/ens";
 import React from "react";
 import { css } from "@emotion/react";
 import { usePublicClient as usePublicEthereumClient } from "wagmi";
+import { mainnet } from "wagmi/chains";
 import { useActions } from "@shades/common/app";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
@@ -10,7 +11,7 @@ import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import Input from "@shades/ui-web/input";
 
 const AddChannelMemberDialog = ({ channelId, isOpen, onRequestClose }) => {
-  const ethereumClient = usePublicEthereumClient();
+  const ethereumClient = usePublicEthereumClient({ chainId: mainnet.id });
   const actions = useActions();
 
   const inputRef = React.useRef();

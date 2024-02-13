@@ -17,10 +17,10 @@ const { sortBy } = arrayUtils;
 const { truncateAddress } = ethereumUtils;
 
 const SignerView = ({ signer }) => {
-  const signerCreatedApprox = signer?.blockTimestamp * 1000;
+  const signerCreatedApprox = (signer?.blockTimestamp ?? 0) * 1000;
   const publicKey = toHex(signer?.signerEventBody?.key);
   const metadata = signer?.signerEventBody?.metadata;
-  const parsedMetadata = decodeMetadata(metadata);
+  const parsedMetadata = metadata && decodeMetadata(metadata);
   const appFid = Number(parsedMetadata?.[0].requestFid);
   const appData = useUserData(appFid);
 

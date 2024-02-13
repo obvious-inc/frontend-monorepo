@@ -11,9 +11,9 @@
   "exports": {
     "./app": "./dist/app.js",
     "./apis": "./dist/apis.js",
-    "./wallet": "./dist/wallet.js",
     "./utils": "./dist/utils.js",
     "./react": "./dist/react.js",
+    "./ethereum-react": "./dist/ethereum-react/index.js",
     "./nouns": "./dist/nouns/index.js",
     "./emoji": "./dist/emoji.js",
     "./custom-emoji": "./dist/custom-emoji.js"

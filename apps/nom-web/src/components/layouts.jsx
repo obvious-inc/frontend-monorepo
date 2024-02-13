@@ -22,7 +22,6 @@ import {
   useHasFetchedMenuData,
   useStringifiedMessageContent,
 } from "@shades/common/app";
-import { useWalletLogin } from "@shades/common/wallet";
 import {
   array as arrayUtils,
   ethereum as ethereumUtils,
@@ -46,6 +45,7 @@ import ChannelAvatar from "@shades/ui-web/channel-avatar";
 import Spinner from "@shades/ui-web/spinner";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import useCommandCenter from "../hooks/command-center";
+import useWalletLogin from "../hooks/wallet-login";
 import { useDialog } from "../hooks/dialogs";
 import useSetting from "../hooks/setting";
 import NotificationBadge from "./notification-badge";

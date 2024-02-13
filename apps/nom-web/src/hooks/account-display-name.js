@@ -3,10 +3,10 @@ import {
   isAddress as isEthereumAccountAddress,
 } from "viem";
 import { useEnsName } from "wagmi";
-import { useUserWithWalletAddress } from "./user.js";
-import { truncateAddress } from "../utils/ethereum.js";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useUserWithWalletAddress } from "@shades/common/app";
 
-const useAccountDisplayName = (
+const useNOMAccountDisplayName = (
   accountAddress,
   { customDisplayName = true } = {}
 ) => {
@@ -33,7 +33,7 @@ const useAccountDisplayName = (
 
   const truncatedAddress =
     checksumEncodedAddress != null
-      ? truncateAddress(checksumEncodedAddress)
+      ? ethereumUtils.truncateAddress(checksumEncodedAddress)
       : null;
 
   const names = {
@@ -53,4 +53,4 @@ const useAccountDisplayName = (
   return { displayName: primaryName, ...names };
 };
 
-export default useAccountDisplayName;
+export default useNOMAccountDisplayName;

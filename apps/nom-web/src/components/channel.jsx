@@ -16,7 +16,6 @@ import {
   useChannelFetchEffects,
   useMarkChannelReadEffects,
 } from "@shades/common/app";
-import { useWalletLogin } from "@shades/common/wallet";
 import {
   useLatestCallback,
   useWindowFocusOrDocumentVisibleListener,
@@ -25,14 +24,15 @@ import {
 } from "@shades/common/react";
 import ChannelMessagesScrollView from "@shades/ui-web/channel-messages-scroll-view";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
-import AccountPreviewPopoverTrigger from "@shades/ui-web/account-preview-popover-trigger";
 import { CrossCircleSolid as CrossCircleIcon } from "@shades/ui-web/icons";
 import MessageEditorForm from "@shades/ui-web/message-editor-form";
 import Spinner from "@shades/ui-web/spinner";
+import useWalletLogin from "../hooks/wallet-login";
 import useLayoutSetting from "../hooks/layout-setting.js";
 import useMessageInputPlaceholder from "../hooks/channel-message-input-placeholder.js";
 import useCommands from "../hooks/commands";
 import Delay from "./delay";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
 import ChannelMessagesScrollViewHeader from "./channel-messages-scroll-view-header";
 import ChannelNavBar from "./channel-nav-bar";
 import ChannelMessage from "./channel-message";

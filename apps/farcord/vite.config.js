@@ -4,6 +4,10 @@ import react from "@vitejs/plugin-react-swc";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, "");
   return {
+    optimizeDeps: {
+      // Getting this again: https://github.com/wevm/wagmi/issues/383
+      include: ["@coinbase/wallet-sdk"],
+    },
     publicDir: "static",
     envPrefix: "PUBLIC_",
     plugins: [react({ jsxImportSource: "@emotion/react" })],

@@ -186,8 +186,10 @@ export const ChannelCacheContextProvider = ({ children }) => {
   }, []);
 
   const fetchCast = React.useCallback(async ({ castHash }) => {
-    return fetchNeynarCast(castHash).then(async (cast) => {
-      const castUsers = await extractUsersFromNeynarCast(cast);
+    return fetchNeynarCast(castHash).then((cast) => {
+      const castUsers = extractUsersFromNeynarCast(cast).filter(
+        (u) => u.fid != null
+      );
 
       setState((s) => {
         return {

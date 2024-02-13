@@ -332,8 +332,8 @@ query {
     }
   }
 
-  proposalCandidateVersions(where: {proposal_in: [${candidateIds.map(
-    (id) => `"${id}"`
+  proposalCandidateVersions(where: {proposal_in: [${candidateIds.map((id) =>
+    JSON.stringify(id)
   )}]}) {
     id
     createdBlock
@@ -344,8 +344,8 @@ query {
     }
   }
 
-  candidateFeedbacks(where: {candidate_in: [${candidateIds.map(
-    (id) => `"${id}"`
+  candidateFeedbacks(where: {candidate_in: [${candidateIds.map((id) =>
+    JSON.stringify(id)
   )}]}, first: 1000) {
     ...CandidateFeedbackFields
   }

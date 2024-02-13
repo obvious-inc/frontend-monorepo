@@ -1,10 +1,10 @@
 import React from "react";
 import { useConnect } from "wagmi";
 import { reloadPageOnce } from "@shades/common/utils";
-import { useWalletLogin } from "@shades/common/wallet";
 import { ErrorBoundary } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import { useDialog } from "../hooks/dialogs";
+import useWalletLogin from "../hooks/wallet-login";
 
 const LazyEditProfileDialog = React.lazy(() =>
   import("./edit-user-profile-dialog")

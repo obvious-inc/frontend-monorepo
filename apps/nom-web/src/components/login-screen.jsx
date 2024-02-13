@@ -1,11 +1,12 @@
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useWallet, useWalletLogin } from "@shades/common/wallet";
 import React from "react";
 import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
 import AccountAvatar from "@shades/ui-web/account-avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
+import useWallet from "../hooks/wallet";
+import useWalletLogin from "../hooks/wallet-login";
 
 const { truncateAddress } = ethereumUtils;
 
