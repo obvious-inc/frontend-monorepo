@@ -19,7 +19,7 @@ const AppUpdateBanner = () => {
       fetch("/")
         .then((res) => res.text())
         .then((html) => {
-          console.log({ html });
+          console.log(html);
           if (html.includes(process.env.GIT_COMMIT_SHA)) return;
 
           console.log(
