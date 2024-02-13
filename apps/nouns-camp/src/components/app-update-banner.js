@@ -17,44 +17,16 @@ const AppUpdateBanner = () => {
   useFetch(
     () =>
       fetch("/", { method: "HEAD" }).then((res) => {
-        console.log("header build version", res.headers.get("x-build-version"));
+        const newestBuildId = res.headers.get("x-build-id");
+        const currentBuildId = process.env.BUILD_ID;
+
+        if (currentBuildId == null || currentBuildId === newestBuildId) return;
+
+        console.log(
+          `New build available: "${newestBuildId}"\nCurrently running: "${currentBuildId}"`
+        );
+        setHasUpdate(true);
       }),
-    []
-  );
-
-  useFetch(
-    () =>
-      fetch("/status")
-        .then((res) => res.text())
-        .then((html) => {
-          if (html.includes(process.env.GIT_COMMIT_SHA)) return;
-
-          console.log(
-            `New build available: "${"?"}"\nCurrently running: "${
-              process.env.GIT_COMMIT_SHA
-            }"`
-          );
-          setHasUpdate(true);
-        }),
-    []
-  );
-
-  useFetch(
-    () =>
-      fetch("/api/version")
-        .then((res) => res.json())
-        .then((data) => {
-          if (
-            process.env.GIT_COMMIT_SHA == null ||
-            data.GIT_COMMIT_SHA === process.env.GIT_COMMIT_SHA
-          )
-            return;
-
-          console.log(
-            `New build available: "${data.GIT_COMMIT_SHA}"\nCurrently running: "${process.env.GIT_COMMIT_SHA}"`
-          );
-          setHasUpdate(true);
-        }),
     []
   );
 

@@ -26,8 +26,8 @@ module.exports = {
         source: "/",
         headers: [
           {
-            key: "x-build-version",
-            value: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "Unknown",
+            key: "x-build-id",
+            value: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "-",
           },
         ],
       },
@@ -46,7 +46,7 @@ module.exports = {
       plugins: [
         ...config.plugins,
         new webpack.DefinePlugin({
-          "process.env.GIT_COMMIT_SHA": JSON.stringify(
+          "process.env.BUILD_ID": JSON.stringify(
             process.env.VERCEL_GIT_COMMIT_SHA
           ),
         }),
