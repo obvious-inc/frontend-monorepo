@@ -821,7 +821,7 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
               >
                 Found no voter with id{" "}
                 <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
-                  {voterId}
+                  {rawAddressOrEnsName}
                 </span>
                 .
               </div>
