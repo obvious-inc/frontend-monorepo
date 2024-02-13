@@ -14,7 +14,7 @@
     "axios": ">=1.6.0"
   },
   "devDependencies": {
-    "turbo": "^1.12.2"
+    "turbo": "^1.12.3"
   },
   "engines": {
     "node": ">=18.0.0",
