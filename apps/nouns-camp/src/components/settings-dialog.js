@@ -35,7 +35,7 @@ const settingInputConfigByKey = {
     },
   },
   "debug-mode": {
-    label: "Developer mode",
+    label: "Developer modez",
     optionLabelsByValue: {
       true: "On",
       false: "Off",
