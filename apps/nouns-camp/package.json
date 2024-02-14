@@ -22,6 +22,9 @@
     "@prophouse/sdk-react": "^1.0.20",
     "@radix-ui/react-toolbar": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.5",
+    "@serwist/next": "^8.4.4",
+    "@serwist/precaching": "^8.4.4",
+    "@serwist/sw": "^8.4.4",
     "@shades/common": "workspace:0.0.0",
     "@shades/ui-web": "workspace:0.0.0",
     "@vercel/analytics": "^1.1.3",
@@ -44,7 +47,6 @@
     "tinykeys": "^1.4.0",
     "viem": "^2.7.1",
     "wagmi": "^2.5.6",
-    "workbox-webpack-plugin": "^6.5.4",
     "zustand": "^4.3.7"
   }
 }
