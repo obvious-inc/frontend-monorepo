@@ -95,16 +95,19 @@ const Content = ({ titleProps, dismiss }) => {
           type: "bool",
           state: searchParams.get("debug") != null,
           setState: (on) => {
-            setSearchParams((params) => {
-              const newParams = new URLSearchParams(params);
-              if (on) {
-                newParams.set("debug", 1);
-                return newParams;
-              }
+            setSearchParams(
+              (params) => {
+                const newParams = new URLSearchParams(params);
+                if (on) {
+                  newParams.set("debug", 1);
+                  return newParams;
+                }
 
-              newParams.delete("debug");
-              return newParams;
-            });
+                newParams.delete("debug");
+                return newParams;
+              },
+              { replace: true }
+            );
           },
         },
       ]
