@@ -14,10 +14,11 @@ import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NextLink from "next/link";
 
-const isAdminSession =
-  process.env.NODE_ENV !== "production" ||
-  (typeof location !== "undefined" &&
-    new URLSearchParams(location.search).get("admin") != null);
+const isProduction = process.env.NODE_ENV !== "production";
+
+const isDebugSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("debug") != null;
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -97,6 +98,8 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 );
 
 const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
+  const enableImpersonation = !isProduction || isDebugSession;
+
   const delegate = useDelegate(accountAddress);
 
   const displayName = useAccountDisplayName(accountAddress);
@@ -322,7 +325,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                       id: "copy-account-address",
                       label: "Copy account address",
                     },
-                    isAdminSession && {
+                    enableImpersonation && {
                       id: "impersonate-account",
                       label: "Impersonate account",
                     },
