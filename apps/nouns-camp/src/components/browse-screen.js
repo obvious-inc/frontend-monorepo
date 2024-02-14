@@ -6,6 +6,7 @@ import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
+import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
 import { useCachedState } from "@shades/common/app";
 import { useAccountDisplayName } from "@shades/common/ethereum-react";
@@ -513,6 +514,32 @@ const BrowseScreen = () => {
     [fetchBrowseScreenData]
   );
 
+  const handleSearchInputChange = useDebouncedCallback((query) => {
+    setPage(1);
+
+    // Clear search from path if query is empty
+    if (query.trim() === "") {
+      setSearchParams(
+        (p) => {
+          const newParams = new URLSearchParams(p);
+          newParams.delete("q");
+          return newParams;
+        },
+        { replace: true }
+      );
+      return;
+    }
+
+    setSearchParams(
+      (p) => {
+        const newParams = new URLSearchParams(p);
+        newParams.set("q", query);
+        return newParams;
+      },
+      { replace: true }
+    );
+  });
+
   return (
     <>
       <Layout
@@ -568,26 +595,10 @@ const BrowseScreen = () => {
               >
                 <Input
                   placeholder="Search..."
-                  value={query}
+                  defaultValue={query}
                   size="large"
                   onChange={(e) => {
-                    setPage(1);
-
-                    // Clear search from path if query is empty
-                    if (e.target.value.trim() === "") {
-                      setSearchParams((p) => {
-                        const newParams = new URLSearchParams(p);
-                        newParams.delete("q");
-                        return newParams;
-                      });
-                      return;
-                    }
-
-                    setSearchParams((p) => {
-                      const newParams = new URLSearchParams(p);
-                      newParams.set("q", e.target.value);
-                      return newParams;
-                    });
+                    handleSearchInputChange(e.target.value);
                   }}
                   css={css({ flex: 1, minWidth: 0 })}
                 />
