@@ -87,8 +87,8 @@ importers:
         specifier: ^3.32.0
         version: 3.32.0(react-dom@18.2.0)(react@18.2.0)
       react-aria-components:
-        specifier: 1.0.1
-        version: 1.0.1(react-dom@18.2.0)(react@18.2.0)
+        specifier: 1.1.0
+        version: 1.1.0(react-dom@18.2.0)(react@18.2.0)
       react-dom:
         specifier: 18.2.0
         version: 18.2.0(react@18.2.0)
@@ -3392,19 +3392,6 @@ packages:
       react-dom: 18.2.0(react@18.2.0)
     dev: false
 
-  /@react-aria/focus@3.16.0(react@18.2.0):
-    resolution: {integrity: sha512-GP6EYI07E8NKQQcXHjpIocEU0vh0oi0Vcsd+/71fKS0NnTR0TUOEeil0JuuQ9ymkmPDTu51Aaaa4FxVsuN/23A==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
-    dependencies:
-      '@react-aria/interactions': 3.21.0(react@18.2.0)
-      '@react-aria/utils': 3.23.1(react@18.2.0)
-      '@react-types/shared': 3.22.0(react@18.2.0)
-      '@swc/helpers': 0.5.3
-      clsx: 2.0.0
-      react: 18.2.0
-    dev: false
-
   /@react-aria/focus@3.16.1(react@18.2.0):
     resolution: {integrity: sha512-3ZEYc+hWqDQX7fA54ZOTkED8OGXs9+K9fYmjD1IdjZJAJS/2/AJ95PgIQ29zBkl9D9TAi4Nb3tJ/3+H/02UzoA==}
     peerDependencies:
@@ -3483,18 +3470,6 @@ packages:
       '@internationalized/message': 3.1.1
       '@internationalized/number': 3.5.0
       '@internationalized/string': 3.2.0
-      '@react-aria/ssr': 3.9.1(react@18.2.0)
-      '@react-aria/utils': 3.23.1(react@18.2.0)
-      '@react-types/shared': 3.22.0(react@18.2.0)
-      '@swc/helpers': 0.5.3
-      react: 18.2.0
-    dev: false
-
-  /@react-aria/interactions@3.20.1(react@18.2.0):
-    resolution: {integrity: sha512-PLNBr87+SzRhe9PvvF9qvzYeP4ofTwfKSorwmO+hjr3qoczrSXf4LRQlb27wB6hF10C7ZE/XVbUI1lj4QQrZ/g==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
-    dependencies:
       '@react-aria/ssr': 3.9.1(react@18.2.0)
       '@react-aria/utils': 3.23.1(react@18.2.0)
       '@react-types/shared': 3.22.0(react@18.2.0)
@@ -3891,8 +3866,8 @@ packages:
       react: 18.2.0
     dev: false
 
-  /@react-aria/toolbar@3.0.0-beta.1(react@18.2.0):
-    resolution: {integrity: sha512-GTQ76i0N8/BzWRJ/95RpOFGmbtv0lV3T2zd7CUis6xmP1zJCpSycs1V2jAUs6ggkVDedHLU2d0AOMkXorZLiUg==}
+  /@react-aria/toolbar@3.0.0-beta.2(react@18.2.0):
+    resolution: {integrity: sha512-9ULwLPCdYE68Uzh8M7ZoPZy7q/MLYMraxzNTon7/YORHjXnW4KcYIj0HV3AVXF4ai5+at4p+8EUupju/v/e0sA==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
     dependencies:
@@ -3916,19 +3891,6 @@ packages:
       '@react-types/shared': 3.22.0(react@18.2.0)
       '@react-types/tooltip': 3.4.6(react@18.2.0)
       '@swc/helpers': 0.5.3
-      react: 18.2.0
-    dev: false
-
-  /@react-aria/utils@3.23.0(react@18.2.0):
-    resolution: {integrity: sha512-fJA63/VU4iQNT8WUvrmll3kvToqMurD69CcgVmbQ56V7ZbvlzFi44E7BpnoaofScYLLtFWRjVdaHsohT6O/big==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
-    dependencies:
-      '@react-aria/ssr': 3.9.1(react@18.2.0)
-      '@react-stately/utils': 3.9.0(react@18.2.0)
-      '@react-types/shared': 3.22.0(react@18.2.0)
-      '@swc/helpers': 0.5.3
-      clsx: 2.0.0
       react: 18.2.0
     dev: false
 
@@ -4183,23 +4145,6 @@ packages:
       '@react-stately/utils': 3.9.0(react@18.2.0)
       '@react-types/shared': 3.22.0(react@18.2.0)
       '@react-types/slider': 3.7.0(react@18.2.0)
-      '@swc/helpers': 0.5.3
-      react: 18.2.0
-    dev: false
-
-  /@react-stately/table@3.11.4(react@18.2.0):
-    resolution: {integrity: sha512-dWINJIEOKQl4qq3moq+S8xCD3m+yJqBj0dahr+rOkS+t2uqORwzsusTM35D2T/ZHZi49S2GpE7QuDa+edCynPw==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
-    dependencies:
-      '@react-stately/collections': 3.10.4(react@18.2.0)
-      '@react-stately/flags': 3.0.0
-      '@react-stately/grid': 3.8.4(react@18.2.0)
-      '@react-stately/selection': 3.14.2(react@18.2.0)
-      '@react-stately/utils': 3.9.0(react@18.2.0)
-      '@react-types/grid': 3.2.3(react@18.2.0)
-      '@react-types/shared': 3.22.0(react@18.2.0)
-      '@react-types/table': 3.9.2(react@18.2.0)
       '@swc/helpers': 0.5.3
       react: 18.2.0
     dev: false
@@ -6823,6 +6768,10 @@ packages:
   /clean-stack@2.2.0:
     resolution: {integrity: sha512-4diC9HaTE+KRAMWhDhrGOECgWZxoevMc5TlkObMqNSsVU62PYzXZ/SMTjzyGAFF1YusgxGcSWTEXBhp0CPwQ1A==}
     engines: {node: '>=6'}
+    dev: false
+
+  /client-only@0.0.1:
+    resolution: {integrity: sha512-IV3Ou0jSMzZrd3pZ48nLkT9DA7Ag1pnPzaiQhpW7c3RbcqqzvzzVu+L8gfqMp/8IM2MQtSiqaCxrrcfu8I8rMA==}
     dev: false
 
   /clipboardy@3.0.0:
@@ -10678,24 +10627,28 @@ packages:
       iconv-lite: 0.4.24
       unpipe: 1.0.0
 
-  /react-aria-components@1.0.1(react-dom@18.2.0)(react@18.2.0):
-    resolution: {integrity: sha512-zlSx5r7Hu3kTg7hDEGNBwrtMNWJnJ81Zt1AXPJASAdO0dw6WUgSgQH2/ZgkDiKLlNmRFQhR8/gKN70rAJ+LZiQ==}
+  /react-aria-components@1.1.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-/Hvw3jy5H+1oswHRg1IRCQ29iJYRcyA5akbf1ipCNsa13o/i0dRZjNCEI32k8tqiFMC7dqvqLd6TsTGqdBq6Ag==}
     peerDependencies:
       react: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
       react-dom: ^16.8.0 || ^17.0.0-rc.1 || ^18.0.0
     dependencies:
       '@internationalized/date': 3.5.1
       '@internationalized/string': 3.2.0
-      '@react-aria/focus': 3.16.0(react@18.2.0)
-      '@react-aria/interactions': 3.20.1(react@18.2.0)
-      '@react-aria/toolbar': 3.0.0-beta.1(react@18.2.0)
-      '@react-aria/utils': 3.23.0(react@18.2.0)
-      '@react-stately/table': 3.11.4(react@18.2.0)
+      '@react-aria/focus': 3.16.1(react@18.2.0)
+      '@react-aria/interactions': 3.21.0(react@18.2.0)
+      '@react-aria/menu': 3.13.0(react-dom@18.2.0)(react@18.2.0)
+      '@react-aria/toolbar': 3.0.0-beta.2(react@18.2.0)
+      '@react-aria/utils': 3.23.1(react@18.2.0)
+      '@react-stately/menu': 3.6.0(react@18.2.0)
+      '@react-stately/table': 3.11.5(react@18.2.0)
+      '@react-stately/utils': 3.9.0(react@18.2.0)
       '@react-types/form': 3.7.1(react@18.2.0)
       '@react-types/grid': 3.2.3(react@18.2.0)
       '@react-types/shared': 3.22.0(react@18.2.0)
       '@react-types/table': 3.9.2(react@18.2.0)
       '@swc/helpers': 0.5.3
+      client-only: 0.0.1
       react: 18.2.0
       react-aria: 3.32.0(react-dom@18.2.0)(react@18.2.0)
       react-dom: 18.2.0(react@18.2.0)
