@@ -193,6 +193,6 @@ export const useWallet = () => {
     isLoading: isConnecting || isSwitchingNetwork,
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
-    isBetaAccount: betaAccounts.includes(connectedAccountAddress),
+    isBetaAccount: betaAccounts.includes(address),
   };
 };

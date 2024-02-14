@@ -3,8 +3,10 @@ import { useAccount } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
 import config from "../config.js";
+import { useConfig } from "../config-provider.js";
 import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 import { useSearchParams } from "../hooks/navigation.js";
+import { useWallet } from "../hooks/wallet.js";
 
 const settingInputConfigByKey = {
   theme: {
@@ -54,6 +56,8 @@ const SettingsDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
+  const { buildId } = useConfig();
+  const { isBetaAccount } = useWallet();
   const { connector } = useAccount();
 
   const [theme, setTheme] = useSetting("theme");
@@ -61,6 +65,8 @@ const Content = ({ titleProps, dismiss }) => {
   const [xmasOptOut, setXmasOptOut] = useSetting("xmas-effects-opt-out");
 
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const betaFeaturesEnabled = isBetaAccount || searchParams.get("beta") != null;
 
   return (
     <FormDialog
@@ -166,11 +172,15 @@ const Content = ({ titleProps, dismiss }) => {
             })
           }
         >
-          {/* {APP_VERSION != null && ( */}
-          {/*   <div> */}
-          {/*     Version: <em>{APP_VERSION}</em> */}
-          {/*   </div> */}
-          {/* )} */}
+          {buildId != null && (
+            <div>
+              Build ID: <em>{buildId}</em>
+            </div>
+          )}
+          <div>
+            Beta features:{" "}
+            <em>{betaFeaturesEnabled ? "Enabled" : "Disabled"}</em>
+          </div>
           <div>
             Wallet connector: <em>{connector.name}</em>
           </div>
