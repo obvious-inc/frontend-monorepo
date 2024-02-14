@@ -1,5 +1,5 @@
 const withSerwist = require("@serwist/next").default({
-  swSrc: "app/service-worker.js",
+  swSrc: "src/app/service-worker.js",
   swDest: "public/service-worker.js",
   swUrl: "/service-worker.js",
 });
