@@ -47,7 +47,7 @@ module.exports = {
       plugins: [
         ...config.plugins,
         new WorkboxPlugin.GenerateSW({
-          swDest: path.join(options.dir, "public", "sw.js"),
+          swDest: path.join(options.dir, "public", "service-worker.js"),
           // these options encourage the ServiceWorkers to get in there fast
           // and not allow any straggling "old" SWs to hang around
           clientsClaim: true,
