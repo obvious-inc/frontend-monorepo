@@ -1,5 +1,8 @@
-const path = require("path");
-const WorkboxPlugin = require("workbox-webpack-plugin");
+const withSerwist = require("@serwist/next").default({
+  swSrc: "src/app/service-worker.js",
+  swDest: "public/service-worker.js",
+  swUrl: "/service-worker.js",
+});
 
 const ignoredModules = [
   // @prophouse/sdk
@@ -16,7 +19,7 @@ const ignoredModules = [
   "encoding",
 ];
 
-module.exports = {
+module.exports = withSerwist({
   reactStrictMode: true,
   compiler: {
     emotion: true,
@@ -34,28 +37,13 @@ module.exports = {
       },
     ];
   },
-  webpack(config, { dev, ...options }) {
+  webpack(config) {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       ...Object.fromEntries(ignoredModules.map((m) => [m, false])),
     };
 
-    if (dev) return config;
-
-    return {
-      ...config,
-      plugins: [
-        ...config.plugins,
-        new WorkboxPlugin.GenerateSW({
-          swDest: path.join(options.dir, "public", "service-worker.js"),
-          // these options encourage the ServiceWorkers to get in there fast
-          // and not allow any straggling "old" SWs to hang around
-          clientsClaim: true,
-          skipWaiting: true,
-          maximumFileSizeToCacheInBytes: 5000000, // 5 MB
-        }),
-      ],
-    };
+    return config;
   },
   experimental: {
     turbo: {
@@ -65,4 +53,4 @@ module.exports = {
       ),
     },
   },
-};
+});
