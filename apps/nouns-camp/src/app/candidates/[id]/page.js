@@ -8,6 +8,7 @@ import metaConfig from "../../../metadata-config.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
 import { subgraphFetch, parseCandidate } from "../../../nouns-subgraph.js";
 import { normalizeId } from "../../../utils/candidates.js";
+import { mainnet } from "../../../chains.js";
 import CandidateScreenClientWrapper from "./page.client.js";
 
 export const runtime = "edge";
@@ -37,7 +38,7 @@ export async function generateMetadata({ params }) {
   const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
   const candidateId = normalizeId(decodeURIComponent(params.id));
   const candidate = await fetchCandidate(candidateId, {
-    chainId: wagmiState.chainId,
+    chainId: wagmiState?.chainId ?? mainnet.id,
   });
 
   // Can’t notFound() here since we might be on a testnet

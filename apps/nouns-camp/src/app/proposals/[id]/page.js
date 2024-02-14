@@ -7,6 +7,7 @@ import {
 import metaConfig from "../../../metadata-config.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
 import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
+import { mainnet } from "../../../chains.js";
 import ProposalScreenClientWrapper from "./page.client.js";
 
 export const runtime = "edge";
@@ -29,7 +30,7 @@ const fetchProposal = async (id, { chainId }) => {
 export async function generateMetadata({ params }) {
   const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
   const proposal = await fetchProposal(params.id, {
-    chainId: wagmiState.chainId,
+    chainId: wagmiState?.chainId ?? mainnet.id,
   });
 
   // Can’t notFound() here since we might be on a testnet
