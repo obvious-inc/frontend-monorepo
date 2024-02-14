@@ -65,30 +65,6 @@ const beforeInteractive = () => {
   }
 };
 
-const setupServiceWorker = () => {
-  const registerServiceWorker = () => {
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/service-worker.js");
-      });
-    }
-  };
-
-  const unregisterServiceWorker = () => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        for (let registration of registrations) registration.unregister();
-      });
-    }
-  };
-
-  if (process.env.NODE_ENV === "production") {
-    registerServiceWorker();
-  } else {
-    unregisterServiceWorker();
-  }
-};
-
 const fetchConfig = async () => {
   try {
     const betaAccounts = await getConfig("beta-accounts");
@@ -116,7 +92,6 @@ export default async function RootLayout({ children }) {
           id="load-theme"
           strategy="beforeInteractive"
         >{`(${beforeInteractive})()`}</Script>
-        <Script id="setup-service-worker">{`(${setupServiceWorker})()`}</Script>
 
         {isProduction && <VercelAnalytics />}
 
