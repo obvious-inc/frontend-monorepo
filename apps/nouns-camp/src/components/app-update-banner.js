@@ -5,12 +5,17 @@ import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
 import Link from "@shades/ui-web/link";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
+import { useConfig } from "../config-provider.js";
+import { useWallet } from "../hooks/wallet.js";
 
 const isBetaSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("beta") != null;
 
-const AppUpdateBanner = ({ buildId }) => {
+const AppUpdateBanner = () => {
+  const { buildId } = useConfig();
+  const { isBetaAccount } = useWallet();
+
   const [isDismissed, setDismissed] = React.useState(false);
   const [hasUpdate, setHasUpdate] = React.useState(false);
 
@@ -18,7 +23,7 @@ const AppUpdateBanner = ({ buildId }) => {
     () =>
       fetch("/", { method: "HEAD" }).then((res) => {
         const newBuildId = res.headers.get("x-build-id");
-        if (buildId === newBuildId) return;
+        if (buildId == null || buildId === newBuildId) return;
         console.log(
           `New build available: "${newBuildId}"\nCurrently running: "${buildId}"`
         );
@@ -27,7 +32,10 @@ const AppUpdateBanner = ({ buildId }) => {
     [buildId]
   );
 
-  if (!isBetaSession || !hasUpdate || isDismissed) return null;
+  const showBanner = hasUpdate && !isDismissed;
+  const isBeta = isBetaAccount || isBetaSession;
+
+  if (!isBeta || !showBanner) return null;
 
   return (
     <div

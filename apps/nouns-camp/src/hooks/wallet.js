@@ -6,6 +6,7 @@ import { array as arrayUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import { useConfig } from "../config-provider.js";
 import useChainId, { useConnectedChainId, defaultChainId } from "./chain-id.js";
 
 const impersonationAddress =
@@ -138,7 +139,7 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
-  const { address } = useAccount();
+  const { address: connectedAccountAddress } = useAccount();
   const { connect, isPending: isConnecting, reset } = useConnect();
   const connectors = useReadyConnectors();
   const { disconnectAsync: disconnect } = useDisconnect();
@@ -146,6 +147,7 @@ export const useWallet = () => {
     useSwitchChain();
   const chainId = useChainId();
   const connectedChainId = useConnectedChainId();
+  const { betaAccounts } = useConfig();
 
   const isUnsupportedChain =
     connectedChainId != null && chainId !== connectedChainId;
@@ -166,8 +168,12 @@ export const useWallet = () => {
     openDialog();
   };
 
+  const address = (
+    impersonationAddress ?? connectedAccountAddress
+  )?.toLowerCase();
+
   return {
-    address: (impersonationAddress ?? address)?.toLowerCase(),
+    address,
     requestAccess: hasReadyConnector ? requestAccess : null,
     disconnect,
     reset,
@@ -187,5 +193,6 @@ export const useWallet = () => {
     isLoading: isConnecting || isSwitchingNetwork,
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
+    isBetaAccount: betaAccounts.includes(connectedAccountAddress),
   };
 };

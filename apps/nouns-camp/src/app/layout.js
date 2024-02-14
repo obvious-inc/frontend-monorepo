@@ -1,14 +1,15 @@
 import { headers } from "next/headers";
 import Script from "next/script";
+import { get as getConfig } from "@vercel/edge-config";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../wagmi-config.js";
 import metaConfig from "../metadata-config.js";
 import CacheStoreProvider from "../cache-store-provider.js";
+import ConfigProvider from "../config-provider.js";
 import ThemeProvider from "../theme-provider.js";
 import WagmiProvider from "../wagmi-provider.js";
 import GlobalStylesWrapper from "../global-styles-wrapper.js";
-import AppUpdateBanner from "../components/app-update-banner.js";
 
 import "../reset.css";
 import "../index.css";
@@ -88,7 +89,26 @@ const setupServiceWorker = () => {
   }
 };
 
-export default function RootLayout({ children }) {
+const fetchConfig = async () => {
+  try {
+    const betaAccounts = await getConfig("beta-accounts");
+    return { betaAccounts };
+  } catch (e) {
+    console.error(e);
+    return { betaAccounts: [] };
+  }
+};
+
+const buildConfig = async () => {
+  const config = await fetchConfig();
+  return {
+    ...config,
+    buildId: headers().get("x-build-id"),
+  };
+};
+
+export default async function RootLayout({ children }) {
+  const config = await buildConfig();
   return (
     <html lang="en">
       <body>
@@ -101,20 +121,21 @@ export default function RootLayout({ children }) {
         {isProduction && <VercelAnalytics />}
 
         <EmotionRootStyleRegistry>
-          <CacheStoreProvider>
-            <ThemeProvider>
-              <GlobalStylesWrapper>
-                <AppUpdateBanner buildId={headers().get("x-build-id")} />
-                <WagmiProvider
-                  initialState={getWagmiStateFromCookie(
-                    headers().get("cookie")
-                  )}
-                >
-                  {children}
-                </WagmiProvider>
-              </GlobalStylesWrapper>
-            </ThemeProvider>
-          </CacheStoreProvider>
+          <ConfigProvider config={config}>
+            <CacheStoreProvider>
+              <ThemeProvider>
+                <GlobalStylesWrapper>
+                  <WagmiProvider
+                    initialState={getWagmiStateFromCookie(
+                      headers().get("cookie")
+                    )}
+                  >
+                    {children}
+                  </WagmiProvider>
+                </GlobalStylesWrapper>
+              </ThemeProvider>
+            </CacheStoreProvider>
+          </ConfigProvider>
         </EmotionRootStyleRegistry>
       </body>
     </html>
