@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
 import Link from "@shades/ui-web/link";
@@ -63,13 +64,7 @@ const AppUpdateBanner = () => {
       >
         <div style={{ flex: 1, minWidth: 0 }}>
           New version of Camp available.{" "}
-          <Link
-            underline
-            component="button"
-            onClick={() => {
-              location.reload();
-            }}
-          >
+          <Link underline prefetch component={NextLink} href="/">
             Click here to update
           </Link>
         </div>

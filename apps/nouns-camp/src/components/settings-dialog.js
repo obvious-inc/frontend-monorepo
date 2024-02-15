@@ -7,7 +7,7 @@ import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 
-const { BUILD_ID } = process.env;
+const BUILD_ID = process.env.BUILD_ID;
 
 const settingInputConfigByKey = {
   theme: {
