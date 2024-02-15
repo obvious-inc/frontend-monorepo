@@ -778,7 +778,7 @@ const TransactionsTabPane = ({ accountAddress }) => {
       >
         {transactions.map((t) => {
           const eth = formatEther(t.value);
-          const [wholeEth, ethDecimals] = eth.split(".");
+          const [wholeEth, ethDecimals = "0"] = eth.split(".");
           const date = new Date(parseInt(t.timestamp) * 1000);
           const showYear = !isThisYear(date);
 
