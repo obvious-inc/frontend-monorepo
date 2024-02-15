@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { I18nProvider } from "react-aria";
 import * as Tooltip from "@shades/ui-web/tooltip";
