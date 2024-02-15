@@ -2,6 +2,7 @@ const withSerwist = require("@serwist/next").default({
   swSrc: "src/app/service-worker.js",
   swDest: "public/service-worker.js",
   swUrl: "/service-worker.js",
+  disable: process.env.NODE_ENV !== "production",
 });
 
 const ignoredModules = [
