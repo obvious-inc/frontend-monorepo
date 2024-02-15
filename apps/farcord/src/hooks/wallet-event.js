@@ -29,7 +29,7 @@ const useWalletEvent = (event, listener) => {
   });
 
   React.useEffect(() => {
-    if (activeConnector == null) return;
+    if (activeConnector?.emitter == null) return;
     activeConnector.emitter.on("change", changeHandler);
     activeConnector.emitter.on("disconnect", disconnectHandler);
     return () => {
