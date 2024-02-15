@@ -1,4 +1,5 @@
 import { headers } from "next/headers";
+import { notFound as nextNotFound } from "next/navigation";
 import {
   string as stringUtils,
   markdown as markdownUtils,
@@ -8,9 +9,15 @@ import metaConfig from "../../../metadata-config.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
 import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
 import { mainnet } from "../../../chains.js";
-import ProposalScreenClientWrapper from "./page.client.js";
+import ClientAppProvider from "../../client-app-provider.js";
+import ProposalScreen from "../../../components/proposal-screen.js";
 
 export const runtime = "edge";
+
+const getChainId = () => {
+  const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
+  return wagmiState?.chainId ?? mainnet.id;
+};
 
 const fetchProposal = async (id, { chainId }) => {
   const data = await subgraphFetch({
@@ -20,6 +27,32 @@ const fetchProposal = async (id, { chainId }) => {
         proposal(id: ${id}) {
           id
           description
+          status
+          createdBlock
+          createdTimestamp
+          lastUpdatedBlock
+          lastUpdatedTimestamp
+          startBlock
+          endBlock
+          updatePeriodEndBlock
+          objectionPeriodEndBlock
+          canceledBlock
+          canceledTimestamp
+          queuedBlock
+          queuedTimestamp
+          executedBlock
+          executedTimestamp
+          forVotes
+          againstVotes
+          abstainVotes
+          quorumVotes
+          executionETA
+          proposer {
+            id
+          }
+          signers {
+            id
+          }
         }
       }`,
   });
@@ -28,13 +61,9 @@ const fetchProposal = async (id, { chainId }) => {
 };
 
 export async function generateMetadata({ params }) {
-  const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
-  const proposal = await fetchProposal(params.id, {
-    chainId: wagmiState?.chainId ?? mainnet.id,
-  });
+  const proposal = await fetchProposal(params.id, { chainId: getChainId() });
 
-  // Can’t notFound() here since we might be on a testnet
-  if (proposal == null) return null;
+  if (proposal == null) nextNotFound();
 
   const { title: parsedTitle, body } = proposal;
 
@@ -68,6 +97,18 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default function Page(props) {
-  return <ProposalScreenClientWrapper {...props} />;
+export default async function Page({ params }) {
+  const proposal = await fetchProposal(params.id, {
+    chainId: getChainId(),
+  });
+
+  if (proposal == null) nextNotFound();
+
+  return (
+    <ClientAppProvider
+      initialStoreState={{ proposalsById: { [proposal.id]: proposal } }}
+    >
+      <ProposalScreen proposalId={params.id} />
+    </ClientAppProvider>
+  );
 }

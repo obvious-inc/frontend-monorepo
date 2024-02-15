@@ -3,7 +3,7 @@
 import React from "react";
 import { I18nProvider } from "react-aria";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import { useDelegatesFetch } from "../store.js";
+import { Provider as StoreProvider, useDelegatesFetch } from "../store.js";
 import { Provider as ConnectWalletDialogProvider } from "../hooks/wallet.js";
 import { Provider as GlobalDialogsProvider } from "../hooks/global-dialogs.js";
 import AppUpdateBanner from "../components/app-update-banner.js";
@@ -23,17 +23,19 @@ const GlobalClientFetches = () => {
   useDelegatesFetch();
 };
 
-export default function ClientAppProvider({ children }) {
+export default function ClientAppProvider({ initialStoreState, children }) {
   return (
     <I18nProvider locale="en-US">
       <Tooltip.Provider delayDuration={300}>
-        <ConnectWalletDialogProvider>
-          <GlobalDialogsProvider dialogs={dialogs}>
-            <AppUpdateBanner />
-            {children}
-            <GlobalClientFetches />
-          </GlobalDialogsProvider>
-        </ConnectWalletDialogProvider>
+        <StoreProvider initialState={initialStoreState}>
+          <ConnectWalletDialogProvider>
+            <GlobalDialogsProvider dialogs={dialogs}>
+              <AppUpdateBanner />
+              {children}
+              <GlobalClientFetches />
+            </GlobalDialogsProvider>
+          </ConnectWalletDialogProvider>
+        </StoreProvider>
       </Tooltip.Provider>
     </I18nProvider>
   );

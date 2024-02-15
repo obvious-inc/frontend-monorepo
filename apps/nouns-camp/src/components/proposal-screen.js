@@ -425,10 +425,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               <div
                 css={css({
                   padding: "2rem 0 6rem",
+                  transition: "0.15s opacity ease-out",
                   "@media (min-width: 600px)": {
                     padding: "6rem 0",
                   },
                 })}
+                style={{ opacity: latestBlockNumber == null ? 0 : 1 }}
               >
                 <div
                   style={{
@@ -1650,7 +1652,9 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
           })
         }
       >
-        <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
+        <div>
+          {quorumVotes == null ? <>&nbsp;</> : <>Quorum {quorumVotes}</>}
+        </div>
         {isVotingOngoing && (
           <div>
             {againstVotes <= forVotes && quorumVotes > forVotes && (
