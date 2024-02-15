@@ -1,19 +1,24 @@
 import React from "react";
 
-const useMatchMedia = (query) => {
-  const [matches, setMatches] = React.useState(
-    () => typeof matchMedia !== "undefined" && matchMedia(query).matches
-  );
+const useMatchMedia = (query, { clientOnly = false } = {}) => {
+  const [matches, setMatches] = React.useState(() => {
+    if (!clientOnly) return null;
+    return matchMedia(query).matches;
+  });
+
+  React.useLayoutEffect(() => {
+    if (clientOnly) return;
+    setMatches(matchMedia(query).matches);
+  }, [clientOnly, query]);
 
   React.useEffect(() => {
     const mediaQueryList = matchMedia(query);
-    const onChange = (event) => {
-      setMatches(event.matches);
+    const onChange = () => {
+      setMatches(mediaQueryList.matches);
     };
-
-    mediaQueryList.addListener(onChange);
+    mediaQueryList.addEventListener("change", onChange);
     return () => {
-      mediaQueryList.removeListener(onChange);
+      mediaQueryList.removeEventListener("change", onChange);
     };
   }, [matches, query]);
 
