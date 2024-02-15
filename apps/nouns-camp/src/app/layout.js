@@ -75,16 +75,8 @@ const fetchConfig = async () => {
   }
 };
 
-const buildConfig = async () => {
-  const config = await fetchConfig();
-  return {
-    ...config,
-    buildId: headers().get("x-build-id"),
-  };
-};
-
 export default async function RootLayout({ children }) {
-  const config = await buildConfig();
+  const config = await fetchConfig();
   return (
     <html lang="en">
       <body>

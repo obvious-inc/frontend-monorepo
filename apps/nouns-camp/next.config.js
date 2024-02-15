@@ -1,9 +1,13 @@
+const webpack = require("webpack");
+
 const withSerwist = require("@serwist/next").default({
   swSrc: "src/app/service-worker.js",
   swDest: "public/service-worker.js",
   swUrl: "/service-worker.js",
   disable: process.env.NODE_ENV !== "production",
 });
+
+const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
 
 const ignoredModules = [
   // @prophouse/sdk
@@ -41,6 +45,13 @@ module.exports = withSerwist({
       ...config.resolve.fallback,
       ...Object.fromEntries(ignoredModules.map((m) => [m, false])),
     };
+
+    config.plugins = [
+      ...config.plugins,
+      new webpack.DefinePlugin({
+        "process.env.BUILD_ID": JSON.stringify(BUILD_ID),
+      }),
+    ];
 
     return config;
   },

@@ -3,10 +3,11 @@ import { useAccount } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
 import config from "../config.js";
-import { useConfig } from "../config-provider.js";
 import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
+
+const { BUILD_ID } = process.env;
 
 const settingInputConfigByKey = {
   theme: {
@@ -56,7 +57,6 @@ const SettingsDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
-  const { buildId } = useConfig();
   const { isBetaAccount } = useWallet();
   const { connector } = useAccount();
 
@@ -175,9 +175,9 @@ const Content = ({ titleProps, dismiss }) => {
             })
           }
         >
-          {buildId != null && (
+          {BUILD_ID != null && (
             <div>
-              Build ID: <em>{buildId}</em>
+              Build ID: <em>{BUILD_ID}</em>
             </div>
           )}
           <div>
