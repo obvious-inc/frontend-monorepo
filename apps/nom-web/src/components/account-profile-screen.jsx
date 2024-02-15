@@ -61,9 +61,7 @@ const fetchAccountTransactions = async (accountAddress, query = {}) => {
     ...query,
   });
   const res = await fetch(
-    `${
-      import.meta.env.PUBLIC_EDGE_API_BASE_URL
-    }/account-transactions?${searchParams}`
+    `${import.meta.env.EDGE_API_BASE_URL}/account-transactions?${searchParams}`
   );
   const body = await res.json();
   if (!res.ok) return Promise.reject(body);
