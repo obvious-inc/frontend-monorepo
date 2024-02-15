@@ -10,7 +10,7 @@ import useWalletLogin from "../hooks/wallet-login";
 
 const { truncateAddress } = ethereumUtils;
 
-const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
+const LoginScreen = () => {
   const {
     connect: connectWallet,
     cancel: cancelWalletConnectionAttempt,
@@ -37,25 +37,17 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
 
   const error = loginError ?? walletError;
 
-  const showThrowawayWalletOption =
-    mobileAppLogin || location.search.includes("throwaway=1");
+  const showThrowawayWalletOption = true;
+  // location.search.includes("throwaway=1");
 
   const handleClickLogin = (type) => {
     if (type === "throwaway") setThrowawayAuth(true);
 
     const promise =
       type === "throwaway" ? loginWithThrowawayWallet() : login(accountAddress);
-    promise.then(
-      (response) => {
-        onSuccess?.(response);
-        // Stay in the loading state for mobile login to avoid flashing the login buttons
-        if (!mobileAppLogin) setThrowawayAuth(false);
-      },
-      (error) => {
-        onError?.(error);
-        setThrowawayAuth(false);
-      }
-    );
+    promise.finally(() => {
+      setThrowawayAuth(false);
+    });
   };
 
   return (
@@ -72,7 +64,6 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
           minWidth: 0,
         },
       })}
-      style={{ height: mobileAppLogin ? "100%" : undefined }}
     >
       {isAuthenticatingWithThrowawayWallet ? (
         <div>
@@ -250,7 +241,7 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                       handleClickLogin("throwaway");
                     }}
                   >
-                    Create throwaway wallet
+                    Create throwaway account
                   </Button>
                 )}
               </div>
@@ -261,36 +252,34 @@ const LoginScreen = ({ mobileAppLogin, onSuccess, onError }) => {
                 />
                 Ethereum identity
               </p>
-              {!mobileAppLogin && (
-                <div style={{ marginTop: "2rem" }}>
-                  <Small
-                    style={{
-                      width: "42rem",
-                      maxWidth: "100%",
-                      margin: "auto",
-                    }}
+              <div style={{ marginTop: "2rem" }}>
+                <Small
+                  style={{
+                    width: "42rem",
+                    maxWidth: "100%",
+                    margin: "auto",
+                  }}
+                >
+                  Make sure to enable any browser extension wallets before you
+                  try to connect. If you use a mobile wallet, no action is
+                  required.
+                </Small>
+                <Small style={{ marginTop: "1.2rem" }}>
+                  <a
+                    href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
+                    rel="noreferrer"
+                    target="_blank"
+                    css={(theme) =>
+                      css({
+                        color: theme.colors.link,
+                        ":hover": { color: theme.colors.linkModifierHover },
+                      })
+                    }
                   >
-                    Make sure to enable any browser extension wallets before you
-                    try to connect. If you use a mobile wallet, no action is
-                    required.
-                  </Small>
-                  <Small style={{ marginTop: "1.2rem" }}>
-                    <a
-                      href="https://learn.rainbow.me/what-is-a-cryptoweb3-wallet-actually"
-                      rel="noreferrer"
-                      target="_blank"
-                      css={(theme) =>
-                        css({
-                          color: theme.colors.link,
-                          ":hover": { color: theme.colors.linkModifierHover },
-                        })
-                      }
-                    >
-                      What is a wallet?
-                    </a>
-                  </Small>
-                </div>
-              )}
+                    What is a wallet?
+                  </a>
+                </Small>
+              </div>
             </div>
           ) : (
             <>

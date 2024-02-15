@@ -8,7 +8,7 @@ import {
   usePublicClient as usePublicEthereumClient,
 } from "wagmi";
 import { mainnet } from "wagmi/chains";
-import { safe, walletConnect } from "wagmi/connectors";
+import { walletConnect } from "wagmi/connectors";
 import React from "react";
 import {
   BrowserRouter,
@@ -48,7 +48,6 @@ import useWalletLogin, {
 import useWalletEvent from "./hooks/wallet-event";
 import useSetting from "./hooks/setting";
 import GlobalDialogs from "./components/global-dialogs";
-import LoginScreen from "./components/login-screen";
 import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import { nounsTv as nounsTvTheme } from "./themes";
@@ -56,12 +55,10 @@ import { nounsTv as nounsTvTheme } from "./themes";
 const AccountProfileScreen = React.lazy(() =>
   import("./components/account-profile-screen")
 );
-const ChannelScreen = React.lazy(() => import("./components/channel-route"));
-const ChannelBase = React.lazy(() => import("./components/channel"));
+const ChannelScreen = React.lazy(() => import("./components/channel-screen"));
 const CommandCenterLazy = React.lazy(() =>
   import("./components/command-center")
 );
-const AuthScreen = React.lazy(() => import("./components/auth"));
 const NewMessageScreen = React.lazy(() =>
   import("./components/new-message-screen")
 );
@@ -70,7 +67,6 @@ const ChannelsScreen = React.lazy(() => import("./components/channels-screen"));
 const { truncateAddress } = ethereumUtils;
 
 const isNative = window.Native != null;
-const isReactNativeWebView = window.ReactNativeWebView != null;
 
 const isIFrame = window.parent && window.self && window.parent !== window.self;
 
@@ -82,7 +78,6 @@ const wagmiConfig = createWagmiConfig({
     walletConnect({
       projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
     }),
-    safe(),
   ],
   transports: {
     [mainnet.id]: http(
@@ -259,22 +254,6 @@ const App = () => {
     });
   });
 
-  if (isReactNativeWebView) {
-    const sendMessageToApp = (type, payload) =>
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type, payload }));
-    return (
-      <LoginScreen
-        mobileAppLogin
-        onSuccess={({ accessToken, refreshToken }) => {
-          sendMessageToApp("ns:authenticated", { accessToken, refreshToken });
-        }}
-        onError={() => {
-          sendMessageToApp("ns:error");
-        }}
-      />
-    );
-  }
-
   return (
     <>
       <Global
@@ -305,27 +284,13 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route path="/new" element={<NewMessageScreen />} />
-          <Route path="/topics" element={<ChannelsScreen />} />
+          <Route path="/channels" element={<ChannelsScreen />} />
           <Route path="/channels/:channelId" element={<ChannelScreen />} />
         </Route>
         <Route path="/c/:channelId" element={<ChannelScreen noSideMenu />} />
         <Route
           path="/dm/:ensNameOrEthereumAccountAddress"
           element={<RedirectDmIntent />}
-        />
-        <Route
-          path="/support"
-          element={
-            <ChannelBase noSideMenu channelId="638880b142d6c362cc0b7224" />
-          }
-        />
-        <Route
-          path="/oauth/authorize"
-          element={
-            <RequireAuth>
-              <AuthScreen />
-            </RequireAuth>
-          }
         />
         <Route element={<Layout />}>
           <Route
@@ -382,16 +347,6 @@ const RedirectDmIntent = () => {
   }, [navigate, publicEthereumClient, ensNameOrEthereumAccountAddress]);
 
   return null;
-};
-
-const RequireAuth = ({ children }) => {
-  const { status: authStatus } = useAuth();
-
-  if (authStatus === "not-authenticated") return <LoginScreen />;
-
-  if (authStatus !== "authenticated") return null; // Spinner
-
-  return children;
 };
 
 const searchParams = new URLSearchParams(location.search);

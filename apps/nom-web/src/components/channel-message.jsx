@@ -1745,7 +1745,7 @@ const SystemMessageContent = ({ messageId }) => {
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <AccountPreviewPopoverTrigger userId={message.inviterUserId} /> added{" "}
           <AccountPreviewPopoverTrigger userId={message.authorUserId} /> to the
-          topic.
+          channel.
         </span>
       );
     }
@@ -1757,7 +1757,7 @@ const SystemMessageContent = ({ messageId }) => {
       return (
         <span style={{ opacity: isMissingData ? 0 : 1 }}>
           <AccountPreviewPopoverTrigger userId={message.authorUserId} /> joined
-          the topic. Welcome!
+          the channel. Welcome!
         </span>
       );
     }
@@ -1768,7 +1768,7 @@ const SystemMessageContent = ({ messageId }) => {
         return (
           <>
             <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
-            updated the topic.
+            updated the channel.
           </>
         );
       }
@@ -1782,10 +1782,10 @@ const SystemMessageContent = ({ messageId }) => {
             <>
               <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
               {(value ?? "") === "" ? (
-                "cleared the topic description."
+                "cleared the channel description."
               ) : (
                 <>
-                  set the topic description:{" "}
+                  set the channel description:{" "}
                   <RichText compact blocks={messageUtils.parseString(value)} />
                 </>
               )}
@@ -1796,10 +1796,10 @@ const SystemMessageContent = ({ messageId }) => {
             <>
               <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
               {(value ?? "") === "" ? (
-                <>cleared the topic {field}.</>
+                <>cleared the channel {field}.</>
               ) : (
                 <>
-                  set the topic {field}: {value}
+                  set the channel {field}: {value}
                 </>
               )}
             </>
@@ -1808,7 +1808,7 @@ const SystemMessageContent = ({ messageId }) => {
           return (
             <>
               <AccountPreviewPopoverTrigger userId={message.authorUserId} />{" "}
-              updated the topic {field}.
+              updated the channel {field}.
             </>
           );
       }

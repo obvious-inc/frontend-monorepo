@@ -175,15 +175,6 @@ importers:
       '@newshades/iframe-provider':
         specifier: ^0.2.1
         version: 0.2.1
-      '@nouns/assets':
-        specifier: ^0.5.0
-        version: 0.5.0
-      '@nouns/contracts':
-        specifier: ^0.3.0
-        version: 0.3.0
-      '@nouns/sdk':
-        specifier: ^0.4.0
-        version: 0.4.0(ethers@6.10.0)
       '@radix-ui/react-toolbar':
         specifier: ^1.0.3
         version: 1.0.3(react-dom@18.2.0)(react@18.2.0)

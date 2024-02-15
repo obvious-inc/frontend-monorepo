@@ -61,7 +61,7 @@ const ChannelsScreen = () => {
               })
             }
           >
-            Topics
+            Channels
           </div>
         </NavBar>
         <div css={css({ padding: "0 1.5rem 1rem" })}>

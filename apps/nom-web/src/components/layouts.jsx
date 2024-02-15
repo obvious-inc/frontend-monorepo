@@ -1,5 +1,5 @@
 import { getAddress as checksumEncodeAddress } from "viem";
-import { useEnsName, useAccount } from "wagmi";
+import { useEnsName, useAccount, useDisconnect } from "wagmi";
 import React from "react";
 import { NavLink, Outlet, useParams } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
@@ -63,6 +63,7 @@ const Layout = () => {
   const serverConnectionState = useServerConnectionState();
 
   const { status: authenticationStatus } = useAuth();
+  const { disconnectAsync: disconnectWallet } = useDisconnect();
   const { address: connectedWalletAccountAddress } = useAccount();
   const { login: initAccountVerification } = useWalletLogin();
   const actions = useActions();
@@ -206,17 +207,15 @@ const Layout = () => {
                     ],
                   },
                   {
-                    id: "switch",
-                    children: [
-                      {
-                        id: "switch-account",
-                        label: "Switch to another account",
-                      },
-                    ],
-                  },
-                  isAuthenticated && {
                     id: "log-out",
-                    children: [{ id: "log-out", label: "Log out" }],
+                    children: [
+                      isAuthenticated
+                        ? { id: "log-out", label: "Log out" }
+                        : {
+                            id: "disconnect-wallet",
+                            label: "Disconnect wallet",
+                          },
+                    ],
                   },
                 ].filter(Boolean)}
                 onAction={(key) => {
@@ -243,12 +242,12 @@ const Layout = () => {
                       openProfileLinkDialog();
                       break;
 
-                    case "switch-account":
-                      alert("Just switch account from your wallet!");
-                      break;
-
                     case "copy-account-address":
                       navigator.clipboard.writeText(me.walletAddress);
+                      break;
+
+                    case "disconnect-wallet":
+                      disconnectWallet();
                       break;
 
                     case "log-out":
@@ -357,7 +356,7 @@ const Layout = () => {
               <ListItem
                 compact={false}
                 icon={<PenIcon style={{ width: "1.9rem", height: "auto" }} />}
-                title="Create topic"
+                title="Create channel"
                 onClick={() => {
                   openCreateChannelDialog();
                   if (isMenuFloating) toggleMenu();

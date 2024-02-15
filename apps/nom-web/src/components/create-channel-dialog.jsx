@@ -82,7 +82,7 @@ const CreateChannelDialogContent = ({
         }}
       >
         <Select
-          aria-label="Select topic visibility"
+          aria-label="Select channel visibility"
           value={isPrivate ? "private" : "public"}
           width="max-content"
           size="small"
@@ -91,12 +91,12 @@ const CreateChannelDialogContent = ({
           }}
           options={[
             {
-              label: "Public topic",
+              label: "Public channel",
               description: "Visible to anyone",
               value: "public",
             },
             {
-              label: "Private topic",
+              label: "Private channel",
               description: "Only visible to members",
               value: "private",
             },
@@ -104,9 +104,9 @@ const CreateChannelDialogContent = ({
           renderTriggerContent={(selectedValue) => {
             switch (selectedValue) {
               case "public":
-                return "Public topic";
+                return "Public channel";
               case "private":
-                return "Private topic";
+                return "Private channel";
               default:
                 throw new Error();
             }
@@ -189,7 +189,7 @@ const CreateChannelDialogContent = ({
               onChange={(e) => setName(e.target.value)}
               autoFocus
               disabled={hasPendingRequest}
-              placeholder="Untitled topic"
+              placeholder="Untitled channel"
               css={(t) =>
                 css({
                   background: "none",
@@ -240,7 +240,7 @@ const CreateChannelDialogContent = ({
                 isLoading={hasPendingRequest}
                 disabled={!hasRequiredInput || hasPendingRequest}
               >
-                Create topic
+                Create channel
               </Button>
             </>
           ) : (
@@ -258,7 +258,7 @@ const CreateChannelDialogContent = ({
                   })
                 }
               >
-                Account verification required to create topics
+                Account verification required to create channels
               </div>
               {connectedWalletAccountAddress == null ? (
                 <Button

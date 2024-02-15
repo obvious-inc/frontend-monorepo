@@ -205,7 +205,7 @@ const ChannelInfoDialog = ({
                       : channelPermissionType != null && (
                           <>
                             {channelPermissionType.slice(0, 1).toUpperCase()}
-                            {channelPermissionType.slice(1)} topic
+                            {channelPermissionType.slice(1)} channel
                           </>
                         )}
                   </Tooltip.Trigger>
@@ -223,19 +223,19 @@ const ChannelInfoDialog = ({
                       </>
                     ) : channelPermissionType === "open" ? (
                       <>
-                        Open topics can be seen
+                        Open channels can be seen
                         <br />
                         and joined by anyone.
                       </>
                     ) : channelPermissionType === "closed" ? (
                       <>
-                        Closed topics have open read access,
+                        Closed channels have open read access,
                         <br />
                         but requires an invite to join.
                       </>
                     ) : channelPermissionType === "private" ? (
                       <>
-                        Private topics are only
+                        Private channels are only
                         <br />
                         visible to members.
                       </>
@@ -363,7 +363,8 @@ const ChannelInfoDialog = ({
                   {
                     value: "off",
                     label: "Off",
-                    description: "Don’t get any notifications from this topic",
+                    description:
+                      "Don’t get any notifications from this channel",
                   },
                 ]}
               />
@@ -384,7 +385,7 @@ const ChannelInfoDialog = ({
         </div>
       </header>
       <Tabs.Root
-        aria-label="Topic details"
+        aria-label="Channel details"
         defaultSelectedKey={initialTab}
         css={css({
           padding: "0 1.5rem",
@@ -572,11 +573,12 @@ const AboutTab = ({ channelId, dismiss }) => {
             >
               {channelPermissionType === "open" ? (
                 <>
-                  Open topics are safe to leave, you can join again at any time.
+                  Open channels are safe to leave, you can join again at any
+                  time.
                 </>
               ) : (
                 <>
-                  Note that after leaving a {channelPermissionType} topic, an
+                  Note that after leaving a {channelPermissionType} channel, an
                   invite is required to join it again.
                 </>
               )}
@@ -596,13 +598,15 @@ const AboutTab = ({ channelId, dismiss }) => {
                   size="default"
                   disabled={isOwner || !isMember}
                   onClick={() => {
-                    if (!confirm("Are you sure you want to leave this topic?"))
+                    if (
+                      !confirm("Are you sure you want to leave this channel?")
+                    )
                       return;
                     actions.leaveChannel(channelId);
                     dismiss();
                   }}
                 >
-                  Leave topic
+                  Leave channel
                 </Button>
                 <Button
                   variant="default"
@@ -610,7 +614,9 @@ const AboutTab = ({ channelId, dismiss }) => {
                   size="default"
                   disabled={!isAdmin}
                   onClick={async () => {
-                    if (!confirm("Are you sure you want to delete this topic?"))
+                    if (
+                      !confirm("Are you sure you want to delete this channel?")
+                    )
                       return;
 
                     actions.deleteChannel(channelId);
@@ -618,7 +624,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                     navigate("/");
                   }}
                 >
-                  Delete topic
+                  Delete channel
                 </Button>
               </div>
             </div>
@@ -635,9 +641,9 @@ const AboutTab = ({ channelId, dismiss }) => {
           const editingPropery = editDialogMode;
 
           const title = {
-            name: "Edit topic name",
-            description: "Edit topic description",
-            body: "Edit topic body",
+            name: "Edit channel name",
+            description: "Edit channel description",
+            body: "Edit channel body",
           }[editingPropery];
           const placeholder = {
             name: "Add a clever title",
@@ -750,7 +756,12 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
   const unfilteredMembers = React.useMemo(() => {
     return members.map((m) => {
       if (me != null && me.id === m.id)
-        return { ...m, displayName: `${m.displayName} (you)` };
+        return {
+          ...m,
+          displayName: `${
+            m.displayName ?? truncateAddress(m.walletAddress)
+          } (you)`,
+        };
 
       if (selectIsUserBlocked(m.id)) return { ...m, isBlocked: true };
       if (starredUserIds.includes(m.id)) return { ...m, isStarred: true };

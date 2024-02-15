@@ -104,15 +104,7 @@ const App = () => {
   );
 };
 
-let cacheStoreStorage;
-try {
-  // This might throw in contexts where storage access isn’t allowed
-  cacheStoreStorage = window.localStorage;
-} catch (e) {
-  console.warn(e);
-}
-
-const cacheStore = createCacheStore({ storage: cacheStoreStorage });
+const cacheStore = createCacheStore({ storage: window.localStorage });
 
 const api = apis.nomLegacy({
   apiOrigin: "/api",

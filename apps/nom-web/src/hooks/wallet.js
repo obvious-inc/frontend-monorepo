@@ -1,6 +1,7 @@
 import React from "react";
 import { useConnect, useAccount, useEnsName, useSwitchChain } from "wagmi";
 import { mainnet as mainnetChain } from "wagmi/chains";
+import { array as arrayUtils } from "@shades/common/utils";
 import { useLatestCallback } from "@shades/common/react";
 
 const ETHEREUM_MAINNET_CHAIN_ID = mainnetChain.id;
@@ -38,12 +39,29 @@ const useIFrameAutoConnect = () => {
   }, [isIFrame, connectHandler, connector]);
 };
 
+const useReadyConnectors = () => {
+  const { connectors } = useConnect();
+  const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
+
+  React.useEffect(() => {
+    for (const c of connectors)
+      c.getProvider().then((p) => {
+        setReadyConnectorIds((ids) =>
+          p == null
+            ? ids.filter((id) => id !== c.id)
+            : arrayUtils.unique([...ids, c.id])
+        );
+      });
+  }, [connectors]);
+
+  return readyConnectorIds.map((id) => connectors.find((c) => c.id == id));
+};
+
 const useWallet = () => {
   const [connectError, setConnectError] = React.useState(null);
   const {
     connectAsync: connectWallet,
     reset: cancelConnectionAttempt,
-    connectors,
     isPending,
     // error,
   } = useConnect();
@@ -65,25 +83,12 @@ const useWallet = () => {
 
   const { switchChainAsync: switchChain } = useSwitchChain();
 
-  const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
+  const connectors = useReadyConnectors();
 
-  React.useEffect(() => {
-    for (const connector of connectors)
-      connector.getProvider().then((p) => {
-        if (p == null) {
-          setReadyConnectorIds((s) => s.filter((id) => id !== connector.id));
-          return;
-        }
-
-        setReadyConnectorIds((s) =>
-          s.includes(connector.id) ? s : [...s, connector.id]
-        );
-      });
-  }, [connectors]);
-
-  const firstReadyConnector = connectors.find((c) => {
-    return readyConnectorIds.find((id) => id === c.id);
-  });
+  const firstReadyConnector = arrayUtils.sortBy(
+    (c) => c.type === "injected",
+    connectors
+  )[0];
 
   const connect = useLatestCallback(async () => {
     if (firstReadyConnector == null) throw new Error("No connector ready");
