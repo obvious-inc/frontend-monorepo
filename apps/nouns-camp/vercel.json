@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    {
-      "source": "/sw.js",
-      "destination": "/service-worker.js"
-    }
-  ]
-}

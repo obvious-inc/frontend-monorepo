@@ -25,16 +25,14 @@ module.exports = withSerwist({
   compiler: {
     emotion: true,
   },
+  rewrites() {
+    return [{ source: "/sw.js", destination: "/service-worker.js" }];
+  },
   headers() {
     return [
       {
         source: "/:path*",
-        headers: [
-          {
-            key: "x-build-id",
-            value: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev",
-          },
-        ],
+        headers: [{ key: "x-camp-build-id", value: BUILD_ID }],
       },
     ];
   },
