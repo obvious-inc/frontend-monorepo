@@ -278,11 +278,14 @@ export const toMessageBlocks = (text, { displayImages = true } = {}) => {
     .filter(Boolean);
 };
 
-export const getFirstParagraph = (string) =>
-  string.split("\n").find((line_) => {
+export const getFirstParagraph = (string) => {
+  const blocks = string.split("\n");
+  const firstParagraph = blocks.find((line_) => {
     const line = line_.trim();
     return (
       line !== "" &&
       ["#", "-", "*", "!", "[", "`"].every((token) => !line.startsWith(token))
     );
   });
+  return firstParagraph ?? blocks[0];
+};
