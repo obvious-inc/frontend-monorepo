@@ -27,7 +27,7 @@
     "swc-loader": "^0.2.6",
     "url": "^0.11.3",
     "util": "^0.12.5",
-    "webpack": "^5.90.1",
+    "webpack": "^5.90.2",
     "webpack-cli": "^5.1.4",
     "webpack-config": "workspace:0.0.0",
     "webpack-dev-server": "^5.0.1"
