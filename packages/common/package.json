@@ -18,13 +18,13 @@
     "./emoji": "./dist/emoji.js",
     "./custom-emoji": "./dist/custom-emoji.js"
   },
-  "devDependencies": {
-    "@swc/core": "^1.4.1",
-    "prettier": "^3.2.5",
-    "rollup": "^4.12.0",
-    "rollup-plugin-swc3": "^0.11.0"
-  },
   "dependencies": {
     "reselect": "^5.1.0"
+  },
+  "devDependencies": {
+    "@swc/core": "^1.3.57",
+    "prettier": "^2.8.8",
+    "rollup": "^3.21.0",
+    "rollup-plugin-swc3": "^0.8.1"
   }
 }
