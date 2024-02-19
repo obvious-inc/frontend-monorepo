@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.25] - 2024-02-19
+
+### Features
+
+- Refactor codebase based on upstream
+
 ## [1.0.0-alpha.24] - 2024-02-19
 
 ### Features
