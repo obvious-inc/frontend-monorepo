@@ -1,4 +1,20 @@
+import { isAddress } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
+
+export const normalizeId = (id) => {
+  const parts = id.toLowerCase().split("-");
+  const proposerFirst = isAddress(
+    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`
+  );
+  const rawProposerId = proposerFirst ? parts[0] : parts.slice(-1)[0];
+  const proposerId = rawProposerId.startsWith("0x")
+    ? rawProposerId
+    : `0x${rawProposerId}`;
+
+  const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
+
+  return `${proposerId}-${slug}`;
+};
 
 export const extractSlugFromId = (candidateId) => {
   const slugParts = candidateId.split("-").slice(1);

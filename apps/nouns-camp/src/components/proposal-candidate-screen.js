@@ -1,14 +1,11 @@
+"use client";
+
 import formatDate from "date-fns/format";
 import addDaysToDate from "date-fns/addDays";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
-import { isAddress } from "viem";
 import React from "react";
-import {
-  useNavigate,
-  useParams,
-  useSearchParams,
-  Link as RouterLink,
-} from "react-router-dom";
+import NextLink from "next/link";
+import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
@@ -23,6 +20,7 @@ import * as Tooltip from "@shades/ui-web/tooltip";
 import { diffParagraphs } from "../utils/diff.js";
 import { stringify as stringifyTransaction } from "../utils/transactions.js";
 import {
+  normalizeId,
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures,
   buildFeed,
@@ -38,6 +36,7 @@ import {
   useProposalFetch,
   useActiveProposalsFetch,
 } from "../store.js";
+import { useNavigate, useSearchParamToggleState } from "../hooks/navigation.js";
 import {
   useProposalThreshold,
   useCancelSignature,
@@ -52,7 +51,6 @@ import {
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import MetaTags_ from "./meta-tags.js";
 import ActivityFeed, { VotingPowerNoggle } from "./activity-feed.js";
 import {
   ProposalHeader,
@@ -78,31 +76,6 @@ const PromoteCandidateDialog = React.lazy(() =>
   import("./promote-candidate-dialog.js")
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
-
-const useSearchParamToggleState = (key, { replace = true } = {}) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const isToggled = searchParams.get(key) != null;
-
-  const toggle = React.useCallback(() => {
-    setSearchParams(
-      (params) => {
-        const newParams = new URLSearchParams(params);
-
-        if (newParams.get(key) == null) {
-          newParams.set(key, 1);
-          return newParams;
-        }
-
-        newParams.delete(key);
-        return newParams;
-      },
-      { replace }
-    );
-  }, [key, replace, setSearchParams]);
-
-  return [isToggled, toggle];
-};
 
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
@@ -147,7 +120,7 @@ const ProposalCandidateScreenContent = ({
   );
 
   const [isProposalUpdateDiffDialogOpen, toggleProposalUpdateDiffDialog] =
-    useSearchParamToggleState("diff");
+    useSearchParamToggleState("diff", { prefetch: true });
   const [hasPendingProposalUpdate, setPendingProposalUpdate] =
     React.useState(false);
   const submitProposalUpdate = useUpdateSponsoredProposalWithSignatures(
@@ -210,11 +183,15 @@ const ProposalCandidateScreenContent = ({
   const feedbackVoteCountExcludingAbstained =
     signals.votes.for + signals.votes.against;
 
-  const handleFormSubmit = async () =>
-    sendProposalFeedback().then(() => {
-      setPendingFeedback("");
-      setPendingSupport(null);
-    });
+  const handleFormSubmit = async () => {
+    // A contract simulation  takes a second to to do its thing after every
+    // argument change, so this might be null. This seems like a nicer
+    // behavior compared to disabling the submit button on every keystroke
+    if (sendProposalFeedback == null) return;
+    await sendProposalFeedback();
+    setPendingFeedback("");
+    setPendingSupport(null);
+  };
 
   const sponsorStatusCallout = (
     <Callout css={(t) => css({ fontSize: t.text.sizes.small })}>
@@ -443,8 +420,8 @@ const ProposalCandidateScreenContent = ({
               <p>
                 <Link
                   underline
-                  component={RouterLink}
-                  to={`/proposals/${candidate.latestVersion.proposalId}`}
+                  component={NextLink}
+                  href={`/proposals/${candidate.latestVersion.proposalId}`}
                 >
                   View the proposal here
                 </Link>
@@ -465,8 +442,8 @@ const ProposalCandidateScreenContent = ({
                 This candidate is an update draft for{" "}
                 <Link
                   underline
-                  component={RouterLink}
-                  to={`/proposals/${candidate.latestVersion.targetProposalId}`}
+                  component={NextLink}
+                  href={`/proposals/${candidate.latestVersion.targetProposalId}`}
                 >
                   Proposal {candidate.latestVersion.targetProposalId}
                 </Link>
@@ -938,14 +915,7 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
   const [isPending, setPending] = React.useState(false);
 
   const candidate = useProposalCandidate(candidateId);
-  const signCandidate = useSignProposalCandidate(
-    candidate.proposerId,
-    candidate.latestVersion.content,
-    {
-      expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
-      targetProposalId: candidate.latestVersion.targetProposalId,
-    }
-  );
+  const signCandidate = useSignProposalCandidate();
   const addSignatureToCandidate = useAddSignatureToProposalCandidate(
     candidate.proposerId,
     candidate.slug,
@@ -956,14 +926,24 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
       size="tiny"
       variant="primary"
       isLoading={isPending}
-      disabled={signCandidate == null || isPending}
+      disabled={isPending}
       onClick={async () => {
         setPending(true);
         try {
-          const signature = await signCandidate();
+          const expirationTimestamp = Math.floor(
+            expirationDate.getTime() / 1000
+          );
+          const signature = await signCandidate(
+            candidate.proposerId,
+            candidate.latestVersion.content,
+            {
+              expirationTimestamp,
+              targetProposalId: candidate.latestVersion.targetProposalId,
+            }
+          );
           await addSignatureToCandidate({
             signature,
-            expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
+            expirationTimestamp,
           });
         } catch (e) {
           if (e.message.startsWith("User rejected the request.")) return;
@@ -1024,14 +1004,7 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
 
   const hasPendingSubmit = submitState !== "idle";
 
-  const signCandidate = useSignProposalCandidate(
-    candidate.proposerId,
-    candidate.latestVersion.content,
-    {
-      expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
-      targetProposalId: candidate.latestVersion.targetProposalId,
-    }
-  );
+  const signCandidate = useSignProposalCandidate();
 
   const addSignatureToCandidate = useAddSignatureToProposalCandidate(
     candidate.proposerId,
@@ -1054,7 +1027,10 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
         onSubmit={(e) => {
           e.preventDefault();
           setSubmitState("signing");
-          signCandidate()
+          signCandidate(candidate.proposerId, candidate.latestVersion.content, {
+            expirationTimestamp: Math.floor(expirationDate.getTime() / 1000),
+            targetProposalId: candidate.latestVersion.targetProposalId,
+          })
             .then((signature) => {
               setSubmitState("adding-signature");
               return addSignatureToCandidate({
@@ -1137,24 +1113,8 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
   );
 };
 
-const normalizeId = (id) => {
-  const parts = id.toLowerCase().split("-");
-  const proposerFirst = isAddress(
-    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`
-  );
-  const rawProposerId = proposerFirst ? parts[0] : parts.slice(-1)[0];
-  const proposerId = rawProposerId.startsWith("0x")
-    ? rawProposerId
-    : `0x${rawProposerId}`;
-
-  const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
-
-  return `${proposerId}-${slug}`;
-};
-
-const ProposalCandidateScreen = () => {
-  const { candidateId: rawId } = useParams();
-  const candidateId = normalizeId(rawId);
+const ProposalCandidateScreen = ({ candidateId: rawId }) => {
+  const candidateId = normalizeId(decodeURIComponent(rawId));
 
   const proposerId = candidateId.split("-")[0];
   const slug = extractSlugFromCandidateId(candidateId);
@@ -1192,12 +1152,18 @@ const ProposalCandidateScreen = () => {
 
   useActiveProposalsFetch();
 
-  const [isEditDialogOpen, toggleEditDialog] =
-    useSearchParamToggleState("edit");
-  const [isSponsorDialogOpen, toggleSponsorDialog] =
-    useSearchParamToggleState("sponsor");
-  const [isProposeDialogOpen, toggleProposeDialog] =
-    useSearchParamToggleState("propose");
+  const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
+    "edit",
+    { prefetch: true, replace: true }
+  );
+  const [isSponsorDialogOpen, toggleSponsorDialog] = useSearchParamToggleState(
+    "sponsor",
+    { prefetch: true, replace: true }
+  );
+  const [isProposeDialogOpen, toggleProposeDialog] = useSearchParamToggleState(
+    "propose",
+    { prefetch: true, replace: true }
+  );
 
   const activeProposerIds = useProposals({ filter: "active" }).map(
     (p) => p.proposerId
@@ -1278,9 +1244,10 @@ const ProposalCandidateScreen = () => {
     return proposerActions.length === 0 ? undefined : proposerActions;
   };
 
+  if (notFound) nextNotFound();
+
   return (
     <>
-      <MetaTags candidateId={candidateId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1319,52 +1286,7 @@ const ProposalCandidateScreen = () => {
               paddingBottom: "10vh",
             }}
           >
-            {notFound ? (
-              <div style={{ width: "38rem", maxWidth: "100%" }}>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarger,
-                      fontWeight: t.text.weights.header,
-                      margin: "0 0 1.6rem",
-                      lineHeight: 1.3,
-                    })
-                  }
-                >
-                  Not found
-                </div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      wordBreak: "break-word",
-                      margin: "0 0 4.8rem",
-                    })
-                  }
-                >
-                  Found no candidate with slug{" "}
-                  <span
-                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                  >
-                    {slug}
-                  </span>{" "}
-                  from account{" "}
-                  <AccountPreviewPopoverTrigger
-                    showAvatar
-                    accountAddress={proposerId}
-                  />
-                  .
-                </div>
-                <Button
-                  component={RouterLink}
-                  to="/"
-                  variant="primary"
-                  size="large"
-                >
-                  Go back
-                </Button>
-              </div>
-            ) : fetchError != null ? (
+            {fetchError != null ? (
               "Something went wrong"
             ) : (
               <Spinner size="2rem" />
@@ -1697,26 +1619,26 @@ const ProposalUpdateDiffDialogContent = ({
   );
 };
 
-const MetaTags = ({ candidateId }) => {
-  const candidate = useProposalCandidate(candidateId);
+// const MetaTags = ({ candidateId }) => {
+//   const candidate = useProposalCandidate(candidateId);
 
-  if (candidate?.latestVersion == null) return null;
+//   if (candidate?.latestVersion == null) return null;
 
-  const { body } = candidate.latestVersion.content;
+//   const { body } = candidate.latestVersion.content;
 
-  return (
-    <MetaTags_
-      title={candidate.latestVersion.content.title}
-      description={
-        body == null
-          ? null
-          : body.length > 600
-          ? `${body.slice(0, 600)}...`
-          : body
-      }
-      canonicalPathname={`/candidates/${candidateId}`}
-    />
-  );
-};
+//   return (
+//     <MetaTags_
+//       title={candidate.latestVersion.content.title}
+//       description={
+//         body == null
+//           ? null
+//           : body.length > 600
+//           ? `${body.slice(0, 600)}...`
+//           : body
+//       }
+//       canonicalPathname={`/candidates/${candidateId}`}
+//     />
+//   );
+// };
 
 export default ProposalCandidateScreen;

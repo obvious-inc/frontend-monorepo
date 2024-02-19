@@ -222,22 +222,6 @@ const entrypoints = [
     ],
   },
   {
-    file: "account-preview-popover-trigger.js",
-    dependencies: [
-      "@shades/common/app",
-      "@shades/common/utils",
-      "@shades/common/react",
-      "@shades/common/nouns",
-      "react",
-      "react-aria",
-      "@react-stately/overlays",
-      "@radix-ui/react-tooltip",
-      "viem",
-      "wagmi",
-      ...emotionDeps,
-    ],
-  },
-  {
     file: "channel-avatar.js",
     dependencies: [
       "@shades/common/app",

@@ -1,7 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAccountDisplayName } from "@shades/common/app";
+import NextLink from "next/link";
+import { useEnsName } from "wagmi";
 import { useFetch } from "@shades/common/react";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
@@ -13,7 +15,6 @@ import { resolveIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
-import { Link } from "react-router-dom";
 
 const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
@@ -198,10 +199,10 @@ const NounEvents = ({ nounId, contextAccount }) => {
 const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
   const transactionHash = event.id.split("_")[0];
-  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
-    useAccountDisplayName(event.newAccountId);
-  const { displayName: ownerDisplayName, ensName: ownerEns } =
-    useAccountDisplayName(noun.ownerId);
+  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
+  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const ownerDisplayName = useAccountDisplayName(noun.ownerId);
+  const { data: ownerEns } = useEnsName({ address: noun.ownerId });
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -236,8 +237,8 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
         {delegatingText}{" "}
       </span>
       <span>
-        <Link
-          to={`/campers/${previousAccountAddress}`}
+        <NextLink
+          href={`/campers/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -252,7 +253,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
           }
         >
           {previousAccount}
-        </Link>
+        </NextLink>
       </span>{" "}
       since{" "}
       <span>
@@ -293,12 +294,14 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
     sourceAddress: contextAccount,
   });
 
-  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
-    useAccountDisplayName(event.newAccountId);
-  const {
-    displayName: previousAccountDisplayName,
-    ensName: previousAccountEns,
-  } = useAccountDisplayName(event.previousAccountId);
+  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
+  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const previousAccountDisplayName = useAccountDisplayName(
+    event.previousAccountId
+  );
+  const { data: previousAccountEns } = useEnsName({
+    address: event.previousAccountId,
+  });
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -361,9 +364,9 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <Link to={`/campers/${previousAccountAddress}`}>
+        <NextLink href={`/campers/${previousAccountAddress}`}>
           {transferredFromText}
-        </Link>
+        </NextLink>
       </span>{" "}
       on{" "}
       <span>

@@ -1,6 +1,5 @@
-import { mainnet, sepolia, goerli } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
-import useChainId from "./hooks/chain-id.js";
+import { mainnet, sepolia, goerli } from "./chains.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 const USDC_TOKEN_CONTRACT_ADDRESS =
@@ -57,6 +56,7 @@ const addressByIdentifierByChainId = {
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
     "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
     "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
+    "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
   [goerli.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
@@ -150,12 +150,4 @@ export const resolveAddress = (chainId, address) => {
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };
-};
-
-export const useContract = (identifierOrAddress) => {
-  const chainId = useChainId();
-  return (
-    resolveIdentifier(chainId, identifierOrAddress) ??
-    resolveAddress(chainId, identifierOrAddress)
-  );
 };

@@ -1,9 +1,9 @@
-import va from "@vercel/analytics";
 import React from "react";
 import { css } from "@emotion/react";
-import { useLocation, Link as RouterLink } from "react-router-dom";
-import { useAccountDisplayName } from "@shades/common/app";
-import { useFetch, useMatchMedia } from "@shades/common/react";
+import NextLink from "next/link";
+import { usePathname } from "next/navigation";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
+import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
@@ -14,10 +14,6 @@ import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
-
-const isBetaSession =
-  typeof location !== "undefined" &&
-  new URLSearchParams(location.search).get("beta") != null;
 
 const Layout = ({
   scrollContainerRef,
@@ -89,8 +85,8 @@ const defaultActions = [
   {
     label: "New Proposal",
     buttonProps: {
-      component: RouterLink,
-      to: "/new",
+      component: NextLink,
+      href: "/new",
       icon: <PlusIcon style={{ width: "0.9rem" }} />,
     },
     desktopOnly: true,
@@ -100,14 +96,12 @@ const defaultActions = [
 const NavBar = ({ navigationStack, actions: actions_ }) => {
   const actions = actions_ ?? defaultActions;
 
-  const location = useLocation();
+  const pathname = usePathname();
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
   const { open: openAccountDialog } = useDialog("account");
   const { open: openSettingsDialog } = useDialog("settings");
-
-  const [hasUpdate, setHasUpdate] = React.useState(false);
 
   const {
     address: connectedWalletAccountAddress,
@@ -115,28 +109,16 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     disconnect: disconnectWallet,
     switchToMainnet: switchWalletToMainnet,
     isUnsupportedChain,
-    isShimmedDisconnect: isShimmedWalletDisconnect,
     isTestnet,
     isLoading: isLoadingWallet,
   } = useWallet();
-  const { displayName: connectedAccountDisplayName } = useAccountDisplayName(
+  const connectedAccountDisplayName = useAccountDisplayName(
     connectedWalletAccountAddress
   );
 
   const visibleActions = isDesktop
     ? actions
     : actions.filter((a) => !a.desktopOnly);
-
-  useFetch(
-    () =>
-      fetch("/api/version")
-        .then((res) => res.json())
-        .then((data) => {
-          if (process.env.GIT_COMMIT_SHA == null) return;
-          setHasUpdate(data.GIT_COMMIT_SHA !== process.env.GIT_COMMIT_SHA);
-        }),
-    []
-  );
 
   return (
     <div
@@ -187,7 +169,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       isTestnet || isUnsupportedChain ? "invert(1)" : undefined,
                   }}
                 />
-                {location.pathname !== "/" && (
+                {pathname !== "/" && (
                   <span
                     css={css({
                       marginLeft: "0.6rem",
@@ -220,10 +202,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 {"/"}
               </span>
             )}
-            <RouterLink
-              to={item.to}
+            <NextLink
+              prefetch
+              href={item.to}
               data-index={index}
-              data-disabled={location.pathname === item.to}
+              data-disabled={pathname === item.to}
               data-desktop-only={item.desktopOnly}
               css={(t) =>
                 css({
@@ -246,7 +229,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               }
             >
               {item.label}
-            </RouterLink>
+            </NextLink>
           </React.Fragment>
         ))}
       </div>
@@ -280,7 +263,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             connectedWalletAccountAddress == null
               ? {
                   onSelect: () => {
-                    va.track("Connect Wallet", { location: "navbar" });
                     requestWalletAccess();
                   },
                   buttonProps: {
@@ -300,6 +282,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     variant: "default",
                     isLoading: isLoadingWallet,
                     disabled: switchWalletToMainnet == null || isLoadingWallet,
+                    style: { marginLeft: "0.9rem" },
                   },
                   label: "Switch to Mainnet",
                 }
@@ -330,7 +313,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         gap: "0.8rem",
                       })}
                     >
-                      {location.pathname === "/" && (
+                      {pathname === "/" && (
                         <div
                           css={css({
                             "@media(max-width: 600px)": { display: "none" },
@@ -386,26 +369,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         id: "settings",
                         children: [
                           { id: "open-settings-dialog", label: "Settings" },
-                          isBetaSession &&
-                            hasUpdate && {
-                              id: "update-app",
-                              primary: true,
-                              label: "Update Camp",
-                            },
-                        ].filter(Boolean),
+                        ],
                       },
                       {
                         id: "disconnect",
                         children: [
-                          isShimmedWalletDisconnect
-                            ? {
-                                id: "request-wallet-access",
-                                label: "Connect a different account",
-                              }
-                            : {
-                                id: "disconnect-wallet",
-                                label: "Disconnect wallet",
-                              },
+                          {
+                            id: "disconnect-wallet",
+                            label: "Disconnect wallet",
+                          },
                         ],
                       },
                     ].filter(Boolean)}

@@ -1,12 +1,12 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useNavigate, Link as RouterLink } from "react-router-dom";
+import NextLink from "next/link";
 import { ListBox, ListBoxItem } from "react-aria-components";
 import {
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Spinner from "@shades/ui-web/spinner";
@@ -29,6 +29,7 @@ import {
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useNavigate } from "../hooks/navigation.js";
 
 const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const navigate = useNavigate();
@@ -110,7 +111,7 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
               retries: 100,
             })
             .then(() => {
-              navigate(`/${res.id}`);
+              navigate(`/proposals/${res.id}`);
             });
         },
         (e) => {
@@ -168,8 +169,8 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
                   when voting for{" "}
                   <Link
                     underline
-                    component={RouterLink}
-                    to={`/proposals/${authoredActiveProposalId}`}
+                    component={NextLink}
+                    href={`/proposals/${authoredActiveProposalId}`}
                   >
                     Proposal {authoredActiveProposalId}
                   </Link>{" "}
@@ -409,7 +410,7 @@ const SignatureListBox = ({
 );
 
 const SignatureItemContent = ({ signature }) => {
-  const { displayName } = useAccountDisplayName(signature.signer.id);
+  const displayName = useAccountDisplayName(signature.signer.id);
   const votingPower = signature.signer.nounsRepresented.length;
   return (
     <div css={css({ display: "flex", alignItems: "center", gap: "1rem" })}>
