@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha.22",
+  "version": "1.0.0-alpha.23",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "build": "turbo build",
@@ -14,7 +14,7 @@
     "axios": ">=1.6.0"
   },
   "devDependencies": {
-    "turbo": "^1.12.2"
+    "turbo": "^1.12.4"
   },
   "engines": {
     "node": ">=18.0.0",
