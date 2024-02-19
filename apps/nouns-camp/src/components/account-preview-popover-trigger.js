@@ -1,8 +1,8 @@
 import React from "react";
 import { useEnsName, useEnsAvatar } from "wagmi";
-import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAccountDisplayName } from "@shades/common/app";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
@@ -12,11 +12,13 @@ import { useDelegate } from "../store.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
-import { Link } from "react-router-dom";
+import NextLink from "next/link";
 
-const isAdminSession =
-  process.env.NODE_ENV !== "production" ||
-  new URLSearchParams(location.search).get("admin") != null;
+const isProduction = process.env.NODE_ENV !== "production";
+
+const isDebugSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("debug") != null;
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -96,10 +98,12 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 );
 
 const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
+  const enableImpersonation = !isProduction || isDebugSession;
+
   const delegate = useDelegate(accountAddress);
 
-  const { displayName, truncatedAddress } =
-    useAccountDisplayName(accountAddress);
+  const displayName = useAccountDisplayName(accountAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
 
   const { data: ensName } = useEnsName({ address: accountAddress });
   const { data: ensAvatarUrl } = useEnsAvatar({
@@ -196,8 +200,9 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
         })}
       >
         <div css={css({ flex: 1, minWidth: 0 })}>
-          <Link
-            to={accountLink}
+          <NextLink
+            prefetch
+            href={accountLink}
             css={css({
               display: "flex",
               alignItems: "center",
@@ -253,7 +258,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 </div>
               )}
             </div>
-          </Link>
+          </NextLink>
         </div>
         <div
           css={css({
@@ -262,7 +267,12 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
             gap: "0.6rem",
           })}
         >
-          <Button size="default" component={RouterLink} to={accountLink}>
+          <Button
+            size="default"
+            component={NextLink}
+            prefetch
+            href={accountLink}
+          >
             View profile
           </Button>
           <DropdownMenu.Root placement="bottom end" offset={18} crossOffset={5}>
@@ -315,7 +325,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                       id: "copy-account-address",
                       label: "Copy account address",
                     },
-                    isAdminSession && {
+                    enableImpersonation && {
                       id: "impersonate-account",
                       label: "Impersonate account",
                     },

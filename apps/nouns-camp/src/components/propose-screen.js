@@ -1,10 +1,5 @@
 import React from "react";
-import {
-  useParams,
-  useNavigate,
-  useSearchParams,
-  Link as RouterLink,
-} from "react-router-dom";
+import NextLink from "next/link";
 import { formatEther, parseUnits } from "viem";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";
@@ -26,11 +21,11 @@ import {
 } from "../hooks/drafts.js";
 import {
   useCreateProposal,
-  useCanCreateProposal,
   useProposalThreshold,
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
 import { useActions, useAccountProposalCandidates } from "../store.js";
+import { useNavigate, useSearchParams } from "../hooks/navigation.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import {
   useCreateProposalCandidate,
@@ -45,8 +40,7 @@ import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
 
-const ProposeScreen = () => {
-  const { draftId } = useParams();
+const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -78,8 +72,6 @@ const ProposeScreen = () => {
     connectedAccountAddress
   );
 
-  const canCreateProposal = useCanCreateProposal();
-
   const isTitleEmpty = draft.name.trim() === "";
   const isBodyEmpty =
     typeof draft.body === "string"
@@ -93,10 +85,7 @@ const ProposeScreen = () => {
     enabled: hasRequiredInput && submitTargetType === "candidate",
   });
 
-  const createProposal = useCreateProposal({
-    enabled:
-      hasRequiredInput && canCreateProposal && submitTargetType === "candidate",
-  });
+  const createProposal = useCreateProposal();
 
   const usdcSumValue = draft.actions.reduce((sum, a) => {
     switch (a.type) {
@@ -173,14 +162,18 @@ const ProposeScreen = () => {
                   await functionUtils.retryAsync(() => fetchProposal(res.id), {
                     retries: 100,
                   });
-                  navigate(`/${res.id}`, { replace: true });
+                  startNavigationTransition(() => {
+                    navigate(`/proposals/${res.id}`, {
+                      replace: true,
+                    });
+                  });
                   break;
                 }
 
                 case "candidate": {
                   const candidateId = [
-                    connectedAccountAddress,
-                    encodeURIComponent(res.slug),
+                    connectedAccountAddress.toLowerCase(),
+                    res.slug,
                   ].join("-");
 
                   await functionUtils.retryAsync(
@@ -188,7 +181,11 @@ const ProposeScreen = () => {
                     { retries: 100 }
                   );
 
-                  navigate(`/candidates/${candidateId}`, { replace: true });
+                  startNavigationTransition(() => {
+                    navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
+                      replace: true,
+                    });
+                  });
                   break;
                 }
               }
@@ -343,8 +340,8 @@ const SubmitDialog = ({
                 when voting for{" "}
                 <Link
                   underline
-                  component={RouterLink}
-                  to={`/proposals/${activeProposalId}`}
+                  component={NextLink}
+                  href={`/proposals/${activeProposalId}`}
                 >
                   Proposal {activeProposalId}
                 </Link>{" "}
@@ -471,18 +468,23 @@ const SubmitDialog = ({
   );
 };
 
-export default () => {
-  const { draftId } = useParams();
-
+export default ({ draftId }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [draft] = useDraft(draftId);
   const { items: drafts, createItem: createDraft } = useDrafts();
 
+  const [hasPendingNavigationTransition, startNavigationTransition] =
+    React.useTransition();
+
   React.useEffect(() => {
-    if (draftId != null && draft === null) navigate("/", { replace: true });
-  }, [draftId, draft, navigate]);
+    if (hasPendingNavigationTransition) return;
+
+    if (draftId != null && draft === null) {
+      navigate("/", { replace: true });
+    }
+  }, [draftId, draft, navigate, hasPendingNavigationTransition]);
 
   const getFirstEmptyDraft = useLatestCallback(() =>
     drafts.find((draft) => {
@@ -514,5 +516,10 @@ export default () => {
 
   if (draft == null) return null; // Spinner
 
-  return <ProposeScreen />;
+  return (
+    <ProposeScreen
+      draftId={draftId}
+      startNavigationTransition={startNavigationTransition}
+    />
+  );
 };

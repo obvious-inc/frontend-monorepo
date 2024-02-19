@@ -1,5 +1,5 @@
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -299,9 +299,9 @@ const ItemTitle = ({ item, context }) => {
               proposal.title
             } `;
       return (
-        <RouterLink to={`/proposals/${proposalId}`}>
+        <NextLink prefetch href={`/proposals/${proposalId}`}>
           {children ?? title}
-        </RouterLink>
+        </NextLink>
       );
     }
 
@@ -310,13 +310,14 @@ const ItemTitle = ({ item, context }) => {
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
       return (
-        <RouterLink
-          to={`/candidates/${encodeURIComponent(
+        <NextLink
+          prefetch
+          href={`/candidates/${encodeURIComponent(
             makeCandidateUrlId(candidateId)
           )}`}
         >
           {children ?? title}
-        </RouterLink>
+        </NextLink>
       );
     }
 

@@ -22,8 +22,8 @@ import Link from "@shades/ui-web/link";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
-import { useContract } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
+import useContract from "../hooks/contract.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
 import RichTextEditor, {
   Provider as EditorProvider,
@@ -51,6 +51,7 @@ const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 const MAX_TRANSACTION_COUNT = 10;
 
 const isDebugSession =
+  typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("debug") != null;
 
 const useEditorMode = ({ body }, { setBody }) => {

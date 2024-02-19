@@ -1,13 +1,9 @@
+"use client";
+
 import React from "react";
-import va from "@vercel/analytics";
 import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
-import {
-  Link as RouterLink,
-  useNavigate,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
@@ -40,6 +36,11 @@ import {
   useDelegate,
 } from "../store.js";
 import {
+  useNavigate,
+  useSearchParams,
+  useSearchParamToggleState,
+} from "../hooks/navigation.js";
+import {
   useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
@@ -51,7 +52,6 @@ import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -400,7 +400,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const handleFormSubmit = async () => {
     if (currentFormAction === "vote") {
-      // A prepared contract write takes a second to to do its thing after every
+      // A contract simulation  takes a second to to do its thing after every
       // argument change, so this might be null. This seems like a nicer
       // behavior compared to disabling the submit button on every keystroke
       if (castProposalVote == null) return;
@@ -425,10 +425,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               <div
                 css={css({
                   padding: "2rem 0 6rem",
+                  transition: "0.15s opacity ease-out",
                   "@media (min-width: 600px)": {
                     padding: "6rem 0",
                   },
                 })}
+                style={{ opacity: latestBlockNumber == null ? 0 : 1 }}
               >
                 <div
                   style={{
@@ -461,7 +463,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       </span>
                     </Callout>
                   )}
-                  {hasVotingStarted && (
+                  {hasVotingStarted && proposal.state != null && (
                     <Callout
                       icon={renderProposalStateIcon()}
                       css={(t) => css({ fontSize: t.text.sizes.base })}
@@ -492,7 +494,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       />
                     </Tooltip.Content>
                   </Tooltip.Root>
-                ) : (
+                ) : proposal.state != null ? (
                   <Callout
                     icon={renderProposalStateIcon()}
                     css={(t) =>
@@ -504,7 +506,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   >
                     {renderProposalStateText()}
                   </Callout>
-                )}
+                ) : null}
                 <Tabs.Root
                   aria-label="Proposal info"
                   defaultSelectedKey="activity"
@@ -896,9 +898,6 @@ export const ProposalActionForm = ({
               <Button
                 type="button"
                 onClick={() => {
-                  va.track("Connect Wallet", {
-                    location: "vote/feedback form",
-                  });
                   requestWalletAccess();
                 }}
                 size={size}
@@ -1231,8 +1230,7 @@ const RequestedAmounts = ({ amounts }) => (
   </>
 );
 
-const ProposalScreen = () => {
-  const { proposalId } = useParams();
+const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
@@ -1261,21 +1259,10 @@ const ProposalScreen = () => {
     enabled: isProposer || isSponsor,
   });
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const isDialogOpen = searchParams.get("edit") != null;
-
-  const openEditDialog = React.useCallback(() => {
-    setSearchParams({ edit: 1 });
-  }, [setSearchParams]);
-
-  const closeEditDialog = React.useCallback(() => {
-    setSearchParams((params) => {
-      const newParams = new URLSearchParams(params);
-      newParams.delete("edit");
-      return newParams;
-    });
-  }, [setSearchParams]);
+  const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
+    "edit",
+    { replace: true, prefetch: "true" }
+  );
 
   useProposalFetch(proposalId, {
     onError: (e) => {
@@ -1297,7 +1284,7 @@ const ProposalScreen = () => {
 
     if (isProposer && proposal.state === "updatable")
       actions.push({
-        onSelect: openEditDialog,
+        onSelect: toggleEditDialog,
         label: "Edit",
       });
 
@@ -1329,9 +1316,10 @@ const ProposalScreen = () => {
     return actions.length === 0 ? undefined : actions;
   };
 
+  if (notFound) nextNotFound();
+
   return (
     <>
-      <MetaTags proposalId={proposalId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1368,47 +1356,7 @@ const ProposalScreen = () => {
               paddingBottom: "10vh",
             }}
           >
-            {notFound ? (
-              <div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarger,
-                      fontWeight: t.text.weights.header,
-                      margin: "0 0 1.6rem",
-                      lineHeight: 1.3,
-                    })
-                  }
-                >
-                  Not found
-                </div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      wordBreak: "break-word",
-                      margin: "0 0 4.8rem",
-                    })
-                  }
-                >
-                  Found no proposal with id{" "}
-                  <span
-                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                  >
-                    {proposalId}
-                  </span>
-                  .
-                </div>
-                <Button
-                  component={RouterLink}
-                  to="/"
-                  variant="primary"
-                  size="large"
-                >
-                  Go back
-                </Button>
-              </div>
-            ) : fetchError != null ? (
+            {fetchError != null ? (
               "Something went wrong"
             ) : (
               <Spinner size="2rem" />
@@ -1422,7 +1370,7 @@ const ProposalScreen = () => {
         )}
       </Layout>
 
-      {isDialogOpen && proposal != null && (
+      {isEditDialogOpen && proposal != null && (
         <ErrorBoundary
           onError={() => {
             reloadPageOnce();
@@ -1432,7 +1380,7 @@ const ProposalScreen = () => {
             <ProposalEditDialog
               proposalId={proposalId}
               isOpen
-              close={closeEditDialog}
+              close={toggleEditDialog}
             />
           </React.Suspense>
         </ErrorBoundary>
@@ -1704,7 +1652,9 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
           })
         }
       >
-        <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
+        <div>
+          {quorumVotes == null ? <>&nbsp;</> : <>Quorum {quorumVotes}</>}
+        </div>
         {isVotingOngoing && (
           <div>
             {againstVotes <= forVotes && quorumVotes > forVotes && (
@@ -1721,25 +1671,25 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
   );
 });
 
-const MetaTags = ({ proposalId }) => {
-  const proposal = useProposal(proposalId);
+// const MetaTags = ({ proposalId }) => {
+//   const proposal = useProposal(proposalId);
 
-  if (proposal == null) return null;
+//   if (proposal == null) return null;
 
-  const title =
-    proposal.title == null
-      ? `Prop ${proposalId}`
-      : `${proposal.title} (Prop ${proposalId})`;
+//   const title =
+//     proposal.title == null
+//       ? `Prop ${proposalId}`
+//       : `${proposal.title} (Prop ${proposalId})`;
 
-  const { body } = proposal;
+//   const { body } = proposal;
 
-  return (
-    <MetaTags_
-      title={title}
-      description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
-      canonicalPathname={`/proposals/${proposalId}`}
-    />
-  );
-};
+//   return (
+//     <MetaTags_
+//       title={title}
+//       description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
+//       canonicalPathname={`/proposals/${proposalId}`}
+//     />
+//   );
+// };
 
 export default ProposalScreen;

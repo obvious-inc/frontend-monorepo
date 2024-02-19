@@ -1,11 +1,15 @@
+"use client";
+
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
-import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
+import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName, useCachedState } from "@shades/common/app";
+import { useCachedState } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import {
   array as arrayUtils,
   object as objectUtils,
@@ -34,6 +38,7 @@ import {
   getSponsorSignatures as getCandidateSponsorSignatures,
 } from "../utils/candidates.js";
 import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
+import { useSearchParams } from "../hooks/navigation.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -52,7 +57,6 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/drafts.js";
-import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -510,17 +514,42 @@ const BrowseScreen = () => {
     [fetchBrowseScreenData]
   );
 
+  const handleSearchInputChange = useDebouncedCallback((query) => {
+    setPage(1);
+
+    // Clear search from path if query is empty
+    if (query.trim() === "") {
+      setSearchParams(
+        (p) => {
+          const newParams = new URLSearchParams(p);
+          newParams.delete("q");
+          return newParams;
+        },
+        { replace: true }
+      );
+      return;
+    }
+
+    setSearchParams(
+      (p) => {
+        const newParams = new URLSearchParams(p);
+        newParams.set("q", query);
+        return newParams;
+      },
+      { replace: true }
+    );
+  });
+
   return (
     <>
-      <MetaTags />
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
           {
             label: "New Proposal",
             buttonProps: {
-              component: RouterLink,
-              to: "/new",
+              component: NextLink,
+              href: "/new",
               icon: <PlusIcon style={{ width: "0.9rem" }} />,
             },
           },
@@ -566,26 +595,10 @@ const BrowseScreen = () => {
               >
                 <Input
                   placeholder="Search..."
-                  value={query}
+                  defaultValue={query}
                   size="large"
                   onChange={(e) => {
-                    setPage(1);
-
-                    // Clear search from path if query is empty
-                    if (e.target.value.trim() === "") {
-                      setSearchParams((p) => {
-                        const newParams = new URLSearchParams(p);
-                        newParams.delete("q");
-                        return newParams;
-                      });
-                      return;
-                    }
-
-                    setSearchParams((p) => {
-                      const newParams = new URLSearchParams(p);
-                      newParams.set("q", e.target.value);
-                      return newParams;
-                    });
+                    handleSearchInputChange(e.target.value);
                   }}
                   css={css({ flex: 1, minWidth: 0 })}
                 />
@@ -1177,9 +1190,7 @@ const FeedTabContent = React.memo(({ visible }) => {
 
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal?.proposerId
-  );
+  const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
 
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
@@ -1187,7 +1198,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
   const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
 
   return (
-    <RouterLink to={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
+    <NextLink prefetch href={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
       <div
         css={css({
           display: "grid",
@@ -1219,7 +1230,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
         </div>
         <div data-small>{tagWithStatusText}</div>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 });
 
@@ -1380,9 +1391,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
     { watch: false }
   );
 
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    candidate.proposerId
-  );
+  const authorAccountDisplayName = useAccountDisplayName(candidate.proposerId);
 
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
@@ -1451,8 +1460,11 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   };
 
   return (
-    <RouterLink
-      to={`/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`}
+    <NextLink
+      prefetch
+      href={`/candidates/${encodeURIComponent(
+        makeCandidateUrlId(candidateId)
+      )}`}
     >
       <div
         css={css({
@@ -1622,19 +1634,19 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
           {/* )} */}
         </div>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 });
 
 const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
+  const authorAccountDisplayName = useAccountDisplayName(
     connectedAccountAddress
   );
 
   return (
-    <RouterLink to={`/new/${draftId}`}>
+    <NextLink prefetch href={`/new/${draftId}`}>
       <div
         css={css({
           display: "grid",
@@ -1661,7 +1673,7 @@ const ProposalDraftItem = ({ draftId }) => {
         </div>
         <Tag size="large">Draft</Tag>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 };
 
@@ -1760,8 +1772,8 @@ const DraftTabContent = ({ items = [] }) => {
         description="You have no drafts"
         buttonLabel="New proposal"
         buttonProps={{
-          component: RouterLink,
-          to: "/new",
+          component: NextLink,
+          href: "/new",
           icon: <PlusIcon style={{ width: "1rem" }} />,
         }}
         css={css({ padding: "3.2rem 0" })}
