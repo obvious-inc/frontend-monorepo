@@ -9,10 +9,10 @@ const Tag = ({ variant, size = "normal", active, ...props }) => (
       css({
         display: "inline-flex",
         justifyContent: "center",
-        background: t.colors.backgroundModifierHover,
+        background: t.colors.backgroundModifierNormal,
         color: t.colors.textDimmed,
         fontSize: t.text.sizes.micro,
-        fontWeight: "400",
+        fontWeight: t.text.weights.smallTextEmphasis,
         textTransform: "uppercase",
         padding: "0.1rem 0.3rem",
         borderRadius: "0.2rem",
