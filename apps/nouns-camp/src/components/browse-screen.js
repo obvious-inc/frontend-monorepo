@@ -317,8 +317,8 @@ const BrowseScreen = () => {
     if (connectedAccount == null) return "proposals:ongoing";
 
     if (
-      p.proposerId.toLowerCase() === connectedAccount ||
-      p.signers.some((s) => s.id.toLowerCase() === connectedAccount)
+      p.proposerId.toLowerCase() === connectedAccount /*||
+      p.signers.some((s) => s.id.toLowerCase() === connectedAccount)*/
     )
       return "proposals:authored";
 

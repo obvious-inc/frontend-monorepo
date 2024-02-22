@@ -66,6 +66,8 @@ const beforeInteractive = () => {
 };
 
 const fetchConfig = async () => {
+  return [];
+  // eslint-disable-next-line no-unreachable
   try {
     const betaAccounts = await getConfig("beta-accounts");
     return { betaAccounts };

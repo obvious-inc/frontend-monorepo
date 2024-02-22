@@ -26,6 +26,15 @@ importers:
       '@emotion/react':
         specifier: ^11.11.3
         version: 11.11.3(react@18.2.0)
+      '@lilnounsdao/assets':
+        specifier: ^0.5.15
+        version: 0.5.15
+      '@lilnounsdao/contracts':
+        specifier: ^0.3.5
+        version: 0.3.5
+      '@lilnounsdao/sdk':
+        specifier: ^0.3.15
+        version: 0.3.15(ethers@5.7.2)
       '@nouns/assets':
         specifier: ^0.5.0
         version: 0.5.0
@@ -2761,6 +2770,34 @@ packages:
 
   /@juggle/resize-observer@3.4.0:
     resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
+    dev: false
+
+  /@lilnounsdao/assets@0.5.15:
+    resolution: {integrity: sha512-AxpzVbJP1ZDAojhPur9BucjQGFL4ehUYkZAI6r4PDN0agFDdNUDSXQxyKzFZpUQ8ca+T7M+SPLXCbD/kUqjzNQ==}
+    dependencies:
+      '@ethersproject/bignumber': 5.7.0
+      '@ethersproject/solidity': 5.7.0
+    dev: false
+
+  /@lilnounsdao/contracts@0.3.5:
+    resolution: {integrity: sha512-qcAdw0DQY0vR9x4L9PEEkwOfhLzIxIS4fPKNRZD+bAHU7DjwYvKGoibCDaeL4eKKWTQhFpYFdkqzhQKfjSE46A==}
+    dependencies:
+      ethers: 5.7.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+    dev: false
+
+  /@lilnounsdao/sdk@0.3.15(ethers@5.7.2):
+    resolution: {integrity: sha512-YHfgbPPVO9aXof9iyIAWIvJ7JBe/0lkcDrdpPWNXXYxASnQkRycLVIqMmIyAFOWaY9LsxwfnmVdhNDqeM2Xmlw==}
+    peerDependencies:
+      ethers: '>=5.0.0'
+    dependencies:
+      '@lilnounsdao/contracts': 0.3.5
+      ethers: 5.7.2
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
     dev: false
 
   /@lit-labs/ssr-dom-shim@1.1.2:

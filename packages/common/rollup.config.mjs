@@ -46,7 +46,7 @@ const entrypoints = [
   },
   {
     file: "nouns/index.js",
-    dependencies: ["@nouns/assets", "@nouns/sdk"],
+    dependencies: ["@lilnounsdao/assets", "@lilnounsdao/sdk"],
   },
   { file: "emoji.js" },
   { file: "custom-emoji.js" },

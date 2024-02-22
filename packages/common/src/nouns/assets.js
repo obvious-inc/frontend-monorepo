@@ -2,8 +2,8 @@ import {
   ImageData,
   getNounSeedFromBlockHash,
   getNounData,
-} from "@nouns/assets";
-import { buildSVG } from "@nouns/sdk";
+} from "@lilnounsdao/assets";
+import { buildSVG } from "@lilnounsdao/sdk";
 
 const svgCacheBySeed = new Map();
 
