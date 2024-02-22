@@ -128,7 +128,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: ^1.9.0
-        version: 1.9.0(vercel@33.5.1)(wrangler@3.28.3)
+        version: 1.9.0(vercel@33.5.1)(wrangler@3.28.4)
       eslint:
         specifier: ^8.56.0
         version: 8.56.0
@@ -148,8 +148,8 @@ importers:
         specifier: ^33.5.1
         version: 33.5.1
       wrangler:
-        specifier: ^3.28.3
-        version: 3.28.3
+        specifier: ^3.28.4
+        version: 3.28.4
 
   packages/common:
     dependencies:
@@ -1609,7 +1609,7 @@ packages:
       mime: 3.0.0
     dev: true
 
-  /@cloudflare/next-on-pages@1.9.0(vercel@33.5.1)(wrangler@3.28.3):
+  /@cloudflare/next-on-pages@1.9.0(vercel@33.5.1)(wrangler@3.28.4):
     resolution: {integrity: sha512-fa46YoaKLRS0xIWlprrQD66bLMOUvvvfqQNkUZTeAk87QBRzgkm14RqrnO2ro2uHYNqW5qf9lhKbq2IUGQWJRQ==}
     hasBin: true
     peerDependencies:
@@ -1633,7 +1633,7 @@ packages:
       pcre-to-regexp: 1.1.0
       semver: 7.5.4
       vercel: 33.5.1
-      wrangler: 3.28.3
+      wrangler: 3.28.4
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -9411,7 +9411,7 @@ packages:
     resolution: {integrity: sha512-WFj2isz22JahUv+B788TlO3N6zL3nNJGU8CcZbPZvVEkBPaJdCV4vy5wyghty5ROFbCRnm132v8BScu5/1BQ8g==}
     dependencies:
       debug: 3.2.7
-      is-core-module: 2.13.0
+      is-core-module: 2.13.1
       resolve: 1.22.8
     transitivePeerDependencies:
       - supports-color
@@ -9431,7 +9431,7 @@ packages:
       eslint-plugin-import: 2.29.0(@typescript-eslint/parser@6.20.0)(eslint-import-resolver-typescript@3.6.1)(eslint@8.56.0)
       fast-glob: 3.3.2
       get-tsconfig: 4.7.2
-      is-core-module: 2.13.0
+      is-core-module: 2.13.1
       is-glob: 4.0.3
     transitivePeerDependencies:
       - '@typescript-eslint/parser'
@@ -10925,12 +10925,6 @@ packages:
   /is-callable@1.2.7:
     resolution: {integrity: sha512-1BC0BVFhS/p0qtw6enp8e+8OD0UrK0oFLztSjNzhcKA3WDuJxxAPXzPuPtKkjEY9UUoEWlX/8fgKeu2S8i9JTA==}
     engines: {node: '>= 0.4'}
-
-  /is-core-module@2.13.0:
-    resolution: {integrity: sha512-Z7dk6Qo8pOCp3l4tsX2C5ZVas4V+UxwQodwZhLopL91TX8UyyHEXafPcyoeeWuLrwzHcr3igO78wNLwHJHsMCQ==}
-    dependencies:
-      has: 1.0.3
-    dev: true
 
   /is-core-module@2.13.1:
     resolution: {integrity: sha512-hHrIjvZsftOsvKSn2TRYl63zvxsgE0K+0mYMoH6gD4omR5IWB2KynivBQczo3+wF1cCkjzvptnI9Q0sPU66ilw==}
@@ -15848,8 +15842,8 @@ packages:
       '@cloudflare/workerd-windows-64': 1.20240129.0
     dev: true
 
-  /wrangler@3.28.3:
-    resolution: {integrity: sha512-pLuvWA5W8FhjI/a7Mr5F491KOqNMYzyWVN7dmwr+52sPv2BFrfN1v6btmhHYotSblCH8yfs5DmuxwdKuVPMw9w==}
+  /wrangler@3.28.4:
+    resolution: {integrity: sha512-LDwW4KhplRhIEfQaZry8AMZIOTpkYZXLWjg1MDSC3a12BXSY37pXACmFxbZeg2TzcOi30j+KqwLfv15vCavIyA==}
     engines: {node: '>=16.17.0'}
     hasBin: true
     peerDependencies:
