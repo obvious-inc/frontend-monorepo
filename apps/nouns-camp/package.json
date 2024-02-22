@@ -50,7 +50,7 @@
     "react-stately": "^3.28.0",
     "slate": "^0.102.0",
     "slate-history": "^0.100.0",
-    "slate-react": "^0.101.6",
+    "slate-react": "^0.102.0",
     "tinykeys": "^2.1.0",
     "use-debounce": "^10.0.0",
     "viem": "^2.7.10",
