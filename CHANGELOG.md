@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.26]] - 2024-02-22
+
+### Features
+
+- Migrate updates from upstream (#163)
+- Migrate to lilnouns contracts (#145)
+
+### Documentation
+
+- Update `README.md` file to improve description and messages (#164)
+
 ## [1.0.0-alpha.25] - 2024-02-19
 
 ### Features
