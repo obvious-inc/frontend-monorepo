@@ -81,8 +81,8 @@ importers:
         specifier: ^4.1.1
         version: 4.1.1
       marked:
-        specifier: ^10.0.0
-        version: 10.0.0
+        specifier: ^12.0.0
+        version: 12.0.0
       next:
         specifier: ^14.1.0
         version: 14.1.0(@babel/core@7.21.4)(react-dom@18.2.0)(react@18.2.0)
@@ -11834,8 +11834,8 @@ packages:
       object-visit: 1.0.1
     dev: false
 
-  /marked@10.0.0:
-    resolution: {integrity: sha512-YiGcYcWj50YrwBgNzFoYhQ1hT6GmQbFG8SksnYJX1z4BXTHSOrz1GB5/Jm2yQvMg4nN1FHP4M6r03R10KrVUiA==}
+  /marked@12.0.0:
+    resolution: {integrity: sha512-Vkwtq9rLqXryZnWaQc86+FHLC6tr/fycMfYAhiOIXkrNmeGAyhSxjqu0Rs1i0bBqw5u0S7+lV9fdH2ZSVaoa0w==}
     engines: {node: '>= 18'}
     hasBin: true
     dev: false
