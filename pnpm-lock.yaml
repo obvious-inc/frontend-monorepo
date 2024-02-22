@@ -132,8 +132,8 @@ importers:
         specifier: ^2.5.7
         version: 2.5.7(@tanstack/react-query@5.13.4)(react-dom@18.2.0)(react-native@0.71.3)(react@18.2.0)(typescript@5.3.3)(viem@2.7.10)
       zustand:
-        specifier: ^4.5.0
-        version: 4.5.0(react@18.2.0)
+        specifier: ^4.5.1
+        version: 4.5.1(react@18.2.0)
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: ^1.9.0
@@ -16173,8 +16173,8 @@ packages:
       use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
 
-  /zustand@4.5.0(react@18.2.0):
-    resolution: {integrity: sha512-zlVFqS5TQ21nwijjhJlx4f9iGrXSL0o/+Dpy4txAP22miJ8Ti6c1Ol1RLNN98BMib83lmDH/2KmLwaNXpjrO1A==}
+  /zustand@4.5.1(react@18.2.0):
+    resolution: {integrity: sha512-XlauQmH64xXSC1qGYNv00ODaQ3B+tNPoy22jv2diYiP4eoDKr9LA+Bh5Bc3gplTrFdb6JVI+N4kc1DZ/tbtfPg==}
     engines: {node: '>=12.7.0'}
     peerDependencies:
       '@types/react': '>=16.8'
