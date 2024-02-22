@@ -94,6 +94,7 @@ const metaByIdentifier = {
     token: "WETH",
   },
   "usdc-token": {
+    name: "USDC Token",
     token: "USDC",
   },
   "lido-steth-token": {

@@ -253,7 +253,7 @@ const isFunctionAbiItem = (item) => {
 
 const createSignature = (functionAbiItem) =>
   `${functionAbiItem.name}(${
-    functionAbiItem.inputs?.map((i) => i.type).join(", ") ?? ""
+    functionAbiItem.inputs?.map((i) => i.type).join(",") ?? ""
   })`;
 
 const StreamingPaymentActionForm = ({ state, setState }) => {

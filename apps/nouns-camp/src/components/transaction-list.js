@@ -120,6 +120,7 @@ const ListItem = ({ transaction }) => {
         return <UnparsedFunctionCallCodeBlock transaction={t} />;
 
       case "transfer":
+      case "usdc-approval":
       case "usdc-transfer-via-payer":
       case "weth-transfer":
       case "weth-deposit":
@@ -166,6 +167,25 @@ const ListItem = ({ transaction }) => {
           </>
         );
 
+      case "usdc-approval":
+        return (
+          <>
+            This transaction sets an allowance for{" "}
+            <AddressDisplayNameWithTooltip address={t.spenderAddress} /> to
+            spend up to{" "}
+            {parseFloat(formatUnits(t.usdcAmount, 6)).toLocaleString()} USDC
+            from the treasury.
+          </>
+        );
+
+      case "usdc-transfer-via-payer":
+        return (
+          <>
+            USDC is transfered from the{" "}
+            <AddressDisplayNameWithTooltip address={t.target} /> contract.
+          </>
+        );
+
       case "payer-top-up":
         return (
           <>
@@ -194,14 +214,6 @@ const ListItem = ({ transaction }) => {
           </>
         );
 
-      case "usdc-transfer-via-payer":
-        return (
-          <>
-            USDC is transfered from the{" "}
-            <AddressDisplayNameWithTooltip address={t.target} /> contract.
-          </>
-        );
-
       case "function-call":
       case "payable-function-call":
       case "proxied-payable-function-call":
@@ -226,10 +238,11 @@ const ListItem = ({ transaction }) => {
       case "weth-transfer":
       case "weth-deposit":
       case "weth-approval":
+      case "usdc-approval":
+      case "usdc-transfer-via-payer":
       case "stream":
       case "usdc-stream-funding-via-payer":
       case "weth-stream-funding":
-      case "usdc-transfer-via-payer":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
         return (
@@ -509,6 +522,20 @@ export const TransactionExplanation = ({ transaction: t }) => {
         </>
       );
 
+    case "usdc-approval":
+      return (
+        <>
+          Approve{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.spenderAddress} />
+          </em>{" "}
+          to spend{" "}
+          <em>
+            {parseFloat(formatUnits(t.usdcAmount, 6)).toLocaleString()} USDC
+          </em>
+        </>
+      );
+
     case "usdc-transfer-via-payer":
       return (
         <>
@@ -545,14 +572,14 @@ export const TransactionExplanation = ({ transaction: t }) => {
         <>
           Approve{" "}
           <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>{" "}
+          to spend{" "}
+          <em>
             <FormattedEthWithConditionalTooltip
               value={t.wethAmount}
               tokenSymbol="WETH"
             />
-          </em>{" "}
-          allowance to{" "}
-          <em>
-            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
           </em>
         </>
       );
