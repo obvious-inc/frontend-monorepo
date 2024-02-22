@@ -57,6 +57,7 @@ export default {
     textAccent,
     textHeader: textAccent,
     textPrimary: primaryText,
+    textPrimaryModifierHover: createPrimary({ saturation: 0.85, lightness: 0.4 }),
     textHighlight: "#9a6700", // Light yellow
     textHighlightBackground: "#b8810e26",
     link: primaryText,

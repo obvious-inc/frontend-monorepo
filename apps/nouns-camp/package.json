@@ -50,8 +50,8 @@
     "slate-react": "^0.101.6",
     "tinykeys": "^2.1.0",
     "use-debounce": "^10.0.0",
-    "viem": "^2.7.1",
-    "wagmi": "^2.5.6",
+    "viem": "^2.7.10",
+    "wagmi": "^2.5.7",
     "zustand": "^4.5.0"
   }
 }

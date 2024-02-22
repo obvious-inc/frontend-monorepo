@@ -925,20 +925,17 @@ export const SectionedList = ({
             },
           },
           // Mobile-only
-          "@container(max-width: 600px)": {
+          "@container(max-width: 580px)": {
             "[data-desktop-only]": {
               display: "none",
             },
           },
           // Desktop-only
-          "@container(min-width: 600px)": {
+          "@container(min-width: 580px)": {
             "[data-mobile-only]": {
               display: "none",
             },
             "[data-group] li + li": { marginTop: "0.4rem" },
-            // "[data-title]": {
-            //   whiteSpace: "normal",
-            // },
           },
           // Hover enhancement
           "@media(hover: hover)": {
@@ -1191,11 +1188,17 @@ const FeedTabContent = React.memo(({ visible }) => {
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
   const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
+  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+
+  const statusText = renderPropStatusText({
+    proposal,
+    calculateBlockTimestamp,
+  });
+
+  const showVoteStatus = !["pending", "updatable"].includes(proposal.state);
 
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
-
-  const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
 
   return (
     <NextLink prefetch href={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
@@ -1224,21 +1227,63 @@ const ProposalItem = React.memo(({ proposalId }) => {
           <div data-title>
             {proposal.title === null ? "Untitled" : proposal.title}
           </div>
-          <div data-small data-mobile-only css={css({ marginTop: "0.2rem" })}>
-            <PropStatusText proposalId={proposalId} />
+          <div
+            data-small
+            data-mobile-only
+            css={css({
+              marginTop: "0.3rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              gap: "0.5rem",
+            })}
+          >
+            <ProposalStateTag proposalId={proposalId} />
+            {showVoteStatus && <ProposalVotesTag proposalId={proposalId} />}
+            {statusText != null && (
+              <div data-small style={{ padding: "0 0.1rem" }}>
+                {statusText}
+              </div>
+            )}
           </div>
+          {showVoteStatus && statusText != null && (
+            <div
+              data-small
+              data-desktop-only
+              css={css({ marginTop: "0.2rem" })}
+            >
+              {statusText}
+            </div>
+          )}
         </div>
-        <div data-small>{tagWithStatusText}</div>
+        <div
+          data-desktop-only
+          css={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "1.2rem",
+            textAlign: "right",
+          })}
+        >
+          {showVoteStatus ? (
+            <ProposalVotesTag proposalId={proposalId} />
+          ) : (
+            <span data-small data-nowrap>
+              {statusText}
+            </span>
+          )}
+          <ProposalStateTag
+            proposalId={proposalId}
+            style={{ minWidth: "7.6rem" }}
+          />
+        </div>
       </div>
     </NextLink>
   );
 });
 
-const PropStatusText = React.memo(({ proposalId }) => {
-  const proposal = useProposal(proposalId, { watch: false });
-
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
+const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   switch (proposal.state) {
     case "updatable": {
       const updatePeriodEndDate = calculateBlockTimestamp(
@@ -1291,58 +1336,24 @@ const PropStatusText = React.memo(({ proposalId }) => {
       const endDate = calculateBlockTimestamp(
         proposal.objectionPeriodEndBlock ?? proposal.endBlock
       );
-      const renderTimeLeft = () => {
-        const { minutes, hours, days } = dateUtils.differenceUnits(
-          endDate,
-          new Date()
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        endDate,
+        new Date()
+      );
+
+      if (minutes < 1) return <>Ends in less than 1 minute</>;
+
+      if (hours <= 1)
+        return (
+          <>
+            Ends in {Math.max(minutes, 0)}{" "}
+            {minutes === 1 ? "minute" : "minutes"}
+          </>
         );
 
-        if (minutes < 1) return <>Ends in less than 1 minute</>;
+      if (days <= 1) return <>Ends in {Math.round(minutes / 60)} hours</>;
 
-        if (hours <= 1)
-          return (
-            <>
-              Ends in {Math.max(minutes, 0)}{" "}
-              {minutes === 1 ? "minute" : "minutes"}
-            </>
-          );
-
-        if (days <= 1) return <>Ends in {Math.round(minutes / 60)} hours</>;
-
-        return <>Ends in {Math.round(hours / 24)} days</>;
-      };
-
-      return (
-        <>
-          <div
-            css={(t) =>
-              css({
-                display: "inline-flex",
-                '[role="separator"]:before': {
-                  content: '",\u{00a0}"',
-                },
-                "@media(min-width: 800px)": {
-                  flexDirection: "row-reverse",
-                  '[role="separator"]:before': {
-                    content: '"|"',
-                    color: t.colors.borderLight,
-                    margin: "0 1rem",
-                  },
-                  "[data-description]::first-letter": {
-                    textTransform: "uppercase",
-                  },
-                },
-              })
-            }
-          >
-            <span data-votes>
-              {proposal.forVotes} For {"-"} {proposal.againstVotes} Against
-            </span>
-            <span role="separator" aria-orientation="vertical" />
-            <span data-description>{renderTimeLeft()}</span>
-          </div>
-        </>
-      );
+      return <>Ends in {Math.round(hours / 24)} days</>;
     }
 
     case "queued":
@@ -1359,30 +1370,81 @@ const PropStatusText = React.memo(({ proposalId }) => {
     default:
       return null;
   }
-});
+};
 
-const PropTagWithStatusText = ({ proposalId }) => {
-  const statusText = <PropStatusText proposalId={proposalId} />;
+const ProposalVotesTag = React.memo(({ proposalId }) => {
+  const { address: connectedWalletAccountAddress } = useWallet();
+  const proposal = useProposal(proposalId, { watch: false });
+
+  const vote = proposal.votes?.find(
+    (v) => v.voterId === connectedWalletAccountAddress
+  );
 
   return (
-    <div
-      css={css({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        gap: "1.6rem",
-        textAlign: "right",
-      })}
+    <span
+      css={(t) =>
+        css({
+          display: "inline-flex",
+          gap: "0.1rem",
+          whiteSpace: "nowrap",
+          fontSize: t.text.sizes.micro,
+          lineHeight: 1.2,
+          color: t.colors.textDimmed,
+          borderRadius: "0.2rem",
+          "@media(min-width: 600px)": {
+            fontSize: t.text.sizes.tiny,
+          },
+          "& > *": {
+            display: "flex",
+            padding: "0.3rem 0.5rem",
+            background: t.colors.backgroundModifierNormal,
+            minWidth: "1.86rem",
+            justifyContent: "center",
+          },
+          "& > *:first-of-type": {
+            borderTopLeftRadius: "0.2rem",
+            borderBottomLeftRadius: "0.2rem",
+          },
+          "& > *:last-of-type": {
+            borderTopRightRadius: "0.2rem",
+            borderBottomRightRadius: "0.2rem",
+          },
+          '[data-voted="true"]': {
+            color: t.colors.textNormal,
+            fontWeight: t.text.weights.smallTextEmphasis,
+            background: t.colors.backgroundModifierStrong,
+          },
+          "[data-arrow]": {
+            width: "0.9rem",
+            marginLeft: "0.2rem",
+            marginRight: "-0.1rem",
+          },
+          '[data-arrow="up"]': {
+            transform: "scaleY(-1)",
+          },
+        })
+      }
     >
-      {statusText != null && (
-        <div data-desktop-only data-nowrap>
-          {statusText}
-        </div>
-      )}
-      <ProposalStateTag proposalId={proposalId} />
-    </div>
+      <span data-for={proposal.forVotes} data-voted={vote?.support === 1}>
+        {proposal.forVotes}
+        <ArrowDownSmallIcon data-arrow="up" />
+      </span>
+      <span
+        data-abstain={proposal.abstainVotes}
+        data-voted={vote?.support === 2}
+      >
+        {proposal.abstainVotes}
+      </span>
+      <span
+        data-against={proposal.againstVotes}
+        data-voted={vote?.support === 0}
+      >
+        {proposal.againstVotes}
+        <ArrowDownSmallIcon data-arrow="down" />
+      </span>
+    </span>
   );
-};
+});
 
 const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
