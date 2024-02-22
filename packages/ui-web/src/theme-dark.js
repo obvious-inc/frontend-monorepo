@@ -63,6 +63,7 @@ const textWeights = {
   header: "700",
   smallHeader: "600",
   emphasis: "600",
+  smallTextEmphasis: "500",
   menuListBoxItem: "500",
   numberBadge: "500",
 };
@@ -134,6 +135,7 @@ export default {
     textAccent: "white",
     textHeaderSecondary: "hsl(0 0% 72%)",
     textPrimary: primaryTintLighter,
+    textPrimaryModifierHover: createPrimary({ saturation: 1, lightness: 0.6 }),
     textHighlight: "#ffd376", // Light yellow
     textHighlightBackground: "#b8810e66",
     textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),

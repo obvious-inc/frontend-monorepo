@@ -48,6 +48,8 @@ const parseUpdate = (u) => ({
 });
 
 export const fetchPropdates = async (chainId, ...args) => {
+  return [];
+  // eslint-disable-next-line no-unreachable
   if (chainId !== 1) return [];
   return fetch(subgraphUrl, {
     method: "POST",
@@ -67,6 +69,8 @@ export const fetchPropdates = async (chainId, ...args) => {
 };
 
 export const fetchPropdatesForProposal = async (chainId, ...args) => {
+  return [];
+  // eslint-disable-next-line no-unreachable
   if (chainId !== 1) return [];
   return fetch(subgraphUrl, {
     method: "POST",

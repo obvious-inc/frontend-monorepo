@@ -30,27 +30,14 @@ const fetchProposal = async (id, { chainId }) => {
           status
           createdBlock
           createdTimestamp
-          lastUpdatedBlock
-          lastUpdatedTimestamp
           startBlock
           endBlock
-          updatePeriodEndBlock
-          objectionPeriodEndBlock
-          canceledBlock
-          canceledTimestamp
-          queuedBlock
-          queuedTimestamp
-          executedBlock
-          executedTimestamp
           forVotes
           againstVotes
           abstainVotes
           quorumVotes
           executionETA
           proposer {
-            id
-          }
-          signers {
             id
           }
         }
