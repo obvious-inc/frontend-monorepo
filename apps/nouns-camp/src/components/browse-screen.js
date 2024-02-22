@@ -226,7 +226,7 @@ const BrowseScreen = () => {
   const [page, setPage] = React.useState(1);
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
-    "popularity"
+    "activity"
   );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
