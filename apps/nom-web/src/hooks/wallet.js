@@ -54,7 +54,9 @@ const useReadyConnectors = () => {
       });
   }, [connectors]);
 
-  return readyConnectorIds.map((id) => connectors.find((c) => c.id == id));
+  return readyConnectorIds
+    .map((id) => connectors.find((c) => c.id == id))
+    .filter(Boolean);
 };
 
 const useWallet = () => {

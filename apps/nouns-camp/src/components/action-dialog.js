@@ -36,6 +36,7 @@ import useEthToUsdRate, {
 } from "../hooks/eth-to-usd-rate.js";
 import useChainId from "../hooks/chain-id.js";
 import FormattedNumber from "./formatted-number.js";
+import AddressInput from "./address-input.js";
 
 const isBetaSession = new URLSearchParams(location.search).get("beta") != null;
 
@@ -132,23 +133,23 @@ const useEnsAddress = ({ name, enabled }) => {
   return { data: address };
 };
 
-const useEnsName = ({ address, enabled }) => {
-  const publicClient = usePublicClient();
+// const useEnsName = ({ address, enabled }) => {
+//   const publicClient = usePublicClient();
 
-  const { register, reverseResolve } = React.useContext(EnsCacheContext);
+//   const { register, reverseResolve } = React.useContext(EnsCacheContext);
 
-  const name = reverseResolve(address);
+//   const name = reverseResolve(address);
 
-  React.useEffect(() => {
-    if (!enabled || address == null || name != null) return;
-    publicClient.getEnsName({ address }).then((name) => {
-      if (name == null) return;
-      register({ name, address });
-    });
-  }, [address, name, enabled, publicClient, register]);
+//   React.useEffect(() => {
+//     if (!enabled || address == null || name != null) return;
+//     publicClient.getEnsName({ address }).then((name) => {
+//       if (name == null) return;
+//       register({ name, address });
+//     });
+//   }, [address, name, enabled, publicClient, register]);
 
-  return { data: name };
-};
+//   return { data: name };
+// };
 
 const simplifyType = (type) =>
   type.startsWith("int") || type.startsWith("uint") ? "number" : type;
@@ -1767,79 +1768,6 @@ const ArgumentInputs = ({ inputs, inputState, setInputState }) => {
         );
       })}
     </div>
-  );
-};
-
-const AddressInput = ({
-  value,
-  alwaysRenderHintContainer = true,
-  ...props
-}) => {
-  const [hasFocus, setFocused] = React.useState(false);
-
-  const { data: ensName } = useEnsName({
-    address: value.trim(),
-    enabled: isAddress(value.trim()),
-  });
-  const { data: ensAddress } = useEnsAddress({
-    name: value.trim(),
-    enabled: value.trim().split(".").slice(-1)[0] === "eth",
-  });
-
-  const buildHint = () => {
-    if (isAddress(value)) {
-      if (props.hint != null) return props.hint;
-      if (ensName != null)
-        return (
-          <>
-            Primary ENS name:{" "}
-            <em
-              css={(t) =>
-                css({
-                  fontStyle: "normal",
-                  fontWeight: t.text.weights.emphasis,
-                })
-              }
-            >
-              {ensName}
-            </em>
-          </>
-        );
-      return alwaysRenderHintContainer ? <>&nbsp;</> : null;
-    }
-
-    if (ensAddress != null) return ensAddress;
-
-    if (hasFocus) {
-      if (value.startsWith("0x"))
-        return `An account address should be 42 characters long (currently ${value.length})`;
-
-      return props.hint ?? "Specify an Ethereum account address or ENS name";
-    }
-
-    return props.hint ?? (alwaysRenderHintContainer ? <>&nbsp;</> : null);
-  };
-
-  return (
-    <Input
-      placeholder="0x..."
-      {...props}
-      maxLength={42}
-      value={value}
-      onFocus={(e) => {
-        props.onFocus?.(e);
-        setFocused(true);
-      }}
-      onBlur={(e) => {
-        props.onBlur?.(e);
-        setFocused(false);
-        if (!isAddress(value) && ensAddress != null) props.onChange(ensAddress);
-      }}
-      onChange={(e) => {
-        props.onChange(e.target.value.trim());
-      }}
-      hint={buildHint()}
-    />
   );
 };
 

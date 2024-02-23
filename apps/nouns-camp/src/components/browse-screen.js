@@ -1497,7 +1497,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const showScoreStack = !isProposalUpdate;
 
   const renderProposalUpdateStatusText = () => {
-    if (updateTargetProposal == null) return "...";
+    if (updateTargetProposal?.signers == null) return "...";
 
     const validSignatures = getCandidateSponsorSignatures(candidate, {
       excludeInvalid: true,

@@ -896,10 +896,6 @@ export const useDelegatesFetch = () => {
 };
 
 export const useDelegateFetch = (id, options) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
   const onError = useLatestCallback(options?.onError);
 
   const { fetchDelegate } = useActions();
@@ -912,7 +908,8 @@ export const useDelegateFetch = (id, options) => {
             if (onError == null) return Promise.reject(e);
             onError(e);
           }),
-    [fetchDelegate, id, onError, blockNumber]
+    { fetchInterval: options?.fetchInterval },
+    [fetchDelegate, id, onError]
   );
 };
 
@@ -1269,10 +1266,6 @@ export const useAccount = (id) =>
   useStore(React.useCallback((s) => s.accountsById[id?.toLowerCase()], [id]));
 
 export const useAccountFetch = (id, options) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
   const onError = useLatestCallback(options?.onError);
 
   const { fetchAccount } = useActions();
@@ -1285,7 +1278,8 @@ export const useAccountFetch = (id, options) => {
             if (onError == null) return Promise.reject(e);
             onError(e);
           }),
-    [fetchAccount, id, onError, blockNumber]
+    { fetchInterval: options?.fetchInterval },
+    [fetchAccount, id, onError]
   );
 };
 

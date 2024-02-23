@@ -10,6 +10,7 @@ import {
   Plus as PlusIcon,
   CaretDown as CaretDownIcon,
 } from "@shades/ui-web/icons";
+import { useAccount, useDelegate } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
@@ -101,6 +102,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
   const { open: openAccountDialog } = useDialog("account");
+  const { open: openDelegationDialog } = useDialog("delegation");
   const { open: openSettingsDialog } = useDialog("settings");
 
   const {
@@ -112,6 +114,13 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     isTestnet,
     isLoading: isLoadingWallet,
   } = useWallet();
+
+  const connectedAccount = useAccount(connectedWalletAccountAddress);
+  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+
+  const hasNouns = connectedAccount?.nouns?.length > 0;
+  const hasVotingPower = connectedDelegate?.nounsRepresented?.length > 0;
+
   const connectedAccountDisplayName = useAccountDisplayName(
     connectedWalletAccountAddress
   );
@@ -357,13 +366,17 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         children: [
                           {
                             id: "open-account-dialog",
-                            label: "View connected account",
+                            label: "View account",
+                          },
+                          (hasNouns || hasVotingPower) && {
+                            id: "open-delegation-dialog",
+                            label: "Manage delegation",
                           },
                           {
                             id: "copy-account-address",
                             label: "Copy account address",
                           },
-                        ],
+                        ].filter(Boolean),
                       },
                       {
                         id: "settings",
@@ -385,6 +398,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       switch (key) {
                         case "open-account-dialog":
                           openAccountDialog();
+                          break;
+
+                        case "open-delegation-dialog":
+                          openDelegationDialog();
                           break;
 
                         case "copy-account-address":
