@@ -137,9 +137,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       : connectedWalletAccountAddress == null
       ? null
       : proposal?.votes?.find(
-          (v) =>
-            v.voterId.toLowerCase() ===
-            connectedWalletAccountAddress.toLowerCase()
+          (v) => v.voterId.toLowerCase() === connectedWalletAccountAddress
         );
 
   const hasCastVote =
@@ -432,46 +430,48 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 })}
                 style={{ opacity: latestBlockNumber == null ? 0 : 1 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "1rem",
-                    marginBottom: "4.8rem",
-                  }}
-                >
-                  {isVotingOngoing && hasCastVote && (
-                    <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
-                      You voted{" "}
-                      <span
-                        css={(t) =>
-                          css({
-                            textTransform: "uppercase",
-                            fontWeight: t.text.weights.emphasis,
-                            "--color-for": t.colors.textPositive,
-                            "--color-against": t.colors.textNegative,
-                            "--color-abstain": t.colors.textMuted,
-                          })
-                        }
-                        style={{
-                          color: `var(--color-${supportToString(
-                            connectedWalletVote.support
-                          )})`,
-                        }}
-                      >
-                        {supportToString(connectedWalletVote.support)}
-                      </span>
-                    </Callout>
-                  )}
-                  {hasVotingStarted && proposal.state != null && (
-                    <Callout
-                      icon={renderProposalStateIcon()}
-                      css={(t) => css({ fontSize: t.text.sizes.base })}
+                {isVotingOngoing && hasCastVote && (
+                  <Callout
+                    css={(t) =>
+                      css({ fontSize: t.text.sizes.base, margin: "0 0 1rem" })
+                    }
+                  >
+                    You voted{" "}
+                    <span
+                      css={(t) =>
+                        css({
+                          textTransform: "uppercase",
+                          fontWeight: t.text.weights.emphasis,
+                          "--color-for": t.colors.textPositive,
+                          "--color-against": t.colors.textNegative,
+                          "--color-abstain": t.colors.textMuted,
+                        })
+                      }
+                      style={{
+                        color: `var(--color-${supportToString(
+                          connectedWalletVote.support
+                        )})`,
+                      }}
                     >
-                      {renderProposalStateText()}
-                    </Callout>
-                  )}
-                </div>
+                      {supportToString(connectedWalletVote.support)}
+                    </span>
+                  </Callout>
+                )}
+
+                {hasVotingStarted && proposal.state != null && (
+                  <Callout
+                    icon={renderProposalStateIcon()}
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.base,
+                        marginBottom: "4.8rem",
+                      })
+                    }
+                  >
+                    {renderProposalStateText()}
+                  </Callout>
+                )}
+
                 {hasVotingStarted ? (
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
