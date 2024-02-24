@@ -226,7 +226,7 @@ const BrowseScreen = () => {
   const [page, setPage] = React.useState(1);
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
-    "popularity"
+    "activity"
   );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
@@ -1497,7 +1497,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const showScoreStack = !isProposalUpdate;
 
   const renderProposalUpdateStatusText = () => {
-    if (updateTargetProposal == null) return "...";
+    if (updateTargetProposal?.signers == null) return "...";
 
     const validSignatures = getCandidateSponsorSignatures(candidate, {
       excludeInvalid: true,

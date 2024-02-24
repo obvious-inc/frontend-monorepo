@@ -65,6 +65,7 @@ export const parse = (data, { chainId }) => {
   const nounsExecutorContract = resolveIdentifier(chainId, "executor");
   const nounsTokenContract = resolveIdentifier(chainId, "token");
   const wethTokenContract = resolveIdentifier(chainId, "weth-token");
+  const usdcTokenContract = resolveIdentifier(chainId, "usdc-token");
 
   const transactions = data.targets.map((target, i) => ({
     target: target.toLowerCase(),
@@ -180,6 +181,21 @@ export const parse = (data, { chainId }) => {
         functionInputTypes,
         receiverAddress: functionInputs[0],
         wethAmount: BigInt(functionInputs[1]),
+      };
+    }
+
+    if (
+      target === usdcTokenContract.address &&
+      signature === "approve(address,uint256)"
+    ) {
+      return {
+        type: "usdc-approval",
+        spenderAddress: functionInputs[0],
+        usdcAmount: BigInt(functionInputs[1]),
+        target,
+        functionName,
+        functionInputs,
+        functionInputTypes,
       };
     }
 
@@ -476,6 +492,30 @@ export const unparse = (transactions, { chainId }) => {
           });
         }
 
+        // Fallback strategy
+        case "usdc-approval": {
+          if (
+            t.target == null ||
+            t.functionName == null ||
+            !Array.isArray(t.functionInputTypes) ||
+            !Array.isArray(t.functionInputs)
+          )
+            throw new Error(`Unknown transaction type "${t.type}"`);
+
+          const signature = `${t.functionName}(${t.functionInputTypes
+            .map((t) => formatAbiParameter(t))
+            .join(",")})`;
+          return append({
+            target: t.target,
+            value: t.value ?? "0",
+            signature,
+            calldata: encodeAbiParameters(
+              t.functionInputTypes,
+              t.functionInputs
+            ),
+          });
+        }
+
         case "function-call":
         case "payable-function-call": {
           const signature = `${t.functionName}(${t.functionInputTypes
@@ -526,6 +566,7 @@ export const extractAmounts = (parsedTransactions) => {
   );
   const usdcTransfers = parsedTransactions.filter(
     (t) =>
+      t.type === "usdc-approval" ||
       t.type === "usdc-transfer-via-payer" ||
       t.type === "usdc-stream-funding-via-payer"
   );

@@ -680,20 +680,21 @@ const TransactionCodeBlock = ({ transaction }) => {
   const t = useEnhancedParsedTransaction(transaction);
 
   switch (t.type) {
-    case "weth-transfer":
-    case "weth-deposit":
-    case "weth-approval":
-    case "stream":
-    case "usdc-stream-funding-via-payer":
-    case "weth-stream-funding":
-    case "usdc-transfer-via-payer":
-    case "treasury-noun-transfer":
-    case "escrow-noun-transfer":
-    case "prop-house-create-and-fund-round":
-    case "function-call":
-    case "payable-function-call":
-    case "proxied-function-call":
-    case "proxied-payable-function-call":
+    case "transfer":
+    case "payer-top-up":
+    case "unparsed-function-call":
+    case "unparsed-payable-function-call":
+      return <UnparsedFunctionCallCodeBlock transaction={t} />;
+
+    default: {
+      if (
+        t.target == null ||
+        t.functionName == null ||
+        !Array.isArray(t.functionInputTypes) ||
+        !Array.isArray(t.functionInputs)
+      )
+        throw new Error(`Invalid transaction "${t.type}"`);
+
       return (
         <FunctionCallCodeBlock
           target={t.target}
@@ -703,15 +704,7 @@ const TransactionCodeBlock = ({ transaction }) => {
           value={t.value}
         />
       );
-
-    case "transfer":
-    case "payer-top-up":
-    case "unparsed-function-call":
-    case "unparsed-payable-function-call":
-      return <UnparsedFunctionCallCodeBlock transaction={t} />;
-
-    default:
-      throw new Error(`Unknown transaction type: "${t.type}"`);
+    }
   }
 };
 
@@ -846,6 +839,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       case "payable-function-call":
       case "proxied-payable-function-call":
       case "transfer":
+      case "usdc-approval":
       case "weth-transfer":
       case "weth-approval":
       case "payer-top-up":
