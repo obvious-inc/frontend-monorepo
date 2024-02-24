@@ -581,6 +581,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               proposerId={proposal.proposerId}
               sponsorIds={proposal.signers?.map((s) => s.id)}
               createdAt={proposal.createdTimestamp}
+              updatedAt={proposal.lastUpdatedTimestamp}
               transactions={proposal.transactions}
               hasPassed={isFinalOrSucceededState}
             />
@@ -1091,7 +1092,14 @@ export const ProposalHeader = ({
           })
         }
       >
-        Proposed by{" "}
+        Proposed{" "}
+        <FormattedDateWithTooltip
+          capitalize={false}
+          value={createdAt}
+          day="numeric"
+          month="short"
+        />{" "}
+        by{" "}
         <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
         {sponsorIds.length !== 0 && (
           <>
@@ -1111,7 +1119,7 @@ export const ProposalHeader = ({
               capitalize={false}
               value={updatedAt}
               day="numeric"
-              month="long"
+              month="short"
             />
           </>
         )}
