@@ -47,7 +47,11 @@ const DialogHeader = ({ title, subtitle, titleProps, dismiss, ...props }) => (
         onClick={() => {
           dismiss();
         }}
-        css={css({ width: "2.8rem", padding: 0 })}
+        css={css({
+          width: "2.8rem",
+          padding: 0,
+          marginBottom: "-100%", // Makes sure the button doesn’t change the container height
+        })}
       >
         <CrossIcon
           style={{ width: "1.5rem", height: "auto", margin: "auto" }}

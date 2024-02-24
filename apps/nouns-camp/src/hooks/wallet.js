@@ -50,7 +50,9 @@ const useReadyConnectors = () => {
       });
   }, [connectors]);
 
-  return readyConnectorIds.map((id) => connectors.find((c) => c.id == id));
+  return readyConnectorIds
+    .map((id) => connectors.find((c) => c.id == id))
+    .filter(Boolean);
 };
 
 const ConnectDialog = ({ titleProps, dismiss }) => {
@@ -138,7 +140,7 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
-  const { address: connectedAccountAddress } = useAccount();
+  const { address: connectedAccountAddress, isConnected } = useAccount();
   const { connect, isPending: isConnecting, reset } = useConnect();
   const connectors = useReadyConnectors();
   const { disconnectAsync: disconnect } = useDisconnect();
@@ -172,7 +174,7 @@ export const useWallet = () => {
   )?.toLowerCase();
 
   return {
-    address,
+    address: isConnected || impersonationAddress != null ? address : null,
     requestAccess: hasReadyConnector ? requestAccess : null,
     disconnect,
     reset,

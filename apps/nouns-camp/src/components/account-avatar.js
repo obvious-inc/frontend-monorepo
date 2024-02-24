@@ -33,6 +33,7 @@ const NounsAccountAvatar = React.forwardRef(
       placeholder = true,
       transparent = false,
       maxStackCount = 2,
+      ensOnly = false,
       ...props
     },
     ref
@@ -49,7 +50,7 @@ const NounsAccountAvatar = React.forwardRef(
     const enablePlaceholder = ensAvatarUrl == null;
 
     const nounAvatarUrls = useNounAvatars(nounSeeds, {
-      enabled: enablePlaceholder,
+      enabled: !ensOnly && enablePlaceholder,
       transparent,
     });
 

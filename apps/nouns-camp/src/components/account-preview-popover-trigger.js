@@ -1,3 +1,4 @@
+import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
 import { useEnsName, useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
@@ -8,7 +9,9 @@ import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
-import { useDelegate } from "../store.js";
+import { useDelegate, useAccount } from "../store.js";
+import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -98,18 +101,27 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 );
 
 const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
-  const enableImpersonation = !isProduction || isDebugSession;
+  const { address: connectedAccountAddress } = useWallet();
+  const connectedAccount = useAccount(connectedAccountAddress);
+
+  const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
+  const enableImpersonation = !isMe && (!isProduction || isDebugSession);
+  const enableDelegation = connectedAccount?.nouns.length > 0;
 
   const delegate = useDelegate(accountAddress);
 
   const displayName = useAccountDisplayName(accountAddress);
-  const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(
+    checksumEncodeAddress(accountAddress)
+  );
 
   const { data: ensName } = useEnsName({ address: accountAddress });
   const { data: ensAvatarUrl } = useEnsAvatar({
     name: ensName,
     enabled: ensName != null,
   });
+
+  const { open: openDelegationDialog } = useDialog("delegation");
 
   const accountLink = `/campers/${ensName ?? accountAddress}`;
 
@@ -296,6 +308,30 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 {
                   id: "main",
                   children: [
+                    !enableDelegation
+                      ? null
+                      : isMe
+                      ? {
+                          id: "manage-delegation",
+                          label: "Manage delegation",
+                        }
+                      : {
+                          id: "delegate-to-account",
+                          label: "Delegate to this account",
+                        },
+                    {
+                      id: "copy-account-address",
+                      label: "Copy account address",
+                    },
+                    enableImpersonation && {
+                      id: "impersonate-account",
+                      label: "Impersonate account",
+                    },
+                  ].filter(Boolean),
+                },
+                {
+                  id: "external",
+                  children: [
                     {
                       id: "open-etherscan",
                       label: "Etherscan",
@@ -318,22 +354,32 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     },
                   ],
                 },
-                {
-                  id: "misc",
-                  children: [
-                    {
-                      id: "copy-account-address",
-                      label: "Copy account address",
-                    },
-                    enableImpersonation && {
-                      id: "impersonate-account",
-                      label: "Impersonate account",
-                    },
-                  ],
-                },
-              ].filter(Boolean)}
+              ]}
               onAction={(key) => {
                 switch (key) {
+                  case "manage-delegation":
+                    openDelegationDialog();
+                    close();
+                    break;
+
+                  case "delegate-to-account":
+                    openDelegationDialog({ target: accountAddress });
+                    close();
+                    break;
+
+                  case "copy-account-address":
+                    navigator.clipboard.writeText(accountAddress.toLowerCase());
+                    close();
+                    break;
+
+                  case "impersonate-account": {
+                    const searchParams = new URLSearchParams(location.search);
+                    searchParams.set("impersonate", accountAddress);
+                    location.replace(`${location.pathname}?${searchParams}`);
+                    close();
+                    break;
+                  }
+
                   case "open-etherscan":
                     window.open(
                       `https://etherscan.io/address/${accountAddress}`,
@@ -368,19 +414,6 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                       "_blank"
                     );
                     break;
-
-                  case "copy-account-address":
-                    navigator.clipboard.writeText(accountAddress.toLowerCase());
-                    close();
-                    break;
-
-                  case "impersonate-account": {
-                    const searchParams = new URLSearchParams(location.search);
-                    searchParams.set("impersonate", accountAddress);
-                    location.replace(`${location.pathname}?${searchParams}`);
-                    close();
-                    break;
-                  }
                 }
               }}
             >

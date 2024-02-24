@@ -65,7 +65,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   }, [persistedMarkdownBody]);
 
   const persistedActions = React.useMemo(
-    () => buildActionsFromTransactions(proposal.transactions, { chainId }),
+    () =>
+      buildActionsFromTransactions(proposal.transactions ?? [], { chainId }),
     [proposal, chainId]
   );
 
@@ -117,7 +118,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     );
   const createTransactionsDiff = () =>
     diffParagraphs(
-      proposal.transactions
+      (proposal.transactions ?? [])
         .map((t) => stringifyTransaction(t, { chainId }))
         .join("\n\n"),
       actions

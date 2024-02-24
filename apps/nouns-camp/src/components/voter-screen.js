@@ -1,6 +1,6 @@
 import React from "react";
 import NextLink from "next/link";
-import { isAddress } from "viem";
+import { isAddress, getAddress as checksumEncodeAddress } from "viem";
 import { useBlockNumber, useEnsName, useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import {
@@ -13,6 +13,8 @@ import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Select from "@shades/ui-web/select";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
@@ -28,6 +30,8 @@ import {
   useProposalCandidates,
   useProposals,
 } from "../store.js";
+import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
@@ -41,6 +45,12 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
+
+const isProduction = process.env.NODE_ENV === "production";
+
+const isDebugSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("debug") != null;
 
 const useFeedItems = (accountAddress, { filter } = {}) => {
   const proposals = useProposals({ state: true, propdates: true });
@@ -429,11 +439,22 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
   );
 });
 
-const VoterHeader = ({ voterAddress }) => {
-  const displayName = useAccountDisplayName(voterAddress);
-  const truncatedAddress = ethereumUtils.truncateAddress(voterAddress);
+const VoterHeader = ({ accountAddress }) => {
+  const { address: connectedAccountAddress } = useWallet();
+  const connectedAccount = useAccount(connectedAccountAddress);
 
-  const allVoterNouns = useAllNounsByAccount(voterAddress);
+  const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
+  const enableDelegation = !isMe && connectedAccount?.nouns.length > 0;
+  const enableImpersonation = !isMe && (!isProduction || isDebugSession);
+
+  const displayName = useAccountDisplayName(accountAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(
+    checksumEncodeAddress(accountAddress)
+  );
+
+  const allVoterNouns = useAllNounsByAccount(accountAddress);
+
+  const { open: openDelegationDialog } = useDialog("delegation");
 
   return (
     <div
@@ -447,63 +468,212 @@ const VoterHeader = ({ voterAddress }) => {
     >
       <div
         css={css({
-          display: "grid",
-          gridTemplateColumns: "auto 1fr",
-          columnGap: "1rem",
-          alignItems: "center",
-          marginBottom: "0.3rem",
+          marginBottom: "2.4rem",
+          "@media (min-width: 600px)": {
+            marginBottom: "2.8rem",
+          },
         })}
       >
-        <h1
-          css={(t) =>
-            css({
-              color: t.colors.textHeader,
-              fontSize: t.text.sizes.headerLarger,
-              lineHeight: 1.15,
-              "@media(min-width: 600px)": {
-                fontSize: t.text.sizes.huge,
-              },
-            })
-          }
-        >
-          {displayName}
-        </h1>
-        <AccountAvatar
-          address={voterAddress}
-          size="2.5rem"
-          placeholder={false}
-        />
-      </div>
-      <div
-        css={(t) =>
-          css({
-            color: t.colors.textDimmed,
-            fontSize: t.text.sizes.base,
-            marginBottom: "2.4rem",
-            "@media (min-width: 600px)": {
-              marginBottom: "2.8rem",
-            },
-          })
-        }
-      >
-        <a
-          href={`https://etherscan.io/address/${voterAddress}`}
-          target="_blank"
-          rel="noreferrer"
+        <div
           css={css({
-            color: "inherit",
-            textDecoration: "none",
-            display: "inline-block",
-            flexDirection: "column",
-            maxHeight: "2.8rem",
-            justifyContent: "center",
-            "@media(hover: hover)": {
-              ":hover": { textDecoration: "underline" },
-            },
+            display: "flex",
+            gap: "1rem",
           })}
         >
-          {truncatedAddress}
-        </a>
+          <div
+            css={css({
+              flex: 1,
+              minWidth: 0,
+              display: "flex",
+              gap: "1rem",
+              alignItems: "center",
+            })}
+          >
+            <h1
+              css={(t) =>
+                css({
+                  color: t.colors.textHeader,
+                  fontSize: t.text.sizes.headerLarger,
+                  lineHeight: 1.15,
+                  "@media(min-width: 600px)": {
+                    fontSize: t.text.sizes.huge,
+                  },
+                })
+              }
+            >
+              {displayName}
+            </h1>
+            <AccountAvatar
+              ensOnly
+              address={accountAddress}
+              size="2.8rem"
+              placeholder={false}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "0.8rem" }}>
+            {enableDelegation && (
+              <Button
+                size="medium"
+                onClick={() => {
+                  openDelegationDialog({ target: accountAddress });
+                }}
+              >
+                Delegate
+              </Button>
+            )}
+            <DropdownMenu.Root placement="bottom end">
+              <DropdownMenu.Trigger asChild>
+                <Button
+                  size="medium"
+                  icon={
+                    <DotsHorizontalIcon
+                      style={{ width: "2rem", height: "auto" }}
+                    />
+                  }
+                />
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Content
+                css={css({
+                  width: "min-content",
+                  minWidth: "min-content",
+                  maxWidth: "calc(100vw - 2rem)",
+                })}
+                items={[
+                  {
+                    id: "main",
+                    children: [
+                      {
+                        id: "copy-account-address",
+                        label: "Copy account address",
+                      },
+                      enableImpersonation && {
+                        id: "impersonate-account",
+                        label: "Impersonate account",
+                      },
+                    ].filter(Boolean),
+                  },
+                  {
+                    id: "external",
+                    children: [
+                      {
+                        id: "open-etherscan",
+                        label: "Etherscan",
+                      },
+                      {
+                        id: "open-mogu",
+                        label: "Mogu",
+                      },
+                      {
+                        id: "open-agora",
+                        label: "Agora",
+                      },
+                      {
+                        id: "open-nounskarma",
+                        label: "NounsKarma",
+                      },
+                      {
+                        id: "open-rainbow",
+                        label: "Rainbow",
+                      },
+                    ],
+                  },
+                ]}
+                onAction={(key) => {
+                  switch (key) {
+                    case "copy-account-address":
+                      navigator.clipboard.writeText(
+                        accountAddress.toLowerCase()
+                      );
+                      close();
+                      break;
+
+                    case "impersonate-account": {
+                      const searchParams = new URLSearchParams(location.search);
+                      searchParams.set("impersonate", accountAddress);
+                      location.replace(`${location.pathname}?${searchParams}`);
+                      close();
+                      break;
+                    }
+
+                    case "open-etherscan":
+                      window.open(
+                        `https://etherscan.io/address/${accountAddress}`,
+                        "_blank"
+                      );
+                      break;
+
+                    case "open-mogu":
+                      window.open(
+                        `https://mmmogu.com/address/${accountAddress}`,
+                        "_blank"
+                      );
+                      break;
+
+                    case "open-agora":
+                      window.open(
+                        `https://nounsagora.com/delegate/${accountAddress}`,
+                        "_blank"
+                      );
+                      break;
+
+                    case "open-nounskarma":
+                      window.open(
+                        `https://nounskarma.xyz/player/${accountAddress}`,
+                        "_blank"
+                      );
+                      break;
+
+                    case "open-rainbow":
+                      window.open(
+                        `https://rainbow.me/${accountAddress}`,
+                        "_blank"
+                      );
+                      break;
+                  }
+                }}
+              >
+                {(item) => (
+                  <DropdownMenu.Section items={item.children}>
+                    {(item) => (
+                      <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                    )}
+                  </DropdownMenu.Section>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Root>
+          </div>
+        </div>
+
+        {displayName !== truncatedAddress && (
+          <div
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.base,
+                marginTop: "0.3rem",
+              })
+            }
+          >
+            <a
+              href={`https://etherscan.io/address/${accountAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              css={css({
+                color: "inherit",
+                textDecoration: "none",
+                display: "inline-block",
+                flexDirection: "column",
+                maxHeight: "2.8rem",
+                justifyContent: "center",
+                "@media(hover: hover)": {
+                  ":hover": { textDecoration: "underline" },
+                },
+              })}
+            >
+              {truncatedAddress}
+            </a>
+          </div>
+        )}
       </div>
 
       {allVoterNouns.length > 0 && (
@@ -528,7 +698,7 @@ const VoterHeader = ({ voterAddress }) => {
             <NounPreviewPopoverTrigger
               key={n.id}
               nounId={n.id}
-              contextAccount={voterAddress}
+              contextAccount={accountAddress}
             />
           ))}
         </div>
@@ -604,7 +774,7 @@ const VoterMainSection = ({ voterAddress }) => {
               },
             })}
           >
-            <VoterHeader voterAddress={voterAddress} />
+            <VoterHeader accountAddress={voterAddress} />
             {!isDesktopLayout && (
               <>
                 <VotingPowerCallout voterAddress={voterAddress} />
@@ -765,9 +935,11 @@ const VoterMainSection = ({ voterAddress }) => {
 const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
   const addressOrEnsName = decodeURIComponent(rawAddressOrEnsName);
 
-  const { data: ensAddress, isFetching } = useEnsAddress({
+  const { data: ensAddress, isPending: isFetching } = useEnsAddress({
     name: addressOrEnsName,
-    enabled: addressOrEnsName.includes("."),
+    query: {
+      enabled: addressOrEnsName.includes("."),
+    },
   });
 
   const voterAddress = isAddress(addressOrEnsName)
@@ -776,8 +948,8 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
 
   const displayName = useAccountDisplayName(voterAddress);
 
-  useDelegateFetch(voterAddress);
-  useAccountFetch(voterAddress);
+  useDelegateFetch(voterAddress, { fetchInterval: 10_000 });
+  useAccountFetch(voterAddress, { fetchInterval: 10_000 });
 
   return (
     <Layout
