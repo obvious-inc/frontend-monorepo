@@ -396,7 +396,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
                   case "open-agora":
                     window.open(
-                      `https://nounsagora.com/delegate/${accountAddress}`,
+                      `https://lilnounsagora.com/delegate/${accountAddress}`,
                       "_blank"
                     );
                     break;

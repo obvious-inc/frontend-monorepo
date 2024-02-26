@@ -611,7 +611,7 @@ const VoterHeader = ({ accountAddress }) => {
 
                     case "open-agora":
                       window.open(
-                        `https://nounsagora.com/delegate/${accountAddress}`,
+                        `https://lilnounsagora.com/delegate/${accountAddress}`,
                         "_blank"
                       );
                       break;
