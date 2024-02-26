@@ -285,6 +285,13 @@ const VotingPowerCallout = ({ voterAddress }) => {
       ? null
       : Math.round((voteCount / currentQuorum) * 1000) / 10;
 
+  const hasNouns = account?.nouns.length > 0;
+  const hasVotingPower = voteCount > 0;
+  const isDelegating =
+    hasNouns &&
+    account?.delegate != null &&
+    voterAddress.toLowerCase() !== account?.delegate.id;
+
   return (
     <Callout
       css={(t) =>
@@ -297,8 +304,17 @@ const VotingPowerCallout = ({ voterAddress }) => {
         })
       }
     >
-      {voteCount === 0 && account?.delegate ? (
-        <div>
+      {hasVotingPower && (
+        <p>
+          <span css={(t) => css({ fontWeight: t.text.weights.smallHeader })}>
+            {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
+          </span>{" "}
+          (~{votePowerQuorumPercentage}% of quorum)
+        </p>
+      )}
+
+      {isDelegating ? (
+        <p>
           Delegating votes to{" "}
           <NextLink
             href={`/campers/${ensName ?? account?.delegateId}`}
@@ -317,23 +333,10 @@ const VotingPowerCallout = ({ voterAddress }) => {
           >
             {delegateDisplayName}
           </NextLink>
-        </div>
-      ) : (
-        <>
-          {voteCount === 0 ? (
-            "No voting power"
-          ) : (
-            <>
-              <span
-                css={(t) => css({ fontWeight: t.text.weights.smallHeader })}
-              >
-                {voteCount} {voteCount === 1 ? "noun" : "nouns"} represented
-              </span>{" "}
-              (~{votePowerQuorumPercentage}% of quorum)
-            </>
-          )}
-        </>
-      )}
+        </p>
+      ) : !hasVotingPower ? (
+        "No voting power"
+      ) : null}
     </Callout>
   );
 };
