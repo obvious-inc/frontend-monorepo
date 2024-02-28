@@ -28,9 +28,18 @@ const createConfig = ({ file, dependencies = [] }) => ({
 });
 
 const entrypoints = [
-  { file: "app.js", dependencies: ["viem", "react", "reselect", "zustand"] },
+  {
+    file: "app.js",
+    dependencies: [
+      "@emotion/react/jsx-runtime",
+      "viem",
+      "react",
+      "reselect",
+      "zustand",
+    ],
+  },
   { file: "apis.js" },
-  { file: "utils.js" },
+  { file: "utils.js", dependencies: ["marked"] },
   {
     file: "react.js",
     dependencies: [

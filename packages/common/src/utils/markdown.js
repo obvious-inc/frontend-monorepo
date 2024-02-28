@@ -1,5 +1,6 @@
 import { marked } from "marked";
-import { string as stringUtils, emoji as emojiUtils } from "../utils.js";
+import { getUserPerceivedCharacters } from "./string.js";
+import { isEmoji } from "./emoji.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -61,10 +62,10 @@ const parseToken = (token, context = {}) => {
       const children = parseChildren(token, parseToken, context);
 
       if (children.length === 1 && children[0].type === "text") {
-        const maybeEmojiChars = stringUtils.getUserPerceivedCharacters(
+        const maybeEmojiChars = getUserPerceivedCharacters(
           children[0].text.trim()
         );
-        if (maybeEmojiChars.every(emojiUtils.isEmoji))
+        if (maybeEmojiChars.every(isEmoji))
           return {
             type: "paragraph",
             children: maybeEmojiChars.map((c) => ({

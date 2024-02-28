@@ -3,7 +3,8 @@ import {
   createStore as createZustandStore,
   useStore as useZustandStore,
 } from "zustand";
-import { useBlockNumber } from "wagmi";
+import { normalize as normalizeEnsName } from "viem/ens";
+import { usePublicClient, useBlockNumber } from "wagmi";
 import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
   array as arrayUtils,
@@ -235,6 +236,34 @@ const createStore = ({ initialState }) =>
         }
       );
 
+    const reverseResolveEnsAddresses = async (client, addresses) => {
+      const reverse = (address) =>
+        client.getEnsName({
+          address,
+        });
+      const records = await Promise.all(
+        addresses.map((address) =>
+          reverse(address).then((name) => ({ address, name }))
+        )
+      );
+
+      const resolvedRecords = records.filter((r) => r.name != null);
+
+      const ensNameByAddress = resolvedRecords.reduce(
+        (acc, r) => ({ ...acc, [r.address]: r.name }),
+        {}
+      );
+      const ensAddressByName = resolvedRecords.reduce(
+        (acc, r) => ({ ...acc, [r.name]: r.address }),
+        {}
+      );
+
+      set((s) => ({
+        ensNameByAddress: { ...s.ensNameByAddress, ...ensNameByAddress },
+        ensAddressByName: { ...s.ensAddressByName, ...ensAddressByName },
+      }));
+    };
+
     return {
       accountsById: {},
       delegatesById: {},
@@ -242,6 +271,8 @@ const createStore = ({ initialState }) =>
       proposalsById: {},
       proposalCandidatesById: {},
       propdatesByProposalId: {},
+      ensNameByAddress: {},
+      ensAddressByName: {},
       ...initialState,
 
       // UI actions
@@ -274,7 +305,38 @@ const createStore = ({ initialState }) =>
         });
       },
 
-      // Actions
+      // ENS resolution
+      resolveEnsNames: async (client, names) => {
+        const resolve = (name) =>
+          client.getEnsAddress({
+            name: normalizeEnsName(name),
+          });
+
+        const records = await Promise.all(
+          names.map((name) =>
+            resolve(name).then((address) => ({ address, name }))
+          )
+        );
+
+        const resolvedRecords = records.filter((r) => r.address != null);
+
+        const ensNameByAddress = resolvedRecords.reduce(
+          (acc, r) => ({ ...acc, [r.address]: r.name }),
+          {}
+        );
+        const ensAddressByName = resolvedRecords.reduce(
+          (acc, r) => ({ ...acc, [r.name]: r.address }),
+          {}
+        );
+
+        set((s) => ({
+          ensNameByAddress: { ...s.ensNameByAddress, ...ensNameByAddress },
+          ensAddressByName: { ...s.ensAddressByName, ...ensAddressByName },
+        }));
+      },
+      reverseResolveEnsAddresses,
+
+      // Subgraph reads
       fetchProposals,
       fetchProposal: (chainId, id) =>
         NounsSubgraph.fetchProposal(chainId, id).then((proposal) => {
@@ -325,6 +387,8 @@ const createStore = ({ initialState }) =>
                 delegatesByIds
               ),
             }));
+
+            return delegates;
           }
         ),
       fetchDelegate: (chainId, id) =>
@@ -385,9 +449,28 @@ const createStore = ({ initialState }) =>
             ),
           }));
         }),
-      fetchBrowseScreenData: (chainId, options) =>
+      fetchBrowseScreenData: (chainId, client, options) =>
         NounsSubgraph.fetchBrowseScreenData(chainId, options).then(
           ({ proposals, candidates }) => {
+            // Populate ENS cache async
+            const addresses = [];
+
+            for (const p of proposals)
+              addresses.push(
+                p.proposerId,
+                ...(p.signers ?? []).map((s) => s.id)
+              );
+
+            for (const c of candidates)
+              addresses.push(
+                c.proposerId,
+                ...(c.latestVersion?.content.contentSignatures ?? []).map(
+                  (s) => s.signer.id
+                )
+              );
+
+            reverseResolveEnsAddresses(client, arrayUtils.unique(addresses));
+
             // Fetch less urgent data async
             NounsSubgraph.fetchBrowseScreenSecondaryData(chainId, {
               proposalIds: proposals.map((p) => p.id),
@@ -795,6 +878,8 @@ const useStore = (selector) => {
 
 export const useActions = () => {
   const chainId = useChainId();
+  const publicClient = usePublicClient();
+
   const fetchProposal = useStore((s) => s.fetchProposal);
   const fetchProposals = useStore((s) => s.fetchProposals);
   const fetchActiveProposals = useStore((s) => s.fetchActiveProposals);
@@ -813,6 +898,10 @@ export const useActions = () => {
   const fetchVoterScreenData = useStore((s) => s.fetchVoterScreenData);
   const fetchPropdatesForProposal = useStore(
     (s) => s.fetchPropdatesForProposal
+  );
+  const resolveEnsNames = useStore((s) => s.resolveEnsNames);
+  const reverseResolveEnsAddresses = useStore(
+    (s) => s.reverseResolveEnsAddresses
   );
   const addOptimitisicProposalVote = useStore(
     (s) => s.addOptimitisicProposalVote
@@ -871,8 +960,8 @@ export const useActions = () => {
       [fetchVoterActivity, chainId]
     ),
     fetchBrowseScreenData: React.useCallback(
-      (...args) => fetchBrowseScreenData(chainId, ...args),
-      [fetchBrowseScreenData, chainId]
+      (...args) => fetchBrowseScreenData(chainId, publicClient, ...args),
+      [fetchBrowseScreenData, chainId, publicClient]
     ),
     fetchVoterScreenData: React.useCallback(
       (...args) => fetchVoterScreenData(chainId, ...args),
@@ -882,6 +971,8 @@ export const useActions = () => {
       (...args) => fetchPropdatesForProposal(chainId, ...args),
       [fetchPropdatesForProposal, chainId]
     ),
+    resolveEnsNames,
+    reverseResolveEnsAddresses,
     addOptimitisicProposalVote,
     addOptimitisicCandidateFeedbackPost,
   };
@@ -1285,3 +1376,9 @@ export const useAccountFetch = (id, options) => {
 
 export const usePropdates = () =>
   useStore((s) => Object.values(s.propdatesByProposalId).flatMap((ps) => ps));
+
+export const useEnsCache = () =>
+  useStore((s) => ({
+    nameByAddress: s.ensNameByAddress,
+    addressByName: s.ensAddressByName,
+  }));
