@@ -26,11 +26,19 @@ export const useSearchParams = () => {
   const searchParams = useNextSearchParams();
 
   const set = React.useCallback(
-    (input_) => {
+    (input_, options) => {
       const input =
         typeof input_ === "function" ? input_(searchParams) : input_;
       const params = new URLSearchParams(input);
-      router.push(pathname + "?" + params.toString());
+
+      const href = pathname + "?" + params.toString();
+
+      if (options?.replace) {
+        router.replace(href);
+        return;
+      }
+
+      router.push(href);
     },
     [router, pathname, searchParams]
   );

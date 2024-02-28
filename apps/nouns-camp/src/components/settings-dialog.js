@@ -185,7 +185,8 @@ const Content = ({ titleProps, dismiss }) => {
             <em>{betaFeaturesEnabled ? "Enabled" : "Disabled"}</em>
           </div>
           <div>
-            Wallet connector: <em>{connector.name}</em>
+            Wallet connector:{" "}
+            <em>{connector == null ? "None" : connector.name}</em>
           </div>
         </div>
       )}

@@ -6,7 +6,12 @@ import {
   cookieToInitialState,
 } from "wagmi";
 import { mainnet, sepolia, goerli } from "wagmi/chains";
-import { walletConnect, coinbaseWallet, safe } from "wagmi/connectors";
+import {
+  walletConnect,
+  coinbaseWallet,
+  safe,
+  injected,
+} from "wagmi/connectors";
 
 export const config = createConfig({
   ssr: true,
@@ -18,6 +23,7 @@ export const config = createConfig({
     }),
     coinbaseWallet({ appName: "Nouns Camp" }),
     safe(),
+    injected(),
   ],
   transports: {
     [mainnet.id]: http(

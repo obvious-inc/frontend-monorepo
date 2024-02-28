@@ -1,7 +1,13 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { mainnet } from "wagmi/chains";
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useConnectors,
+  useSwitchChain,
+} from "wagmi";
 import { array as arrayUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
@@ -35,29 +41,49 @@ export const Provider = ({ children }) => {
   );
 };
 
-const useReadyConnectors = () => {
-  const { connectors } = useConnect();
+const useConnectorsWithReadyState = () => {
+  const connectors = useConnectors();
   const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
 
   React.useEffect(() => {
-    for (const c of connectors)
-      c.getProvider().then((p) => {
-        setReadyConnectorIds((ids) =>
-          p == null
-            ? ids.filter((id) => id !== c.id)
-            : arrayUtils.unique([...ids, c.id])
-        );
-      });
+    let canceled = false;
+
+    Promise.all(
+      connectors.map((c) =>
+        c.getProvider().then((p) => {
+          if (p == null) return c;
+          return { ...c, ready: true };
+        })
+      )
+    ).then((connectorsWithReadyState) => {
+      const readyConnectorIds = connectorsWithReadyState
+        .filter((c) => c.ready)
+        .map((c) => c.id);
+
+      if (canceled) return;
+
+      setReadyConnectorIds(readyConnectorIds);
+    });
+
+    return () => {
+      canceled = true;
+    };
   }, [connectors]);
 
-  return readyConnectorIds
-    .map((id) => connectors.find((c) => c.id == id))
-    .filter(Boolean);
+  return (
+    connectors
+      .map((c) => {
+        if (!readyConnectorIds.includes(c.id)) return c;
+        return { ...c, ready: true };
+      })
+      // Exclude the injected connector if it’s not available
+      .filter((c) => c.id !== "injected" || c.ready)
+  );
 };
 
 const ConnectDialog = ({ titleProps, dismiss }) => {
   const { connectAsync: connect, isPending, reset } = useConnect();
-  const connectors = useReadyConnectors();
+  const connectors = useConnectorsWithReadyState();
 
   const init = async (connector) => {
     await connect({ connector });
@@ -120,19 +146,30 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
       >
         {arrayUtils
           // Injected wallets first
-          .sortBy({ value: (c) => c.type === "injected" }, connectors)
-          .map((c) => (
-            <div key={c.uid}>
-              <Button
-                fullWidth
-                onClick={() => {
-                  init(c);
-                }}
-              >
-                <em>{c.name}</em>
-              </Button>
-            </div>
-          ))}
+          .sortBy(
+            { value: (c) => c.id !== "injected" },
+            { value: (c) => c.type === "injected" },
+            connectors
+          )
+          .map((c) => {
+            return (
+              <div key={c.uid}>
+                <Button
+                  fullWidth
+                  onClick={() => {
+                    init(c);
+                  }}
+                  disabled={!c.ready}
+                >
+                  {c.id === "injected" ? (
+                    "Injected wallet (EIP-1193)"
+                  ) : (
+                    <em>{c.name}</em>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
       </main>
     </div>
   );
@@ -140,9 +177,14 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
 
 export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
-  const { address: connectedAccountAddress, isConnected } = useAccount();
+  const {
+    address: connectedAccountAddress,
+    isConnected,
+    isConnecting: isConnectingAccount,
+    isReconnecting: isReconnectingAccount,
+  } = useAccount();
   const { connect, isPending: isConnecting, reset } = useConnect();
-  const connectors = useReadyConnectors();
+  const connectors = useConnectorsWithReadyState();
   const { disconnectAsync: disconnect } = useDisconnect();
   const { isLoading: isSwitchingNetwork, switchChainAsync: switchChain } =
     useSwitchChain();
@@ -153,16 +195,11 @@ export const useWallet = () => {
   const isUnsupportedChain =
     connectedChainId != null && chainId !== connectedChainId;
 
-  const hasReadyConnector = connectors.length > 0;
+  const hasReadyConnector = connectors.some((c) => c.ready);
 
   const requestAccess = (connector) => {
     if (connector != null) {
       connect({ connector });
-      return;
-    }
-
-    if (connectors.length === 1) {
-      connect({ connector: connectors[0] });
       return;
     }
 
@@ -172,6 +209,12 @@ export const useWallet = () => {
   const address = (
     impersonationAddress ?? connectedAccountAddress
   )?.toLowerCase();
+
+  const isLoading =
+    isConnecting ||
+    isConnectingAccount ||
+    isReconnectingAccount ||
+    isSwitchingNetwork;
 
   return {
     address: isConnected || impersonationAddress != null ? address : null,
@@ -191,7 +234,7 @@ export const useWallet = () => {
             clearTimeout(timeoutHandle);
           });
       }),
-    isLoading: isConnecting || isSwitchingNetwork,
+    isLoading,
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
     isBetaAccount: betaAccounts.includes(address),

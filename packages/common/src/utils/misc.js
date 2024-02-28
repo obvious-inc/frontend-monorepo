@@ -1,3 +1,5 @@
+import { sortBy } from "./array.js";
+
 let prevDummyId = 0;
 export const generateDummyId = () => {
   const id = prevDummyId++;
@@ -57,4 +59,55 @@ export const reloadPageOnce = () => {
     location.replace([location.pathname, searchParams].join("?"));
     return;
   }
+};
+
+export const searchRecords = (records, rawQuery) => {
+  const queries = (Array.isArray(rawQuery) ? rawQuery : [rawQuery]).map((q) =>
+    q.trim().toLowerCase()
+  );
+
+  const filteredRecords = records
+    .map((record) => {
+      let bestIndex;
+
+      const scoreExact = (token, query) =>
+        token.toLowerCase() === query ? 0 : -1;
+      const scoreLoose = (token, query) =>
+        token.trim().toLowerCase().indexOf(query);
+
+      for (const { value: tokenValue, exact } of record.tokens) {
+        if (tokenValue == null) continue;
+
+        const index = queries.reduce((best, query) => {
+          if (best === 0) return 0; // No need to check further
+          const index = exact
+            ? scoreExact(tokenValue, query)
+            : scoreLoose(tokenValue, query);
+          if (index === -1) return best;
+          if (best === -1) return index;
+          return index < best ? index : best;
+        }, -1);
+
+        if (index === 0) {
+          bestIndex = 0;
+          break;
+        }
+        if (index === -1) continue;
+        if (bestIndex == null || index < bestIndex) {
+          bestIndex = index;
+        }
+      }
+
+      return {
+        ...record,
+        index: bestIndex ?? -1,
+      };
+    })
+    .filter((i) => i.index !== -1);
+
+  return sortBy(
+    { value: (r) => r.index, type: "index" },
+    { value: (r) => r.fallbackSortProperty, order: "desc" },
+    filteredRecords
+  );
 };

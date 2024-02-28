@@ -4,7 +4,6 @@ import React from "react";
 import { I18nProvider } from "react-aria";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
-  Provider as StoreProvider,
   useAccountFetch,
   useDelegateFetch,
   useDelegatesFetch,
@@ -39,19 +38,17 @@ const GlobalClientFetches = () => {
   useDelegateFetch(connectedAccountAddress);
 };
 
-export default function ClientAppProvider({ initialStoreState, children }) {
+export default function ClientAppProvider({ children }) {
   return (
     <I18nProvider locale="en-US">
       <Tooltip.Provider delayDuration={300}>
-        <StoreProvider initialState={initialStoreState}>
-          <ConnectWalletDialogProvider>
-            <GlobalDialogsProvider dialogs={dialogs}>
-              <AppUpdateBanner />
-              {children}
-              <GlobalClientFetches />
-            </GlobalDialogsProvider>
-          </ConnectWalletDialogProvider>
-        </StoreProvider>
+        <ConnectWalletDialogProvider>
+          <GlobalDialogsProvider dialogs={dialogs}>
+            <AppUpdateBanner />
+            {children}
+            <GlobalClientFetches />
+          </GlobalDialogsProvider>
+        </ConnectWalletDialogProvider>
       </Tooltip.Provider>
     </I18nProvider>
   );

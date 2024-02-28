@@ -9,6 +9,7 @@ import metaConfig from "../../../metadata-config.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
 import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
 import { mainnet } from "../../../chains.js";
+import { Hydrater as StoreHydrater } from "../../../store.js";
 import ClientAppProvider from "../../client-app-provider.js";
 import ProposalScreen from "../../../components/proposal-screen.js";
 
@@ -92,10 +93,9 @@ export default async function Page({ params }) {
   if (proposal == null) nextNotFound();
 
   return (
-    <ClientAppProvider
-      initialStoreState={{ proposalsById: { [proposal.id]: proposal } }}
-    >
+    <ClientAppProvider>
       <ProposalScreen proposalId={params.id} />
+      <StoreHydrater state={{ proposalsById: { [proposal.id]: proposal } }} />
     </ClientAppProvider>
   );
 }

@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.0-alpha.28]] - 2024-02-24
+## [1.0.0-alpha.29]] - 2024-02-28
+
+### Features
+
+- Migrate updates from upstream (#173)
+
+### Bug Fixes
+
+- Update links to the token pages over Lil Nouns site
+- Update Agora links for Lil Nouns site
+
+## [1.0.0-alpha.28] - 2024-02-24
 
 ### Features
 

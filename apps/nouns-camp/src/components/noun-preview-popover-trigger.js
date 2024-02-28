@@ -465,7 +465,7 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
               }
             >
               <a
-                href={`https://nouns.wtf/noun/${nounId}`}
+                href={`https://lilnouns.wtf/lilnoun/${nounId}`}
                 rel="noreferrer"
                 target="_blank"
                 css={(t) =>
