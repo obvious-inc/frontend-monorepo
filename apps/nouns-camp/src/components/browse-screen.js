@@ -14,6 +14,7 @@ import {
   array as arrayUtils,
   object as objectUtils,
   date as dateUtils,
+  searchRecords,
 } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
@@ -51,6 +52,7 @@ import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
   usePropdates,
+  useEnsCache,
 } from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
@@ -75,43 +77,19 @@ const getCandidateScore = (candidate) => {
   return signals.delegates.for - signals.delegates.against;
 };
 
-const searchProposals = (items, rawQuery) => {
+const searchEns = (nameByAddress, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
+  const ensEntries = Object.entries(nameByAddress);
 
-  const filteredItems = items
-    .map((i) => {
-      const title = i.title ?? i.latestVersion?.content.title ?? i.name;
-      const authorAccountAddress = i.proposerId;
-      const id = i.id;
+  const matchingRecords = ensEntries.reduce((matches, [address, name]) => {
+    const index = name.toLowerCase().indexOf(query);
+    if (index === -1) return matches;
+    return [...matches, { address, index }];
+  }, []);
 
-      const tokens = [title, authorAccountAddress, id];
-
-      let bestIndex;
-
-      for (const token of tokens) {
-        if (token == null) continue;
-        const index = token.trim().toLowerCase().indexOf(query);
-        if (index === 0) {
-          bestIndex = 0;
-          break;
-        }
-        if (index === -1) continue;
-        if (bestIndex == null || index < bestIndex) {
-          bestIndex = index;
-        }
-      }
-
-      return {
-        ...i,
-        index: bestIndex ?? -1,
-      };
-    })
-    .filter((i) => i.index !== -1);
-
-  return arrayUtils.sortBy(
-    { value: (i) => i.index, type: "index" },
-    filteredItems
-  );
+  return arrayUtils
+    .sortBy({ value: (r) => r.index, type: "index" }, matchingRecords)
+    .map((r) => r.address);
 };
 
 const useFeedItems = ({ filter }) => {
@@ -211,6 +189,8 @@ const BrowseScreen = () => {
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
+  const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
+
   const proposals = useProposals({ state: true });
   const candidates = useProposalCandidates({
     includeCanceled: false,
@@ -291,20 +271,66 @@ const BrowseScreen = () => {
             })
             .map((d) => ({ ...d, type: "draft" }));
 
-    const items = [
-      ...filteredProposalDrafts,
-      ...filteredCandidates,
-      ...filteredProposals,
-      ...filteredProposalUpdateCandidates,
-    ];
+    if (deferredQuery === "")
+      return [
+        ...filteredProposalDrafts,
+        ...filteredCandidates,
+        ...filteredProposals,
+        ...filteredProposalUpdateCandidates,
+      ];
 
-    return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
+    const matchingAddresses = searchEns(primaryEnsNameByAddress, deferredQuery);
+
+    const matchingRecords = searchRecords(
+      [
+        ...filteredProposalDrafts.map((d) => ({
+          type: "draft",
+          data: d,
+          tokens: [
+            { value: d.id, exact: true },
+            { value: d.proposerId, exact: true },
+            { value: d.name },
+          ],
+          fallbackSortProperty: Infinity,
+        })),
+        ...filteredProposals.map((p) => ({
+          type: "proposal",
+          data: p,
+          tokens: [
+            { value: p.id, exact: true },
+            { value: p.proposerId, exact: true },
+            { value: p.title },
+            ...(p.signers ?? []).map((s) => ({ value: s.id, exact: true })),
+          ],
+          fallbackSortProperty: p.createdBlock,
+        })),
+        ...[...filteredCandidates, ...filteredProposalUpdateCandidates].map(
+          (c) => ({
+            type: "candidate",
+            data: c,
+            tokens: [
+              { value: c.id, exact: true },
+              { value: c.proposerId, exact: true },
+              { value: c.latestVersion?.content.title },
+              ...(c.latestVersion?.content.contentSignatures ?? []).map(
+                (s) => ({ value: s.signer.id, exact: true })
+              ),
+            ],
+            fallbackSortProperty: c.createdBlock,
+          })
+        ),
+      ],
+      [deferredQuery, ...matchingAddresses]
+    );
+
+    return matchingRecords.map((r) => r.data);
   }, [
     deferredQuery,
     filteredProposals,
     filteredCandidates,
     filteredProposalUpdateCandidates,
     proposalDrafts,
+    primaryEnsNameByAddress,
   ]);
 
   const groupProposal = (p) => {

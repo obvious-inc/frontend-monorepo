@@ -10,6 +10,7 @@ import ConfigProvider from "../config-provider.js";
 import ThemeProvider from "../theme-provider.js";
 import WagmiProvider from "../wagmi-provider.js";
 import GlobalStylesWrapper from "../global-styles-wrapper.js";
+import { Provider as StoreProvider } from "../store.js";
 
 import "../reset.css";
 import "../index.css";
@@ -99,7 +100,7 @@ export default async function RootLayout({ children }) {
                       headers().get("cookie")
                     )}
                   >
-                    {children}
+                    <StoreProvider>{children}</StoreProvider>
                   </WagmiProvider>
                 </GlobalStylesWrapper>
               </ThemeProvider>
