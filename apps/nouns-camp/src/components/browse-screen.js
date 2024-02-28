@@ -144,7 +144,7 @@ const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
 const groupConfigByKey = {
   drafts: {},
-  "proposals:new": { title: "New" },
+  "proposals:new": { title: "Upcoming" },
   "proposals:ongoing": { title: "Ongoing" },
   "proposals:awaiting-vote": { title: "Not yet voted" },
   "proposals:authored": { title: "Authored" },
