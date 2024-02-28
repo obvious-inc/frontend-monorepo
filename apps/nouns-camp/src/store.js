@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import {
   createStore as createZustandStore,
@@ -865,6 +867,48 @@ export const Provider = ({ children, initialState }) => {
       {children}
     </StoreContext.Provider>
   );
+};
+
+export const Hydrater = ({ state }) => {
+  const store = React.useContext(StoreContext);
+  if (store == null)
+    throw new Error(
+      "`Hydrater` cannot be used without a parent store provider"
+    );
+
+  React.useEffect(() => {
+    store.setState((s) => {
+      const keys = Object.keys(state);
+      return keys.reduce((s, key) => {
+        switch (key) {
+          case "proposalsById":
+            return {
+              ...s,
+              proposalsById: objectUtils.merge(
+                mergeProposals,
+                s.proposalsById,
+                state.proposalsById
+              ),
+            };
+
+          case "proposalCandidatesById":
+            return {
+              proposalCandidatesById: objectUtils.merge(
+                mergeProposalCandidates,
+                s.proposalCandidatesById,
+                state.proposalCandidatesById
+              ),
+            };
+
+          default:
+            console.warn(`Don’t know how to hydrate "${key}"`);
+            return s;
+        }
+      }, s);
+    });
+  }, [store, state]);
+
+  return null;
 };
 
 const useStore = (selector) => {
