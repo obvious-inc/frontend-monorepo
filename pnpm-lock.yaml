@@ -45,8 +45,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0(ethers@6.11.1)
       '@prophouse/sdk-react':
-        specifier: ^1.0.30
-        version: 1.0.30(react@18.2.0)(wagmi@2.5.7)
+        specifier: ^1.0.31
+        version: 1.0.31(react@18.2.0)(wagmi@2.5.7)
       '@radix-ui/react-toolbar':
         specifier: ^1.0.3
         version: 1.0.4(react-dom@18.2.0)(react@18.2.0)
@@ -3498,13 +3498,13 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@prophouse/sdk-react@1.0.30(react@18.2.0)(wagmi@2.5.7):
-    resolution: {integrity: sha512-T5U7bRWQR24f2RUbpQF1pbp4p3lKgm/1GlibiCwzHy4GUR9ZK+PlMSWD42mC8EHV/H9Z1SvHwpm72tCWa6uzdQ==}
+  /@prophouse/sdk-react@1.0.31(react@18.2.0)(wagmi@2.5.7):
+    resolution: {integrity: sha512-kaMC5KejgqDz6OwfQkswc8LOhgT6bZEcehqndFtiy2RVTvL4HbHutCn5gXj0fuyy1+Q6gxqAx4wu6tJAonmOYA==}
     peerDependencies:
       react: '>=16.13.1'
       wagmi: '>=0.9.2'
     dependencies:
-      '@prophouse/sdk': 1.0.33
+      '@prophouse/sdk': 1.0.34
       react: 18.2.0
       wagmi: 2.5.7(@tanstack/react-query@5.22.2)(react-dom@18.2.0)(react-native@0.73.4)(react@18.2.0)(typescript@5.3.3)(viem@2.7.10)
     transitivePeerDependencies:
@@ -3515,8 +3515,8 @@ packages:
       - utf-8-validate
     dev: false
 
-  /@prophouse/sdk@1.0.33:
-    resolution: {integrity: sha512-xSHEW+EhAyrXvlzfkLVJ0rYal8W8LL03YbRFDdXgesDq6OxKAlNmHYhDcWu5Nex1Qy+V1J5ZesTmGp544UmzIQ==}
+  /@prophouse/sdk@1.0.34:
+    resolution: {integrity: sha512-PSVfghZdVK3KKO6X10TIH9n65Sb/A2L8cycVvB1r0VCYDD7rHlbqjS5wwF2LQ3PpljL0MwxearFCRBCJhvyqVQ==}
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/abstract-provider': 5.7.0
@@ -9618,11 +9618,6 @@ packages:
       '@esbuild/win32-ia32': 0.17.19
       '@esbuild/win32-x64': 0.17.19
 
-  /escalade@3.1.1:
-    resolution: {integrity: sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==}
-    engines: {node: '>=6'}
-    dev: false
-
   /escalade@3.1.2:
     resolution: {integrity: sha512-ErCHMCae19vR8vQGe50xIsVomy19rg6gFu3+r3jkEO46suLMWBksvVyoGgQV+jOfl84ZSOSlmv6Gxa89PmTGmA==}
     engines: {node: '>=6'}
@@ -11341,7 +11336,7 @@ packages:
     resolution: {integrity: sha512-qvUtwJ3j6qwsF3jLxkZ72qCgjMysPzDfeV240JHiGZsANBYd+EEuu35v7dfrJ9Up0Ak07D7GGSkGhCHTqg/5wA==}
     dependencies:
       node-fetch: 2.7.0
-      whatwg-fetch: 3.6.2
+      whatwg-fetch: 3.6.20
     transitivePeerDependencies:
       - encoding
     dev: false
@@ -15477,10 +15472,6 @@ packages:
       - uglify-js
     dev: false
 
-  /whatwg-fetch@3.6.2:
-    resolution: {integrity: sha512-bJlen0FcuU/0EMLrdbJ7zOnW6ITZLrZMIarMUVmdKtsGvZna8vxKYaexICWPfZ8qwf9fzNq+UEIZrnSaApt6RA==}
-    dev: false
-
   /whatwg-fetch@3.6.20:
     resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
     dev: false
@@ -15826,7 +15817,7 @@ packages:
     engines: {node: '>=12'}
     dependencies:
       cliui: 8.0.1
-      escalade: 3.1.1
+      escalade: 3.1.2
       get-caller-file: 2.0.5
       require-directory: 2.1.1
       string-width: 4.2.3
