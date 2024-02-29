@@ -59,10 +59,11 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
-import ActivityFeed from "./activity-feed.js";
 import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
+
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
 const ProposalEditDialog = React.lazy(
   () => import("./proposal-edit-dialog.js"),
@@ -536,7 +537,9 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     </div>
 
                     {feedItems.length !== 0 && (
-                      <ActivityFeed context="proposal" items={feedItems} />
+                      <React.Suspense fallback={null}>
+                        <ActivityFeed context="proposal" items={feedItems} />
+                      </React.Suspense>
                     )}
                   </Tabs.Item>
                   <Tabs.Item key="transactions" title="Transactions">

@@ -1,8 +1,6 @@
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
-import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
@@ -14,83 +12,80 @@ import { useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
-
-const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
+import MarkdownRichText from "./markdown-rich-text.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
 const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
-  <React.Suspense fallback={null}>
-    <ul
-      css={(t) =>
-        css({
-          lineHeight: 1.4285714286, // 20px line height given font size if 14px
-          fontSize: t.text.sizes.base,
-          '[role="listitem"] + [role="listitem"]': {
-            marginTop: "var(--vertical-spacing)",
+  <ul
+    css={(t) =>
+      css({
+        lineHeight: 1.4285714286, // 20px line height given font size if 14px
+        fontSize: t.text.sizes.base,
+        '[role="listitem"] + [role="listitem"]': {
+          marginTop: "var(--vertical-spacing)",
+        },
+        '[data-pending="true"]': { opacity: 0.6 },
+        "[data-nowrap]": { whiteSpace: "nowrap" },
+        "[data-header]": {
+          display: "grid",
+          gridTemplateColumns: "2rem minmax(0,1fr)",
+          gridGap: "0.6rem",
+          alignItems: "flex-start",
+          a: {
+            color: t.colors.textDimmed,
+            fontWeight: t.text.weights.emphasis,
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
           },
-          '[data-pending="true"]': { opacity: 0.6 },
-          "[data-nowrap]": { whiteSpace: "nowrap" },
-          "[data-header]": {
-            display: "grid",
-            gridTemplateColumns: "2rem minmax(0,1fr)",
-            gridGap: "0.6rem",
-            alignItems: "flex-start",
-            a: {
-              color: t.colors.textDimmed,
-              fontWeight: t.text.weights.emphasis,
-              textDecoration: "none",
-              "@media(hover: hover)": {
-                ":hover": { textDecoration: "underline" },
+        },
+        "[data-avatar-button]": {
+          display: "block",
+          outline: "none",
+          ":focus-visible [data-avatar]": {
+            boxShadow: t.shadows.focus,
+            background: t.colors.backgroundModifierHover,
+          },
+          "@media (hover: hover)": {
+            ":not(:disabled)": {
+              cursor: "pointer",
+              ":hover [data-avatar]": {
+                boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
               },
             },
           },
-          "[data-avatar-button]": {
-            display: "block",
-            outline: "none",
-            ":focus-visible [data-avatar]": {
-              boxShadow: t.shadows.focus,
-              background: t.colors.backgroundModifierHover,
-            },
-            "@media (hover: hover)": {
-              ":not(:disabled)": {
-                cursor: "pointer",
-                ":hover [data-avatar]": {
-                  boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
-                },
-              },
-            },
+        },
+        "[data-timeline-symbol]": {
+          position: "relative",
+          height: "2rem",
+          width: "0.1rem",
+          background: t.colors.borderLight,
+          zIndex: -1,
+          margin: "auto",
+          ":after": {
+            content: '""',
+            position: "absolute",
+            width: "0.7rem",
+            height: "0.7rem",
+            background: t.colors.textMuted,
+            top: "50%",
+            left: "50%",
+            transform: "translateY(-50%) translateX(-50%)",
+            borderRadius: "50%",
+            border: "0.1rem solid",
+            borderColor: t.colors.backgroundPrimary,
           },
-          "[data-timeline-symbol]": {
-            position: "relative",
-            height: "2rem",
-            width: "0.1rem",
-            background: t.colors.borderLight,
-            zIndex: -1,
-            margin: "auto",
-            ":after": {
-              content: '""',
-              position: "absolute",
-              width: "0.7rem",
-              height: "0.7rem",
-              background: t.colors.textMuted,
-              top: "50%",
-              left: "50%",
-              transform: "translateY(-50%) translateX(-50%)",
-              borderRadius: "50%",
-              border: "0.1rem solid",
-              borderColor: t.colors.backgroundPrimary,
-            },
-          },
-        })
-      }
-      style={{ "--vertical-spacing": spacing }}
-    >
-      {items.map((item) => (
-        <FeedItem key={item.id} {...item} context={context} />
-      ))}
-    </ul>
-  </React.Suspense>
+        },
+      })
+    }
+    style={{ "--vertical-spacing": spacing }}
+  >
+    {items.map((item) => (
+      <FeedItem key={item.id} {...item} context={context} />
+    ))}
+  </ul>
 );
 
 const FeedItem = React.memo(({ context, ...item }) => {
@@ -656,36 +651,6 @@ const Signal = ({ positive, negative, ...props }) => (
     }}
     {...props}
   />
-);
-
-export const VotingPowerNoggle = ({ count }) => (
-  <Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <span
-        css={(t) =>
-          css({
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            fontSize: t.text.sizes.small,
-            color: t.colors.textDimmed,
-          })
-        }
-      >
-        {count}
-        <NogglesIcon
-          style={{
-            display: "inline-flex",
-            width: "1.7rem",
-            height: "auto",
-          }}
-        />
-      </span>
-    </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={5}>
-      {count} {count === 1 ? "noun" : "nouns"}
-    </Tooltip.Content>
-  </Tooltip.Root>
 );
 
 export default ActivityFeed;

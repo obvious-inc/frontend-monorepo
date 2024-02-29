@@ -51,7 +51,7 @@ import {
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import ActivityFeed, { VotingPowerNoggle } from "./activity-feed.js";
+import NounCountNoggles from "./noun-count-noggles.js";
 import {
   ProposalHeader,
   ProposalBody,
@@ -68,6 +68,8 @@ import Tag from "./tag.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 import DiffBlock from "./diff-block.js";
+
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
 const CandidateEditDialog = React.lazy(
   () => import("./candidate-edit-dialog.js"),
@@ -367,7 +369,9 @@ const ProposalCandidateScreenContent = ({
                   </div>
 
                   {feedItems.length !== 0 && (
-                    <ActivityFeed context="candidate" items={feedItems} />
+                    <React.Suspense fallback={null}>
+                      <ActivityFeed context="candidate" items={feedItems} />
+                    </React.Suspense>
                   )}
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">
@@ -829,7 +833,7 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
                   </span>
                 </div>
 
-                <VotingPowerNoggle count={s.signer.nounsRepresented.length} />
+                <NounCountNoggles count={s.signer.nounsRepresented.length} />
               </div>
 
               <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
