@@ -64,8 +64,8 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 
-const ProposalEditDialog = React.lazy(() =>
-  import("./proposal-edit-dialog.js")
+const ProposalEditDialog = React.lazy(
+  () => import("./proposal-edit-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -89,7 +89,7 @@ const useFeedItems = (proposalId) => {
 
   return React.useMemo(
     () => buildProposalFeed(proposal, { latestBlockNumber, candidate }),
-    [proposal, latestBlockNumber, candidate]
+    [proposal, latestBlockNumber, candidate],
   );
 };
 
@@ -102,7 +102,7 @@ const getDelegateVotes = (proposal) => {
         const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[v.support];
         return { ...acc, [voteGroup]: acc[voteGroup] + 1 };
       },
-      { for: 0, against: 0, abstain: 0 }
+      { for: 0, against: 0, abstain: 0 },
     );
 };
 
@@ -126,7 +126,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const [pendingFeedback, setPendingFeedback] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(
-    isFinalOrSucceededState ? 2 : null
+    isFinalOrSucceededState ? 2 : null,
   );
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
@@ -135,10 +135,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     castVoteCallSupportDetailed != null
       ? { support: castVoteCallSupportDetailed }
       : connectedWalletAccountAddress == null
-      ? null
-      : proposal?.votes?.find(
-          (v) => v.voterId.toLowerCase() === connectedWalletAccountAddress
-        );
+        ? null
+        : proposal?.votes?.find(
+            (v) => v.voterId.toLowerCase() === connectedWalletAccountAddress,
+          );
 
   const hasCastVote =
     castVoteCallSupportDetailed != null || connectedWalletVote != null;
@@ -245,7 +245,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         const startDate = calculateBlockTimestamp(proposal.startBlock);
         const { minutes, hours, days } = dateUtils.differenceUnits(
           startDate,
-          new Date()
+          new Date(),
         );
 
         if (minutes < 1) return <>Starts in less than 1 minute</>;
@@ -319,7 +319,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     value={
                       new Date(
                         proposal.executionEtaTimestamp.getTime() +
-                          EXECUTION_GRACE_PERIOD_IN_MILLIS
+                          EXECUTION_GRACE_PERIOD_IN_MILLIS,
                       )
                     }
                   />
@@ -369,11 +369,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       case "active":
       case "objection-period": {
         const endDate = calculateBlockTimestamp(
-          proposal.objectionPeriodEndBlock ?? proposal.endBlock
+          proposal.objectionPeriodEndBlock ?? proposal.endBlock,
         );
         const { minutes, hours, days } = dateUtils.differenceUnits(
           endDate,
-          new Date()
+          new Date(),
         );
 
         if (minutes < 1) return <>Voting ends in less than 1 minute</>;
@@ -449,7 +449,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       }
                       style={{
                         color: `var(--color-${supportToString(
-                          connectedWalletVote.support
+                          connectedWalletVote.support,
                         )})`,
                       }}
                     >
@@ -562,7 +562,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
             {/* Display state callout for "important" states on mobile */}
             {!isDesktopLayout &&
               ["active", "objection-period", "succeeded", "queued"].includes(
-                proposal.state
+                proposal.state,
               ) && (
                 <Callout
                   icon={renderProposalStateIcon()}
@@ -825,7 +825,7 @@ export const ProposalActionForm = ({
                   label: { vote: "Cast vote", feedback: "Post comment" }[m],
                 }))}
                 size="tiny"
-                variant="default-opaque"
+                variant="opaque"
                 width="max-content"
                 align="right"
                 buttonProps={{
@@ -1260,7 +1260,7 @@ const ProposalScreen = ({ proposalId }) => {
     connectedWalletAccountAddress != null &&
     proposal?.signers != null &&
     proposal.signers.some(
-      (s) => s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase()
+      (s) => s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase(),
     );
 
   const cancelProposal = useCancelProposal(proposalId, {
@@ -1269,7 +1269,7 @@ const ProposalScreen = ({ proposalId }) => {
 
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
-    { replace: true, prefetch: "true" }
+    { replace: true, prefetch: "true" },
   );
 
   useProposalFetch(proposalId, {
@@ -1311,7 +1311,7 @@ const ProposalScreen = ({ proposalId }) => {
             (e) => {
               setPendingCancel(false);
               return Promise.reject(e);
-            }
+            },
           );
         },
         label: "Cancel",

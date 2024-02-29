@@ -61,7 +61,7 @@ const fetchAccountTransactions = async (accountAddress, query = {}) => {
     ...query,
   });
   const res = await fetch(
-    `${import.meta.env.EDGE_API_BASE_URL}/account-transactions?${searchParams}`
+    `${import.meta.env.EDGE_API_BASE_URL}/account-transactions?${searchParams}`,
   );
   const body = await res.json();
   if (!res.ok) return Promise.reject(body);
@@ -85,7 +85,7 @@ const useAccountChannels = (accountAddress) => {
 
   const nonDmChannels = React.useMemo(
     () => channels.filter((c) => c.kind !== "dm"),
-    [channels]
+    [channels],
   );
   return nonDmChannels;
 };
@@ -117,7 +117,7 @@ const useAccountTransactions = (accountAddress) => {
       fetchAccountTransactions(accountAddress).then((ts) => {
         setTransactions(ts);
       }),
-    [accountAddress]
+    [accountAddress],
   );
 
   return transactions;
@@ -128,7 +128,7 @@ const AccountProfileScreen = () => {
   const publicEthereumClient = usePublicEthereumClient({ chainId: mainnet.id });
   const isAddress = React.useMemo(
     () => isEthereumAccountAddress(ensNameOrEthereumAccountAddress),
-    [ensNameOrEthereumAccountAddress]
+    [ensNameOrEthereumAccountAddress],
   );
 
   const [notFound, setNotFound] = React.useState(false);
@@ -159,7 +159,7 @@ const AccountProfileScreen = () => {
           if (error.code !== "INVALID_ARGUMENT") {
             console.warn("unrecognized error", error.code);
           }
-        }
+        },
       );
   }, [isAddress, publicEthereumClient, ensNameOrEthereumAccountAddress]);
 
@@ -516,7 +516,7 @@ const AccountProfile = ({ accountAddress }) => {
                         if (connectedWalletAccountAddress == null)
                           await connectWallet();
                         await initAccountVerification(
-                          connectedWalletAccountAddress
+                          connectedWalletAccountAddress,
                         );
                         dismissAccountAuthenticationDialog();
                       }
@@ -527,8 +527,8 @@ const AccountProfile = ({ accountAddress }) => {
                             if (selectors.selectHasFetchedUserChannels()) {
                               resolve(
                                 selectors.selectUserFromWalletAddress(
-                                  accountAddress
-                                )
+                                  accountAddress,
+                                ),
                               );
                               return;
                             }
@@ -560,7 +560,7 @@ const AccountProfile = ({ accountAddress }) => {
                 size="medium"
                 onClick={() => {
                   const dmChannel = selectors.selectDmChannelFromUserId(
-                    user?.id
+                    user?.id,
                   );
 
                   if (dmChannel != null) {

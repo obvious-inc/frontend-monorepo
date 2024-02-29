@@ -82,7 +82,7 @@ const addressByIdentifierByChainId = {
 
 const identifierByAddressByChainId = objectUtils.mapValues(
   (addressByIdentifier) => objectUtils.mirror(addressByIdentifier),
-  addressByIdentifierByChainId
+  addressByIdentifierByChainId,
 );
 
 const metaByIdentifier = {

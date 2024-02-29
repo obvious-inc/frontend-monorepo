@@ -107,7 +107,7 @@ const WarpcastAuthScreen = () => {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       )
         .then((response) => {
           return response.json();
@@ -128,7 +128,7 @@ const WarpcastAuthScreen = () => {
       delay: warpcastToken !== null ? 3000 : 0,
       requireFocus: true,
       requireOnline: true,
-    }
+    },
   );
 
   const handleWarpcastConnection = useLatestCallback(async () => {
@@ -269,7 +269,7 @@ const WarpcastAuthScreen = () => {
               {signer && onChainSigner ? (
                 <a
                   href={`https://optimistic.etherscan.io/tx/${toHex(
-                    onChainSigner?.transactionHash
+                    onChainSigner?.transactionHash,
                   )}`}
                   rel="noreferrer"
                   target="_blank"

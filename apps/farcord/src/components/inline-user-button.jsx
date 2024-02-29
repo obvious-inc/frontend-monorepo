@@ -25,7 +25,7 @@ const InlineUserButton = React.forwardRef(
         {children}
       </InlineButton>
     );
-  }
+  },
 );
 
 export default InlineUserButton;

@@ -28,7 +28,7 @@ export const Provider = ({ children }) => {
 
   const { fid, account, address } = useFarcasterAccount();
   const cacheKey = createCacheKey(
-    account?.address ?? fid?.toString() ?? address
+    account?.address ?? fid?.toString() ?? address,
   );
   const [signer, setCachedSigner] = useCachedState(cacheKey);
   const onChainSigner = useSignerByPublicKey(fid, signer?.publicKey);
@@ -134,7 +134,7 @@ export const Provider = ({ children }) => {
         setStatus("idle");
       }
     },
-    [fid, signer]
+    [fid, signer],
   );
 
   const broadcastSigner = useLatestCallback(
@@ -186,7 +186,7 @@ export const Provider = ({ children }) => {
         const error = new Error(
           e.code === 32003
             ? "transaction-rejected"
-            : "transaction-rejected-or-failed"
+            : "transaction-rejected-or-failed",
         );
         setError(error.message);
         return Promise.reject(error);
@@ -194,7 +194,7 @@ export const Provider = ({ children }) => {
         setStatus("idle");
       }
     },
-    [fid, signer]
+    [fid, signer],
   );
 
   const removeSigner = useLatestCallback(async () => {
@@ -253,7 +253,7 @@ export const Provider = ({ children }) => {
       setSigner,
       resetSigner,
       createWarpcastSignKeyRequest,
-    ]
+    ],
   );
 
   return (

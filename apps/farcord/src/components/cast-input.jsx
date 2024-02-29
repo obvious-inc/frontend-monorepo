@@ -35,8 +35,8 @@ const CastInput = ({
   const placeholderText = !broadcasted
     ? "Sign in to cast"
     : threadCast
-    ? replyPlaceholderText
-    : channelPlaceholderText;
+      ? replyPlaceholderText
+      : channelPlaceholderText;
 
   const {
     actions: { fetchChannelCasts, fetchFeedCasts, fetchThreadCasts },
@@ -48,8 +48,8 @@ const CastInput = ({
     const parentUrl = threadCast
       ? null
       : isFeed || isRecent
-      ? null
-      : channel.parentUrl;
+        ? null
+        : channel.parentUrl;
     const parentCastId = threadCast
       ? {
           hash: hexToBytes(threadCast?.hash),

@@ -11,7 +11,7 @@ export const Provider = ({ initialIsOpen, children }) => {
   const sidebarFocusTargetRef = React.useRef();
 
   const [isCollapsed, setCollapsed] = React.useState(
-    initialIsOpen == null ? isSmallScreen : !initialIsOpen
+    initialIsOpen == null ? isSmallScreen : !initialIsOpen,
   );
 
   const toggle = React.useCallback((collapse) => {
@@ -39,7 +39,7 @@ export const Provider = ({ initialIsOpen, children }) => {
       isCollapsed,
       toggle,
     }),
-    [isSmallScreen, isCollapsed, toggle, sidebarFocusTargetRef]
+    [isSmallScreen, isCollapsed, toggle, sidebarFocusTargetRef],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;

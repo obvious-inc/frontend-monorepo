@@ -97,7 +97,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     const accountUser = useUserWithWalletAddress(accountAddress);
 
@@ -131,7 +131,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const AccountPreview = React.forwardRef(
@@ -152,7 +152,7 @@ const AccountPreview = React.forwardRef(
     if (user == null) return null;
 
     const truncatedAddress = ethereumUtils.truncateAddress(
-      checksumEncodeAddress(user.walletAddress)
+      checksumEncodeAddress(user.walletAddress),
     );
 
     return (
@@ -248,10 +248,10 @@ const AccountPreview = React.forwardRef(
                     {displayName === ensName
                       ? truncatedAddress
                       : displayName === truncatedAddress
-                      ? ensName
-                      : ensName == null
-                      ? truncatedAddress
-                      : `${ensName} (${truncatedAddress})`}
+                        ? ensName
+                        : ensName == null
+                          ? truncatedAddress
+                          : `${ensName} (${truncatedAddress})`}
                   </a>
                 </Tooltip.Trigger>
                 <Tooltip.Content portal={false} side="top" sideOffset={4}>
@@ -333,12 +333,12 @@ const AccountPreview = React.forwardRef(
         )}
       </div>
     );
-  }
+  },
 );
 
 const AccountPreviewPopoverTriggerWithActions = (
   { userId, accountAddress, ...props },
-  ref
+  ref,
 ) => {
   const actions = useActions({ userId, accountAddress });
   return (

@@ -6,8 +6,8 @@ const InlineButton = React.forwardRef(
     const additionalProps = !disabled
       ? {}
       : component === "button"
-      ? { disabled }
-      : { "data-disabled": true };
+        ? { disabled }
+        : { "data-disabled": true };
 
     const mergedProps = {
       component,
@@ -18,7 +18,7 @@ const InlineButton = React.forwardRef(
     if (variant === "link") return <Link ref={ref} {...mergedProps} />;
 
     return <Button ref={ref} {...mergedProps} />;
-  }
+  },
 );
 
 const Link = React.forwardRef(
@@ -50,7 +50,7 @@ const Link = React.forwardRef(
       }
       {...props}
     />
-  )
+  ),
 );
 
 const Button = React.forwardRef(
@@ -93,7 +93,7 @@ const Button = React.forwardRef(
       }
       {...props}
     />
-  )
+  ),
 );
 
 export default InlineButton;

@@ -47,7 +47,7 @@ const middleware = (editor) => {
     }
 
     const emojiEntries = getCharacters([node, path]).filter(([char]) =>
-      isEmoji(char)
+      isEmoji(char),
     );
 
     for (const [emoji, emojiRange] of emojiEntries) {

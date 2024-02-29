@@ -183,7 +183,7 @@ export const useCanCreateProposal = () => {
 
 export const useCastProposalVote = (
   proposalId,
-  { support, reason, enabled = true }
+  { support, reason, enabled = true },
 ) => {
   const chainId = useChainId();
   const { data: blockNumber } = useBlockNumber();
@@ -232,7 +232,7 @@ export const useCastProposalVote = (
     writeContract(
       hasReason
         ? castVoteWithReasonSimulationResult.request
-        : castVoteSimulationResult.request
+        : castVoteSimulationResult.request,
     ).then((hash) => {
       const voterId = accountAddress.toLowerCase();
 
@@ -267,7 +267,7 @@ export const useCreateProposal = () => {
   return async ({ description, transactions }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
-      { chainId }
+      { chainId },
     );
 
     return writeContract({
@@ -312,7 +312,7 @@ export const useCreateProposalWithSignatures = () => {
   return async ({ description, transactions, proposerSignatures }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
-      { chainId }
+      { chainId },
     );
 
     return writeContract({
@@ -369,7 +369,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
   }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
-      { chainId }
+      { chainId },
     );
 
     return writeContract({
@@ -423,7 +423,7 @@ export const useUpdateProposal = (proposalId) => {
 
       const { targets, values, signatures, calldatas } = unparseTransactions(
         transactions,
-        { chainId }
+        { chainId },
       );
 
       if (description == null)
@@ -584,6 +584,6 @@ export const useCancelSignature = (signature) => {
 
   return () =>
     writeContract(simulationResult.request).then((hash) =>
-      publicClient.waitForTransactionReceipt({ hash })
+      publicClient.waitForTransactionReceipt({ hash }),
     );
 };

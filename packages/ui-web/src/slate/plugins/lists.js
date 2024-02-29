@@ -66,7 +66,7 @@ const outdentListItem = (editor, [listItemElement, listItemPath]) => {
         match: (_, path) =>
           path.length === pathRef.current.length &&
           path.slice(-1)[0] > pathRef.current.slice(-1)[0],
-      }
+      },
     );
     editor.moveNodes({
       at: itemsBelowRange.anchor,
@@ -100,7 +100,7 @@ const middleware = (editor) => {
 
     const selectionIsAtListItemStart = Point.equals(
       selection.anchor,
-      editor.start(listItemElementPath)
+      editor.start(listItemElementPath),
     );
 
     if (selectionIsAtListItemStart) {
@@ -126,7 +126,7 @@ const middleware = (editor) => {
           editor.removeNodes({ at: childPath });
           editor.insertNodes(
             { type: "paragraph", children: [{ text }] },
-            { at: childPath }
+            { at: childPath },
           );
           return;
         }
@@ -161,11 +161,11 @@ const middleware = (editor) => {
             : BULLETED_LIST_ROOT_ELEMENT_TYPE;
         editor.wrapNodes(
           { type: listType, children: [] },
-          { match: isListItem }
+          { match: isListItem },
         );
       },
     },
-    editor
+    editor,
   );
 };
 
@@ -261,7 +261,7 @@ export default ({ mode } = {}) => ({
         ];
         const maybePreviousNestedListNode = Node.get(
           editor,
-          maybePreviousNestedListPath
+          maybePreviousNestedListPath,
         );
 
         if (isListRoot(maybePreviousNestedListNode)) {
@@ -276,7 +276,7 @@ export default ({ mode } = {}) => ({
         editor.withoutNormalizing(() => {
           editor.wrapNodes(
             { type: listType, children: [] },
-            { at: listItemPath }
+            { at: listItemPath },
           );
           editor.moveNodes({
             at: listItemPath,

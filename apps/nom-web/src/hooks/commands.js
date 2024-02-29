@@ -36,7 +36,7 @@ const useCommands = ({ context, channelId } = {}) => {
       channelId,
       publicEthereumClient,
       selectors,
-    ]
+    ],
   );
 
   return React.useMemo(() => {
@@ -58,7 +58,7 @@ const useCommands = ({ context, channelId } = {}) => {
     return filterObject(
       // eslint-disable-next-line no-unused-vars
       ([_, command]) => command.exclude == null || !command.exclude?.(),
-      commandsWithDependeciesInjected
+      commandsWithDependeciesInjected,
     );
   }, [user, commandDependencies]);
 };

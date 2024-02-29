@@ -38,8 +38,8 @@ const App = () => {
                         m.default.filter(
                           (e) =>
                             e.unicode_version === "" ||
-                            parseFloat(e.unicode_version) <= 12
-                        )
+                            parseFloat(e.unicode_version) <= 12,
+                        ),
                       )
                     }
                   >

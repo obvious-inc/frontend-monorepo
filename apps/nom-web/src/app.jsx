@@ -24,7 +24,7 @@ const useIFrameMessenger = () => {
       ? null
       : (action) => {
           window.parent.postMessage({ action }, "*");
-        }
+        },
   );
 };
 
@@ -57,9 +57,9 @@ const App = () => {
           channels
             .filter((c) => c.kind === "dm")
             .flatMap((c) =>
-              c.memberUserIds.filter((id) => id !== me.id).slice(0, 3)
-            )
-        )
+              c.memberUserIds.filter((id) => id !== me.id).slice(0, 3),
+            ),
+        ),
       );
     });
   }, [
@@ -88,7 +88,7 @@ const App = () => {
       fetchUserChannelsReadStates();
       fetchStarredItems();
     },
-    { requireFocus: true }
+    { requireFocus: true },
   );
 
   return (

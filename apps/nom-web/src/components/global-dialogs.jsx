@@ -6,16 +6,16 @@ import Dialog from "@shades/ui-web/dialog";
 import { useDialog } from "../hooks/dialogs";
 import useWalletLogin from "../hooks/wallet-login";
 
-const LazyEditProfileDialog = React.lazy(() =>
-  import("./edit-user-profile-dialog")
+const LazyEditProfileDialog = React.lazy(
+  () => import("./edit-user-profile-dialog"),
 );
 const LazySettingsDialog = React.lazy(() => import("./settings-dialog"));
 const LazyProfileLinkDialog = React.lazy(() => import("./profile-link-dialog"));
-const LazyAccountAuthenticationDialog = React.lazy(() =>
-  import("./account-authentication-dialog")
+const LazyAccountAuthenticationDialog = React.lazy(
+  () => import("./account-authentication-dialog"),
 );
-const LazyCreateChannelDialog = React.lazy(() =>
-  import("./create-channel-dialog")
+const LazyCreateChannelDialog = React.lazy(
+  () => import("./create-channel-dialog"),
 );
 
 const GlobalDialogs = () => {
@@ -129,7 +129,7 @@ const GlobalDialogs = () => {
               </ErrorBoundary>
             )}
           </Dialog>
-        )
+        ),
       )}
     </>
   );

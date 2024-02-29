@@ -45,7 +45,7 @@ const defaultTheme = themeMap["light"];
 const useTheme = () => {
   const [themePreference] = useSetting("theme");
   const systemPrefersDarkColorScheme = useMatchMedia(
-    "(prefers-color-scheme: dark)"
+    "(prefers-color-scheme: dark)",
   );
 
   const theme = React.useMemo(() => {

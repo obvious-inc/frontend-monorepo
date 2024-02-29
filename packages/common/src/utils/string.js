@@ -10,7 +10,7 @@ export const match = (string, query) => {
   if (query.trim() === "") return false;
   const normalizedString = string.toLowerCase();
   return getWords(query.toLowerCase()).some((w) =>
-    normalizedString.includes(w)
+    normalizedString.includes(w),
   );
 };
 
@@ -23,7 +23,7 @@ export const getWordMatchCount = (string, query, { exact = false } = {}) => {
   if (exact) {
     const stringWords = getWords(normalizedString);
     const matchingWords = queryWords.filter((qw) =>
-      stringWords.some((sw) => sw === qw)
+      stringWords.some((sw) => sw === qw),
     );
     return matchingWords.length;
   }

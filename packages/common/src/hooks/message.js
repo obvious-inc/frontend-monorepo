@@ -9,14 +9,14 @@ export const useSortedMessageReplies = (messageId) =>
   useStore(
     React.useCallback(
       (state) => selectSortedMessageReplies(state, messageId),
-      [messageId]
-    )
+      [messageId],
+    ),
   );
 
 export const useStringifiedMessageContent = (messageId) =>
   useStore(
     React.useCallback(
       (state) => selectStringifiedMessageContent(state, messageId),
-      [messageId]
-    )
+      [messageId],
+    ),
   );

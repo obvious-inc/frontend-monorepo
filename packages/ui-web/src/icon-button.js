@@ -10,7 +10,7 @@ const IconButton = React.forwardRef(
       dimmed = false,
       ...props
     },
-    ref
+    ref,
   ) => (
     <Component
       ref={ref}
@@ -43,7 +43,7 @@ const IconButton = React.forwardRef(
       }
       {...props}
     />
-  )
+  ),
 );
 
 export default IconButton;

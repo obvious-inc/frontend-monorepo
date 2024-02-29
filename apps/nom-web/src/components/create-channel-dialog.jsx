@@ -49,8 +49,8 @@ const CreateChannelDialogContent = ({
     const permissionType = isPrivate
       ? "private"
       : hasOpenWriteAccess
-      ? "open"
-      : "closed";
+        ? "open"
+        : "closed";
 
     createChannel({ name, body, permissionType })
       .catch((e) => {
@@ -284,7 +284,7 @@ const CreateChannelDialogContent = ({
                     openAccountAuthenticationDialog();
                     try {
                       await initAccountVerification(
-                        connectedWalletAccountAddress
+                        connectedWalletAccountAddress,
                       );
                     } finally {
                       dismissAccountAuthenticationDialog();

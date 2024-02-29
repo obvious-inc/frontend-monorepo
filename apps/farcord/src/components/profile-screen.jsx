@@ -196,13 +196,13 @@ const ProfileView = () => {
   const [usernameUpdateError, setUsernameUpdateError] = React.useState(null);
   const [usernameUpdateValue, setUsernameUpdateValue] = React.useState(null);
   const [isValidUsername, setIsValidUsername] = React.useState(
-    Boolean(usernameUpdateValue)
+    Boolean(usernameUpdateValue),
   );
   const [usernameTimelock, setUsernameTimelock] = React.useState(null);
 
   const [displayName, setDisplayName] = React.useState(null);
   const [displayNameUpdateValue, setDisplayNameUpdateValue] = React.useState(
-    userData?.displayName
+    userData?.displayName,
   );
   const [displayNameUpdatePending, setDisplayNameUpdatePending] =
     React.useState(false);
@@ -219,7 +219,7 @@ const ProfileView = () => {
     if (usernameUpdateValue == username) return;
 
     const response = await fetch(
-      FARCASTER_FNAME_API_ENDPOINT + `/transfers?name=${usernameUpdateValue}`
+      FARCASTER_FNAME_API_ENDPOINT + `/transfers?name=${usernameUpdateValue}`,
     );
     const data = await response.json();
     const transfers = data?.transfers || [];
@@ -268,7 +268,7 @@ const ProfileView = () => {
             timestamp: proofTimestamp,
             signature: signature,
           }),
-        }
+        },
       );
 
       const data = await response.json();
@@ -365,7 +365,7 @@ const ProfileView = () => {
   React.useEffect(() => {
     const fetchTransfers = async (fid) => {
       const response = await fetch(
-        FARCASTER_FNAME_API_ENDPOINT + `/transfers?fid=${fid}`
+        FARCASTER_FNAME_API_ENDPOINT + `/transfers?fid=${fid}`,
       );
       const data = await response.json();
       const transfer = data?.transfers?.[0];
@@ -466,7 +466,7 @@ const ProfileView = () => {
                 (e) => {
                   // wallet_switchEthereumChain already pending
                   if (e.code === 4902) return;
-                }
+                },
               );
             }}
           >
@@ -730,7 +730,7 @@ const ProfileView = () => {
                 setHasUsernameUpdatePending(true);
                 setUsernameUpdateError(null);
                 await registerUsernameChange().finally(() =>
-                  setHasUsernameUpdatePending(false)
+                  setHasUsernameUpdatePending(false),
                 );
               }}
               css={css({

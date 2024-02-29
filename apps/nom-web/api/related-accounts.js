@@ -26,11 +26,11 @@ export default async (req) => {
         headers: {
           "content-type": "application/json",
         },
-      }
+      },
     );
 
   const userResponse = await warpcastFetch(
-    `/v2/user-by-verification?address=${walletAddress}`
+    `/v2/user-by-verification?address=${walletAddress}`,
   );
 
   if (userResponse.status === 404)
@@ -66,8 +66,8 @@ export default async (req) => {
   const verifications = (
     await Promise.all(
       users.map((u) =>
-        warpcastFetch(`/v2/verifications?fid=${u.fid}`).then((r) => r.json())
-      )
+        warpcastFetch(`/v2/verifications?fid=${u.fid}`).then((r) => r.json()),
+      ),
     )
   ).flatMap((body) => body.result.verifications);
 
@@ -79,6 +79,6 @@ export default async (req) => {
         "Content-Type": "application/json",
         "Cache-Control": `public, max-age=${ONE_HOUR_IN_SECONDS}, stale-while-revalidate=${ONE_WEEK_IN_SECONDS}`,
       },
-    }
+    },
   );
 };

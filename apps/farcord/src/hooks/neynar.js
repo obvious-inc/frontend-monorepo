@@ -43,7 +43,7 @@ export async function fetchNeynarFeedCasts({
       return await Promise.all(
         casts.map(async (cast) => {
           return parseCast({ cast });
-        })
+        }),
       );
     })
     .then((parsedCasts) => {
@@ -73,7 +73,7 @@ export async function fetchNeynarRecentCasts({ cursor }) {
       return await Promise.all(
         casts.map(async (cast) => {
           return parseCast({ cast });
-        })
+        }),
       );
     })
     .then((parsedCasts) => {
@@ -105,7 +105,7 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
       return await Promise.all(
         casts.map(async (cast) => {
           return parseCast({ cast });
-        })
+        }),
       );
     })
     .then((parsedCasts) => {
@@ -294,10 +294,10 @@ const parseCast = ({ cast, hash }) => {
         }
       : {
           likes: arrayUtils.unique(
-            cast.reactions?.likes.map((r) => r.fid) || []
+            cast.reactions?.likes.map((r) => r.fid) || [],
           ),
           recasts: arrayUtils.unique(
-            cast.reactions?.recasts.map((r) => r.fid) || []
+            cast.reactions?.recasts.map((r) => r.fid) || [],
           ),
         };
 
@@ -347,7 +347,7 @@ const parseNotification = ({ notification }) => {
 
   if (notification.follows) {
     const timestamp = new Date(
-      parsedNotification.mostRecentTimestamp
+      parsedNotification.mostRecentTimestamp,
     ).getTime();
     parsedNotification.id = `${parsedNotification.type}-${timestamp}`;
     parsedNotification.follows = notification.follows.map((f) => {

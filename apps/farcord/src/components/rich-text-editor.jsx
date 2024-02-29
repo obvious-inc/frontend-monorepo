@@ -74,7 +74,7 @@ export const Provider = ({ children }) => {
       setSelection,
       activeMarks,
       setActiveMarks,
-    ]
+    ],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
@@ -118,7 +118,7 @@ const useLinkDialog = ({ editorRef }) => {
       { ...state, isOpen: state != null },
       { open, close },
     ],
-    [state, open, close]
+    [state, open, close],
   );
 };
 
@@ -136,7 +136,7 @@ const useImageDialog = ({ editorRef }) => {
 
       setState({ url: node?.url, at });
     },
-    [editorRef]
+    [editorRef],
   );
 
   const close = React.useCallback(() => {
@@ -148,7 +148,7 @@ const useImageDialog = ({ editorRef }) => {
       { ...state, isOpen: state != null },
       { open, close },
     ],
-    [state, open, close]
+    [state, open, close],
   );
 };
 
@@ -275,7 +275,7 @@ const RichTextEditor = React.forwardRef(
       imagesMaxHeight,
       ...props
     },
-    ref
+    ref,
   ) => {
     const {
       editorRef: internalEditorRef,
@@ -295,7 +295,7 @@ const RichTextEditor = React.forwardRef(
         withTextCommands,
         withEditorCommands,
         withReact,
-        withHistory
+        withHistory,
       )(createSlateEditor());
 
       const { middleware, elements, handlers } = mergePlugins(
@@ -305,7 +305,7 @@ const RichTextEditor = React.forwardRef(
           createUserMentionsPlugin,
           createInlineLinksPlugin,
           createEmojiPlugin,
-        ].map((fn) => fn({ mode: editorMode }))
+        ].map((fn) => fn({ mode: editorMode })),
       );
 
       return {
@@ -325,16 +325,16 @@ const RichTextEditor = React.forwardRef(
               },
             }
           : props_.element.type === "image"
-          ? {
-              ...props_,
-              maxWidth: imagesMaxWidth,
-              maxHeight: imagesMaxHeight,
-              openEditDialog: () => {
-                const nodePath = ReactEditor.findPath(editor, props_.element);
-                imageDialogActions.open(nodePath);
-              },
-            }
-          : props_;
+            ? {
+                ...props_,
+                maxWidth: imagesMaxWidth,
+                maxHeight: imagesMaxHeight,
+                openEditDialog: () => {
+                  const nodePath = ReactEditor.findPath(editor, props_.element);
+                  imageDialogActions.open(nodePath);
+                },
+              }
+            : props_;
 
       const CustomComponent = customElementsByNodeType[props.element.type];
 
@@ -408,7 +408,7 @@ const RichTextEditor = React.forwardRef(
                   const [command, ...args] = parts;
                   trigger.handler(
                     command,
-                    args.map((a) => a.trim()).filter(Boolean)
+                    args.map((a) => a.trim()).filter(Boolean),
                   );
 
                   break;
@@ -479,7 +479,7 @@ const RichTextEditor = React.forwardRef(
                       await editor.focus(linkDialogState.selection);
                       editor.insertLink(
                         { label, url },
-                        { at: linkDialogState.selection }
+                        { at: linkDialogState.selection },
                       );
                     }}
                   />
@@ -519,7 +519,7 @@ const RichTextEditor = React.forwardRef(
                       ]);
                       editor.insertImage(
                         { url, width, height },
-                        { at: imageDialogState.at }
+                        { at: imageDialogState.at },
                       );
                     }}
                   />
@@ -530,7 +530,7 @@ const RichTextEditor = React.forwardRef(
         )}
       </>
     );
-  }
+  },
 );
 
 const Element = (props) => {

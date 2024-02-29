@@ -29,7 +29,7 @@ const hubFetch = async (url, options) => {
 
   const response = await fetch(
     `${EDGE_API_BASE_URL}/hub?` + urlParams,
-    options
+    options,
   );
 
   const data = await response.json();
@@ -37,7 +37,7 @@ const hubFetch = async (url, options) => {
   if (!response.ok) {
     console.error(data);
     return Promise.reject(
-      new Error(`${response.status} ${response.statusText}`)
+      new Error(`${response.status} ${response.statusText}`),
     );
   }
 
@@ -74,7 +74,7 @@ export const useUserSigners = (fid) => {
       (err) => {
         console.error(err);
         setSigners([]);
-      }
+      },
     );
   }, [fid]);
 
@@ -149,12 +149,12 @@ export const addReaction = async ({ fid, signer, cast, reactionType }) => {
       fid: Number(fid),
       network: FarcasterNetwork.MAINNET,
     },
-    farcastSigner
+    farcastSigner,
   );
 
   return messageResult.match(
     (message) => submitHubMessage(message),
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 };
 
@@ -173,12 +173,12 @@ export const removeReaction = async ({ fid, signer, cast, reactionType }) => {
       fid: Number(fid),
       network: FarcasterNetwork.MAINNET,
     },
-    farcastSigner
+    farcastSigner,
   );
 
   return messageResult.match(
     (message) => submitHubMessage(message),
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 };
 
@@ -206,7 +206,7 @@ export const addCast = async ({
 
   // filter null values from castAddBody object
   Object.keys(castAddBody).forEach(
-    (key) => castAddBody[key] === null && delete castAddBody[key]
+    (key) => castAddBody[key] === null && delete castAddBody[key],
   );
 
   const messageResult = await makeCastAdd(
@@ -215,12 +215,12 @@ export const addCast = async ({
       fid: Number(fid),
       network: FarcasterNetwork.MAINNET,
     },
-    farcastSigner
+    farcastSigner,
   );
 
   return messageResult.match(
     (message) => submitHubMessage(message),
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 };
 
@@ -295,12 +295,12 @@ export const setUserData = async ({ fid, signer, dataType, value }) => {
   const messageResult = makeUserDataAdd(
     { type: hubDataType, value },
     { fid: Number(fid), network: FarcasterNetwork.MAINNET },
-    farcastSigner
+    farcastSigner,
   );
 
   return messageResult.match(
     (message) => submitHubMessage(message),
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 };
 
@@ -310,12 +310,12 @@ export const followUser = async ({ fid, signer, fidToFollow }) => {
   const messageResult = await makeLinkAdd(
     { type: "follow", targetFid: Number(fidToFollow) },
     { fid: Number(fid), network: FarcasterNetwork.MAINNET },
-    farcastSigner
+    farcastSigner,
   );
 
   return messageResult.match(
     (message) => submitHubMessage(message),
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 };
 
@@ -325,12 +325,12 @@ export const unfollowUser = async ({ fid, signer, fidToUnfollow }) => {
   const messageResult = await makeLinkRemove(
     { type: "follow", targetFid: Number(fidToUnfollow) },
     { fid: Number(fid), network: FarcasterNetwork.MAINNET },
-    farcastSigner
+    farcastSigner,
   );
 
   return messageResult.match(
     (message) => submitHubMessage(message),
-    (error) => Promise.reject(error)
+    (error) => Promise.reject(error),
   );
 };
 

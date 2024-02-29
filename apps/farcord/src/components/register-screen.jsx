@@ -326,15 +326,15 @@ const RegisterView = () => {
   const priceTag =
     usdUnitPrice && ethUnitPrice
       ? `${priceFormatter.format(usdUnitPrice)} (${ethFormatter.format(
-          ethUnitPrice
+          ethUnitPrice,
         )} ETH) + gas`
       : "loading...";
 
   const storageTag = storageUnits
     ? `Enough for ${ethFormatter.format(
-        storageUnits * 5000
+        storageUnits * 5000,
       )} casts, ${ethFormatter.format(
-        storageUnits * 2500
+        storageUnits * 2500,
       )} reactions, and ${ethFormatter.format(storageUnits * 2500)} follows`
     : "loading...";
 
@@ -453,7 +453,7 @@ const RegisterView = () => {
                             connector: connector.name,
                           });
                         },
-                      }
+                      },
                     )
                   }
                 />
@@ -530,7 +530,7 @@ const RegisterView = () => {
                     if (e.code === 4902) return;
 
                     setSwitchingToOptimism(false);
-                  }
+                  },
                 );
               }}
             >
@@ -1026,7 +1026,7 @@ const RegisterView = () => {
                   setHasPendingRegisterRequest(true);
                   setRegisterError(null);
                   await createAccount().finally(() =>
-                    setHasPendingRegisterRequest(false)
+                    setHasPendingRegisterRequest(false),
                   );
                 }}
                 isLoading={hasPendingRegisterRequest}
@@ -1071,8 +1071,8 @@ const RegisterView = () => {
                   {isInsufficientFundsError
                     ? "Your wallet does not have enough funds. Make sure you have bridged some ETH to Optimism."
                     : registerAccountSimulationError
-                    ? registerAccountSimulationError.message.slice(0, 300)
-                    : registerError.slice(0, 200)}
+                      ? registerAccountSimulationError.message.slice(0, 300)
+                      : registerError.slice(0, 200)}
                 </Small>
               )}
             </StepElement>

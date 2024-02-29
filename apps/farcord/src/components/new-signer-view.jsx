@@ -172,16 +172,16 @@ const NewSignerView = () => {
                 {walletError != null
                   ? "Could not connect to wallet"
                   : signerError === "signature-rejected"
-                  ? "Signature rejected by user"
-                  : signerError === "signature-rejected-or-failed"
-                  ? "Signature rejected or failed"
-                  : signerError === "transaction-rejected"
-                  ? "Transaction rejected by user"
-                  : signerError === "transaction-rejected-or-failed"
-                  ? "Transaction rejected or failed"
-                  : signerError != null
-                  ? "Problems creating signer"
-                  : "A wild error has appeared! Check you Internet connection or go grab a snack."}
+                    ? "Signature rejected by user"
+                    : signerError === "signature-rejected-or-failed"
+                      ? "Signature rejected or failed"
+                      : signerError === "transaction-rejected"
+                        ? "Transaction rejected by user"
+                        : signerError === "transaction-rejected-or-failed"
+                          ? "Transaction rejected or failed"
+                          : signerError != null
+                            ? "Problems creating signer"
+                            : "A wild error has appeared! Check you Internet connection or go grab a snack."}
               </div>
             )}
           </div>

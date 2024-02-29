@@ -8,7 +8,7 @@ import { useUserWithWalletAddress } from "@shades/common/app";
 
 const useNOMAccountDisplayName = (
   accountAddress,
-  { customDisplayName = true } = {}
+  { customDisplayName = true } = {},
 ) => {
   const user = useUserWithWalletAddress(accountAddress);
 

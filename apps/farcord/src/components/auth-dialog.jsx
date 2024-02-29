@@ -12,10 +12,10 @@ const AuthDialog = () => {
   const [searchParams] = useSearchParams();
   const provider = searchParams.get("provider");
   const [warpcastVisible, setWarpcastVisible] = React.useState(
-    provider === "warpcast"
+    provider === "warpcast",
   );
   const [custodyWalletVisible, setCustodyWalletVisible] = React.useState(
-    provider === "wallet"
+    provider === "wallet",
   );
 
   const isSmallScreen = useMatchMedia("(max-width: 800px)");

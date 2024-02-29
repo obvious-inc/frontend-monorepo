@@ -103,12 +103,12 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const createdAtDate = React.useMemo(
     () => new Date(message.createdAt),
-    [message.createdAt]
+    [message.createdAt],
   );
 
   const initReply = React.useCallback(
     () => initReply_(messageId),
-    [messageId, initReply_]
+    [messageId, initReply_],
   );
 
   const initEdit = React.useCallback(() => {
@@ -126,7 +126,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const save = React.useCallback(
     (blocks) => actions.updateMessage(messageId, { blocks }),
-    [actions, messageId]
+    [actions, messageId],
   );
 
   const sendDirectMessageToAuthor = useLatestCallback(() => {
@@ -146,7 +146,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
   const remove = React.useCallback(
     () => actions.removeMessage(messageId),
-    [actions, messageId]
+    [actions, messageId],
   );
 
   const addReaction = React.useCallback(
@@ -158,7 +158,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
 
       setEmojiPickerOpen(false);
     },
-    [messageId, reactions, addMessageReaction, me?.id]
+    [messageId, reactions, addMessageReaction, me?.id],
   );
 
   const toolbarDropdownItems = React.useMemo(
@@ -218,7 +218,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
           ].map((section) => ({
             ...section,
             children: section.children.filter(
-              (i) => i.visible == null || i.visible
+              (i) => i.visible == null || i.visible,
             ),
           })),
     [
@@ -234,7 +234,7 @@ const ChannelMessage = React.memo(function ChannelMessage_({
       message.isAppMessage,
       remove,
       sendDirectMessageToAuthor,
-    ]
+    ],
   );
 
   React.useEffect(() => {
@@ -271,8 +271,8 @@ const ChannelMessage = React.memo(function ChannelMessage_({
         "--background": hasPendingReply
           ? "var(--bg-highlight)"
           : showAsFocused
-          ? "var(--bg-focus)"
-          : undefined,
+            ? "var(--bg-focus)"
+            : undefined,
         "--padding":
           showSimplifiedMessage || compact
             ? `0.5rem ${horizontalPadding}`
@@ -1026,8 +1026,8 @@ const Reactions = ({ messageId, addReaction, hideAddButton, layout }) => {
             align === "left"
               ? "flex-start"
               : align === "right"
-              ? "flex-end"
-              : undefined,
+                ? "flex-end"
+                : undefined,
         }}
       >
         {layout !== "bubbles" || align === "left" || !inputDeviceCanHover ? (
@@ -1400,7 +1400,7 @@ const MessageToolbar = React.memo(
         )}
       </Toolbar.Root>
     );
-  }
+  },
 );
 
 const EditMessageInput = React.forwardRef(
@@ -1471,7 +1471,7 @@ const EditMessageInput = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 const ReplyTargetMessage = ({ messageId, layout, onClickMessage }) => {
@@ -1738,7 +1738,7 @@ const SystemMessageContent = ({ messageId }) => {
   switch (message.type) {
     case "user-invited": {
       const isMissingData = [message.inviter, message.author].some(
-        (u) => !u?.deleted && !u?.unknown && u?.walletAddress == null
+        (u) => !u?.deleted && !u?.unknown && u?.walletAddress == null,
       );
 
       return (
@@ -1898,7 +1898,7 @@ const FormattedDateWithTooltip = React.memo(
         </Tooltip.Content>
       </Tooltip.Root>
     );
-  }
+  },
 );
 
 export default ChannelMessage;

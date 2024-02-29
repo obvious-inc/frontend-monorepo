@@ -107,7 +107,7 @@ const Channel = ({ channelId }) => {
     () => {
       fetchMessages({ limit: 30 });
     },
-    { requireFocus: true }
+    { requireFocus: true },
   );
 
   useMarkChannelReadEffects(channelId, { didScrollToBottomRef });
@@ -118,7 +118,7 @@ const Channel = ({ channelId }) => {
     if (me == null) {
       if (
         !confirm(
-          "You need to verify your account to post. Sign in with your wallet to proceed."
+          "You need to verify your account to post. Sign in with your wallet to proceed.",
         )
       )
         return;
@@ -147,7 +147,7 @@ const Channel = ({ channelId }) => {
       throttle(() => actions.registerChannelTypingActivity(channelId), 3000, {
         trailing: false,
       }),
-    [actions, channelId]
+    [actions, channelId],
   );
 
   const handleInputChange = useLatestCallback(({ rawRichTextNodes }) => {
@@ -159,7 +159,7 @@ const Channel = ({ channelId }) => {
   const initReply = useLatestCallback((targetMessageId) => {
     const targetMessage = selectors.selectMessage(targetMessageId);
     setReplyTargetMessageId(
-      targetMessage?.replyTargetMessageId ?? targetMessageId
+      targetMessage?.replyTargetMessageId ?? targetMessageId,
     );
     inputRef.current.focus();
   });
@@ -171,7 +171,7 @@ const Channel = ({ channelId }) => {
 
   const renderScrollViewHeader = React.useCallback(
     () => <ChannelMessagesScrollViewHeader channelId={channelId} />,
-    [channelId]
+    [channelId],
   );
 
   const renderMessage = React.useCallback(
@@ -186,7 +186,7 @@ const Channel = ({ channelId }) => {
         {...props}
       />
     ),
-    [layout, initReply, replyTargetMessageId]
+    [layout, initReply, replyTargetMessageId],
   );
 
   return (

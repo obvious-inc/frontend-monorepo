@@ -47,7 +47,7 @@ const useCombobox = ({
       buttonRef,
       listBoxRef,
     },
-    state
+    state,
   );
 
   const { buttonProps } = useButton(buttonPropsInput, buttonRef);

@@ -40,7 +40,8 @@ const ChannelMessagesScrollViewHeader = ({ channelId }) => {
             .filter(
               (m) =>
                 me == null ||
-                m.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+                m.walletAddress.toLowerCase() !==
+                  me.walletAddress.toLowerCase(),
             )
             .map((m, i, ms) => {
               return (
@@ -214,7 +215,7 @@ const DMChannelHeader = ({ channelId }) => {
   const channel = useChannel(channelId, { name: true, members: true });
 
   const membersExcludingMe = channel.members.filter(
-    (m) => me != null && me.id !== m.id
+    (m) => me != null && me.id !== m.id,
   );
   const member = membersExcludingMe[0] ?? me;
 

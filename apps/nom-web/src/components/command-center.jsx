@@ -82,11 +82,11 @@ const CommandCenterDiscoverMode = ({ query, close, ...props }) => {
   const deferredQuery = React.useDeferredValue(query.trim().toLowerCase());
   const channels = usePublicChannels({ name: true, members: true });
   const channelsNotMember = channels.filter(
-    (c) => !c.memberUserIds.includes(me.id)
+    (c) => !c.memberUserIds.includes(me.id),
   );
   const filteredOptions = useFilteredChannelOptions(
     channelsNotMember,
-    deferredQuery
+    deferredQuery,
   );
 
   React.useEffect(() => {
@@ -186,7 +186,7 @@ const AlwaysOpenCombobox = ({ value, options = [], popoverRef, ...props_ }) => {
       listBoxRef,
       popoverRef,
     },
-    state
+    state,
   );
 
   const selectFirstKey = useLatestCallback(() => {

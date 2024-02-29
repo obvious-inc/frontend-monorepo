@@ -144,7 +144,7 @@ const AuthScreen = () => {
       return broadcastSigner({ publicKey: createdSigner?.publicKey }).then(
         (txHash) => {
           setWaitingTransactionHash(txHash);
-        }
+        },
       );
     });
   };
@@ -247,7 +247,7 @@ const AuthScreen = () => {
                   if (e.code === 4902) return;
 
                   setSwitchingToOptimism(false);
-                }
+                },
               );
             }}
           >
@@ -337,16 +337,16 @@ const AuthScreen = () => {
               {walletError != null
                 ? "Could not connect to wallet"
                 : signerError === "signature-rejected"
-                ? "Signature rejected by user"
-                : signerError === "signature-rejected-or-failed"
-                ? "Signature rejected or failed"
-                : signerError === "transaction-rejected"
-                ? "Transaction rejected by user"
-                : signerError === "transaction-rejected-or-failed"
-                ? "Transaction rejected or failed"
-                : signerError != null
-                ? "Problems creating signer"
-                : "A wild error has appeared! Check you Internet connection or go grab a snack."}
+                  ? "Signature rejected by user"
+                  : signerError === "signature-rejected-or-failed"
+                    ? "Signature rejected or failed"
+                    : signerError === "transaction-rejected"
+                      ? "Transaction rejected by user"
+                      : signerError === "transaction-rejected-or-failed"
+                        ? "Transaction rejected or failed"
+                        : signerError != null
+                          ? "Problems creating signer"
+                          : "A wild error has appeared! Check you Internet connection or go grab a snack."}
             </div>
           )}
           {accountAddress == null ? (
@@ -661,7 +661,7 @@ const AuthScreen = () => {
                 {signer && onChainSigner ? (
                   <a
                     href={`https://optimistic.etherscan.io/tx/${toHex(
-                      onChainSigner?.transactionHash
+                      onChainSigner?.transactionHash,
                     )}`}
                     rel="noreferrer"
                     target="_blank"

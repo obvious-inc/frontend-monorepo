@@ -18,7 +18,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
       inline = false,
       ...props
     },
-    editorRef
+    editorRef,
   ) => {
     const preventInputBlurRef = React.useRef();
     const mentionQueryRangeRef = React.useRef();
@@ -37,7 +37,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
     })();
 
     const { allEntries: emojis, recentlyUsedEntries: recentEmojis } = useEmojis(
-      { enabled: autoCompleteMode === "emojis" }
+      { enabled: autoCompleteMode === "emojis" },
     );
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
@@ -82,7 +82,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         const visibleAliases = [
           firstAlias,
           ...otherAliases.filter(
-            (a) => lowerCaseQuery !== "" && a.includes(lowerCaseQuery)
+            (a) => lowerCaseQuery !== "" && a.includes(lowerCaseQuery),
           ),
         ];
         return {
@@ -153,7 +153,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
             throw new Error();
         }
       },
-      [autoCompleteMode, editorRef, mentionQueryRangeRef]
+      [autoCompleteMode, editorRef, mentionQueryRangeRef],
     );
 
     const autoCompleteInputKeyDownHandler = React.useCallback(
@@ -164,14 +164,14 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
           case "ArrowDown": {
             event.preventDefault();
             setSelectedAutoCompleteIndex((i) =>
-              i >= autoCompleteOptions.length - 1 ? 0 : i + 1
+              i >= autoCompleteOptions.length - 1 ? 0 : i + 1,
             );
             break;
           }
           case "ArrowUp": {
             event.preventDefault();
             setSelectedAutoCompleteIndex((i) =>
-              i <= 0 ? autoCompleteOptions.length - 1 : i - 1
+              i <= 0 ? autoCompleteOptions.length - 1 : i - 1,
             );
             break;
           }
@@ -194,7 +194,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         autoCompleteOptions,
         selectedAutoCompleteIndex,
         selectAutoCompleteOption,
-      ]
+      ],
     );
 
     const autoCompleteInputAccesibilityProps = {
@@ -297,7 +297,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         )}
       </>
     );
-  }
+  },
 );
 
 const AutoCompleteListbox = ({

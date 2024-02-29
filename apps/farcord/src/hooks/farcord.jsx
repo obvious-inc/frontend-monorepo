@@ -36,7 +36,7 @@ export const ChainDataCacheContextProvider = ({ children }) => {
           channelsById: fetchedChannelsById,
         });
       }),
-    [queryFarcaster]
+    [queryFarcaster],
   );
 
   const contextValue = React.useMemo(() => ({ state }), [state]);
@@ -59,9 +59,9 @@ export const useFarcasterChannels = () => {
     () =>
       sortBy(
         { value: (c) => c.castCount, order: "desc" },
-        Object.values(channelsById)
+        Object.values(channelsById),
       ),
-    [channelsById]
+    [channelsById],
   );
 };
 

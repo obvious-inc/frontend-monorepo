@@ -122,7 +122,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const hasVotingPower = connectedDelegate?.nounsRepresented?.length > 0;
 
   const connectedAccountDisplayName = useAccountDisplayName(
-    connectedWalletAccountAddress
+    connectedWalletAccountAddress,
   );
 
   const visibleActions = isDesktop
@@ -283,61 +283,62 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   label: "Connect Wallet",
                 }
               : isUnsupportedChain
-              ? {
-                  onSelect: () => {
-                    switchWalletToMainnet();
-                  },
-                  buttonProps: {
-                    variant: "default",
-                    isLoading: isLoadingWallet,
-                    disabled: switchWalletToMainnet == null || isLoadingWallet,
-                    style: { marginLeft: "0.9rem" },
-                  },
-                  label: "Switch to Mainnet",
-                }
-              : {
-                  type: "dropdown",
-                  onSelect: () => {
-                    openAccountDialog();
-                  },
-                  // buttonProps: {
-                  //   component: "a",
-                  //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
-                  //   target: "_blank",
-                  //   rel: "noreferrer",
-                  // },
-                  buttonProps: {
-                    iconRight: (
-                      <CaretDownIcon
-                        style={{ width: "0.9rem", height: "auto" }}
-                      />
+                ? {
+                    onSelect: () => {
+                      switchWalletToMainnet();
+                    },
+                    buttonProps: {
+                      variant: "default",
+                      isLoading: isLoadingWallet,
+                      disabled:
+                        switchWalletToMainnet == null || isLoadingWallet,
+                      style: { marginLeft: "0.9rem" },
+                    },
+                    label: "Switch to Mainnet",
+                  }
+                : {
+                    type: "dropdown",
+                    onSelect: () => {
+                      openAccountDialog();
+                    },
+                    // buttonProps: {
+                    //   component: "a",
+                    //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
+                    //   target: "_blank",
+                    //   rel: "noreferrer",
+                    // },
+                    buttonProps: {
+                      iconRight: (
+                        <CaretDownIcon
+                          style={{ width: "0.9rem", height: "auto" }}
+                        />
+                      ),
+                    },
+
+                    label: (
+                      <div
+                        css={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.8rem",
+                        })}
+                      >
+                        {pathname === "/" && (
+                          <div
+                            css={css({
+                              "@media(max-width: 600px)": { display: "none" },
+                            })}
+                          >
+                            {connectedAccountDisplayName}
+                          </div>
+                        )}
+                        <AccountAvatar
+                          address={connectedWalletAccountAddress}
+                          size="2rem"
+                        />
+                      </div>
                     ),
                   },
-
-                  label: (
-                    <div
-                      css={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.8rem",
-                      })}
-                    >
-                      {pathname === "/" && (
-                        <div
-                          css={css({
-                            "@media(max-width: 600px)": { display: "none" },
-                          })}
-                        >
-                          {connectedAccountDisplayName}
-                        </div>
-                      )}
-                      <AccountAvatar
-                        address={connectedWalletAccountAddress}
-                        size="2rem"
-                      />
-                    </div>
-                  ),
-                },
           ]
             .filter(Boolean)
             .map((a, i) =>
@@ -406,7 +407,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
                         case "copy-account-address":
                           navigator.clipboard.writeText(
-                            connectedWalletAccountAddress
+                            connectedWalletAccountAddress,
                           );
                           break;
 
@@ -450,7 +451,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     {a.label}
                   </Button>
                 </li>
-              )
+              ),
             )}
         </ul>
       </div>

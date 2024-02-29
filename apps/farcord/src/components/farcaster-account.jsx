@@ -65,7 +65,7 @@ export const Provider = ({ children }) => {
       logout,
       reloadAccount,
     }),
-    [fid, address, account, initAccount, logout, reloadAccount]
+    [fid, address, account, initAccount, logout, reloadAccount],
   );
 
   return (

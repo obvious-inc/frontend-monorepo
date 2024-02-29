@@ -49,7 +49,7 @@ const middleware = (editor) => {
     }
 
     const urlEntries = getWords([node, path]).filter(([word]) =>
-      isChannelLink(word)
+      isChannelLink(word),
     );
 
     for (let [url, urlRange] of urlEntries) {

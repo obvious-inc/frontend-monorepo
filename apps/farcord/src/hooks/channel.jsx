@@ -37,14 +37,14 @@ export const ChannelCacheContextProvider = ({ children }) => {
   React.useEffect(() => {
     localStorage.setItem(
       "ns:read-states",
-      JSON.stringify(state.readStatesByChannelId)
+      JSON.stringify(state.readStatesByChannelId),
     );
   }, [state.readStatesByChannelId]);
 
   React.useEffect(() => {
     localStorage.setItem(
       "ns:followed-channels",
-      JSON.stringify(state.followedChannelsByFid)
+      JSON.stringify(state.followedChannelsByFid),
     );
   }, [state.followedChannelsByFid]);
 
@@ -79,7 +79,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
             },
           };
         });
-      }
+      },
     );
   }, []);
 
@@ -181,14 +181,14 @@ export const ChannelCacheContextProvider = ({ children }) => {
             },
           };
         });
-      }
+      },
     );
   }, []);
 
   const fetchCast = React.useCallback(async ({ castHash }) => {
     return fetchNeynarCast(castHash).then((cast) => {
       const castUsers = extractUsersFromNeynarCast(cast).filter(
-        (u) => u.fid != null
+        (u) => u.fid != null,
       );
 
       setState((s) => {
@@ -222,7 +222,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
               ...(s.followedChannelsByFid[fid] ?? []),
               ...channels.filter(
                 (c) =>
-                  !s.followedChannelsByFid[fid]?.some((cc) => cc.id === c.id)
+                  !s.followedChannelsByFid[fid]?.some((cc) => cc.id === c.id),
               ),
             ],
           },
@@ -296,7 +296,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
         };
       });
     },
-    []
+    [],
   );
 
   const followChannel = React.useCallback(async ({ fid, channel }) => {
@@ -318,7 +318,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
         followedChannelsByFid: {
           ...s.followedChannelsByFid,
           [fid]: s.followedChannelsByFid[fid]?.filter(
-            (c) => c.id !== channel.id
+            (c) => c.id !== channel.id,
           ),
         },
       };
@@ -353,7 +353,7 @@ export const ChannelCacheContextProvider = ({ children }) => {
       followChannel,
       unfollowChannel,
       fetchUserByFid,
-    ]
+    ],
   );
 
   return (
@@ -373,7 +373,7 @@ export const useChannelCastsFetch = ({ channel, cursor }) => {
       fetchChannelCasts({ channel, cursor }).catch((e) => {
         throw e;
       }),
-    [fetchChannelCasts, channel, cursor]
+    [fetchChannelCasts, channel, cursor],
   );
 };
 
@@ -395,7 +395,7 @@ export const useFeedCastsFetch = ({ fid, cursor, isFeed = false }) => {
       fetchFeedCasts({ fid, cursor, isFeed }).catch((e) => {
         throw e;
       }),
-    [fetchFeedCasts, fid, cursor, isFeed]
+    [fetchFeedCasts, fid, cursor, isFeed],
   );
 };
 
@@ -427,7 +427,7 @@ export const useThreadCastsFetch = ({ threadCast, cursor }) => {
       fetchThreadCasts({ threadHash: threadCast, cursor }).catch((e) => {
         throw e;
       }),
-    [fetchThreadCasts, threadCast, cursor]
+    [fetchThreadCasts, threadCast, cursor],
   );
 };
 
@@ -449,7 +449,7 @@ export const useCastFetch = ({ castHash }) => {
       fetchCast({ castHash }).catch((e) => {
         throw e;
       }),
-    [fetchCast, castHash]
+    [fetchCast, castHash],
   );
 };
 
@@ -494,13 +494,13 @@ const useFollowedChannelsFetch = ({ fid }) => {
               const channelId = channel?.id;
               const cachedChannel = channelsById[channelId];
               return fetchUnreadState({ channel: cachedChannel });
-            })
+            }),
           );
         })
         .catch((e) => {
           throw e;
         }),
-    [fetchFollowedChannels, fid]
+    [fetchFollowedChannels, fid],
   );
 };
 

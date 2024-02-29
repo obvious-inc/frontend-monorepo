@@ -38,7 +38,7 @@ export default async function handler(request) {
           headers: {
             "Content-Type": "application/json",
           },
-        }
+        },
       );
     }
 
@@ -64,7 +64,7 @@ export default async function handler(request) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   } else {
     return new Response(
@@ -79,7 +79,7 @@ export default async function handler(request) {
         headers: {
           "Content-Type": "application/json",
         },
-      }
+      },
     );
   }
 }

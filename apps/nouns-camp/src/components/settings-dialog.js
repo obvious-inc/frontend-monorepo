@@ -106,7 +106,7 @@ const Content = ({ titleProps, dismiss }) => {
                 newParams.delete("debug");
                 return newParams;
               },
-              { replace: true }
+              { replace: true },
             );
           },
         },

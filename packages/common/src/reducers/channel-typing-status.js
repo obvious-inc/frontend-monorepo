@@ -50,11 +50,11 @@ export const selectChannelTypingMembers = createSelector(
     const members = selectUsers(state, userIds);
 
     return members.filter(
-      (m) => state.me.user == null || m.id !== state.me.user.id
+      (m) => state.me.user == null || m.id !== state.me.user.id,
     );
   },
   (members) => members,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export default combineReducers({ typingUserIdsByChannelId });

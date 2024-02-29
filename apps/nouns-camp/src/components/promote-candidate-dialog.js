@@ -39,10 +39,10 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const proposerDelegate = useDelegate(candidate.proposerId);
   const proposalThreshold = useProposalThreshold();
   const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId
+    (p) => p.proposerId,
   );
   const authoredActiveProposalId = useActiveProposalId(
-    connectedWalletAccountAddress
+    connectedWalletAccountAddress,
   );
 
   const { fetchProposal } = useActions();
@@ -60,13 +60,13 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   });
 
   const selectedSignatures = [...selectedSignerIds].map((id) =>
-    validSignatures.find((s) => s.signer.id === id)
+    validSignatures.find((s) => s.signer.id === id),
   );
 
   const selectedSponsorsVotingPower = arrayUtils.unique(
     selectedSignatures.flatMap((s) =>
-      s.signer.nounsRepresented.map((n) => n.id)
-    )
+      s.signer.nounsRepresented.map((n) => n.id),
+    ),
   ).length;
 
   const proposerVotingPower =
@@ -119,11 +119,11 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
             return Promise.reject(e);
 
           alert(
-            "Ops, looks like something went wrong submitting your proposal!"
+            "Ops, looks like something went wrong submitting your proposal!",
           );
           console.error(e);
           return Promise.reject(e);
-        }
+        },
       )
       .catch(() => {
         // This should only happen for errors occuring after a successful submit

@@ -38,7 +38,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
       members = [],
       ...props
     },
-    editorRef
+    editorRef,
   ) => {
     const channels = useAllChannels({ name: true });
 
@@ -65,7 +65,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
     })();
 
     const { allEntries: emojis, recentlyUsedEntries: recentEmojis } = useEmojis(
-      { enabled: autoCompleteMode === "emojis" }
+      { enabled: autoCompleteMode === "emojis" },
     );
 
     const isAutoCompleteMenuOpen = autoCompleteMode != null;
@@ -133,7 +133,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         const visibleAliases = [
           firstAlias,
           ...otherAliases.filter(
-            (a) => lowerCaseQuery !== "" && a.includes(lowerCaseQuery)
+            (a) => lowerCaseQuery !== "" && a.includes(lowerCaseQuery),
           ),
         ];
         return {
@@ -179,12 +179,12 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
       const lowerCaseQuery = commandQuery?.toLowerCase() ?? null;
 
       const unorderedCommands = Object.keys(commands).filter(
-        (command) => lowerCaseQuery != null && command.includes(lowerCaseQuery)
+        (command) => lowerCaseQuery != null && command.includes(lowerCaseQuery),
       );
 
       const orderedCommands = sort((o1, o2) => {
         const [i1, i2] = [o1, o2].map((command) =>
-          command.toLowerCase().indexOf(lowerCaseQuery)
+          command.toLowerCase().indexOf(lowerCaseQuery),
         );
 
         if (i1 < i2) return -1;
@@ -258,7 +258,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
 
               executeCommand(
                 commandQuery,
-                commandArgumentsQuery?.split(" ") ?? []
+                commandArgumentsQuery?.split(" ") ?? [],
               );
               setCommandQuery(null);
               break;
@@ -280,7 +280,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         commandQuery,
         commandArgumentsQuery,
         executeCommand,
-      ]
+      ],
     );
 
     const autoCompleteInputKeyDownHandler = React.useCallback(
@@ -291,14 +291,14 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
           case "ArrowDown": {
             event.preventDefault();
             setSelectedAutoCompleteIndex((i) =>
-              i >= autoCompleteOptions.length - 1 ? 0 : i + 1
+              i >= autoCompleteOptions.length - 1 ? 0 : i + 1,
             );
             break;
           }
           case "ArrowUp": {
             event.preventDefault();
             setSelectedAutoCompleteIndex((i) =>
-              i <= 0 ? autoCompleteOptions.length - 1 : i - 1
+              i <= 0 ? autoCompleteOptions.length - 1 : i - 1,
             );
             break;
           }
@@ -322,7 +322,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         autoCompleteOptions,
         selectedAutoCompleteIndex,
         selectAutoCompleteOption,
-      ]
+      ],
     );
 
     const autoCompleteInputAccesibilityProps = {
@@ -394,7 +394,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
 
                 setCommandQuery(command);
                 setCommandArgumentsQuery(
-                  args.length === 0 ? null : args.join(" ")
+                  args.length === 0 ? null : args.join(" "),
                 );
                 setSelectedAutoCompleteIndex(0);
               },
@@ -433,7 +433,7 @@ const RichTextEditorWithAutoComplete = React.forwardRef(
         )}
       </>
     );
-  }
+  },
 );
 
 const AutoCompleteListbox = ({

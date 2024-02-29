@@ -48,9 +48,9 @@ export const Provider = ({ authenticate, children }) => {
             new Error(
               e.code === 4001
                 ? "signature-rejected"
-                : "signature-rejected-or-failed"
-            )
-          )
+                : "signature-rejected-or-failed",
+            ),
+          ),
         )
         .then(({ signature, message, signedAt, nonce }) =>
           authenticate({
@@ -62,7 +62,7 @@ export const Provider = ({ authenticate, children }) => {
           }).catch((e) => {
             console.warn(e);
             return Promise.reject(new Error("server-login-request-error"));
-          })
+          }),
         );
     } catch (e) {
       console.log(e);
@@ -102,7 +102,7 @@ export const Provider = ({ authenticate, children }) => {
       status,
       error,
     }),
-    [loginWithWalletSignature, loginWithThrowawayWallet, reset, status, error]
+    [loginWithWalletSignature, loginWithThrowawayWallet, reset, status, error],
   );
 
   return (

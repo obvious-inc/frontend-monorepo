@@ -67,7 +67,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const persistedActions = React.useMemo(
     () =>
       buildActionsFromTransactions(proposal.transactions ?? [], { chainId }),
-    [proposal, chainId]
+    [proposal, chainId],
   );
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
@@ -85,7 +85,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
   const hasBodyChanges = React.useMemo(() => {
     const markdownBody = messageUtils.toMarkdown(
-      richTextToMessageBlocks(deferredBody)
+      richTextToMessageBlocks(deferredBody),
     );
     return markdownBody !== persistedMarkdownBody;
   }, [deferredBody, persistedMarkdownBody]);
@@ -99,11 +99,11 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
         resolveActionTransactions(a, { chainId }),
         {
           chainId,
-        }
+        },
       );
       const persistedTransactions = unparseTransactions(
         resolveActionTransactions(persistedAction, { chainId }),
-        { chainId }
+        { chainId },
       );
 
       return !areTransactionsEqual(transactions, persistedTransactions);
@@ -114,7 +114,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const createDescriptionDiff = () =>
     diffParagraphs(
       proposal.description,
-      createMarkdownDescription({ title, body: deferredBody })
+      createMarkdownDescription({ title, body: deferredBody }),
     );
   const createTransactionsDiff = () =>
     diffParagraphs(
@@ -124,7 +124,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
       actions
         .flatMap((a) => resolveActionTransactions(a, { chainId }))
         .map((t) => stringifyTransaction(t, { chainId }))
-        .join("\n\n")
+        .join("\n\n"),
     );
 
   const dismissDialog = () => {
@@ -135,7 +135,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
     if (
       !confirm(
-        "This will discard all your changes. Are you sure you wish to continue?"
+        "This will discard all your changes. Are you sure you wish to continue?",
       )
     )
       return;
@@ -160,11 +160,11 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     connectedAccountAddress == null
       ? null
       : () => fetchProposalCandidatesByAccount(connectedAccountAddress),
-    [connectedAccountAddress]
+    [connectedAccountAddress],
   );
 
   const accountProposalCandidates = useAccountProposalCandidates(
-    connectedAccountAddress
+    connectedAccountAddress,
   );
 
   const updateProposal = useUpdateProposal(proposalId);
@@ -204,7 +204,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           slug: buildUpdateCandidateSlug(),
           description: createMarkdownDescription({ title, body }),
           transactions: actions.flatMap((a) =>
-            resolveActionTransactions(a, { chainId })
+            resolveActionTransactions(a, { chainId }),
           ),
         });
         const candidateId = [
@@ -214,7 +214,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
         await functionUtils.retryAsync(
           () => fetchProposalCandidate(candidateId),
-          { retries: 100 }
+          { retries: 100 },
         );
 
         navigate(`/candidates/${candidateId}`, { replace: true });
@@ -383,10 +383,10 @@ export const PreviewUpdateDialog = ({
   const descriptionDiff = createDescriptionDiff();
   const transactionsDiff = createTransactionsDiff();
   const hasDescriptionChanges = descriptionDiff.some(
-    (token) => token.added || token.removed
+    (token) => token.added || token.removed,
   );
   const hasTransactionChanges = transactionsDiff.some(
-    (token) => token.added || token.removed
+    (token) => token.added || token.removed,
   );
 
   const hasVisibleDiff = hasDescriptionChanges || hasTransactionChanges;

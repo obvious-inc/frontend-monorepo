@@ -106,7 +106,7 @@ const SignersView = () => {
 
   const sortedSigners = sortBy(
     { value: (s) => s.blockTimestamp, order: "desc" },
-    Object.values(userSigners ?? [])
+    Object.values(userSigners ?? []),
   );
 
   // todo: import signer?

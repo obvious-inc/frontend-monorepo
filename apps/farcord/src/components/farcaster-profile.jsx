@@ -215,7 +215,7 @@ const ProfileDropdownTrigger = React.forwardRef(
         </div>
       </button>
     );
-  }
+  },
 );
 
 export default ProfileDropdownTrigger;

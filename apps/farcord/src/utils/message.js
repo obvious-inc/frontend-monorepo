@@ -27,7 +27,7 @@ const getImages = (nodes) => {
 export const parseImagesFromBlocks = (blocks) => {
   const imageNodes = message.filter(
     (n) => n.type == "attachments" || n.type == "image-attachment",
-    blocks
+    blocks,
   );
 
   return getImages(imageNodes);

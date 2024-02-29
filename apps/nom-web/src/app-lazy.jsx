@@ -52,15 +52,15 @@ import Layout from "./components/layouts";
 import TitleBar from "./components/title-bar";
 import { nounsTv as nounsTvTheme } from "./themes";
 
-const AccountProfileScreen = React.lazy(() =>
-  import("./components/account-profile-screen")
+const AccountProfileScreen = React.lazy(
+  () => import("./components/account-profile-screen"),
 );
 const ChannelScreen = React.lazy(() => import("./components/channel-screen"));
-const CommandCenterLazy = React.lazy(() =>
-  import("./components/command-center")
+const CommandCenterLazy = React.lazy(
+  () => import("./components/command-center"),
 );
-const NewMessageScreen = React.lazy(() =>
-  import("./components/new-message-screen")
+const NewMessageScreen = React.lazy(
+  () => import("./components/new-message-screen"),
 );
 const ChannelsScreen = React.lazy(() => import("./components/channels-screen"));
 
@@ -83,7 +83,7 @@ const wagmiConfig = createWagmiConfig({
     [mainnet.id]: http(
       `https://eth-mainnet.g.alchemy.com/v2/${
         import.meta.env.PUBLIC_ALCHEMY_API_KEY
-      }`
+      }`,
     ),
   },
   batch: {
@@ -118,7 +118,7 @@ const useSystemNotifications = () => {
               if (message.authorUserId === me.id) break;
 
               const hasUnread = selectors.selectChannelHasUnread(
-                message.channelId
+                message.channelId,
               );
 
               if (!hasUnread) break;
@@ -136,7 +136,7 @@ const useSystemNotifications = () => {
                       ? undefined
                       : message.author.profilePicture?.small ??
                         module.generatePlaceholderAvatarDataUri(
-                          message.author.walletAddress
+                          message.author.walletAddress,
                         ),
                   onClick: ({ close }) => {
                     navigate(`/channels/${channel.id}`);
@@ -151,7 +151,7 @@ const useSystemNotifications = () => {
 
             default: // Ignore
           }
-        }
+        },
   );
 };
 
@@ -172,7 +172,7 @@ const useUserEnsNames = () => {
             .filter(
               (u) =>
                 selectEnsName(u.walletAddress) === undefined &&
-                u.walletAddress != null
+                u.walletAddress != null,
             )
             .map((u) => u.walletAddress);
 
@@ -243,7 +243,7 @@ const App = () => {
     // Suggest login with new account
     if (
       !confirm(
-        `Do you wish to login as ${truncateAddress(newAddress)} instead?`
+        `Do you wish to login as ${truncateAddress(newAddress)} instead?`,
       )
     )
       return;
@@ -426,14 +426,14 @@ export default function LazyRoot() {
                         loader={() =>
                           Promise.all([
                             import("@shades/common/custom-emoji").then(
-                              (m) => m.default
+                              (m) => m.default,
                             ),
                             import("@shades/common/emoji").then((m) =>
                               m.default.filter(
                                 (e) =>
                                   e.unicode_version === "" ||
-                                  parseFloat(e.unicode_version) <= 12
-                              )
+                                  parseFloat(e.unicode_version) <= 12,
+                              ),
                             ),
                           ]).then((sets) => sets.flat())
                         }

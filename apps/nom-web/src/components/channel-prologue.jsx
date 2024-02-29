@@ -97,7 +97,7 @@ export const PersonalDMChannelPrologue = () => {
   const { displayName: accountDisplayName } =
     useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
-    checksumEncodeAddress(walletAddress)
+    checksumEncodeAddress(walletAddress),
   );
 
   const hasSubtitle =

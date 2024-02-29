@@ -156,7 +156,7 @@ const LoginView = () => {
                             connector: connector.name,
                           });
                         },
-                      }
+                      },
                     )
                   }
                 />
@@ -263,7 +263,7 @@ const LoginView = () => {
                     if (e.code === 4902) return;
 
                     setSwitchingToOptimism(false);
-                  }
+                  },
                 );
               }}
             >

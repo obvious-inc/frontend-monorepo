@@ -14,7 +14,7 @@ const InlineUserButton = React.forwardRef(
       cachedUser ?? (walletAddress == null ? null : { walletAddress });
 
     const accountDisplayName = useAccountDisplayName(
-      user?.walletAddress ?? walletAddress
+      user?.walletAddress ?? walletAddress,
     );
     const displayName = user?.displayName ?? accountDisplayName;
 
@@ -23,8 +23,8 @@ const InlineUserButton = React.forwardRef(
     const label = user?.deleted
       ? "Deleted user"
       : user?.unknown
-      ? "Unknown user"
-      : displayName;
+        ? "Unknown user"
+        : displayName;
 
     return (
       // {children} need to be rendered to work in Slate editor
@@ -40,7 +40,7 @@ const InlineUserButton = React.forwardRef(
         {children}
       </InlineButton>
     );
-  }
+  },
 );
 
 export default InlineUserButton;

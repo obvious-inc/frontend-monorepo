@@ -16,7 +16,7 @@ export const useNavigate = () => {
 
       router.push(to);
     },
-    [router]
+    [router],
   );
 };
 
@@ -40,7 +40,7 @@ export const useSearchParams = () => {
 
       router.push(href);
     },
-    [router, pathname, searchParams]
+    [router, pathname, searchParams],
   );
 
   return [searchParams, set];
@@ -48,7 +48,7 @@ export const useSearchParams = () => {
 
 export const useSearchParamToggleState = (
   key,
-  { replace = true, prefetch = false } = {}
+  { replace = true, prefetch = false } = {},
 ) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -68,7 +68,7 @@ export const useSearchParamToggleState = (
       newParams.delete(key);
       return newParams;
     },
-    [key]
+    [key],
   );
 
   const toggle = React.useCallback(() => {

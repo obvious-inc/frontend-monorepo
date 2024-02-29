@@ -6,7 +6,7 @@ const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
   return new Request(
-    `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`
+    `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`,
   );
 };
 
@@ -18,7 +18,7 @@ const fetchAbi = async (address) => {
       module: "contract",
       action: "getabi",
       address,
-    })
+    }),
   );
 
   const responseBody = await response.json();
@@ -42,7 +42,7 @@ const fetchContractInfo = async (address_) => {
       module: "contract",
       action: "getsourcecode",
       address,
-    })
+    }),
   );
 
   const responseBody = await response.json();
@@ -103,13 +103,13 @@ export async function GET(req) {
         headers: {
           "Cache-Control": `public, max-age=${ONE_MONTH_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`,
         },
-      }
+      },
     );
   } catch (e) {
     console.error(e);
     return Response.json(
       { code: e.code ?? "unexpected-error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

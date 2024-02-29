@@ -14,7 +14,7 @@ const EditUserProfileDialog = ({ titleProps, dismiss }) => {
 
   const { displayName: accountDisplayName } = useAccountDisplayName(
     me?.walletAddress,
-    { customDisplayName: false }
+    { customDisplayName: false },
   );
 
   if (authenticationStatus === "not-authenticated")

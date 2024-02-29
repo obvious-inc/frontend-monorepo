@@ -53,7 +53,7 @@ const commands = {
         window.location.reload();
       } else {
         alert(
-          "Permission rejected. If you wish to turn system notification on, run the command again and grant permission when prompted."
+          "Permission rejected. If you wish to turn system notification on, run the command again and grant permission when prompted.",
         );
       }
 

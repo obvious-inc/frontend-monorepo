@@ -34,12 +34,12 @@ const wagmiConfig = createWagmiConfig({
   ],
   transports: {
     [mainnet.id]: http(
-      `https://mainnet.infura.io/v3/${import.meta.env.PUBLIC_INFURA_PROJECT_ID}`
+      `https://mainnet.infura.io/v3/${import.meta.env.PUBLIC_INFURA_PROJECT_ID}`,
     ),
     [optimism.id]: http(
       `https://optimism-mainnet.infura.io/v3/${
         import.meta.env.PUBLIC_INFURA_PROJECT_ID
-      }`
+      }`,
     ),
     //
   },
@@ -62,5 +62,5 @@ createRoot(document.getElementById("app-mount")).render(
         </ChainDataCacheContextProvider>
       </QueryClientProvider>
     </WagmiProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

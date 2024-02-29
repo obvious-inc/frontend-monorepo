@@ -49,7 +49,7 @@ const useReadyConnectors = () => {
         setReadyConnectorIds((ids) =>
           p == null
             ? ids.filter((id) => id !== c.id)
-            : arrayUtils.unique([...ids, c.id])
+            : arrayUtils.unique([...ids, c.id]),
         );
       });
   }, [connectors]);
@@ -89,7 +89,7 @@ const useWallet = () => {
 
   const firstReadyConnector = arrayUtils.sortBy(
     (c) => c.type === "injected",
-    connectors
+    connectors,
   )[0];
 
   const connect = useLatestCallback(async () => {

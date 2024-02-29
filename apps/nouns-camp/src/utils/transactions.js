@@ -78,7 +78,7 @@ export const parse = (data, { chainId }) => {
     .filter(
       (t) =>
         normalizeSignature(t.signature) ===
-        normalizeSignature(CREATE_STREAM_SIGNATURE)
+        normalizeSignature(CREATE_STREAM_SIGNATURE),
     )
     .map((t) => {
       const { inputs } = decodeCalldataWithSignature({
@@ -170,7 +170,7 @@ export const parse = (data, { chainId }) => {
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
-        (a) => a === receiverAddress
+        (a) => a === receiverAddress,
       );
 
       return {
@@ -206,7 +206,7 @@ export const parse = (data, { chainId }) => {
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
-        (a) => a === receiverAddress
+        (a) => a === receiverAddress,
       );
 
       return {
@@ -248,7 +248,7 @@ export const parse = (data, { chainId }) => {
       target === nounsGovernanceContract.address &&
       normalizeSignature(signature) ===
         normalizeSignature(
-          "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)"
+          "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
         )
     ) {
       return {
@@ -266,7 +266,7 @@ export const parse = (data, { chainId }) => {
       target === resolveIdentifier(chainId, "prop-house")?.address &&
       normalizeSignature(signature) ===
         normalizeSignature(
-          "createAndFundRoundOnExistingHouse(address, (address impl, bytes config, string title, string description), (uint8 assetType, address token, uint256 identifier, uint256 amount)[])"
+          "createAndFundRoundOnExistingHouse(address, (address impl, bytes config, string title, string description), (uint8 assetType, address token, uint256 identifier, uint256 amount)[])",
         )
     ) {
       const [houseAddress, { impl, config, title, description }, assets] =
@@ -338,7 +338,7 @@ export const unparse = (transactions, { chainId }) => {
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
   const nounsStreamFactoryContract = resolveIdentifier(
     chainId,
-    "stream-factory"
+    "stream-factory",
   );
 
   return transactions.reduce(
@@ -376,7 +376,7 @@ export const unparse = (transactions, { chainId }) => {
             signature: "sendOrRegisterDebt(address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
-              [t.receiverAddress, t.usdcAmount]
+              [t.receiverAddress, t.usdcAmount],
             ),
           });
 
@@ -396,14 +396,14 @@ export const unparse = (transactions, { chainId }) => {
             signature: "transfer(address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
-              [t.receiverAddress, t.wethAmount]
+              [t.receiverAddress, t.wethAmount],
             ),
           });
 
         case "stream": {
           const tokenContract = resolveIdentifier(
             chainId,
-            `${t.token.toLowerCase()}-token`
+            `${t.token.toLowerCase()}-token`,
           );
           return append({
             target: nounsStreamFactoryContract.address,
@@ -427,7 +427,7 @@ export const unparse = (transactions, { chainId }) => {
                 t.endDate.getTime() / 1000,
                 0,
                 t.streamContractAddress,
-              ]
+              ],
             ),
           });
         }
@@ -441,7 +441,7 @@ export const unparse = (transactions, { chainId }) => {
               : "safeTransferFrom(address,address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "address" }, { type: "uint256" }],
-              [nounsExecutorContract.address, t.receiverAddress, t.nounId]
+              [nounsExecutorContract.address, t.receiverAddress, t.nounId],
             ),
           });
 
@@ -453,13 +453,13 @@ export const unparse = (transactions, { chainId }) => {
               "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
             calldata: encodeAbiParameters(
               [{ type: "uint256[]" }, { type: "address" }],
-              [t.nounIds, t.receiverAddress]
+              [t.nounIds, t.receiverAddress],
             ),
           });
 
         case "prop-house-create-and-fund-round": {
           const signature = `createAndFundRoundOnExistingHouse(${PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES.map(
-            (t) => formatAbiParameter(t)
+            (t) => formatAbiParameter(t),
           ).join(",")}`;
 
           const [propHousePrimaryAddress, timedRoundImplAddress] = [
@@ -486,7 +486,7 @@ export const unparse = (transactions, { chainId }) => {
             signature,
             calldata: encodeAbiParameters(
               PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES,
-              [t.houseAddress, getRoundStruct(), t.assets]
+              [t.houseAddress, getRoundStruct(), t.assets],
             ),
             value: t.value,
           });
@@ -511,7 +511,7 @@ export const unparse = (transactions, { chainId }) => {
             signature,
             calldata: encodeAbiParameters(
               t.functionInputTypes,
-              t.functionInputs
+              t.functionInputs,
             ),
           });
         }
@@ -527,7 +527,7 @@ export const unparse = (transactions, { chainId }) => {
             signature,
             calldata: encodeAbiParameters(
               t.functionInputTypes,
-              t.functionInputs
+              t.functionInputs,
             ),
           });
         }
@@ -545,7 +545,7 @@ export const unparse = (transactions, { chainId }) => {
           throw new Error(`Unknown transaction type "${t.type}"`);
       }
     },
-    { targets: [], values: [], signatures: [], calldatas: [] }
+    { targets: [], values: [], signatures: [], calldatas: [] },
   );
 };
 
@@ -556,19 +556,19 @@ export const extractAmounts = (parsedTransactions) => {
       t.type !== "payer-top-up" &&
       // Exclude WETH deposits as these are handled separately
       t.type !== "weth-deposit" &&
-      t.value != null
+      t.value != null,
   );
   const wethTransfers = parsedTransactions.filter(
     (t) =>
       t.type === "weth-transfer" ||
       t.type === "weth-approval" ||
-      t.type === "weth-stream-funding"
+      t.type === "weth-stream-funding",
   );
   const usdcTransfers = parsedTransactions.filter(
     (t) =>
       t.type === "usdc-approval" ||
       t.type === "usdc-transfer-via-payer" ||
-      t.type === "usdc-stream-funding-via-payer"
+      t.type === "usdc-stream-funding-via-payer",
   );
   const treasuryNounTransferNounIds = parsedTransactions
     .filter((t) => t.type === "treasury-noun-transfer")
@@ -579,15 +579,15 @@ export const extractAmounts = (parsedTransactions) => {
 
   const ethAmount = ethTransfersAndPayableCalls.reduce(
     (sum, t) => sum + t.value,
-    BigInt(0)
+    BigInt(0),
   );
   const wethAmount = wethTransfers.reduce(
     (sum, t) => sum + t.wethAmount,
-    BigInt(0)
+    BigInt(0),
   );
   const usdcAmount = usdcTransfers.reduce(
     (sum, t) => sum + t.usdcAmount,
-    BigInt(0)
+    BigInt(0),
   );
 
   return [
@@ -610,14 +610,14 @@ export const buildActions = (transactions, { chainId }) => {
   const extractPropHouseAction = () => {
     const { address: propHouseNounsHouseAddress } = resolveIdentifier(
       chainId,
-      "prop-house-nouns-house"
+      "prop-house-nouns-house",
     );
 
     const createRoundTx = transactionsLeft.find(
       (t) =>
         t.type === "prop-house-create-and-fund-round" &&
         // We don’t support selecting custom houses
-        t.houseAddress === propHouseNounsHouseAddress
+        t.houseAddress === propHouseNounsHouseAddress,
     );
 
     if (createRoundTx == null) return null;
@@ -642,12 +642,12 @@ export const buildActions = (transactions, { chainId }) => {
       (t) =>
         t.type === "usdc-stream-funding-via-payer" &&
         t.receiverAddress.toLowerCase() ===
-          streamTx.streamContractAddress.toLowerCase()
+          streamTx.streamContractAddress.toLowerCase(),
     );
 
     if (usdcFundingTx != null) {
       transactionsLeft = transactionsLeft.filter(
-        (t) => t !== streamTx && t !== usdcFundingTx
+        (t) => t !== streamTx && t !== usdcFundingTx,
       );
 
       return {
@@ -659,7 +659,7 @@ export const buildActions = (transactions, { chainId }) => {
         endTimestamp: streamTx.endDate.getTime(),
         predictedStreamContractAddress: streamTx.streamContractAddress,
         firstTransactionIndex: Math.min(
-          ...[streamTx, usdcFundingTx].map(getTransactionIndex)
+          ...[streamTx, usdcFundingTx].map(getTransactionIndex),
         ),
       };
     }
@@ -668,7 +668,7 @@ export const buildActions = (transactions, { chainId }) => {
       (t) =>
         t.type === "weth-stream-funding" &&
         t.receiverAddress.toLowerCase() ===
-          streamTx.streamContractAddress.toLowerCase()
+          streamTx.streamContractAddress.toLowerCase(),
     );
 
     if (wethFundingTx == null) return null;
@@ -676,13 +676,13 @@ export const buildActions = (transactions, { chainId }) => {
     const wethDepositTx = transactionsLeft.find(
       (t) =>
         t.type === "weth-deposit" &&
-        t.value.toString() === wethFundingTx.wethAmount.toString()
+        t.value.toString() === wethFundingTx.wethAmount.toString(),
     );
 
     if (wethDepositTx == null) return null;
 
     transactionsLeft = transactionsLeft.filter(
-      (t) => t !== streamTx && t !== wethFundingTx && t !== wethDepositTx
+      (t) => t !== streamTx && t !== wethFundingTx && t !== wethDepositTx,
     );
 
     return {
@@ -694,7 +694,7 @@ export const buildActions = (transactions, { chainId }) => {
       endTimestamp: streamTx.endDate.getTime(),
       predictedStreamContractAddress: streamTx.streamContractAddress,
       firstTransactionIndex: Math.min(
-        ...[streamTx, wethFundingTx, wethDepositTx].map(getTransactionIndex)
+        ...[streamTx, wethFundingTx, wethDepositTx].map(getTransactionIndex),
       ),
     };
   };
@@ -714,7 +714,7 @@ export const buildActions = (transactions, { chainId }) => {
     }
 
     const usdcTransferTx = transactionsLeft.find(
-      (t) => t.type === "usdc-transfer-via-payer"
+      (t) => t.type === "usdc-transfer-via-payer",
     );
 
     if (usdcTransferTx != null) {
@@ -725,7 +725,7 @@ export const buildActions = (transactions, { chainId }) => {
         currency: "usdc",
         amount: formatUnits(
           usdcTransferTx.usdcAmount,
-          decimalsByCurrency["usdc"]
+          decimalsByCurrency["usdc"],
         ),
         firstTransactionIndex: getTransactionIndex(usdcTransferTx),
       };
@@ -888,7 +888,7 @@ export const resolveAction = (a, { chainId }) => {
       case "prop-house-timed-round": {
         const { address: propHouseNounsHouseAddress } = resolveIdentifier(
           chainId,
-          "prop-house-nouns-house"
+          "prop-house-nouns-house",
         );
         const getValue = () =>
           a.roundConfig.awards.reduce((sum, award) => {
@@ -922,7 +922,7 @@ export const resolveAction = (a, { chainId }) => {
 
       case "custom-transaction": {
         const { name: functionName, inputs: functionInputTypes } = parseAbiItem(
-          `function ${a.contractCallSignature}`
+          `function ${a.contractCallSignature}`,
         );
 
         if (a.contractCallValue > 0)
@@ -959,7 +959,7 @@ export const resolveAction = (a, { chainId }) => {
 export const stringify = (parsedTransaction, { chainId }) => {
   const { targets, values, signatures, calldatas } = unparse(
     [parsedTransaction],
-    { chainId }
+    { chainId },
   );
 
   if (signatures[0] == null || signatures[0] === "") {
@@ -973,7 +973,7 @@ export const stringify = (parsedTransaction, { chainId }) => {
   }
 
   const { name: functionName, inputs: inputTypes } = parseAbiItem(
-    `function ${signatures[0]}`
+    `function ${signatures[0]}`,
   );
   const inputs = decodeAbiParameters(inputTypes, calldatas[0]);
 

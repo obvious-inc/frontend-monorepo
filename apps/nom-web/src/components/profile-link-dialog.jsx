@@ -24,7 +24,7 @@ const ProfileLinkDialog = ({ accountAddress, titleProps, dismiss }) => {
   const { displayName: computedDisplayName } =
     useAccountDisplayName(walletAddress);
   const truncatedAddress = truncateAddress(
-    checksumEncodeAddress(walletAddress)
+    checksumEncodeAddress(walletAddress),
   );
 
   const [linkCopied, setLinkCopied] = React.useState(false);

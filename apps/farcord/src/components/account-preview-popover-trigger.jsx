@@ -23,7 +23,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     const user = useUserByFid(fid);
     if (fid == null && user == null) return null;
@@ -50,7 +50,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {

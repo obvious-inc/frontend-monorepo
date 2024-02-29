@@ -110,7 +110,7 @@ const useFeedItems = ({ filter }) => {
   return React.useMemo(() => {
     const buildProposalItems = () =>
       proposals.flatMap((p) =>
-        buildProposalFeed(p, { latestBlockNumber, includePropdates: false })
+        buildProposalFeed(p, { latestBlockNumber, includePropdates: false }),
       );
     const buildCandidateItems = () =>
       candidates.flatMap((c) => buildCandidateFeed(c));
@@ -135,7 +135,7 @@ const useFeedItems = ({ filter }) => {
 
     return arrayUtils.sortBy(
       { value: (i) => i.blockNumber, order: "desc" },
-      buildFeedItems()
+      buildFeedItems(),
     );
   }, [proposals, candidates, propdates, filter, latestBlockNumber]);
 };
@@ -206,11 +206,11 @@ const BrowseScreen = () => {
   const [page, setPage] = React.useState(1);
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
-    "activity"
+    "activity",
   );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedBrowseDataOnce
+    hasFetchedBrowseDataOnce,
   );
 
   const candidateSortStrategies =
@@ -219,18 +219,18 @@ const BrowseScreen = () => {
       : ["activity", "popularity", "connected-account-feedback"];
 
   const candidateSortStrategy = candidateSortStrategies.includes(
-    candidateSortStrategy_
+    candidateSortStrategy_,
   )
     ? candidateSortStrategy_
     : "popularity";
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
-    [proposals]
+    [proposals],
   );
   const filteredCandidates = React.useMemo(
     () => candidates.filter((c) => c.latestVersion != null),
-    [candidates]
+    [candidates],
   );
   const filteredProposalUpdateCandidates = React.useMemo(() => {
     const hasSigned = (c) => {
@@ -239,7 +239,7 @@ const BrowseScreen = () => {
         activeProposerIds: [],
       });
       return signatures.some(
-        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress
+        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress,
       );
     };
 
@@ -251,7 +251,7 @@ const BrowseScreen = () => {
         return true;
 
       const isSponsor = c.targetProposal.signers.some(
-        (s) => s.id.toLowerCase() === connectedWalletAccountAddress
+        (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
       );
 
       return isSponsor && !hasSigned(c);
@@ -266,7 +266,7 @@ const BrowseScreen = () => {
             .filter((d) => {
               if (d.name.trim() !== "") return true;
               return d.body.some(
-                (n) => !isRichTextNodeEmpty(n, { trim: true })
+                (n) => !isRichTextNodeEmpty(n, { trim: true }),
               );
             })
             .map((d) => ({ ...d, type: "draft" }));
@@ -313,14 +313,14 @@ const BrowseScreen = () => {
               { value: c.proposerId, exact: true },
               { value: c.latestVersion?.content.title },
               ...(c.latestVersion?.content.contentSignatures ?? []).map(
-                (s) => ({ value: s.signer.id, exact: true })
+                (s) => ({ value: s.signer.id, exact: true }),
               ),
             ],
             fallbackSortProperty: c.createdBlock,
-          })
+          }),
         ),
       ],
-      [deferredQuery, ...matchingAddresses]
+      [deferredQuery, ...matchingAddresses],
     );
 
     return matchingRecords.map((r) => r.data);
@@ -359,10 +359,10 @@ const BrowseScreen = () => {
   };
 
   const candidateActiveThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS)
+    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS),
   );
   const candidateNewThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS)
+    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS),
   );
 
   const groupCandidate = (c) => {
@@ -379,7 +379,7 @@ const BrowseScreen = () => {
       c.lastUpdatedTimestamp > candidateActiveThreshold ||
       (c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.createdTimestamp > candidateActiveThreshold
+          (p) => p.createdTimestamp > candidateActiveThreshold,
         ));
 
     if (!isActive) return "candidates:inactive";
@@ -390,7 +390,7 @@ const BrowseScreen = () => {
       const hasFeedback =
         c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.voter.id.toLowerCase() === connectedAccount
+          (p) => p.voter.id.toLowerCase() === connectedAccount,
         );
 
       if (
@@ -408,7 +408,7 @@ const BrowseScreen = () => {
 
     if (
       content.contentSignatures.some(
-        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount
+        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
       )
     )
       return "candidates:sponsored";
@@ -432,7 +432,7 @@ const BrowseScreen = () => {
               ? items
               : arrayUtils.sortBy(
                   { value: (i) => Number(i.id), order: "desc" },
-                  items
+                  items,
                 ),
           };
 
@@ -443,7 +443,7 @@ const BrowseScreen = () => {
               ? items
               : arrayUtils.sortBy(
                   (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                  items
+                  items,
                 ),
           };
 
@@ -458,7 +458,7 @@ const BrowseScreen = () => {
                   value: (i) => Number(i.startBlock),
                   order: "desc",
                 },
-                items
+                items,
               );
           const paginate = page != null && groupKey === "proposals:past";
           return {
@@ -493,11 +493,11 @@ const BrowseScreen = () => {
                         Math.max(
                           i.lastUpdatedTimestamp,
                           ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
-                            [])
+                            []),
                         ),
                       order: "desc",
                     },
-                items
+                items,
               );
 
           const paginate = page != null && groupKey === "candidates:inactive";
@@ -524,7 +524,7 @@ const BrowseScreen = () => {
       if (i.type === "draft") return "drafts";
       if (i.slug != null) return groupCandidate(i);
       return groupProposal(i);
-    }, filteredItems)
+    }, filteredItems),
   );
 
   const { fetchBrowseScreenData } = useActions();
@@ -537,7 +537,7 @@ const BrowseScreen = () => {
         hasFetchedBrowseDataOnce = true;
         fetchBrowseScreenData({ skip: 40, first: 1000 });
       }),
-    [fetchBrowseScreenData]
+    [fetchBrowseScreenData],
   );
 
   const handleSearchInputChange = useDebouncedCallback((query) => {
@@ -551,7 +551,7 @@ const BrowseScreen = () => {
           newParams.delete("q");
           return newParams;
         },
-        { replace: true }
+        { replace: true },
       );
       return;
     }
@@ -562,7 +562,7 @@ const BrowseScreen = () => {
         newParams.set("q", query);
         return newParams;
       },
-      { replace: true }
+      { replace: true },
     );
   });
 
@@ -641,7 +641,7 @@ const BrowseScreen = () => {
                             ? filteredItems
                             : filteredItems.slice(
                                 0,
-                                BROWSE_LIST_PAGE_ITEM_COUNT * page
+                                BROWSE_LIST_PAGE_ITEM_COUNT * page,
                               ),
                       },
                     ]}
@@ -723,10 +723,12 @@ const BrowseScreen = () => {
                             "proposals:past",
                           ]
                             .map(
-                              (sectionName) => sectionsByName[sectionName] ?? {}
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
                             )
                             .filter(
-                              ({ items }) => items != null && items.length !== 0
+                              ({ items }) =>
+                                items != null && items.length !== 0,
                             )}
                         />
                         {page != null &&
@@ -772,7 +774,7 @@ const BrowseScreen = () => {
                               (o) =>
                                 // A connected wallet is required for feedback filter to work
                                 connectedWalletAccountAddress != null ||
-                                o.value !== "connected-account-feedback"
+                                o.value !== "connected-account-feedback",
                             )}
                             onChange={(value) => {
                               setCandidateSortStrategy(value);
@@ -813,10 +815,12 @@ const BrowseScreen = () => {
                             "candidates:inactive",
                           ]
                             .map(
-                              (sectionName) => sectionsByName[sectionName] ?? {}
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
                             )
                             .filter(
-                              ({ items }) => items != null && items.length !== 0
+                              ({ items }) =>
+                                items != null && items.length !== 0,
                             )}
                         />
                         {page != null &&
@@ -1029,7 +1033,7 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
 
   const [page, setPage] = React.useState(2);
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedActivityFeedOnce
+    hasFetchedActivityFeedOnce,
   );
 
   const feedItems = useFeedItems({ filter });
@@ -1058,7 +1062,7 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
             });
           });
         },
-    [latestBlockNumber, fetchNounsActivity]
+    [latestBlockNumber, fetchNounsActivity],
   );
 
   if (visibleItems.length === 0 || !hasFetchedOnce) return null;
@@ -1086,7 +1090,7 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
 const FeedSidebar = React.memo(({ visible = true }) => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
-    "all"
+    "all",
   );
 
   if (!visible) return null;
@@ -1159,7 +1163,7 @@ const FeedSidebar = React.memo(({ visible = true }) => {
 const FeedTabContent = React.memo(({ visible }) => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
-    "all"
+    "all",
   );
 
   if (!visible) return null;
@@ -1313,11 +1317,11 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   switch (proposal.state) {
     case "updatable": {
       const updatePeriodEndDate = calculateBlockTimestamp(
-        proposal.updatePeriodEndBlock
+        proposal.updatePeriodEndBlock,
       );
       const { minutes, hours, days } = dateUtils.differenceUnits(
         updatePeriodEndDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Closes for changes in less than 1 minute</>;
@@ -1339,7 +1343,7 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
       const startDate = calculateBlockTimestamp(proposal.startBlock);
       const { minutes, hours, days } = dateUtils.differenceUnits(
         startDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Starts in less than 1 minute</>;
@@ -1360,11 +1364,11 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
     case "active":
     case "objection-period": {
       const endDate = calculateBlockTimestamp(
-        proposal.objectionPeriodEndBlock ?? proposal.endBlock
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock,
       );
       const { minutes, hours, days } = dateUtils.differenceUnits(
         endDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Ends in less than 1 minute</>;
@@ -1403,7 +1407,7 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
 
   const vote = proposal.votes?.find(
-    (v) => v.voterId === connectedWalletAccountAddress
+    (v) => v.voterId === connectedWalletAccountAddress,
   );
 
   return (
@@ -1476,7 +1480,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
     candidate.latestVersion.targetProposalId,
-    { watch: false }
+    { watch: false },
   );
 
   const authorAccountDisplayName = useAccountDisplayName(candidate.proposerId);
@@ -1501,7 +1505,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
 
   const feedbackPostsAscending = arrayUtils.sortBy(
     (p) => p.createdBlock,
-    candidate?.feedbackPosts ?? []
+    candidate?.feedbackPosts ?? [],
   );
   const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
 
@@ -1513,11 +1517,11 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
       mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
       ? "feedback"
       : hasUpdate
-      ? "update"
-      : "create";
+        ? "update"
+        : "create";
 
   const feedbackAuthorAccounts = arrayUtils.unique(
-    feedbackPostsAscending.map((p) => p.voterId)
+    feedbackPostsAscending.map((p) => p.voterId),
   );
 
   const showScoreStack = !isProposalUpdate;
@@ -1551,7 +1555,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
     <NextLink
       prefetch
       href={`/candidates/${encodeURIComponent(
-        makeCandidateUrlId(candidateId)
+        makeCandidateUrlId(candidateId),
       )}`}
     >
       <div
@@ -1730,7 +1734,7 @@ const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
   const authorAccountDisplayName = useAccountDisplayName(
-    connectedAccountAddress
+    connectedAccountAddress,
   );
 
   return (

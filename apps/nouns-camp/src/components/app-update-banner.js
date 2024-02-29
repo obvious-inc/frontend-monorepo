@@ -18,11 +18,11 @@ const AppUpdateBanner = () => {
         const newBuildId = res.headers.get("x-camp-build-id");
         if (buildId == null || buildId === newBuildId) return;
         console.log(
-          `New build available: "${newBuildId}"\nCurrently running: "${buildId}"`
+          `New build available: "${newBuildId}"\nCurrently running: "${buildId}"`,
         );
         setHasUpdate(true);
       }),
-    []
+    [],
   );
 
   const showBanner = hasUpdate && !isDismissed;

@@ -90,7 +90,7 @@ const fetchRelatedAccounts = (accountAddress) =>
   fetch(
     `${
       import.meta.env.PUBLIC_EDGE_API_BASE_URL
-    }/related-accounts?wallet-address=${accountAddress.toLowerCase()}`
+    }/related-accounts?wallet-address=${accountAddress.toLowerCase()}`,
   ).then((res) => {
     if (!res.ok) return [];
     return res.json().then((body) => body.results);
@@ -142,7 +142,7 @@ const useFilteredAccounts = (query) => {
       .filter(
         (u) =>
           me == null ||
-          u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+          u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase(),
       );
   }, [me, users, relatedAccounts, query]);
 
@@ -160,7 +160,7 @@ const useFilteredChannels = (query, { selectedWalletAddresses }) => {
       return channels.length === 0
         ? sort(
             createDefaultChannelComparator(),
-            publicChannels.filter((c) => c.memberUserIds.length > 1)
+            publicChannels.filter((c) => c.memberUserIds.length > 1),
           )
         : [];
 
@@ -193,9 +193,9 @@ const useExternalAccount = (ensNameOrWalletAddress) => {
       ensMatchWalletAddress != null
         ? { walletAddress: ensMatchWalletAddress }
         : isEthereumAccountAddress(ensNameOrWalletAddress)
-        ? { walletAddress: ensNameOrWalletAddress }
-        : null,
-    [ensMatchWalletAddress, ensNameOrWalletAddress]
+          ? { walletAddress: ensNameOrWalletAddress }
+          : null,
+    [ensMatchWalletAddress, ensNameOrWalletAddress],
   );
 
   return account;
@@ -240,7 +240,7 @@ const useFilteredComboboxItems = (query, state) => {
         : accounts.filter(
             (a) =>
               a.walletAddress.toLowerCase() !==
-              exactAccountMatch.walletAddress.toLowerCase()
+              exactAccountMatch.walletAddress.toLowerCase(),
           );
 
     const accountItems = accountsExcludingEnsMatch.map((a) => ({
@@ -292,11 +292,11 @@ const useRecipientsTagFieldComboboxState = () => {
   React.useEffect(() => {
     const accounts = getIdentifiersOfType(
       "account",
-      recipientsState.selectedKeys
+      recipientsState.selectedKeys,
     );
     const channels = getIdentifiersOfType(
       "channel",
-      recipientsState.selectedKeys
+      recipientsState.selectedKeys,
     );
 
     setSearchParams(
@@ -304,13 +304,13 @@ const useRecipientsTagFieldComboboxState = () => {
         const currentEntries = [...p.entries()];
         return [
           ...currentEntries.filter(
-            (e) => !["account", "channel"].includes(e[0])
+            (e) => !["account", "channel"].includes(e[0]),
           ),
           ["account", accounts.length === 0 ? undefined : accounts.join(",")],
           ["channel", channels[0]],
         ].filter((e) => e[1]);
       },
-      { replace: true }
+      { replace: true },
     );
   }, [recipientsState.selectedKeys, setSearchParams]);
 
@@ -319,7 +319,7 @@ const useRecipientsTagFieldComboboxState = () => {
 
 const useTagFieldComboboxState = (initialState) => {
   const [state, setState] = React.useState(
-    initialState ?? { selectedKeys: [], focusIndex: -1 }
+    initialState ?? { selectedKeys: [], focusIndex: -1 },
   );
   const { selectedKeys, focusedIndex } = state;
 
@@ -332,7 +332,7 @@ const useTagFieldComboboxState = (initialState) => {
 
   const clearFocus = React.useCallback(
     () => setState((s) => ({ ...s, focusedIndex: -1 })),
-    []
+    [],
   );
 
   const moveFocusLeft = React.useCallback(
@@ -344,7 +344,7 @@ const useTagFieldComboboxState = (initialState) => {
             ? selectedKeys.length - 1
             : Math.max(0, focusedIndex - 1),
       })),
-    []
+    [],
   );
 
   const moveFocusRight = React.useCallback(
@@ -356,12 +356,12 @@ const useTagFieldComboboxState = (initialState) => {
             ? -1
             : focusedIndex + 1,
       })),
-    []
+    [],
   );
 
   const focusIndex = React.useCallback(
     (i) => setState((s) => ({ ...s, focusedIndex: i })),
-    []
+    [],
   );
 
   const focusLast = React.useCallback(
@@ -370,7 +370,7 @@ const useTagFieldComboboxState = (initialState) => {
         selectedKeys,
         focusedIndex: selectedKeys.length - 1,
       })),
-    []
+    [],
   );
 
   const deselectFocusedKeyAndMoveFocusLeft = React.useCallback(
@@ -379,7 +379,7 @@ const useTagFieldComboboxState = (initialState) => {
         selectedKeys: selectedKeys.filter((_, i) => i !== focusedIndex),
         focusedIndex: focusedIndex === 0 ? -1 : focusedIndex - 1,
       })),
-    []
+    [],
   );
 
   return {
@@ -447,8 +447,8 @@ const createDefaultChannelName = async (accounts, { publicEthereumClient }) => {
         publicEthereumClient
           .getEnsName({ address: a.walletAddress })
           .then((name) => name ?? truncateAddress(a.walletAddress))
-          .catch(() => truncateAddress(a.walletAddress))
-    )
+          .catch(() => truncateAddress(a.walletAddress)),
+    ),
   );
 
   const joineddisplayNames = displayNames.join(", ");
@@ -496,7 +496,7 @@ const NewMessageScreen = () => {
   }, [recipientsState.selectedKeys]);
 
   const dmChannel = useDmChannelWithMember(
-    selectedWalletAddresses.length === 1 ? selectedWalletAddresses[0] : null
+    selectedWalletAddresses.length === 1 ? selectedWalletAddresses[0] : null,
   );
 
   const channelId = dmChannel?.id ?? selectedChannelId;
@@ -505,10 +505,10 @@ const NewMessageScreen = () => {
     channelId != null
       ? "channel"
       : selectedWalletAddresses.length === 0
-      ? null
-      : selectedWalletAddresses.length === 1
-      ? "dm"
-      : "group";
+        ? null
+        : selectedWalletAddresses.length === 1
+          ? "dm"
+          : "group";
 
   const messageInputCommands = useCommands({ channelId });
   const channelMembers = useChannelMembers(channelId);
@@ -519,8 +519,8 @@ const NewMessageScreen = () => {
   const selectedAccounts = selectedWalletAddresses.map(
     (a) =>
       selectedUsers.find(
-        (u) => u.walletAddress.toLowerCase() === a.toLowerCase()
-      ) ?? { walletAddress: a }
+        (u) => u.walletAddress.toLowerCase() === a.toLowerCase(),
+      ) ?? { walletAddress: a },
   );
 
   const [hasPendingMessageSubmit, setHasPendingMessageSubmit] =
@@ -705,7 +705,7 @@ const NewMessageScreen = () => {
               try {
                 const channelName = await createDefaultChannelName(
                   [me, ...selectedAccounts],
-                  { publicEthereumClient }
+                  { publicEthereumClient },
                 );
 
                 const channel = await actions.createPrivateChannel({
@@ -829,7 +829,7 @@ const NewMessageScreen = () => {
                             disabled={accountVerificationStatus !== "idle"}
                             onClick={() => {
                               initAccountVerification(
-                                connectedWalletAccountAddress
+                                connectedWalletAccountAddress,
                               ).then(() => {
                                 dismissAccountAuthenticationDialog();
                                 messageInputRef.current.focus();
@@ -865,7 +865,7 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
 
   const renderHeader = React.useCallback(
     () => <ChannelMessagesScrollViewHeader channelId={channelId} />,
-    [channelId]
+    [channelId],
   );
 
   const renderMessage = React.useCallback(
@@ -880,7 +880,7 @@ const ChannelMessages = ({ channelId, initReply, replyTargetMessageId }) => {
         {...props}
       />
     ),
-    [layout, initReply, replyTargetMessageId]
+    [layout, initReply, replyTargetMessageId],
   );
 
   return (
@@ -933,7 +933,7 @@ const MessageRecipientsInputContainer = React.forwardRef(
       {label && <div style={{ marginRight: "0.8rem" }}>{label}</div>}
       {children}
     </Component>
-  )
+  ),
 );
 
 const MessageRecipientChannelHeader = ({ channelId, ...props }) => {
@@ -961,7 +961,7 @@ const AccountDisplayName = ({ walletAddress }) =>
 const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
   const users = useUsers(walletAddresses);
   const accounts = walletAddresses.map(
-    (a) => users.find((u) => u.walletAddress === a) ?? { walletAddress: a }
+    (a) => users.find((u) => u.walletAddress === a) ?? { walletAddress: a },
   );
 
   return (
@@ -989,7 +989,7 @@ const MessageRecipientAccountsHeader = ({ walletAddresses, ...props }) => {
 const MessageRecipientCombobox = React.forwardRef(
   (
     { label, ariaLabel, placeholder, state, disabled, onSelect, onBlur },
-    inputRef
+    inputRef,
   ) => {
     const containerRef = React.useRef();
 
@@ -1074,7 +1074,7 @@ const MessageRecipientCombobox = React.forwardRef(
                   case "account":
                     state.setSelection((keys) => {
                       const nonChannelKeys = keys.filter(
-                        (k) => getKeyItemType(k) !== "channel"
+                        (k) => getKeyItemType(k) !== "channel",
                       );
                       return [...nonChannelKeys, key];
                     });
@@ -1143,7 +1143,7 @@ const MessageRecipientCombobox = React.forwardRef(
                     },
                     inputKeyboardProps,
                     inputProps,
-                    tagFieldInputProps
+                    tagFieldInputProps,
                   )}
                 />
               )}
@@ -1166,7 +1166,7 @@ const MessageRecipientCombobox = React.forwardRef(
         </FlexGrid>
       </MessageRecipientsInputContainer>
     );
-  }
+  },
 );
 
 const Tag = ({ label, isFocused, focus, deselect, ...props }) => (
@@ -1286,7 +1286,7 @@ const MessageRecipientListBox = React.forwardRef(
         })}
       </ul>
     );
-  }
+  },
 );
 
 const MessageRecipientComboboxOption = ({ item, state, isSelected }) => {

@@ -4,7 +4,7 @@ import React from "react";
 const generateMatrix = (text) => {
   const arr = Array.prototype.slice.call(
     QRCodeUtil.create(text, { errorCorrectionLevel: "H" }).modules.data,
-    0
+    0,
   );
   const sqrt = Math.sqrt(arr.length);
   return arr.reduce(
@@ -12,7 +12,7 @@ const generateMatrix = (text) => {
       (index % sqrt === 0
         ? rows.push([key])
         : rows[rows.length - 1].push(key)) && rows,
-    []
+    [],
   );
 };
 
@@ -44,7 +44,7 @@ const QRCode = ({ image, uri, color = "black" }) => {
             width={cellSize * (7 - i * 2)}
             x={x1 + cellSize * i}
             y={y1 + cellSize * i}
-          />
+          />,
         );
       }
     });
@@ -78,7 +78,7 @@ const QRCode = ({ image, uri, color = "black" }) => {
                   fill={color}
                   key={`circle-${i}-${j}`}
                   r={cellSize / 3} // calculate size of single dots
-                />
+                />,
               );
             }
           }

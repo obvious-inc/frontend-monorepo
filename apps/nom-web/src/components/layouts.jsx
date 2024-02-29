@@ -72,7 +72,7 @@ const Layout = () => {
 
   const [collapsedIds_, setCollapsedIds] = useCachedState(
     "main-menu:collapsed",
-    []
+    [],
   );
 
   const collapsedIds = collapsedIds_ ?? [];
@@ -87,9 +87,9 @@ const Layout = () => {
   const topChannels = React.useMemo(
     () =>
       memberChannels.filter(
-        (c) => c.hasBeenSeen === false && c.id !== params.channelId
+        (c) => c.hasBeenSeen === false && c.id !== params.channelId,
       ),
-    [memberChannels, params.channelId]
+    [memberChannels, params.channelId],
   );
 
   const memberChannelsExcludingStarredAndTopChannels = React.useMemo(() => {
@@ -102,7 +102,7 @@ const Layout = () => {
   const popularNonMemberPublicChannels = usePublicChannels().filter(
     (c) =>
       c.memberUserIds.length >= 3 &&
-      (me == null || !c.memberUserIds.includes(me.id))
+      (me == null || !c.memberUserIds.includes(me.id)),
   );
 
   const listedChannels =
@@ -117,7 +117,7 @@ const Layout = () => {
   const selectedChannel = useChannel(params.channelId);
 
   const selectedChannelIsListed = listedChannels.some(
-    (c) => c.id === params.channelId
+    (c) => c.id === params.channelId,
   );
 
   const isLoadingUser = authenticationStatus === "authenticated" && me == null;
@@ -223,7 +223,7 @@ const Layout = () => {
                     case "verify-account":
                       if (isMenuFloating) toggleMenu();
                       initAccountVerification(
-                        connectedWalletAccountAddress
+                        connectedWalletAccountAddress,
                       ).then(() => {
                         dismissAccountAuthenticationDialog();
                       });
@@ -438,9 +438,9 @@ const Layout = () => {
                             value: (c) => c.memberUserIds.length,
                             order: "desc",
                           },
-                          { value: (c) => c.name.toLowerCase() }
+                          { value: (c) => c.name.toLowerCase() },
                         ),
-                        popularNonMemberPublicChannels
+                        popularNonMemberPublicChannels,
                       ),
                       isHidden:
                         memberChannels.length > 1 ||
@@ -457,7 +457,7 @@ const Layout = () => {
                         const defaultTruncationCount =
                           channels.length - TRUNCATION_THRESHOLD;
                         const readCount = channels.filter(
-                          (c) => !c.hasUnread
+                          (c) => !c.hasUnread,
                         ).length;
 
                         return Math.min(defaultTruncationCount, readCount);
@@ -482,17 +482,17 @@ const Layout = () => {
                             setCollapsedIds((ids) =>
                               ids.includes(key)
                                 ? ids.filter((id) => id !== key)
-                                : [...ids, key]
+                                : [...ids, key],
                             );
                             setTruncatedSections((ids) =>
-                              ids.includes(key) ? ids : [...ids, key]
+                              ids.includes(key) ? ids : [...ids, key],
                             );
                           }}
                           onToggleTruncated={() => {
                             setTruncatedSections((ids) =>
                               ids.includes(key)
                                 ? ids.filter((id) => id !== key)
-                                : [...ids, key]
+                                : [...ids, key],
                             );
                           }}
                         >
@@ -547,8 +547,8 @@ const ProfileDropdownTrigger = React.forwardRef(
       user == null
         ? null
         : user.hasCustomDisplayName
-        ? user.displayName
-        : userEnsName ?? truncatedAddress;
+          ? user.displayName
+          : userEnsName ?? truncatedAddress;
 
     const showAccountDescription = userDisplayName !== truncatedAddress;
     const accountDescription =
@@ -734,7 +734,7 @@ const ProfileDropdownTrigger = React.forwardRef(
         </div>
       </button>
     );
-  }
+  },
 );
 
 const CollapsibleSection = ({
@@ -830,7 +830,7 @@ const useLastMessage = (channelId) => {
     channelId == null || message != null
       ? null
       : () => fetchLastChannelMessage(channelId),
-    [channelId, message]
+    [channelId, message],
   );
 
   return message;
@@ -909,7 +909,7 @@ const ChannelItem = ({ id, expandable, size = "normal" }) => {
 };
 
 const StringifiedMessageContent = React.memo(({ messageId }) =>
-  useStringifiedMessageContent(messageId)
+  useStringifiedMessageContent(messageId),
 );
 
 const ListItem = React.forwardRef(
@@ -929,7 +929,7 @@ const ListItem = React.forwardRef(
       disabled,
       ...props
     },
-    ref
+    ref,
   ) => {
     const iconSize = size === "large" ? "3rem" : "2rem";
     return (
@@ -997,8 +997,8 @@ const ListItem = React.forwardRef(
                   size === "large"
                     ? "0.88888888rem"
                     : compact
-                    ? "0.4rem"
-                    : "0.8rem",
+                      ? "0.4rem"
+                      : "0.8rem",
                 width: `calc(${iconSize} + 0.2rem)`,
               }}
             >
@@ -1025,7 +1025,7 @@ const ListItem = React.forwardRef(
         </Component>
       </div>
     );
-  }
+  },
 );
 
 export default Layout;

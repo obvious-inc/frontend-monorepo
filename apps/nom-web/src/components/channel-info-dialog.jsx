@@ -500,7 +500,7 @@ const AboutTab = ({ channelId, dismiss }) => {
                 }
                 onClick={() => {
                   setEditDialogMode(
-                    channel.body != null ? "body" : "description"
+                    channel.body != null ? "body" : "description",
                   );
                 }}
               />
@@ -667,8 +667,8 @@ const AboutTab = ({ channelId, dismiss }) => {
                     editingPropery === "body"
                       ? "rich-text"
                       : editingPropery === "description"
-                      ? "multiline-text"
-                      : "text",
+                        ? "multiline-text"
+                        : "text",
                   placeholder,
                   hint,
                   required: channel.kind !== "dm" && editingPropery === "name",
@@ -891,7 +891,7 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
                 <button
                   onClick={() => {
                     const dmChannel = selectors.selectDmChannelFromUserId(
-                      member.id
+                      member.id,
                     );
 
                     if (dmChannel != null) {
@@ -901,7 +901,7 @@ const MembersDirectoryTab = ({ dismiss, channelId, addMember }) => {
                     }
 
                     navigate(
-                      `/new?account=${member.walletAddress.toLowerCase()}`
+                      `/new?account=${member.walletAddress.toLowerCase()}`,
                     );
                   }}
                 >

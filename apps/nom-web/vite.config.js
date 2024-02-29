@@ -10,7 +10,7 @@ export default defineConfig(({ mode }) => {
     define: {
       "import.meta.env.EDGE_API_BASE_URL": JSON.stringify(
         // If there’s no edge api origin specified we proxy everything through /api
-        env.EDGE_API_BASE_URL == null ? "/api" : "/edge-api"
+        env.EDGE_API_BASE_URL == null ? "/api" : "/edge-api",
       ),
     },
     server: {

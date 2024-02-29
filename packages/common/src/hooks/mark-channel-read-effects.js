@@ -47,7 +47,7 @@ const useMarkChannelReadEffects = (channelId, { didScrollToBottomRef }) => {
       if (channelHasUnread && didScrollToBottomRef.current)
         markChannelRead(channelId);
     },
-    { requireFocus: true }
+    { requireFocus: true },
   );
 };
 

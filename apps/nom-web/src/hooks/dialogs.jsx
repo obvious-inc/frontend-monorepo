@@ -7,7 +7,7 @@ export const Provider = ({ children }) => {
 
   const contextValue = React.useMemo(
     () => ({ openDialogs, setOpenDialogs }),
-    [openDialogs]
+    [openDialogs],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
@@ -24,7 +24,7 @@ export const useDialog = (key) => {
         return next;
       });
     },
-    [key, setOpenDialogs]
+    [key, setOpenDialogs],
   );
 
   const dismiss = React.useCallback(() => {

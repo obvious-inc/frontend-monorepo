@@ -21,7 +21,7 @@ export const NotificationsContextProvider = ({ children }) => {
   React.useEffect(() => {
     localStorage.setItem(
       "ns:notif-read-states",
-      JSON.stringify(state.lastSeenByFid)
+      JSON.stringify(state.lastSeenByFid),
     );
   }, [state.lastSeenByFid]);
 
@@ -33,7 +33,7 @@ export const NotificationsContextProvider = ({ children }) => {
 
       const notificationsByType = arrayUtils.groupBy(
         (n) => n.type,
-        notifications
+        notifications,
       );
 
       setState((s) => {
@@ -85,7 +85,7 @@ export const NotificationsContextProvider = ({ children }) => {
         markNotificationsRead,
       },
     }),
-    [state, fetchNotifications, markNotificationsRead]
+    [state, fetchNotifications, markNotificationsRead],
   );
 
   return (
@@ -105,7 +105,7 @@ export const useNotificationsFetch = ({ fid }) => {
       fetchNotifications({ fid }).catch((e) => {
         throw e;
       }),
-    [fetchNotifications, fid]
+    [fetchNotifications, fid],
   );
 };
 
@@ -214,7 +214,7 @@ export const useSortedByDateNotificationsByFid = (fid) => {
 
   return arrayUtils.sortBy(
     { value: (n) => n.mostRecentTimestamp ?? n.timestamp, order: "desc" },
-    notifications
+    notifications,
   );
 };
 

@@ -83,7 +83,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
   } = useDialog("add-member-dialog");
 
   const isFetchingMembers = channel?.members.some(
-    (m) => m.walletAddress == null
+    (m) => m.walletAddress == null,
   );
   const isEmbedded = searchParams.get("mode") === "embedded";
   const hasPendingWalletAction =
@@ -126,7 +126,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               if (authenticationStatus !== "authenticated") {
                 if (walletAccountAddress == null) {
                   alert(
-                    "You need to connect and verify your account to star channels."
+                    "You need to connect and verify your account to star channels.",
                   );
                   return;
                 }
@@ -134,8 +134,8 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
                 if (
                   !confirm(
                     `You need to verify your account to star channels. Press ok to verify "${truncateAddress(
-                      walletAccountAddress
-                    )}" with wallet signature.`
+                      walletAccountAddress,
+                    )}" with wallet signature.`,
                   )
                 )
                   return;
@@ -152,7 +152,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
               if (isEmbedded)
                 window.open(
                   `${window.location.origin}/channels/${channel.id}`,
-                  "_blank"
+                  "_blank",
                 );
             };
 
@@ -339,7 +339,7 @@ const ChannelNavBar = ({ noSideMenu, channelId }) => {
   };
 
   const descriptionParagraphBlock = channel.descriptionBlocks?.find(
-    (b) => b.type === "paragraph"
+    (b) => b.type === "paragraph",
   );
 
   return (
@@ -460,12 +460,12 @@ const MembersDisplayButton = React.forwardRef(({ onClick, members }, ref) => {
   const theme = useTheme();
   const sortedMembers = React.useMemo(
     () => sort(userUtils.createDefaultComparator(), members),
-    [members]
+    [members],
   );
 
   const memberCount = members.length;
   const onlineMemberCount = members.filter(
-    (m) => m.onlineStatus === "online"
+    (m) => m.onlineStatus === "online",
   ).length;
 
   const membersToDisplay = sortedMembers.slice(0, 3);

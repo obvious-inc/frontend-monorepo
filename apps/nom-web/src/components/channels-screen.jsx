@@ -16,7 +16,7 @@ const useChannels = () => {
 
   useFetch(
     () => fetchPubliclyReadableChannels(),
-    [fetchPubliclyReadableChannels]
+    [fetchPubliclyReadableChannels],
   );
 
   return channels;
@@ -31,7 +31,7 @@ const ChannelsScreen = () => {
   const filteredChannels = React.useMemo(
     () =>
       deferredQuery === "" ? channels : searchChannels(channels, deferredQuery),
-    [deferredQuery, channels]
+    [deferredQuery, channels],
   );
 
   return (

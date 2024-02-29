@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react({ jsxImportSource: "@emotion/react" })],
     define: {
       "import.meta.env.EDGE_API_BASE_URL": JSON.stringify(
-        env.EDGE_API_BASE_URL == null ? "/api" : "/edge-api"
+        env.EDGE_API_BASE_URL == null ? "/api" : "/edge-api",
       ),
     },
     server: {

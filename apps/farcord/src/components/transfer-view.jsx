@@ -373,7 +373,7 @@ const TransferView = () => {
 
                   try {
                     const { hash } = await writeContract(
-                      transferSimulationData.request
+                      transferSimulationData.request,
                     );
                     setTransferTransaction(hash);
                   } catch (e) {

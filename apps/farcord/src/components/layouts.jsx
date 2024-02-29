@@ -62,7 +62,7 @@ const ListItem = React.forwardRef(
       disabled,
       ...props
     },
-    ref
+    ref,
   ) => {
     const iconSize = size === "large" ? "3rem" : "2rem";
     return (
@@ -130,8 +130,8 @@ const ListItem = React.forwardRef(
                   size === "large"
                     ? "0.88888888rem"
                     : compact
-                    ? "0.4rem"
-                    : "0.8rem",
+                      ? "0.4rem"
+                      : "0.8rem",
                 width: `calc(${iconSize} + 0.2rem)`,
               }}
             >
@@ -155,7 +155,7 @@ const ListItem = React.forwardRef(
         </Component>
       </div>
     );
-  }
+  },
 );
 
 export const ChannelItem = ({ channel, expandable }) => {
@@ -500,11 +500,11 @@ export const MainLayout = ({ children }) => {
   React.useEffect(() => {
     const followedChannelsIds = storedFollowedChannels?.map((c) => c.id);
     const remainingChannels = farcasterChannels.filter(
-      (channel) => !followedChannelsIds?.includes(channel.id)
+      (channel) => !followedChannelsIds?.includes(channel.id),
     );
 
     const fChannels = storedFollowedChannels?.filter(
-      (c) => c.id != "https://farcord.com"
+      (c) => c.id != "https://farcord.com",
     );
 
     const sortedChannels = sort((c1, c2) => {

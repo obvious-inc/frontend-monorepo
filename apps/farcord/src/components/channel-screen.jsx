@@ -40,7 +40,7 @@ export const ChannelCastsScrollView = ({
   const { fid } = useFarcasterAccount();
 
   const channel = useFarcasterChannel(
-    isFeed ? "feed" : isRecent ? "recent" : channelId
+    isFeed ? "feed" : isRecent ? "recent" : channelId,
   );
 
   useChannelCastsFetch({ channel, cursor: null });

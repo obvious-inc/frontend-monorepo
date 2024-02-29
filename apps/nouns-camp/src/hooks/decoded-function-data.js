@@ -27,7 +27,7 @@ const decodeCalldataWithAbi = ({ abi, calldata }) => {
 
 const useDecodedFunctionData = (
   { target, calldata },
-  { enabled = false } = {}
+  { enabled = false } = {},
 ) => {
   const contractInfo = useEtherscanContractInfo(target, { enabled });
 

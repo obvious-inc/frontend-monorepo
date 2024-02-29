@@ -15,5 +15,5 @@ if (import.meta.env.PROD) {
 createRoot(document.getElementById("app-mount")).render(
   <React.StrictMode>
     <App />
-  </React.StrictMode>
+  </React.StrictMode>,
 );

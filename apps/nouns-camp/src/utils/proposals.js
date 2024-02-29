@@ -55,7 +55,7 @@ export const isActiveState = (state) =>
 
 export const buildFeed = (
   proposal,
-  { latestBlockNumber, candidate, includePropdates = true }
+  { latestBlockNumber, candidate, includePropdates = true },
 ) => {
   if (proposal == null) return [];
 
@@ -202,7 +202,7 @@ export const buildFeed = (
 
   return arrayUtils.sortBy(
     { value: (i) => i.blockNumber, order: "desc" },
-    items
+    items,
   );
 };
 

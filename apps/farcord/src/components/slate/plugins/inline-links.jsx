@@ -67,7 +67,7 @@ const createMiddleware = ({ isUrl }) => {
 
     editor.insertLink = (
       { label: maybeLabel, url },
-      { at = editor.selection, select = true } = {}
+      { at = editor.selection, select = true } = {},
     ) => {
       const linkMatch = editor.above({ at, match: (n) => n.type === "link" });
 
@@ -77,7 +77,7 @@ const createMiddleware = ({ isUrl }) => {
       if (linkMatch == null) {
         editor.insertNodes(
           { type: "link", url, label, children: [{ text: label }] },
-          { at }
+          { at },
         );
         if (select) {
           const linkNodeEntry = editor.next({ at });
@@ -96,7 +96,7 @@ const createMiddleware = ({ isUrl }) => {
         editor.removeNodes({ at: linkNodeFirstChildPath });
         editor.insertNodes(
           { children: [{ text: label }] },
-          { at: linkNodeFirstChildPath }
+          { at: linkNodeFirstChildPath },
         );
         if (select) {
           const linkNodeEntry = editor.next({ at: linkNodePath });
@@ -169,7 +169,7 @@ const createMiddleware = ({ isUrl }) => {
               : linkNode.url,
             label: linkLabel,
           },
-          { at: linkNodePath }
+          { at: linkNodePath },
         );
         insertText(text);
       });
