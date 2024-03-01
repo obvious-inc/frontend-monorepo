@@ -46,6 +46,7 @@
     "slate-react": "^0.100.1",
     "tinykeys": "^1.4.0",
     "viem": "^2.7.10",
+    "vite-plugin-pwa": "^0.19.2",
     "wagmi": "^2.5.7",
     "zustand": "^4.3.7"
   }
