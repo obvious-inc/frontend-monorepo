@@ -39,7 +39,7 @@ const stylesByVariant = (t, { danger }) => ({
       },
     },
   },
-  "default-opaque": {
+  opaque: {
     color: t.colors.textNormal,
     background: t.colors.backgroundModifierNormal,
     "@media (hover: hover)": {
@@ -162,7 +162,7 @@ const Button = React.forwardRef(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const { buttonProps } = useButton(
       {
@@ -173,7 +173,7 @@ const Button = React.forwardRef(
         onPress: onPress ?? onClick,
         onPressStart,
       },
-      ref
+      ref,
     );
 
     const iconLayout =
@@ -271,7 +271,7 @@ const Button = React.forwardRef(
         )}
       </Component>
     );
-  }
+  },
 );
 
 const dotsAnimation = keyframes({

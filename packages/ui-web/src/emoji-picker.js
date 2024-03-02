@@ -48,7 +48,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
 
   const emojiByCategoryEntries = React.useMemo(
     () => Object.entries(groupBy((e) => e.category, emojis)),
-    [emojis]
+    [emojis],
   );
 
   const [highlightedEntry, setHighlightedEntry] = React.useState(null);
@@ -77,7 +77,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
         : filteredEmojisByCategoryEntries[deferredHighlightedEntry[0]][1][
             deferredHighlightedEntry[1]
           ],
-    [deferredHighlightedEntry, filteredEmojisByCategoryEntries]
+    [deferredHighlightedEntry, filteredEmojisByCategoryEntries],
   );
 
   const ROW_LENGTH = 9;

@@ -35,7 +35,7 @@ const NounAvatar = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 export default NounAvatar;

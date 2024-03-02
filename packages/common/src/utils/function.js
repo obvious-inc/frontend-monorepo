@@ -20,16 +20,16 @@ export const waterfall = (promiseCreators) => {
             .then((res) => {
               responses.push(res);
             })
-            .catch()
+            .catch(),
         ),
-      Promise.resolve()
+      Promise.resolve(),
     )
     .then(() => responses);
 };
 
 export const retryAsync = (
   createPromise,
-  { retries = 3, timeout = 1000 } = {}
+  { retries = 3, timeout = 1000 } = {},
 ) =>
   new Promise((resolve, reject) => {
     createPromise().then(resolve, (e) => {
@@ -37,7 +37,7 @@ export const retryAsync = (
       setTimeout(() => {
         retryAsync(createPromise, { retries: retries - 1, timeout }).then(
           resolve,
-          reject
+          reject,
         );
       }, timeout);
     });

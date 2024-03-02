@@ -14,17 +14,17 @@ const useRecentEmojis = ({ enabled, fetcher } = {}) => {
       recentEmojiCache == null
         ? []
         : unique([...recentEmojiCache, ...defaultSet]),
-    [recentEmojiCache]
+    [recentEmojiCache],
   );
 
   const emojiByEmoji = React.useMemo(
     () => indexBy((e) => e.emoji, emojis),
-    [emojis]
+    [emojis],
   );
 
   const recentEmojiData = React.useMemo(
     () => recentEmoji?.map((e) => emojiByEmoji[e]).filter(Boolean),
-    [emojiByEmoji, recentEmoji]
+    [emojiByEmoji, recentEmoji],
   );
 
   return recentEmojiData;

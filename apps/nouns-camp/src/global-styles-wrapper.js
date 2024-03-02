@@ -12,7 +12,7 @@ const GlobalStyles = ({ children }) => {
   const [xmasEffectsOptOut] = useSetting("xmas-effects-opt-out");
 
   const [isClient, setIsClient] = React.useState(
-    false
+    false,
     // () => typeof window !== "undefined"
   );
 

@@ -7,7 +7,7 @@ const ChannelMembersAvatar = ({ id, transparent, highRes, ...props }) => {
   const me = useMe();
   const memberUsers = useChannelMembers(id);
   const memberUsersExcludingMe = memberUsers.filter(
-    (u) => me == null || u.id !== me.id
+    (u) => me == null || u.id !== me.id,
   );
   const isFetchingMembers = memberUsers.some((m) => m.walletAddress == null);
 

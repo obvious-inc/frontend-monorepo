@@ -13,7 +13,7 @@ const wrapLink = (editor, url, { at } = {}) => {
       label: parsedUrl.href,
       children: [{ text: parsedUrl.href }],
     },
-    { at, split: true }
+    { at, split: true },
   );
 };
 
@@ -83,7 +83,7 @@ const createMiddleware = ({ isUrl }) => {
 
     editor.insertLink = (
       { label: maybeLabel, url },
-      { at = editor.selection, select = true } = {}
+      { at = editor.selection, select = true } = {},
     ) => {
       const linkMatch = editor.above({
         at,
@@ -101,7 +101,7 @@ const createMiddleware = ({ isUrl }) => {
             label,
             children: [{ text: label }],
           },
-          { at }
+          { at },
         );
         if (select) {
           const linkNodeEntry = editor.next({ at });
@@ -120,7 +120,7 @@ const createMiddleware = ({ isUrl }) => {
         editor.removeNodes({ at: linkNodeFirstChildPath });
         editor.insertNodes(
           { children: [{ text: label }] },
-          { at: linkNodeFirstChildPath }
+          { at: linkNodeFirstChildPath },
         );
         if (select) {
           const linkNodeEntry = editor.next({ at: linkNodePath });
@@ -150,7 +150,7 @@ const createMiddleware = ({ isUrl }) => {
       if (parentBlockMatchEntry[0].type === "paragraph") {
         // Wrap urls in link nodes
         const urlEntries = getWords([node, path]).filter(([word]) =>
-          isUrl(word)
+          isUrl(word),
         );
 
         for (let [url, urlRange] of urlEntries) {
@@ -214,7 +214,7 @@ const createMiddleware = ({ isUrl }) => {
       editor.withoutNormalizing(() => {
         editor.setNodes(
           { url: getUrl(), label: linkLabel },
-          { at: linkNodePath }
+          { at: linkNodePath },
         );
         insertText(text);
       });

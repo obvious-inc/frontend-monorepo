@@ -35,31 +35,31 @@ const useChannelFetchEffects = (channelId) => {
           fetchChannel(channelId).catch(() => {
             // Ignore
           }),
-    [channelId, fetchChannel, authenticationStatus]
+    [channelId, fetchChannel, authenticationStatus],
   );
   useFetch(
     () =>
       fetchChannelMembers(channelId).catch(() => {
         // Ignore
       }),
-    [channelId, fetchChannelMembers, authenticationStatus]
+    [channelId, fetchChannelMembers, authenticationStatus],
   );
   useFetch(
     () => fetchChannelPublicPermissions(channelId),
-    [channelId, fetchChannelPublicPermissions, authenticationStatus]
+    [channelId, fetchChannelPublicPermissions, authenticationStatus],
   );
   useFetch(
     () =>
       authenticationStatus === "authenticated"
         ? fetchChannelPermissions(channelId)
         : undefined,
-    [channelId, fetchChannelPermissions, authenticationStatus]
+    [channelId, fetchChannelPermissions, authenticationStatus],
   );
   useFetch(
     authenticationStatus === "not-authenticated"
       ? () => fetchApps(channelId)
       : undefined,
-    [channelId, authenticationStatus]
+    [channelId, authenticationStatus],
   );
 
   React.useEffect(() => {
@@ -83,7 +83,7 @@ const useChannelFetchEffects = (channelId) => {
           : 0,
       requireFocus: true,
       requireOnline: true,
-    }
+    },
   );
 };
 

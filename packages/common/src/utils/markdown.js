@@ -26,11 +26,11 @@ const commonHtmlEnties = {
 const decodeHtmlEntities = (string) => {
   const partiallyDecodedString = string
     .replace(/&#(\d+);/gi, (_, numStr) =>
-      String.fromCharCode(parseInt(numStr, 10))
+      String.fromCharCode(parseInt(numStr, 10)),
     )
     .replace(
       /&([^;]+);/g,
-      (match, entity) => commonHtmlEnties[entity] || match
+      (match, entity) => commonHtmlEnties[entity] || match,
     );
 
   if (
@@ -63,7 +63,7 @@ const parseToken = (token, context = {}) => {
 
       if (children.length === 1 && children[0].type === "text") {
         const maybeEmojiChars = getUserPerceivedCharacters(
-          children[0].text.trim()
+          children[0].text.trim(),
         );
         if (maybeEmojiChars.every(isEmoji))
           return {
@@ -76,7 +76,7 @@ const parseToken = (token, context = {}) => {
       }
 
       const isImageParagraph = children.every(
-        (t) => t.type === "image" || t.text?.trim() === ""
+        (t) => t.type === "image" || t.text?.trim() === "",
       );
 
       if (isImageParagraph)
@@ -182,7 +182,7 @@ const parseToken = (token, context = {}) => {
 
     case "link": {
       const isImageUrl = ["jpg", "png", "gif"].some((ext) =>
-        token.href.endsWith(`.${ext}`)
+        token.href.endsWith(`.${ext}`),
       );
 
       const hasLabel = token.text !== token.href;

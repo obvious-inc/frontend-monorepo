@@ -53,8 +53,8 @@ const useConnectorsWithReadyState = () => {
         c.getProvider().then((p) => {
           if (p == null) return c;
           return { ...c, ready: true };
-        })
-      )
+        }),
+      ),
     ).then((connectorsWithReadyState) => {
       const readyConnectorIds = connectorsWithReadyState
         .filter((c) => c.ready)
@@ -149,7 +149,7 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
           .sortBy(
             { value: (c) => c.id !== "injected" },
             { value: (c) => c.type === "injected" },
-            connectors
+            connectors,
           )
           .map((c) => {
             return (

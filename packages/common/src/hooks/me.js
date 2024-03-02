@@ -15,8 +15,8 @@ export const useChannelNotificationSetting = (channelId) =>
   useStore(
     React.useCallback(
       (state) => selectChannelNotificationSetting(state, channelId),
-      [channelId]
-    )
+      [channelId],
+    ),
   );
 
 export const useStarredUsers = () => useStore(selectStarredUsers);
@@ -28,14 +28,14 @@ export const useIsUserStarred = (userId) =>
   useStore(
     React.useCallback(
       (state) => (userId == null ? null : selectIsUserStarred(state, userId)),
-      [userId]
-    )
+      [userId],
+    ),
   );
 
 export const useIsUserBlocked = (userId) =>
   useStore(
     React.useCallback(
       (state) => (userId == null ? null : selectIsUserBlocked(state, userId)),
-      [userId]
-    )
+      [userId],
+    ),
   );

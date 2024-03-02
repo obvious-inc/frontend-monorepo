@@ -35,7 +35,7 @@ const Content = ({ titleProps, dismiss }) => {
   const displayName = useAccountDisplayName(accountAddress);
   const { data: ensName } = useEnsName({ address: accountAddress });
   const truncatedAddress = ethereumUtils.truncateAddress(
-    checksumEncodeAddress(accountAddress)
+    checksumEncodeAddress(accountAddress),
   );
 
   const { open: openDelegationDialog } = useDialog("delegation");
@@ -209,7 +209,7 @@ const Content = ({ titleProps, dismiss }) => {
                 <NounList
                   contextAccount={accountAddress}
                   items={nounsRepresented.filter(
-                    (n) => n.ownerId.toLowerCase() !== accountAddress
+                    (n) => n.ownerId.toLowerCase() !== accountAddress,
                   )}
                 />
               </dd>

@@ -375,8 +375,8 @@ const createRenderer = ({
           el.label != null
             ? el.label
             : el.children != null
-            ? children()
-            : el.url;
+              ? children()
+              : el.url;
         return (
           <a
             key={i}
@@ -529,11 +529,11 @@ const ImageComponent = ({
     maxWidth === null && maxHeight === null
       ? width
       : width == null
-      ? null
-      : dimensionUtils.fitInsideBounds(
-          { width, height },
-          { width: maxWidth, height: maxHeight }
-        ).width;
+        ? null
+        : dimensionUtils.fitInsideBounds(
+            { width, height },
+            { width: maxWidth, height: maxHeight },
+          ).width;
 
   const hasDimensions = fittedWidth != null;
 
@@ -585,7 +585,7 @@ const RichText = React.forwardRef(
       raw = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     const render = createRenderer({
       inline,
@@ -624,7 +624,7 @@ const RichText = React.forwardRef(
         {render(blocks)}
       </div>
     );
-  }
+  },
 );
 
 export default RichText;

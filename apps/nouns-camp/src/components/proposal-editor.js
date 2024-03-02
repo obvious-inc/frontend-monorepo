@@ -86,7 +86,7 @@ const useActionTransactions = (actions) => {
 
   return React.useMemo(
     () => actions.flatMap((a) => resolveActionTransactions(a, { chainId })),
-    [actions, chainId]
+    [actions, chainId],
   );
 };
 
@@ -123,7 +123,7 @@ const ProposalEditor = ({
           amount: formatEther(payerTopUpValue),
         },
       ].filter(Boolean),
-    [actions, payerTopUpValue]
+    [actions, payerTopUpValue],
   );
 
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
@@ -783,7 +783,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
   const wethTokenContract = useContract("weth-token");
 
   const [isExpanded, setExpanded] = React.useState(
-    a.type === "custom-transaction"
+    a.type === "custom-transaction",
   );
 
   const renderTransactionComment = (t) => {
@@ -906,7 +906,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       >
         {openEditDialog != null && (
           <Button
-            variant="default-opaque"
+            variant="opaque"
             size="tiny"
             onClick={() => {
               openEditDialog();
@@ -923,7 +923,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
         )}
 
         <Button
-          variant="default-opaque"
+          variant="opaque"
           size="tiny"
           onClick={() => {
             setExpanded((s) => !s);
@@ -991,7 +991,7 @@ const MarkdownEditor = ({ value, onChange, ...props }) => (
 
       const textBeforeSelection = e.target.value.slice(
         0,
-        e.target.selectionStart
+        e.target.selectionStart,
       );
       const textAfterSelection = e.target.value.slice(e.target.selectionEnd);
 
@@ -1007,13 +1007,13 @@ const MarkdownEditor = ({ value, onChange, ...props }) => (
         [
           textBeforeSelection,
           textAfterSelection.padStart(indentCount, " "),
-        ].join("\n")
+        ].join("\n"),
       );
 
       document.execCommand(
         "insertText",
         undefined,
-        "\n" + "".padEnd(indentCount, " ")
+        "\n" + "".padEnd(indentCount, " "),
       );
     }}
     onChange={(e) => {
@@ -1186,10 +1186,10 @@ const ProposalContentEditor = ({
             e.preventDefault();
             const textBeforeSelection = e.target.value.slice(
               0,
-              e.target.selectionStart
+              e.target.selectionStart,
             );
             const textAfterSelection = e.target.value.slice(
-              e.target.selectionEnd
+              e.target.selectionEnd,
             );
             setTitle(textBeforeSelection);
             editor.insertNode(
@@ -1197,7 +1197,7 @@ const ProposalContentEditor = ({
                 type: "paragraph",
                 children: [{ text: textAfterSelection }],
               },
-              { at: editor.start([]) }
+              { at: editor.start([]) },
             );
             editor.focus(editor.start([]));
           }
@@ -1451,12 +1451,12 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
             title="Edit action"
             submit={(a) => {
               setActions((actions) =>
-                actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a))
+                actions.map((a_, i) => (i !== selectedActionIndex ? a_ : a)),
               );
             }}
             remove={() => {
               setActions((actions) =>
-                actions.filter((_, i) => i !== selectedActionIndex)
+                actions.filter((_, i) => i !== selectedActionIndex),
               );
             }}
             action={selectedAction}

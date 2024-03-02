@@ -8,7 +8,7 @@ export const buildFeed = (accountAddress, { proposals, candidates }) => {
       ?.map((p) => buildProposalFeed(p, {}))
       .flat()
       .filter(
-        (p) => p.authorAccount?.toLowerCase() === accountAddress.toLowerCase()
+        (p) => p.authorAccount?.toLowerCase() === accountAddress.toLowerCase(),
       ) ?? [];
 
   const candidateFeedItems =
@@ -16,7 +16,7 @@ export const buildFeed = (accountAddress, { proposals, candidates }) => {
       ?.map((c) => buildCandidateFeed(c))
       .flat()
       .filter(
-        (i) => i.authorAccount?.toLowerCase() === accountAddress.toLowerCase()
+        (i) => i.authorAccount?.toLowerCase() === accountAddress.toLowerCase(),
       ) ?? [];
 
   const items = [...propFeedItems, ...candidateFeedItems];

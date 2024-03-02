@@ -24,7 +24,7 @@ const middleware = (editor) => {
         {
           at: parentPath,
           match: (node) => node.type === IMAGE_ELEMENT_TYPE,
-        }
+        },
       );
       return;
     }
@@ -48,7 +48,7 @@ const middleware = (editor) => {
 
     // Only image children allowed
     const firstNonImageIndex = node.children.findIndex(
-      (n) => n.type !== IMAGE_ELEMENT_TYPE
+      (n) => n.type !== IMAGE_ELEMENT_TYPE,
     );
 
     if (firstNonImageIndex !== -1) {
@@ -116,7 +116,7 @@ const middleware = (editor) => {
 
   editor.insertImage = (
     { url, caption: caption_, width, height },
-    { at } = {}
+    { at } = {},
   ) => {
     const match = editor.node(at);
 
@@ -182,11 +182,11 @@ const ImageComponent = ({
     maxWidth == null && maxHeight == null
       ? element.width
       : element.width == null
-      ? null
-      : dimensionUtils.fitInsideBounds(
-          { width: element.width, height: element.height },
-          { width: maxWidth, height: maxHeight }
-        ).width;
+        ? null
+        : dimensionUtils.fitInsideBounds(
+            { width: element.width, height: element.height },
+            { width: maxWidth, height: maxHeight },
+          ).width;
 
   return (
     <span {...attributes}>

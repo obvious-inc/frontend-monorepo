@@ -45,12 +45,12 @@ const FormattedDateWithTooltip = React.memo(
             {dayDifference === 0
               ? "today"
               : dayDifference === 1
-              ? "tomorrow"
-              : dayDifference === -1
-              ? "yesterday"
-              : dayDifference > 0
-              ? `in ${dayDifference} days`
-              : `${Math.abs(dayDifference)} days ago`}
+                ? "tomorrow"
+                : dayDifference === -1
+                  ? "yesterday"
+                  : dayDifference > 0
+                    ? `in ${dayDifference} days`
+                    : `${Math.abs(dayDifference)} days ago`}
           </span>
           {Math.abs(dayDifference) <= 1 && (
             <>
@@ -89,7 +89,7 @@ const FormattedDateWithTooltip = React.memo(
         </Tooltip.Content>
       </Tooltip.Root>
     );
-  }
+  },
 );
 
 export default FormattedDateWithTooltip;

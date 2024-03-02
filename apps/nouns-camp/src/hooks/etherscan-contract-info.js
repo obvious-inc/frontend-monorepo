@@ -23,7 +23,7 @@ const fetchEtherscanContractInfo = (address) =>
 
 const fetchEip1967ProxyImplementationAddressFromStorage = (
   address,
-  { publicClient }
+  { publicClient },
 ) =>
   publicClient
     .getStorageAt({
@@ -36,7 +36,7 @@ const fetchEip1967ProxyImplementationAddressFromStorage = (
         if (address === "0x00") return null;
         return address;
       },
-      () => null
+      () => null,
     );
 
 const readContractImplementationItem = (address, { abi, publicClient }) =>
@@ -70,7 +70,7 @@ export const fetchContractInfo = async (address, { publicClient }) => {
     if (implementationAddress == null) return info;
 
     const implementationContractInfo = await fetchEtherscanContractInfo(
-      implementationAddress
+      implementationAddress,
     );
 
     return {
@@ -103,7 +103,7 @@ const useContractInfo = (address, { enabled = true } = {}) => {
       if (signal?.aborted) return;
       setInfoByAddress((d) => ({ ...d, [address.toLowerCase()]: info }));
     },
-    [publicClient, address]
+    [publicClient, address],
   );
 
   useFetch(enabled ? fetchData : null, [fetchData]);

@@ -56,10 +56,10 @@ export const comparator = (...sortValueExtractors) => {
         typeof sortValueExtractor === "string"
           ? (e) => e[sortValueExtractor]
           : typeof sortValueExtractor === "function"
-          ? sortValueExtractor
-          : typeof sortValueExtractor.value === "string"
-          ? (e) => e[sortValueExtractor.value]
-          : sortValueExtractor.value;
+            ? sortValueExtractor
+            : typeof sortValueExtractor.value === "string"
+              ? (e) => e[sortValueExtractor.value]
+              : sortValueExtractor.value;
 
       const desc = sortValueExtractor?.order === "desc";
       const type = sortValueExtractor?.type;

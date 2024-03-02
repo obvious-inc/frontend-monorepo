@@ -59,7 +59,7 @@ const MessageEditorForm = React.memo(
       containerProps,
       ...props
     },
-    forwardedEditorRef
+    forwardedEditorRef,
   ) {
     const fallbackEditorRef = React.useRef();
     const editorRef = forwardedEditorRef ?? fallbackEditorRef;
@@ -79,7 +79,7 @@ const MessageEditorForm = React.memo(
       const imageAttachments =
         filterMessageNodes(
           (n) => n.type === "attachments" || n.type === "image-attachment",
-          initialValue
+          initialValue,
         )[0]?.children ?? [];
 
       return imageAttachments.map((a) => ({ ...a, id: a.url }));
@@ -343,7 +343,7 @@ const MessageEditorForm = React.memo(
                   const dimensions = await getImageDimensionsFromUrl(url);
                   const { width, height } = dimensionUtils.fitInsideBounds(
                     dimensions,
-                    { width: 320, height: 320 }
+                    { width: 320, height: 320 },
                   );
                   submit([
                     {
@@ -463,13 +463,13 @@ const MessageEditorForm = React.memo(
                   uploadImage({ files: [file] }).catch(() => {
                     setImageUploads((fs) => {
                       const newImageUploads = fs.filter(
-                        (f) => f.name !== file.name
+                        (f) => f.name !== file.name,
                       );
                       lastImageUploads = newImageUploads;
                       return newImageUploads;
                     });
                     const error = new Error(
-                      `Could not upload file "${file.name}"`
+                      `Could not upload file "${file.name}"`,
                     );
                     alert(error.message);
                     return Promise.reject(error);
@@ -482,7 +482,7 @@ const MessageEditorForm = React.memo(
                         id: uploadedFile.id,
                         name: uploadedFile.filename,
                         url: uploadedFile.variants.find((url) =>
-                          url.endsWith("/public")
+                          url.endsWith("/public"),
                         ),
                         previewUrl: f.url,
                         ...dimensions,
@@ -492,7 +492,7 @@ const MessageEditorForm = React.memo(
                     lastImageUploads = newImageUploads;
                     return newImageUploads;
                   });
-                })
+                }),
               ),
             ]).then(() => {
               uploadPromiseRef.current = null;
@@ -504,7 +504,7 @@ const MessageEditorForm = React.memo(
         <input type="submit" hidden />
       </form>
     );
-  })
+  }),
 );
 
 const AttachmentList = ({ items, remove }) => (
