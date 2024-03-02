@@ -132,7 +132,7 @@ export default ({
   const markChannelRead = (channelId) => {
     const lastMessageAt = selectChannelLastMessageAt(
       getStoreState(),
-      channelId
+      channelId,
     );
 
     // Use the current time in case the channel is empty
@@ -213,7 +213,7 @@ export default ({
           });
 
           return { user: me, channels, readStates, starredItems };
-        }
+        },
       );
 
   const fetchClientBootDataPrivate = () =>
@@ -290,7 +290,7 @@ export default ({
     fetchUsers,
     fetchMessages(
       channelId,
-      { limit = 50, beforeMessageId, afterMessageId, onSuccess } = {}
+      { limit = 50, beforeMessageId, afterMessageId, onSuccess } = {},
     ) {
       return api
         .fetchMessages(channelId, { limit, beforeMessageId, afterMessageId })
@@ -314,10 +314,10 @@ export default ({
 
           const fetchReplyTargets = async () => {
             const replies = messages.filter(
-              (m) => m.replyTargetMessageId != null
+              (m) => m.replyTargetMessageId != null,
             );
             const responses = await Promise.all(
-              replies.map((m) => fetchReplyTargetChain(m.replyTargetMessageId))
+              replies.map((m) => fetchReplyTargetChain(m.replyTargetMessageId)),
             );
             const allMessages = responses.flatMap((ms) => ms);
             dispatch({
@@ -334,7 +334,7 @@ export default ({
             ...messages
               .filter((m) => m.type === "regular" || m.type === "user-invited")
               .flatMap((m) =>
-                [m.authorUserId, m.inviterUserId].filter(Boolean)
+                [m.authorUserId, m.inviterUserId].filter(Boolean),
               ),
             ...messages
               .flatMap((m) => getMentions(m.content))
@@ -344,7 +344,7 @@ export default ({
           const cachedUserIds = Object.keys(getStoreState().users.entriesById);
 
           const missingUserIds = messageUserIds.filter(
-            (id) => !cachedUserIds.includes(id)
+            (id) => !cachedUserIds.includes(id),
           );
 
           // Beautifuly fetch missing users
@@ -382,7 +382,7 @@ export default ({
     },
     async createMessage(
       { channel: channelId, blocks, replyToMessageId: replyTargetMessageId },
-      { optimistic = true } = {}
+      { optimistic = true } = {},
     ) {
       const me = selectMe(getStoreState());
       const stringContent = stringifyMessageBlocks(blocks, {
@@ -435,7 +435,7 @@ export default ({
               optimisticEntryId: dummyId,
             });
             return Promise.reject(error);
-          }
+          },
         );
     },
     async updateMessage(messageId, { blocks }) {
@@ -474,7 +474,10 @@ export default ({
             "recent-emoji",
             cachedEmoji == null
               ? [emoji]
-              : [emoji, ...cachedEmoji.filter((e) => e !== emoji)].slice(0, 100)
+              : [emoji, ...cachedEmoji.filter((e) => e !== emoji)].slice(
+                  0,
+                  100,
+                ),
           );
         });
       }
@@ -616,13 +619,13 @@ export default ({
     makeChannelOpen(channelId) {
       return updateChannelPermissions(
         channelId,
-        openChannelPermissionOverrides
+        openChannelPermissionOverrides,
       );
     },
     makeChannelClosed(channelId) {
       return updateChannelPermissions(
         channelId,
-        closedChannelPermissionOverrides
+        closedChannelPermissionOverrides,
       );
     },
     makeChannelPrivate(channelId) {
@@ -718,7 +721,7 @@ export default ({
     // This assumes the client is batching request
     async fetchEnsData(
       accountAddresses,
-      { publicEthereumClient, avatars = true }
+      { publicEthereumClient, avatars = true },
     ) {
       const namesByAddress = Object.fromEntries(
         (
@@ -726,10 +729,10 @@ export default ({
             accountAddresses.map((address) =>
               publicEthereumClient
                 .getEnsName({ address })
-                .then((name) => (name == null ? null : [address, name]))
-            )
+                .then((name) => (name == null ? null : [address, name])),
+            ),
           )
-        ).filter(Boolean)
+        ).filter(Boolean),
       );
 
       const avatarsByAddress = avatars
@@ -740,11 +743,11 @@ export default ({
                   publicEthereumClient
                     .getEnsAvatar({ name })
                     .then((avatar) =>
-                      avatar == null ? null : [address, avatar]
-                    )
-                )
+                      avatar == null ? null : [address, avatar],
+                    ),
+                ),
               )
-            ).filter(Boolean)
+            ).filter(Boolean),
           )
         : {};
 
@@ -752,7 +755,7 @@ export default ({
         Object.entries(namesByAddress).map(([address, name]) => [
           address.toLowerCase(),
           { name, avatar: avatarsByAddress[address] },
-        ])
+        ]),
       );
 
       dispatch({

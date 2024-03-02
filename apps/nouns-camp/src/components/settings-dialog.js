@@ -36,7 +36,7 @@ const settingInputConfigByKey = {
     },
   },
   "debug-mode": {
-    label: "Developer mode",
+    label: "Debug mode",
     optionLabelsByValue: {
       true: "On",
       false: "Off",
@@ -106,7 +106,7 @@ const Content = ({ titleProps, dismiss }) => {
                 newParams.delete("debug");
                 return newParams;
               },
-              { replace: true }
+              { replace: true },
             );
           },
         },

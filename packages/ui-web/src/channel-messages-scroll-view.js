@@ -65,7 +65,7 @@ const ChannelMessagesScrollView = ({
     // Keep track of the average message height, so that we can make educated
     // guesses at what the placeholder height should be when fetching messages
     setAverageMessageListItemHeight(
-      messagesContainerRef.current.scrollHeight / messageIds.length
+      messagesContainerRef.current.scrollHeight / messageIds.length,
     );
   }, [messageIds.length]);
 
@@ -230,7 +230,7 @@ const ChannelMessagesScrollView = ({
             setTouchFocused: inputDeviceCanHover
               ? undefined
               : setTouchFocusedMessageId,
-          })
+          }),
         )}
         <div css={css({ height: "1.6rem" })} />
       </div>

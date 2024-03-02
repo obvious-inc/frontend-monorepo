@@ -32,7 +32,7 @@ const migrations = [
       if (a.type !== "custom-transaction") return a;
 
       const { name, inputs } = parseAbiItem(
-        a.contractCallFormattedTargetAbiItem
+        a.contractCallFormattedTargetAbiItem,
       );
       const signature = `${name}(${inputs.map((i) => i.type).join(", ")})`;
       return {
@@ -50,7 +50,7 @@ const migrations = [
           ...entry,
           actions: entry.actions.map(migrateAction),
         }),
-        state
+        state,
       ),
     };
   },
@@ -75,7 +75,7 @@ const useStore = (accountAddress) => {
     { schema: SCHEMA_VERSION, entriesById: {} },
     {
       middleware: migrateStore,
-    }
+    },
   );
 
   const setState = React.useCallback(
@@ -86,7 +86,7 @@ const useStore = (accountAddress) => {
         return { ...currentState, ...newState };
       });
     },
-    [setState_]
+    [setState_],
   );
 
   return [state ?? {}, setState, meta];
@@ -96,7 +96,7 @@ export const useCollection = () => {
   const { address: connectedAccountAddress } = useAccount();
 
   const [state, setState, { isInitialized }] = useStore(
-    connectedAccountAddress
+    connectedAccountAddress,
   );
 
   const { entriesById } = state;
@@ -120,7 +120,7 @@ export const useCollection = () => {
         entriesById: omitKey(id, state.entriesById),
       }));
     },
-    [setState]
+    [setState],
   );
 
   if (!isInitialized) return { items };
@@ -132,7 +132,7 @@ export const useSingleItem = (id) => {
   const { address: connectedAccountAddress } = useAccount();
 
   const [state, setState, { isInitialized }] = useStore(
-    connectedAccountAddress
+    connectedAccountAddress,
   );
 
   const { entriesById } = state;
@@ -145,7 +145,7 @@ export const useSingleItem = (id) => {
           entriesById: { ...state.entriesById, [item.id]: { ...item, name } },
         };
       }),
-    [id, setState]
+    [id, setState],
   );
 
   const setBody = React.useCallback(
@@ -156,7 +156,7 @@ export const useSingleItem = (id) => {
           entriesById: { ...state.entriesById, [item.id]: { ...item, body } },
         };
       }),
-    [id, setState]
+    [id, setState],
   );
   const setActions = React.useCallback(
     (actions) =>
@@ -171,7 +171,7 @@ export const useSingleItem = (id) => {
           },
         };
       }),
-    [id, setState]
+    [id, setState],
   );
 
   if (!isInitialized) return [undefined, {}];

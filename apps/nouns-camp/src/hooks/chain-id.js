@@ -16,6 +16,6 @@ const useChainId = () => {
   return chain.id;
 };
 
-export const useConnectedChainId = () => useAccount().chain?.id;
+export const useConnectedChainId = () => useAccount().chainId;
 
 export default useChainId;

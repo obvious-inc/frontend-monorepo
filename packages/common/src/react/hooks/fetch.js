@@ -35,7 +35,7 @@ const useFetch = (fetcher_, options_, dependencies_) => {
     () => {
       fetcher();
     },
-    { requireFocus: true }
+    { requireFocus: true },
   );
 };
 

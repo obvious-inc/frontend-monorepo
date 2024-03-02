@@ -24,7 +24,7 @@ const FormDialog = ({
   const [state, setState] = React.useState(() =>
     controls.reduce((acc, c) => {
       return { ...acc, [c.key]: c.initialValue ?? "" };
-    }, {})
+    }, {}),
   );
 
   const hasRequiredInput = controls.every((c) => {

@@ -2,7 +2,7 @@ import React from "react";
 
 const useInterval = (
   callback,
-  { delay, requireVisibile, requireOnline } = {}
+  { delay, requireVisibile, requireOnline } = {},
 ) => {
   const callbackRef = React.useRef(callback);
 
@@ -51,7 +51,7 @@ const useInterval = (
       clearInterval(id);
       window.removeEventListener(
         "visibilityChangeHandler",
-        visibilityChangeHandler
+        visibilityChangeHandler,
       );
       window.removeEventListener("online", set);
       window.removeEventListener("offline", pause);

@@ -51,7 +51,7 @@ export const Root = ({
   const { triggerProps, overlayProps } = useOverlayTrigger(
     { type: "dialog" },
     state,
-    triggerRef
+    triggerRef,
   );
 
   return (
@@ -100,13 +100,13 @@ export const Trigger = React.forwardRef(
         {children}
       </button>
     );
-  }
+  },
 );
 
 const ContentInner = React.forwardRef(
   (
     { width = "auto", widthFollowTrigger, children, ...props },
-    forwardedRef
+    forwardedRef,
   ) => {
     const {
       isDialog,
@@ -140,7 +140,7 @@ const ContentInner = React.forwardRef(
         containerPadding,
         ...popoverInputProps,
       },
-      state
+      state,
     );
 
     const ref = useComposedRefs(popoverRef, forwardedRef);
@@ -202,7 +202,7 @@ const ContentInner = React.forwardRef(
         </div>
       </>
     );
-  }
+  },
 );
 
 export const Content = React.forwardRef((props, ref) => {

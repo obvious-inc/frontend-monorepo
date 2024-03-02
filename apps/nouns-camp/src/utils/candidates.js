@@ -4,7 +4,7 @@ import { array as arrayUtils } from "@shades/common/utils";
 export const normalizeId = (id) => {
   const parts = id.toLowerCase().split("-");
   const proposerFirst = isAddress(
-    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`
+    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`,
   );
   const rawProposerId = proposerFirst ? parts[0] : parts.slice(-1)[0];
   const proposerId = rawProposerId.startsWith("0x")
@@ -29,7 +29,7 @@ export const makeUrlId = (id) => {
 
 export const getSponsorSignatures = (
   candidate,
-  { excludeInvalid = false, activeProposerIds } = {}
+  { excludeInvalid = false, activeProposerIds } = {},
 ) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
@@ -148,7 +148,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
 
   const sponsorNounIds = signatures.flatMap((s) =>
-    s.signer.nounsRepresented.map((n) => n.id)
+    s.signer.nounsRepresented.map((n) => n.id),
   );
 
   const sponsoringNounIds = arrayUtils.unique([
@@ -159,13 +159,13 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
     [
       ...signatures.map((s) => s.signer.id),
       proposerDelegateNounIds.length === 0 ? null : proposerDelegate.id,
-    ].filter(Boolean)
+    ].filter(Boolean),
   );
 
   // Sort first to make sure we pick the most recent feedback from per voter
   const sortedFeedbackPosts = arrayUtils.sortBy(
     { value: (c) => c.createdTimestamp, order: "desc" },
-    candidate.feedbackPosts ?? []
+    candidate.feedbackPosts ?? [],
   );
 
   const supportByNounId = sortedFeedbackPosts.reduce(
@@ -181,7 +181,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
       return { ...supportByNounId, ...newSupportByNounId };
     },
     // Assume that the sponsors will vote for
-    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
+    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {}),
   );
 
   const supportByDelegateId = sortedFeedbackPosts.reduce(
@@ -190,7 +190,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
       return { ...supportByDelegateId, [post.voterId]: post.support };
     },
     // Assume that sponsors will vote for
-    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
+    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {}),
   );
 
   const countSignals = (supportList) =>
@@ -199,7 +199,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
         const signalGroup = { 0: "against", 1: "for", 2: "abstain" }[support];
         return { ...acc, [signalGroup]: acc[signalGroup] + 1 };
       },
-      { for: 0, against: 0, abstain: 0 }
+      { for: 0, against: 0, abstain: 0 },
     );
 
   return {

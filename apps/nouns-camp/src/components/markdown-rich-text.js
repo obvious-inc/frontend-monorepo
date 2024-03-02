@@ -28,8 +28,8 @@ const setImageDimensions = async (blocks) => {
         } catch (e) {
           return [el.url, null];
         }
-      })
-    )
+      }),
+    ),
   );
 
   return messageUtils.map((node) => {
@@ -141,7 +141,7 @@ const MarkdownRichText = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 const ImageLink = ({ element: el, maxWidth, maxHeight }) => {
@@ -154,11 +154,11 @@ const ImageLink = ({ element: el, maxWidth, maxHeight }) => {
     maxWidth == null && maxHeight == null
       ? width
       : width == null
-      ? null
-      : dimensionUtils.fitInsideBounds(
-          { width, height },
-          { width: maxWidth, height: maxHeight }
-        ).width;
+        ? null
+        : dimensionUtils.fitInsideBounds(
+            { width, height },
+            { width: maxWidth, height: maxHeight },
+          ).width;
 
   const hasDimensions = fittedWidth != null;
 

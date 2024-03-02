@@ -68,7 +68,7 @@ export async function generateMetadata({ params }) {
   const title = parsedTitle ?? "Untitled candidate";
 
   const firstRegularParagraph = messageUtils.stringifyBlocks(
-    markdownUtils.toMessageBlocks(markdownUtils.getFirstParagraph(body ?? ""))
+    markdownUtils.toMessageBlocks(markdownUtils.getFirstParagraph(body ?? "")),
   );
 
   const description = stringUtils.truncate(220, firstRegularParagraph);

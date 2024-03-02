@@ -60,7 +60,7 @@ module.exports = withSerwist({
     turbo: {
       // Ignoring modules is not a thing yet
       resolveAlias: Object.fromEntries(
-        ignoredModules.map((n) => [n, "@shades/common"])
+        ignoredModules.map((n) => [n, "@shades/common"]),
       ),
     },
   },

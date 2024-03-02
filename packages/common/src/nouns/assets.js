@@ -25,7 +25,7 @@ const buildSvgStringFromSeed = (seed, { transparent = false } = {}) => {
   return buildSVG(
     parts,
     ImageData.palette,
-    transparent ? "00000000" : background
+    transparent ? "00000000" : background,
   );
 };
 

@@ -68,13 +68,13 @@ const getStrategy = (
   {
     multiplier,
     // chainId
-  }
+  },
 ) => {
   switch (identifier) {
     case "nouns-token": {
       const { address: nounsTokenAddress } = resolveContractIdentifier(
         1, // Prophouse SDK doesn’t support testnets
-        "token"
+        "token",
       );
       return {
         strategyType: GovPowerStrategyType.CHECKPOINTABLE_ERC721,
@@ -101,10 +101,10 @@ export const getTimedRoundConfigStruct = async (config, { publicClient }) => {
       }),
     ],
     proposalPeriodStartUnixTimestamp: Math.floor(
-      config.proposalPeriodStartMillis / 1000
+      config.proposalPeriodStartMillis / 1000,
     ),
     proposalPeriodDurationSecs: Math.floor(
-      config.proposalPeriodDurationMillis / 1000
+      config.proposalPeriodDurationMillis / 1000,
     ),
     votePeriodDurationSecs: Math.floor(config.votePeriodDurationMillis / 1000),
     winnerCount: config.winnerCount,
@@ -116,7 +116,7 @@ export const getTimedRoundConfigStruct = async (config, { publicClient }) => {
       if (value?.type === "BigNumber") return BigInt(value.hex).toString();
       if (typeof value === "bigint") return value.toString();
       return value;
-    })
+    }),
   );
 };
 
@@ -130,7 +130,7 @@ export const parseTimedRoundConfigStruct = (struct, { publicClient }) => {
       case GovPowerStrategyType.CHECKPOINTABLE_ERC721: {
         const { address: nounsTokenAddress } = resolveContractIdentifier(
           1, // Prophouse SDK doesn’t support testnets
-          "token"
+          "token",
         );
         const contractAddress = params[0];
         const multiplier = params[3];
@@ -151,14 +151,14 @@ export const parseTimedRoundConfigStruct = (struct, { publicClient }) => {
   };
 
   const votingStrategyParams = parseFlattened2dArray(
-    struct.votingStrategyParamsFlat
+    struct.votingStrategyParamsFlat,
   );
 
   const votingStrategies = struct.votingStrategies.map((address, i) =>
     parseStrategy({
       address,
       params: votingStrategyParams[i],
-    })
+    }),
   );
 
   return {

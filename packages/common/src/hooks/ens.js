@@ -6,6 +6,6 @@ export const useEnsAvatar = (walletAddress) =>
   useStore(
     React.useCallback(
       (state) => selectEnsAvatar(state, walletAddress),
-      [walletAddress]
-    )
+      [walletAddress],
+    ),
   );

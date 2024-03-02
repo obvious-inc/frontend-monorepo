@@ -30,7 +30,7 @@ const fetchNounOwnersAndDelegates = () =>
       const ownersAndDelegates = arrayUtils.unique(
         body.data.nouns
           .flatMap((n) => [n.owner.id, n.owner.delegate.id])
-          .filter(Boolean)
+          .filter(Boolean),
       );
 
       return ownersAndDelegates;
@@ -70,7 +70,7 @@ export const Provider = ({ children }) => {
       fetchNounOwnersAndDelegates().then((addresses) => {
         setAuthorizedAddresses(addresses);
       }),
-    []
+    [],
   );
 
   const state = getState();
@@ -97,7 +97,7 @@ export const useWriteAccess = (channelId) => {
     memberUsers.some(
       (u) =>
         u.walletAddress != null &&
-        u.walletAddress.toLowerCase() === connectedAccountAddress.toLowerCase()
+        u.walletAddress.toLowerCase() === connectedAccountAddress.toLowerCase(),
     );
 
   if (isUnverifiedMember) return "authorized-unverified";

@@ -35,7 +35,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     const avatar = showAvatar ? (
       <AccountAvatar
@@ -97,7 +97,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
@@ -112,7 +112,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
   const displayName = useAccountDisplayName(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(
-    checksumEncodeAddress(accountAddress)
+    checksumEncodeAddress(accountAddress),
   );
 
   const { data: ensName } = useEnsName({ address: accountAddress });
@@ -311,14 +311,14 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     !enableDelegation
                       ? null
                       : isMe
-                      ? {
-                          id: "manage-delegation",
-                          label: "Manage delegation",
-                        }
-                      : {
-                          id: "delegate-to-account",
-                          label: "Delegate to this account",
-                        },
+                        ? {
+                            id: "manage-delegation",
+                            label: "Manage delegation",
+                          }
+                        : {
+                            id: "delegate-to-account",
+                            label: "Delegate to this account",
+                          },
                     {
                       id: "copy-account-address",
                       label: "Copy account address",
@@ -383,35 +383,35 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                   case "open-etherscan":
                     window.open(
                       `https://etherscan.io/address/${accountAddress}`,
-                      "_blank"
+                      "_blank",
                     );
                     break;
 
                   case "open-mogu":
                     window.open(
                       `https://mmmogu.com/address/${accountAddress}`,
-                      "_blank"
+                      "_blank",
                     );
                     break;
 
                   case "open-agora":
                     window.open(
                       `https://lilnounsagora.com/delegate/${accountAddress}`,
-                      "_blank"
+                      "_blank",
                     );
                     break;
 
                   case "open-nounskarma":
                     window.open(
                       `https://nounskarma.xyz/player/${accountAddress}`,
-                      "_blank"
+                      "_blank",
                     );
                     break;
 
                   case "open-rainbow":
                     window.open(
                       `https://rainbow.me/${accountAddress}`,
-                      "_blank"
+                      "_blank",
                     );
                     break;
                 }

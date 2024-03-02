@@ -17,7 +17,7 @@ export const Provider = ({ children }) => {
           if (rate == null) return;
           setRate(parseFloat(rate));
         }),
-    []
+    [],
   );
 
   return <Context.Provider value={rate}>{children}</Context.Provider>;

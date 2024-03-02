@@ -33,7 +33,7 @@ const useImageLinkDialog = ({ editorRef }) => {
       if (node == null) return;
       setState({ url: node?.url, caption: node?.caption, at });
     },
-    [editorRef]
+    [editorRef],
   );
 
   const close = React.useCallback(() => {
@@ -45,7 +45,7 @@ const useImageLinkDialog = ({ editorRef }) => {
       { ...state, isOpen: state != null },
       { open, close },
     ],
-    [state, open, close]
+    [state, open, close],
   );
 };
 
@@ -74,7 +74,7 @@ const RichTextEditor = React.forwardRef((props, externalRef) => {
                 onClick={() => {
                   const nodePath = ReactEditor.findPath(
                     editorRef.curent,
-                    element
+                    element,
                   );
                   imageLinkDialogActions.open(nodePath);
                 }}
@@ -131,7 +131,7 @@ const RichTextEditor = React.forwardRef((props, externalRef) => {
                     ]);
                     editorRef.current.insertImage(
                       { url: imageUrl, caption: linkUrl, width, height },
-                      { at: imageLinkDialogState.at }
+                      { at: imageLinkDialogState.at },
                     );
                   }}
                 />
@@ -160,11 +160,11 @@ export const ImageLinkComponent = ({
     maxWidth == null && maxHeight == null
       ? element.width
       : element.width == null
-      ? null
-      : dimensionUtils.fitInsideBounds(
-          { width: element.width, height: element.height },
-          { width: maxWidth, height: maxHeight }
-        ).width;
+        ? null
+        : dimensionUtils.fitInsideBounds(
+            { width: element.width, height: element.height },
+            { width: maxWidth, height: maxHeight },
+          ).width;
 
   return (
     <span {...attributes}>

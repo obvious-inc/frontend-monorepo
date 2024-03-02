@@ -30,14 +30,14 @@ const ModalDialog = React.forwardRef(
       children,
       ...dialogProps
     },
-    dialogRef
+    dialogRef,
   ) => {
     const modalRef = React.useRef(null);
 
     const { modalProps, underlayProps } = useModalOverlay(
       { isDismissable: true },
       { isOpen, close: onRequestClose },
-      modalRef
+      modalRef,
     );
 
     if (!isOpen) return null;
@@ -103,8 +103,8 @@ const ModalDialog = React.forwardRef(
             "--background": transparent
               ? "none"
               : backdrop === "light"
-              ? "hsl(0 0% 0% / 20%)"
-              : undefined,
+                ? "hsl(0 0% 0% / 20%)"
+                : undefined,
           }}
         >
           <div
@@ -132,7 +132,7 @@ const ModalDialog = React.forwardRef(
         </div>
       </Overlay>
     );
-  }
+  },
 );
 
 export default ModalDialog;

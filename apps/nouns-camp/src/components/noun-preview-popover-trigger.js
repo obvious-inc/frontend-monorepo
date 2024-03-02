@@ -61,7 +61,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     const renderTrigger = () => {
       if (children != null) return children;
@@ -152,7 +152,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const NounEvents = ({ nounId, contextAccount }) => {
@@ -297,7 +297,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
   const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
   const previousAccountDisplayName = useAccountDisplayName(
-    event.previousAccountId
+    event.previousAccountId,
   );
   const { data: previousAccountEns } = useEnsName({
     address: event.previousAccountId,
@@ -327,8 +327,8 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const transferredFromText = transferredFromAuction
     ? "Auction House"
     : transferredFromTreasury
-    ? "Nouns Treasury"
-    : previousAccount;
+      ? "Nouns Treasury"
+      : previousAccount;
 
   const amount = transferredFromAuction
     ? parseInt(noun.auction.amount)

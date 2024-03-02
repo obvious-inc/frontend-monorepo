@@ -97,7 +97,7 @@ export default async function RootLayout({ children }) {
                 <GlobalStylesWrapper>
                   <WagmiProvider
                     initialState={getWagmiStateFromCookie(
-                      headers().get("cookie")
+                      headers().get("cookie"),
                     )}
                   >
                     <StoreProvider>{children}</StoreProvider>

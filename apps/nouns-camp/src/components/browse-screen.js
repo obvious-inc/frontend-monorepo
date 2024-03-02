@@ -65,7 +65,8 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 import Tag from "./tag.js";
 import ProposalStateTag from "./proposal-state-tag.js";
-import ActivityFeed_ from "./activity-feed.js";
+
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
 const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
@@ -92,59 +93,11 @@ const searchEns = (nameByAddress, rawQuery) => {
     .map((r) => r.address);
 };
 
-const useFeedItems = ({ filter }) => {
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
-  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
-
-  const proposals = useProposals({ state: true, propdates: true });
-  const candidates = useProposalCandidates({
-    includeCanceled: true,
-    includePromoted: true,
-    includeProposalUpdates: true,
-  });
-  const propdates = usePropdates();
-
-  return React.useMemo(() => {
-    const buildProposalItems = () =>
-      proposals.flatMap((p) =>
-        buildProposalFeed(p, { latestBlockNumber, includePropdates: false })
-      );
-    const buildCandidateItems = () =>
-      candidates.flatMap((c) => buildCandidateFeed(c));
-    const buildPropdateItems = () => buildPropdateFeed(propdates);
-
-    const buildFeedItems = () => {
-      switch (filter) {
-        case "proposals":
-          return [...buildProposalItems(), ...buildPropdateItems()];
-        case "candidates":
-          return buildCandidateItems();
-        case "propdates":
-          return buildPropdateItems();
-        default:
-          return [
-            ...buildProposalItems(),
-            ...buildCandidateItems(),
-            ...buildPropdateItems(),
-          ];
-      }
-    };
-
-    return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
-      buildFeedItems()
-    );
-  }, [proposals, candidates, propdates, filter, latestBlockNumber]);
-};
-
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
 const groupConfigByKey = {
   drafts: {},
-  "proposals:new": { title: "New" },
+  "proposals:new": { title: "Upcoming" },
   "proposals:ongoing": { title: "Ongoing" },
   "proposals:awaiting-vote": { title: "Not yet voted" },
   "proposals:authored": { title: "Authored" },
@@ -206,11 +159,11 @@ const BrowseScreen = () => {
   const [page, setPage] = React.useState(1);
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
-    "activity"
+    "activity",
   );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedBrowseDataOnce
+    hasFetchedBrowseDataOnce,
   );
 
   const candidateSortStrategies =
@@ -219,18 +172,18 @@ const BrowseScreen = () => {
       : ["activity", "popularity", "connected-account-feedback"];
 
   const candidateSortStrategy = candidateSortStrategies.includes(
-    candidateSortStrategy_
+    candidateSortStrategy_,
   )
     ? candidateSortStrategy_
     : "popularity";
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
-    [proposals]
+    [proposals],
   );
   const filteredCandidates = React.useMemo(
     () => candidates.filter((c) => c.latestVersion != null),
-    [candidates]
+    [candidates],
   );
   const filteredProposalUpdateCandidates = React.useMemo(() => {
     const hasSigned = (c) => {
@@ -239,7 +192,7 @@ const BrowseScreen = () => {
         activeProposerIds: [],
       });
       return signatures.some(
-        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress
+        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress,
       );
     };
 
@@ -251,7 +204,7 @@ const BrowseScreen = () => {
         return true;
 
       const isSponsor = c.targetProposal.signers.some(
-        (s) => s.id.toLowerCase() === connectedWalletAccountAddress
+        (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
       );
 
       return isSponsor && !hasSigned(c);
@@ -266,7 +219,7 @@ const BrowseScreen = () => {
             .filter((d) => {
               if (d.name.trim() !== "") return true;
               return d.body.some(
-                (n) => !isRichTextNodeEmpty(n, { trim: true })
+                (n) => !isRichTextNodeEmpty(n, { trim: true }),
               );
             })
             .map((d) => ({ ...d, type: "draft" }));
@@ -313,14 +266,14 @@ const BrowseScreen = () => {
               { value: c.proposerId, exact: true },
               { value: c.latestVersion?.content.title },
               ...(c.latestVersion?.content.contentSignatures ?? []).map(
-                (s) => ({ value: s.signer.id, exact: true })
+                (s) => ({ value: s.signer.id, exact: true }),
               ),
             ],
             fallbackSortProperty: c.createdBlock,
-          })
+          }),
         ),
       ],
-      [deferredQuery, ...matchingAddresses]
+      [deferredQuery, ...matchingAddresses],
     );
 
     return matchingRecords.map((r) => r.data);
@@ -359,10 +312,10 @@ const BrowseScreen = () => {
   };
 
   const candidateActiveThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS)
+    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS),
   );
   const candidateNewThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS)
+    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS),
   );
 
   const groupCandidate = (c) => {
@@ -379,7 +332,7 @@ const BrowseScreen = () => {
       c.lastUpdatedTimestamp > candidateActiveThreshold ||
       (c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.createdTimestamp > candidateActiveThreshold
+          (p) => p.createdTimestamp > candidateActiveThreshold,
         ));
 
     if (!isActive) return "candidates:inactive";
@@ -390,7 +343,7 @@ const BrowseScreen = () => {
       const hasFeedback =
         c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.voter.id.toLowerCase() === connectedAccount
+          (p) => p.voter.id.toLowerCase() === connectedAccount,
         );
 
       if (
@@ -408,7 +361,7 @@ const BrowseScreen = () => {
 
     if (
       content.contentSignatures.some(
-        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount
+        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
       )
     )
       return "candidates:sponsored";
@@ -432,7 +385,7 @@ const BrowseScreen = () => {
               ? items
               : arrayUtils.sortBy(
                   { value: (i) => Number(i.id), order: "desc" },
-                  items
+                  items,
                 ),
           };
 
@@ -443,7 +396,7 @@ const BrowseScreen = () => {
               ? items
               : arrayUtils.sortBy(
                   (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                  items
+                  items,
                 ),
           };
 
@@ -458,7 +411,7 @@ const BrowseScreen = () => {
                   value: (i) => Number(i.startBlock),
                   order: "desc",
                 },
-                items
+                items,
               );
           const paginate = page != null && groupKey === "proposals:past";
           return {
@@ -493,11 +446,11 @@ const BrowseScreen = () => {
                         Math.max(
                           i.lastUpdatedTimestamp,
                           ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
-                            [])
+                            []),
                         ),
                       order: "desc",
                     },
-                items
+                items,
               );
 
           const paginate = page != null && groupKey === "candidates:inactive";
@@ -524,7 +477,7 @@ const BrowseScreen = () => {
       if (i.type === "draft") return "drafts";
       if (i.slug != null) return groupCandidate(i);
       return groupProposal(i);
-    }, filteredItems)
+    }, filteredItems),
   );
 
   const { fetchBrowseScreenData } = useActions();
@@ -537,7 +490,7 @@ const BrowseScreen = () => {
         hasFetchedBrowseDataOnce = true;
         fetchBrowseScreenData({ skip: 40, first: 1000 });
       }),
-    [fetchBrowseScreenData]
+    [fetchBrowseScreenData],
   );
 
   const handleSearchInputChange = useDebouncedCallback((query) => {
@@ -551,7 +504,7 @@ const BrowseScreen = () => {
           newParams.delete("q");
           return newParams;
         },
-        { replace: true }
+        { replace: true },
       );
       return;
     }
@@ -562,7 +515,7 @@ const BrowseScreen = () => {
         newParams.set("q", query);
         return newParams;
       },
-      { replace: true }
+      { replace: true },
     );
   });
 
@@ -586,8 +539,8 @@ const BrowseScreen = () => {
             sidebar={
               isDesktopLayout ? (
                 <FeedSidebar
-                  align="right"
-                  visible={filteredProposals.length > 0}
+                  // Hiding until the first fetch is done to avoid flickering
+                  visible={hasFetchedOnce}
                 />
               ) : null
             }
@@ -641,7 +594,7 @@ const BrowseScreen = () => {
                             ? filteredItems
                             : filteredItems.slice(
                                 0,
-                                BROWSE_LIST_PAGE_ITEM_COUNT * page
+                                BROWSE_LIST_PAGE_ITEM_COUNT * page,
                               ),
                       },
                     ]}
@@ -697,9 +650,7 @@ const BrowseScreen = () => {
                   >
                     {!isDesktopLayout && (
                       <Tabs.Item key="activity" title="Activity">
-                        <FeedTabContent
-                          visible={filteredProposals.length > 0}
-                        />
+                        <FeedTabContent />
                       </Tabs.Item>
                     )}
                     <Tabs.Item key="proposals" title="Proposals">
@@ -723,10 +674,12 @@ const BrowseScreen = () => {
                             "proposals:past",
                           ]
                             .map(
-                              (sectionName) => sectionsByName[sectionName] ?? {}
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
                             )
                             .filter(
-                              ({ items }) => items != null && items.length !== 0
+                              ({ items }) =>
+                                items != null && items.length !== 0,
                             )}
                         />
                         {page != null &&
@@ -772,7 +725,7 @@ const BrowseScreen = () => {
                               (o) =>
                                 // A connected wallet is required for feedback filter to work
                                 connectedWalletAccountAddress != null ||
-                                o.value !== "connected-account-feedback"
+                                o.value !== "connected-account-feedback",
                             )}
                             onChange={(value) => {
                               setCandidateSortStrategy(value);
@@ -813,10 +766,12 @@ const BrowseScreen = () => {
                             "candidates:inactive",
                           ]
                             .map(
-                              (sectionName) => sectionsByName[sectionName] ?? {}
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
                             )
                             .filter(
-                              ({ items }) => items != null && items.length !== 0
+                              ({ items }) =>
+                                items != null && items.length !== 0,
                             )}
                         />
                         {page != null &&
@@ -1019,23 +974,20 @@ const FEED_PAGE_ITEM_COUNT = 30;
 
 let hasFetchedActivityFeedOnce = false;
 
-const ActivityFeed = React.memo(({ filter = "all" }) => {
-  const { data: latestBlockNumber } = useBlockNumber({
-    watch: true,
-    cache: 20_000,
-  });
-
+const useActivityFeedItems = ({ filter = "all" }) => {
   const { fetchNounsActivity } = useActions();
 
-  const [page, setPage] = React.useState(2);
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedActivityFeedOnce
+    hasFetchedActivityFeedOnce,
   );
 
-  const feedItems = useFeedItems({ filter });
-  const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
+  const { data: eagerLatestBlockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
-  // Fetch feed items
+  // Fetch feed data
   useFetch(
     latestBlockNumber == null
       ? null
@@ -1058,16 +1010,68 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
             });
           });
         },
-    [latestBlockNumber, fetchNounsActivity]
+    [latestBlockNumber, fetchNounsActivity],
   );
 
-  if (visibleItems.length === 0 || !hasFetchedOnce) return null;
+  const proposals = useProposals({ state: true, propdates: true });
+  const candidates = useProposalCandidates({
+    includeCanceled: true,
+    includePromoted: true,
+    includeProposalUpdates: true,
+  });
+  const propdates = usePropdates();
+
+  return React.useMemo(() => {
+    if (!hasFetchedOnce) return [];
+
+    const buildProposalItems = () =>
+      proposals.flatMap((p) =>
+        buildProposalFeed(p, { latestBlockNumber, includePropdates: false }),
+      );
+    const buildCandidateItems = () =>
+      candidates.flatMap((c) => buildCandidateFeed(c));
+    const buildPropdateItems = () => buildPropdateFeed(propdates);
+
+    const buildFeedItems = () => {
+      switch (filter) {
+        case "proposals":
+          return [...buildProposalItems(), ...buildPropdateItems()];
+        case "candidates":
+          return buildCandidateItems();
+        case "propdates":
+          return buildPropdateItems();
+        default:
+          return [
+            ...buildProposalItems(),
+            ...buildCandidateItems(),
+            ...buildPropdateItems(),
+          ];
+      }
+    };
+
+    return arrayUtils.sortBy(
+      { value: (i) => i.blockNumber, order: "desc" },
+      buildFeedItems(),
+    );
+  }, [
+    proposals,
+    candidates,
+    propdates,
+    filter,
+    latestBlockNumber,
+    hasFetchedOnce,
+  ]);
+};
+
+const TruncatedActivityFeed = ({ items }) => {
+  const [page, setPage] = React.useState(2);
+  const visibleItems = items.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   return (
     <>
-      <ActivityFeed_ items={visibleItems} />
+      <ActivityFeed items={visibleItems} />
 
-      {feedItems.length > visibleItems.length && (
+      {items.length > visibleItems.length && (
         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
           <Button
             size="small"
@@ -1081,132 +1085,139 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
       )}
     </>
   );
-});
+};
 
-const FeedSidebar = React.memo(({ visible = true }) => {
+const FeedSidebar = React.memo(({ visible }) => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
-    "all"
+    "all",
   );
-
-  if (!visible) return null;
+  const feedItems = useActivityFeedItems({ filter });
 
   return (
     <div
       css={css({
+        transition: "0.2s ease-out opacity",
         padding: "1rem 0 3.2rem",
         "@media (min-width: 600px)": {
           padding: "6rem 0 8rem",
         },
       })}
+      style={{ opacity: visible && feedItems.length > 0 ? 1 : 0 }}
     >
-      <div
-        css={css({
-          height: "4.05rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          margin: "0 0 2rem",
-        })}
-      >
-        <Select
-          size="small"
-          aria-label="Feed filter"
-          value={filter}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "proposals", label: "Proposal activity only" },
-            { value: "candidates", label: "Candidate activity only" },
-            { value: "propdates", label: "Propdates only" },
-          ]}
-          onChange={(value) => {
-            setFilter(value);
-          }}
-          fullWidth={false}
-          align="right"
-          width="max-content"
-          renderTriggerContent={(value) => {
-            const filterLabel = {
-              all: "Everything",
-              proposals: "Proposal activity",
-              candidates: "Candidate activity",
-              propdates: "Propdates",
-            }[value];
-            return (
-              <>
-                Show:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {filterLabel}
-                </em>
-              </>
-            );
-          }}
-        />
-      </div>
+      <React.Suspense fallback={null}>
+        <div
+          css={css({
+            height: "4.05rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            margin: "0 0 2rem",
+          })}
+        >
+          <Select
+            size="small"
+            aria-label="Feed filter"
+            value={filter}
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "proposals", label: "Proposal activity only" },
+              { value: "candidates", label: "Candidate activity only" },
+              { value: "propdates", label: "Propdates only" },
+            ]}
+            onChange={(value) => {
+              setFilter(value);
+            }}
+            fullWidth={false}
+            align="right"
+            width="max-content"
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                all: "Everything",
+                proposals: "Proposal activity",
+                candidates: "Candidate activity",
+                propdates: "Propdates",
+              }[value];
+              return (
+                <>
+                  Show:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {filterLabel}
+                  </em>
+                </>
+              );
+            }}
+          />
+        </div>
 
-      <ActivityFeed filter={filter} />
+        <TruncatedActivityFeed items={feedItems} />
+      </React.Suspense>
     </div>
   );
 });
 
-const FeedTabContent = React.memo(({ visible }) => {
+const FeedTabContent = React.memo(() => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
-    "all"
+    "all",
   );
-
-  if (!visible) return null;
+  const feedItems = useActivityFeedItems({ filter });
 
   return (
-    <div css={css({ padding: "2rem 0" })}>
-      <div css={css({ margin: "0 0 2.8rem" })}>
-        <Select
-          size="small"
-          aria-label="Feed filter"
-          value={filter}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "proposals", label: "Proposal activity only" },
-            { value: "candidates", label: "Candidate activity only" },
-          ]}
-          onChange={(value) => {
-            setFilter(value);
-          }}
-          fullWidth={false}
-          width="max-content"
-          renderTriggerContent={(value) => {
-            const filterLabel = {
-              all: "Everything",
-              proposals: "Proposal activity",
-              candidates: "Candidate activity",
-            }[value];
-            return (
-              <>
-                Show:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {filterLabel}
-                </em>
-              </>
-            );
-          }}
-        />
-      </div>
+    <div
+      css={css({ transition: "0.2s ease-out opacity", padding: "2rem 0" })}
+      style={{ opacity: feedItems.length === 0 ? 0 : 1 }}
+    >
+      <React.Suspense fallback={null}>
+        <div css={css({ margin: "0 0 2.8rem" })}>
+          <Select
+            size="small"
+            aria-label="Feed filter"
+            value={filter}
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "proposals", label: "Proposal activity only" },
+              { value: "candidates", label: "Candidate activity only" },
+            ]}
+            onChange={(value) => {
+              setFilter(value);
+            }}
+            fullWidth={false}
+            width="max-content"
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                all: "Everything",
+                proposals: "Proposal activity",
+                candidates: "Candidate activity",
+              }[value];
+              return (
+                <>
+                  Show:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {filterLabel}
+                  </em>
+                </>
+              );
+            }}
+          />
+        </div>
 
-      <ActivityFeed filter={filter} />
+        <TruncatedActivityFeed items={feedItems} />
+      </React.Suspense>
     </div>
   );
 });
@@ -1313,11 +1324,11 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   switch (proposal.state) {
     case "updatable": {
       const updatePeriodEndDate = calculateBlockTimestamp(
-        proposal.updatePeriodEndBlock
+        proposal.updatePeriodEndBlock,
       );
       const { minutes, hours, days } = dateUtils.differenceUnits(
         updatePeriodEndDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Closes for changes in less than 1 minute</>;
@@ -1339,7 +1350,7 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
       const startDate = calculateBlockTimestamp(proposal.startBlock);
       const { minutes, hours, days } = dateUtils.differenceUnits(
         startDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Starts in less than 1 minute</>;
@@ -1360,11 +1371,11 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
     case "active":
     case "objection-period": {
       const endDate = calculateBlockTimestamp(
-        proposal.objectionPeriodEndBlock ?? proposal.endBlock
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock,
       );
       const { minutes, hours, days } = dateUtils.differenceUnits(
         endDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Ends in less than 1 minute</>;
@@ -1403,7 +1414,7 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
 
   const vote = proposal.votes?.find(
-    (v) => v.voterId === connectedWalletAccountAddress
+    (v) => v.voterId === connectedWalletAccountAddress,
   );
 
   return (
@@ -1476,7 +1487,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
     candidate.latestVersion.targetProposalId,
-    { watch: false }
+    { watch: false },
   );
 
   const authorAccountDisplayName = useAccountDisplayName(candidate.proposerId);
@@ -1501,7 +1512,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
 
   const feedbackPostsAscending = arrayUtils.sortBy(
     (p) => p.createdBlock,
-    candidate?.feedbackPosts ?? []
+    candidate?.feedbackPosts ?? [],
   );
   const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
 
@@ -1513,11 +1524,11 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
       mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
       ? "feedback"
       : hasUpdate
-      ? "update"
-      : "create";
+        ? "update"
+        : "create";
 
   const feedbackAuthorAccounts = arrayUtils.unique(
-    feedbackPostsAscending.map((p) => p.voterId)
+    feedbackPostsAscending.map((p) => p.voterId),
   );
 
   const showScoreStack = !isProposalUpdate;
@@ -1551,7 +1562,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
     <NextLink
       prefetch
       href={`/candidates/${encodeURIComponent(
-        makeCandidateUrlId(candidateId)
+        makeCandidateUrlId(candidateId),
       )}`}
     >
       <div
@@ -1730,7 +1741,7 @@ const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
   const authorAccountDisplayName = useAccountDisplayName(
-    connectedAccountAddress
+    connectedAccountAddress,
   );
 
   return (

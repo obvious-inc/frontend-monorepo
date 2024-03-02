@@ -36,12 +36,13 @@ import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
-import ActivityFeed_ from "./activity-feed.js";
 import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import { VotingBar } from "./proposal-screen.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
 const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
@@ -74,7 +75,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
 
     return arrayUtils.sortBy(
       { value: (i) => i.blockNumber, order: "desc" },
-      buildFeedItems()
+      buildFeedItems(),
     );
   }, [accountAddress, proposals, candidates, filter]);
 };
@@ -92,11 +93,11 @@ const getDelegateVotes = (delegate) => {
         totalVotes: acc.totalVotes + 1,
       };
     },
-    { for: 0, against: 0, abstain: 0, withReason: 0, totalVotes: 0 }
+    { for: 0, against: 0, abstain: 0, withReason: 0, totalVotes: 0 },
   );
 };
 
-const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
+const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
   const { data: latestBlockNumber } = useBlockNumber({
     watch: true,
     cache: 20_000,
@@ -117,8 +118,8 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
           fetchVoterActivity(voterAddress, {
             startBlock: latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY),
             endBlock: latestBlockNumber,
-          }).then(() => {}),
-    [latestBlockNumber, fetchVoterActivity]
+          }),
+    [latestBlockNumber, fetchVoterActivity],
   );
 
   if (visibleItems.length === 0)
@@ -137,7 +138,7 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 
   return (
     <>
-      <ActivityFeed_ items={visibleItems} />
+      <ActivityFeed items={visibleItems} />
 
       {feedItems.length > visibleItems.length && (
         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
@@ -155,120 +156,119 @@ const ActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
   );
 });
 
-const FeedSidebar = React.memo(({ visible = true, voterAddress }) => {
+const FeedSidebar = React.memo(({ voterAddress }) => {
   const [filter, setFilter] = useCachedState(
     "voter-screen:activity-filter",
-    "all"
+    "all",
   );
-  if (!visible) return null;
 
   return (
-    <div css={css({ marginTop: "3.2rem" })}>
-      <div
-        css={css({
-          height: "4.05rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          margin: "0 0 2rem",
-        })}
-      >
-        <Select
-          size="small"
-          aria-label="Feed filter"
-          value={filter}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "proposals", label: "Proposal activity only" },
-            { value: "candidates", label: "Candidate activity only" },
-          ]}
-          onChange={(value) => {
-            setFilter(value);
-          }}
-          fullWidth={false}
-          width="max-content"
-          renderTriggerContent={(value) => {
-            const filterLabel = {
-              all: "Everything",
-              proposals: "Proposal activity",
-              candidates: "Candidate activity",
-            }[value];
-            return (
-              <>
-                Show:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {filterLabel}
-                </em>
-              </>
-            );
-          }}
-        />
-      </div>
+    <React.Suspense fallback={null}>
+      <div css={css({ marginTop: "3.2rem" })}>
+        <div
+          css={css({
+            display: "flex",
+            justifyContent: "flex-end",
+            margin: "0 0 2rem",
+          })}
+        >
+          <Select
+            size="small"
+            aria-label="Feed filter"
+            value={filter}
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "proposals", label: "Proposal activity only" },
+              { value: "candidates", label: "Candidate activity only" },
+            ]}
+            onChange={(value) => {
+              setFilter(value);
+            }}
+            fullWidth={false}
+            width="max-content"
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                all: "Everything",
+                proposals: "Proposal activity",
+                candidates: "Candidate activity",
+              }[value];
+              return (
+                <>
+                  Show:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {filterLabel}
+                  </em>
+                </>
+              );
+            }}
+          />
+        </div>
 
-      <ActivityFeed voterAddress={voterAddress} filter={filter} />
-    </div>
+        <TruncatedActivityFeed voterAddress={voterAddress} filter={filter} />
+      </div>
+    </React.Suspense>
   );
 });
 
-const FeedTabContent = React.memo(({ visible, voterAddress }) => {
+const FeedTabContent = React.memo(({ voterAddress }) => {
   const [filter, setFilter] = useCachedState(
     "voter-screen:activity-filter",
-    "all"
+    "all",
   );
 
-  if (!visible) return null;
-
   return (
-    <div css={css({ padding: "2rem 0" })}>
-      <div css={css({ margin: "0 0 2.8rem" })}>
-        <Select
-          size="small"
-          aria-label="Feed filter"
-          value={filter}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "proposals", label: "Proposal activity only" },
-            { value: "candidates", label: "Candidate activity only" },
-          ]}
-          onChange={(value) => {
-            setFilter(value);
-          }}
-          fullWidth={false}
-          width="max-content"
-          renderTriggerContent={(value) => {
-            const filterLabel = {
-              all: "Everything",
-              proposals: "Proposal activity",
-              candidates: "Candidate activity",
-            }[value];
-            return (
-              <>
-                Show:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {filterLabel}
-                </em>
-              </>
-            );
-          }}
-        />
-      </div>
+    <React.Suspense fallback={null}>
+      <div css={css({ padding: "2rem 0" })}>
+        <div css={css({ margin: "0 0 2.8rem" })}>
+          <Select
+            size="small"
+            aria-label="Feed filter"
+            value={filter}
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "proposals", label: "Proposal activity only" },
+              { value: "candidates", label: "Candidate activity only" },
+            ]}
+            onChange={(value) => {
+              setFilter(value);
+            }}
+            fullWidth={false}
+            width="max-content"
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                all: "Everything",
+                proposals: "Proposal activity",
+                candidates: "Candidate activity",
+              }[value];
+              return (
+                <>
+                  Show:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {filterLabel}
+                  </em>
+                </>
+              );
+            }}
+          />
+        </div>
 
-      <ActivityFeed voterAddress={voterAddress} filter={filter} />
-    </div>
+        <TruncatedActivityFeed voterAddress={voterAddress} filter={filter} />
+      </div>
+    </React.Suspense>
   );
 });
 
@@ -430,7 +430,7 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
                 (
                 {formatPercentage(
                   delegateVotes.withReason,
-                  delegateVotes.totalVotes
+                  delegateVotes.totalVotes,
                 )}{" "}
                 with reason)
               </span>
@@ -452,7 +452,7 @@ const VoterHeader = ({ accountAddress }) => {
 
   const displayName = useAccountDisplayName(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(
-    checksumEncodeAddress(accountAddress)
+    checksumEncodeAddress(accountAddress),
   );
 
   const allVoterNouns = useAllNounsByAccount(accountAddress);
@@ -585,7 +585,7 @@ const VoterHeader = ({ accountAddress }) => {
                   switch (key) {
                     case "copy-account-address":
                       navigator.clipboard.writeText(
-                        accountAddress.toLowerCase()
+                        accountAddress.toLowerCase(),
                       );
                       close();
                       break;
@@ -601,35 +601,35 @@ const VoterHeader = ({ accountAddress }) => {
                     case "open-etherscan":
                       window.open(
                         `https://etherscan.io/address/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-mogu":
                       window.open(
                         `https://mmmogu.com/address/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-agora":
                       window.open(
                         `https://lilnounsagora.com/delegate/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-nounskarma":
                       window.open(
                         `https://nounskarma.xyz/player/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-rainbow":
                       window.open(
                         `https://rainbow.me/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
                   }
@@ -721,7 +721,7 @@ const VoterMainSection = ({ voterAddress }) => {
   const sponsoredProposals = useAccountSponsoredProposals(voterAddress);
 
   const [hasFetchedData, setHasFetchedData] = React.useState(
-    () => proposals.length > 0
+    () => proposals.length > 0,
   );
 
   const { fetchVoterScreenData } = useActions();
@@ -732,7 +732,7 @@ const VoterMainSection = ({ voterAddress }) => {
         setHasFetchedData(true);
         fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 });
       }),
-    [fetchVoterScreenData, voterAddress]
+    [fetchVoterScreenData, voterAddress],
   );
 
   const proposalsTabTitle =
@@ -764,7 +764,7 @@ const VoterMainSection = ({ voterAddress }) => {
               >
                 <VotingPowerCallout voterAddress={voterAddress} />
                 <VoterStatsBar voterAddress={voterAddress} />
-                <FeedSidebar align="right" voterAddress={voterAddress} />
+                <FeedSidebar voterAddress={voterAddress} />
               </div>
             ) : null
           }
@@ -801,7 +801,7 @@ const VoterMainSection = ({ voterAddress }) => {
             >
               {!isDesktopLayout && (
                 <Tabs.Item key="activity" title="Activity">
-                  <FeedTabContent voterAddress={voterAddress} visible={true} />
+                  <FeedTabContent voterAddress={voterAddress} />
                 </Tabs.Item>
               )}
               <Tabs.Item key="proposals" title={proposalsTabTitle}>
@@ -823,7 +823,7 @@ const VoterMainSection = ({ voterAddress }) => {
                               value: (p) => Number(p.id),
                               order: "desc",
                             },
-                            proposals
+                            proposals,
                           )
                           .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
@@ -863,7 +863,7 @@ const VoterMainSection = ({ voterAddress }) => {
                               value: (p) => p.lastUpdatedTimestamp,
                               order: "desc",
                             },
-                            candidates
+                            candidates,
                           )
                           .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
@@ -905,7 +905,7 @@ const VoterMainSection = ({ voterAddress }) => {
                               value: (p) => p.lastUpdatedTimestamp,
                               order: "desc",
                             },
-                            sponsoredProposals
+                            sponsoredProposals,
                           )
                           .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },

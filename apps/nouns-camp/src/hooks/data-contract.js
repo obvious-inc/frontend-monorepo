@@ -28,7 +28,7 @@ const getContractAddress = (chainId) =>
 export const useSendProposalCandidateFeedback = (
   proposerId,
   slug,
-  { support, reason }
+  { support, reason },
 ) => {
   const { address: accountAddress } = useWallet();
   const { data: blockNumber } = useBlockNumber();
@@ -127,7 +127,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
   return async ({ slug, description, transactions, targetProposalId = 0 }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
-      { chainId }
+      { chainId },
     );
 
     return writeContract({
@@ -223,7 +223,7 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
   }) => {
     const { targets, values, signatures, calldatas } = unparseTransactions(
       transactions,
-      { chainId }
+      { chainId },
     );
     return writeContract({
       address: getContractAddress(chainId),
@@ -298,7 +298,7 @@ const calcProposalEncodeData = ({
   targetProposalId = 0,
 }) => {
   const signatureHashes = signatures.map((sig) =>
-    keccak256(stringToBytes(sig))
+    keccak256(stringToBytes(sig)),
   );
 
   const calldatasHashes = calldatas.map((calldata) => keccak256(calldata));
@@ -317,7 +317,7 @@ const calcProposalEncodeData = ({
 
   const encodedData = encodeAbiParameters(
     parameters.map(([type]) => ({ type })),
-    parameters.map((p) => p[1])
+    parameters.map((p) => p[1]),
   );
 
   return encodedData;
@@ -326,7 +326,7 @@ const calcProposalEncodeData = ({
 export const useAddSignatureToProposalCandidate = (
   proposerId,
   slug,
-  { content, targetProposalId = 0 }
+  { content, targetProposalId = 0 },
 ) => {
   const { address: accountAddress } = useWallet();
 
@@ -388,7 +388,7 @@ export const useSignProposalCandidate = () => {
   return (
     proposerId,
     { description, targets, values, signatures, calldatas },
-    { expirationTimestamp, targetProposalId }
+    { expirationTimestamp, targetProposalId },
   ) => {
     const message = {
       proposer: proposerId,

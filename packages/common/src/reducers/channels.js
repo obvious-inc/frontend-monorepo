@@ -65,7 +65,7 @@ const entriesById = (state = {}, action) => {
         [action.channelId]: {
           ...existingChannelData,
           memberUserIds: existingChannelData.memberUserIds.filter(
-            (id) => id !== action.userId
+            (id) => id !== action.userId,
           ),
         },
       };
@@ -198,10 +198,10 @@ const publicChannelIds = (state = [], action) => {
     case "fetch-channel-public-permissions-request-successful": {
       const openChannelPublicPermissions =
         Permissions.openChannelPermissionOverrides.find(
-          (o) => o.group === "@public"
+          (o) => o.group === "@public",
         )?.permissions ?? [];
       const isPublic = openChannelPublicPermissions.every((p) =>
-        action.permissions.includes(p)
+        action.permissions.includes(p),
       );
       return isPublic ? unique([...state, action.channelId]) : state;
     }
@@ -246,11 +246,11 @@ const readStatesById = (state = {}, action) => {
 
           if (readState?.mention_count != null)
             nextState.unreadMentionMessageIds = Array(
-              readState.mention_count
+              readState.mention_count,
             ).fill();
 
           return nextState;
-        })
+        }),
       );
 
       return { ...state, ...entriesByChannelId };
@@ -293,7 +293,7 @@ const readStatesById = (state = {}, action) => {
       const channelState = state[action.data.message.channelId];
 
       const userMentions = getMentions(action.data.message.content).filter(
-        (m) => m.ref === action.user.id
+        (m) => m.ref === action.user.id,
       );
       const unreadMentionMessageIds =
         channelState?.unreadMentionMessageIds ?? [];
@@ -321,7 +321,7 @@ const readStatesById = (state = {}, action) => {
         [action.data.message.channelId]: {
           ...channelState,
           unreadMentionMessageIds: channelState.unreadMentionMessageIds.filter(
-            (id) => id !== action.data.message.id
+            (id) => id !== action.data.message.id,
           ),
         },
       };
@@ -331,7 +331,7 @@ const readStatesById = (state = {}, action) => {
       const channel = state[action.data.message.channelId];
       const messageId = action.data.message.id;
       const userMentions = getMentions(action.data.message.content).filter(
-        (m) => m.ref === action.user.id
+        (m) => m.ref === action.user.id,
       );
 
       return {
@@ -341,7 +341,7 @@ const readStatesById = (state = {}, action) => {
           unreadMentionMessageIds:
             userMentions.length === 0
               ? channel.unreadMentionMessageIds?.filter(
-                  (id) => id !== messageId
+                  (id) => id !== messageId,
                 ) ?? []
               : unique([...channel.unreadMentionMessageIds, messageId]),
         },
@@ -406,7 +406,7 @@ export const selectChannelName = createSelector(
 
     return memberDisplayNames.join(", ");
   },
-  { memoizeOptions: { maxSize: 1000, equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { maxSize: 1000, equalityCheck: arrayShallowEquals } },
 );
 
 export const selectChannel = createSelector(
@@ -447,7 +447,7 @@ export const selectChannel = createSelector(
     if (gating != null) channel.gating = gating;
 
     return channel;
-  }
+  },
 );
 
 export const selectChannelMentionCount = (state, channelId) => {
@@ -461,12 +461,12 @@ export const selectTotalMentionCount = createSelector(
   (state) => {
     const channelIds = Object.keys(state.channels.entriesById);
     const channelMentionCounts = channelIds.map((id) =>
-      selectChannelMentionCount(state, id)
+      selectChannelMentionCount(state, id),
     );
     return channelMentionCounts;
   },
   (mentionCounts) => mentionCounts.reduce((sum, count) => sum + count, 0),
-  { memoizeOptions: { maxSize: 1000 } }
+  { memoizeOptions: { maxSize: 1000 } },
 );
 
 export const selectChannelHasBeenSeen = createSelector(
@@ -475,7 +475,7 @@ export const selectChannelHasBeenSeen = createSelector(
     if (channelState == null) return null;
     return channelState.lastReadAt != null;
   },
-  { memoizeOptions: { maxSize: 1000 } }
+  { memoizeOptions: { maxSize: 1000 } },
 );
 
 export const selectChannelLastReadAt = (state, channelId) => {
@@ -504,7 +504,7 @@ export const selectChannelHasUnread = createSelector(
 
     return lastReadTimestamp < lastMessageTimestamp;
   },
-  { memoizeOptions: { maxSize: 1000 } }
+  { memoizeOptions: { maxSize: 1000 } },
 );
 
 export const selectChannelLastMessageAt = (state, channelId) => {
@@ -523,14 +523,14 @@ export const selectDmChannelFromUserId = (state, userId) => {
       (c) =>
         c.memberUserIds != null &&
         c.memberUserIds.length === 1 &&
-        c.memberUserIds[0] === userId
+        c.memberUserIds[0] === userId,
     );
 
   const userDmChannels = dmChannels.filter(
     (c) =>
       c.memberUserIds != null &&
       c.memberUserIds.length <= 2 &&
-      c.memberUserIds.includes(userId)
+      c.memberUserIds.includes(userId),
   );
 
   if (userDmChannels.length > 1) throw new Error();
@@ -544,7 +544,7 @@ export const selectDmChannelFromUserIds = (state, userIds) => {
     (c) =>
       c.memberUserIds != null &&
       c.memberUserIds.length === userIds.length &&
-      c.memberUserIds.every((id) => userIds.includes(id))
+      c.memberUserIds.every((id) => userIds.includes(id)),
   );
 };
 
@@ -555,7 +555,7 @@ export const selectAllChannels = createSelector(
       .filter(Boolean),
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectChannelsWithMembers = createSelector(
@@ -578,12 +578,12 @@ export const selectChannelsWithMembers = createSelector(
         memberWalletAddresses != null &&
         memberWalletAddresses.length >= memberWalletAddressesQuery.length &&
         memberWalletAddressesQuery.every((a) =>
-          memberWalletAddresses.includes(a.toLowerCase())
+          memberWalletAddresses.includes(a.toLowerCase()),
         )
       );
     });
   },
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectMemberChannels = createSelector(
@@ -616,7 +616,7 @@ export const selectMemberChannels = createSelector(
   },
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectDmChannels = createSelector(
@@ -629,7 +629,7 @@ export const selectDmChannels = createSelector(
   },
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectDmChannelWithMember = createSelector(
@@ -650,7 +650,7 @@ export const selectDmChannelWithMember = createSelector(
         (u) =>
           me == null ||
           u.walletAddress == null ||
-          u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase()
+          u.walletAddress.toLowerCase() !== me.walletAddress.toLowerCase(),
       );
       if (membersExcludingMe.length !== 1) return false;
       return (
@@ -658,7 +658,7 @@ export const selectDmChannelWithMember = createSelector(
         membersExcludingMe[0].walletAddress.toLowerCase() === walletAddress
       );
     });
-  }
+  },
 );
 
 export const selectPublicChannels = createSelector(
@@ -668,7 +668,7 @@ export const selectPublicChannels = createSelector(
       .filter(Boolean),
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectStarredChannels = createSelector(
@@ -678,7 +678,7 @@ export const selectStarredChannels = createSelector(
       .filter(Boolean),
   (state) => state.channels.readStatesById,
   sortChannelsByActivity,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectIsChannelStarred = (state, id) =>
@@ -695,7 +695,7 @@ export const selectChannelMembers = createSelector(
     });
   },
   (members) => members,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectChannelStarId = (state, channelId) =>

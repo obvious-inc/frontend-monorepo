@@ -84,7 +84,7 @@ export const isEqual = (ns1, ns2, options = {}) => {
     if (!Array.isArray(ns2)) return false;
 
     const [ns1_, ns2_] = [ns1, ns2].map((ns) =>
-      filterEmpty ? ns.filter((n) => !isEmpty(n)) : ns
+      filterEmpty ? ns.filter((n) => !isEmpty(n)) : ns,
     );
 
     if (ns1_.length !== ns2_.length) return false;
@@ -101,7 +101,7 @@ export const isEqual = (ns1, ns2, options = {}) => {
   // Text nodes
   if (n1.text != null)
     return ["text", "bold", "italic", "strikethrough"].every(
-      (p) => n1[p] === n2[p]
+      (p) => n1[p] === n2[p],
     );
 
   // The rest is for element nodes
@@ -202,7 +202,7 @@ export const parseString = (string) => {
 
 export const stringifyBlocks = (
   blockElements,
-  { humanReadable = true, renderUser, renderChannelLink } = {}
+  { humanReadable = true, renderUser, renderChannelLink } = {},
 ) => {
   const stringifyTextNode = (l) => {
     let text = l.text;
@@ -386,8 +386,8 @@ export const toMarkdown = (blockElements) => {
           ...(body?.children ?? []),
         ].map((rowEl) =>
           rowEl.children.map((cellEl) =>
-            cellEl.children.map(renderNode).join("")
-          )
+            cellEl.children.map(renderNode).join(""),
+          ),
         );
 
         const columnWidths = rows.reduce((widths, cells) => {

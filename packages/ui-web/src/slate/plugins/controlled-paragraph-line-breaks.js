@@ -21,7 +21,7 @@ const createMiddleware = ({ mode }) => {
         editor.setNodes({ type: "text" }, { at: path });
         editor.wrapNodes(
           { type: PARAGRAPH_ELEMENT_TYPE, children: [] },
-          { at: path }
+          { at: path },
         );
         return;
       }

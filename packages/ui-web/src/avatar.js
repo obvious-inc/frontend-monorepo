@@ -15,7 +15,7 @@ const Avatar = React.forwardRef(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const sharedProps = {
       ref,
@@ -79,7 +79,7 @@ const Avatar = React.forwardRef(
         )}
       </div>
     );
-  }
+  },
 );
 
 export default Avatar;

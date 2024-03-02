@@ -65,11 +65,11 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
 
   useFetch(
     () => fetchProposalCandidatesByAccount(connectedAccountAddress),
-    [connectedAccountAddress]
+    [connectedAccountAddress],
   );
 
   const accountProposalCandidates = useAccountProposalCandidates(
-    connectedAccountAddress
+    connectedAccountAddress,
   );
 
   const isTitleEmpty = draft.name.trim() === "";
@@ -121,7 +121,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
       const transactions = draft.actions.flatMap((a) =>
-        resolveActionTransactions(a, { chainId })
+        resolveActionTransactions(a, { chainId }),
       );
 
       if (usdcSumValue > 0 && payerTopUpValue > 0)
@@ -132,7 +132,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
 
       if (transactions.length > 10) {
         alert(
-          `A proposal can at max include 10 transactions (currently ${transactions.length})`
+          `A proposal can at max include 10 transactions (currently ${transactions.length})`,
         );
         return;
       }
@@ -178,7 +178,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
 
                   await functionUtils.retryAsync(
                     () => fetchProposalCandidate(candidateId),
-                    { retries: 100 }
+                    { retries: 100 },
                   );
 
                   startNavigationTransition(() => {
@@ -198,11 +198,11 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
               return Promise.reject(e);
 
             alert(
-              "Ops, looks like something went wrong submitting your proposal!"
+              "Ops, looks like something went wrong submitting your proposal!",
             );
             console.error(e);
             return Promise.reject(e);
-          }
+          },
         )
         .catch(() => {
           // This should only happen for errors occuring after a successful submit
@@ -496,7 +496,7 @@ export default ({ draftId }) => {
             isRichTextEditorNodeEmpty(draft.body[0])));
 
       return isEmpty;
-    })
+    }),
   );
 
   React.useEffect(() => {

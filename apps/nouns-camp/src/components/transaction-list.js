@@ -17,8 +17,8 @@ import Code from "./code.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
-const LazyPropHouseRoundDescriptionList = React.lazy(() =>
-  import("./prop-house-round-description-list.js")
+const LazyPropHouseRoundDescriptionList = React.lazy(
+  () => import("./prop-house-round-description-list.js"),
 );
 
 const decimalsByCurrency = {
@@ -39,7 +39,7 @@ export const useEnhancedParsedTransaction = (transaction) => {
 
   const decodedFunctionData = useDecodedFunctionData(
     { target, calldata },
-    { enabled: isUnparsed }
+    { enabled: isUnparsed },
   );
 
   if (decodedFunctionData == null) return transaction;
@@ -355,7 +355,7 @@ const ListItem = ({ transaction }) => {
       {expandedContent != null && (
         <div style={{ marginTop: "0.6rem" }}>
           <Button
-            variant="default-opaque"
+            variant="opaque"
             size="tiny"
             onClick={() => {
               setExpanded((s) => !s);
@@ -602,7 +602,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
     case "payer-top-up": {
       const { address: nounsPayerAddress } = resolveContractIdentifier(
         chainId,
-        "payer"
+        "payer",
       );
       return (
         <>
@@ -617,7 +617,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
     case "stream": {
       const formattedUnits = formatUnits(
         t.tokenAmount,
-        decimalsByCurrency[t.token]
+        decimalsByCurrency[t.token],
       );
       // TODO: handle unknown token contract
       return (

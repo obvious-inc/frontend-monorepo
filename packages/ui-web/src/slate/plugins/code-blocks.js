@@ -77,7 +77,7 @@ const middleware = (editor) => {
     (e) =>
       withBlockPrefixShortcut(
         { prefix: "```", instant: true, elementType: CODE_BLOCK_ELEMENT_TYPE },
-        e
+        e,
       ),
     (e) =>
       withEmptyBlockBackwardDeleteTransform(
@@ -85,8 +85,8 @@ const middleware = (editor) => {
           fromElementType: CODE_BLOCK_ELEMENT_TYPE,
           toElementType: "paragraph",
         },
-        e
-      )
+        e,
+      ),
   )(editor);
 };
 

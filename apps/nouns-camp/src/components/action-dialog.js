@@ -93,12 +93,12 @@ const EnsCacheProvider = ({ children }) => {
 
   const reverseResolve = React.useCallback(
     (address) => state.reverseIndex[address.toLowerCase()],
-    [state]
+    [state],
   );
 
   const contextValue = React.useMemo(
     () => ({ register, resolve, reverseResolve }),
-    [register, resolve, reverseResolve]
+    [register, resolve, reverseResolve],
   );
 
   return (
@@ -126,7 +126,7 @@ const useEnsAddress = ({ name, enabled }) => {
       },
       () => {
         // Ignore
-      }
+      },
     );
   }, [name, address, enabled, publicClient, register]);
 
@@ -187,7 +187,7 @@ const buildInitialInputState = (inputs = []) => {
           ...obj,
           [c.name]: buildInputState(c),
         }),
-        {}
+        {},
       );
     }
 
@@ -288,7 +288,7 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
       state.currency,
       state.dateRange?.start,
       state.dateRange?.end,
-    ]
+    ],
   );
 
   useEnsAddress({
@@ -329,7 +329,7 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
                   const selectedStart = parseDate(
                     e.target.value,
                     "yyyy-MM-dd",
-                    new Date()
+                    new Date(),
                   );
                   formatDate(selectedStart, "yyyy-MM-dd"); // Validation :shrug:
                   return {
@@ -371,7 +371,7 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
                   const selectedEnd = parseDate(
                     e.target.value,
                     "yyyy-MM-dd",
-                    new Date()
+                    new Date(),
                   );
                   formatDate(selectedEnd, "yyyy-MM-dd"); // Validation :shrug:
 
@@ -440,7 +440,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
   const publicClient = usePublicClient();
 
   const contractNotFound = ["not-found", "not-contract-address"].includes(
-    state.contractDataRequestError?.message
+    state.contractDataRequestError?.message,
   );
 
   const fetchedAbi =
@@ -479,7 +479,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
         });
       }
     },
-    [publicClient, setState, state.target]
+    [publicClient, setState, state.target],
   );
 
   useFetch(isAddress(state.target) ? fetchContractData : null, [
@@ -530,7 +530,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
     });
 
   const selectedContractCallAbiItem = contractCallAbiItemOptions?.find(
-    (o) => o.signature === state.signature
+    (o) => o.signature === state.signature,
   )?.abiItem;
 
   const isPayableContractCall =
@@ -615,7 +615,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
               const formattedAbi = JSON.stringify(
                 JSON.parse(state.customAbiString),
                 null,
-                2
+                2,
               );
               setState({ customAbiString: formattedAbi });
             } catch (e) {
@@ -645,7 +645,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
             size="medium"
             onChange={(signature) => {
               const targetOption = contractCallAbiItemOptions?.find(
-                (o) => o.signature === signature
+                (o) => o.signature === signature,
               );
               setState({
                 signature,
@@ -863,7 +863,7 @@ const PropHouseRoundActionForm = ({ state, setState }) => {
           }}
         >
           <Button
-            variant="default-opaque"
+            variant="opaque"
             size="tiny"
             component="button"
             type="button"
@@ -882,7 +882,7 @@ const PropHouseRoundActionForm = ({ state, setState }) => {
           </Button>
           {state.awardAssets.length > 1 && (
             <Button
-              variant="default-opaque"
+              variant="opaque"
               size="tiny"
               component="button"
               type="button"
@@ -890,7 +890,7 @@ const PropHouseRoundActionForm = ({ state, setState }) => {
                 setState({
                   winnerCount: state.awardAssets.length - 1,
                   awardAssets: state.awardAssets.filter(
-                    (_, i, as) => i !== as.length - 1
+                    (_, i, as) => i !== as.length - 1,
                   ),
                 })
               }
@@ -937,7 +937,7 @@ const PropHouseRoundActionForm = ({ state, setState }) => {
                 const selectedDate = parseDate(
                   e.target.value,
                   "yyyy-MM-dd",
-                  new Date()
+                  new Date(),
                 );
                 formatDate(selectedDate, "yyyy-MM-dd"); // Validation :shrug:
                 const time = getTime();
@@ -1215,7 +1215,7 @@ const formConfigByActionType = {
           votePeriodDurationMillis: state.votePeriodDurationMillis,
           winnerCount: state.winnerCount,
         },
-        { publicClient }
+        { publicClient },
       );
       return {
         type: "prop-house-timed-round",
@@ -1245,14 +1245,14 @@ const formConfigByActionType = {
               ...(state.contractData.implementationAbi ?? []),
             ];
       const contractNotFound = ["not-found", "not-contract-address"].includes(
-        state.contractDataRequestError?.message
+        state.contractDataRequestError?.message,
       );
       const abi = contractNotFound ? customAbi : fetchedAbi;
       return { ...state, customAbi, fetchedAbi, abi };
     },
     hasRequiredInputs: ({ state }) => {
       const selectedSignatureAbiItem = state.abi?.find(
-        (i) => createSignature(i) === state.signature
+        (i) => createSignature(i) === state.signature,
       );
 
       if (selectedSignatureAbiItem == null) return false;
@@ -1271,7 +1271,7 @@ const formConfigByActionType = {
     },
     buildAction: ({ state }) => {
       const selectedSignatureAbiItem = state.abi?.find(
-        (i) => createSignature(i) === state.signature
+        (i) => createSignature(i) === state.signature,
       );
 
       const { inputs: inputTypes } = selectedSignatureAbiItem;
@@ -1286,10 +1286,11 @@ const formConfigByActionType = {
             // arguments, e.g. empty numbers turn into zeroes
             decodeAbiParameters(
               inputTypes,
-              encodeAbiParameters(inputTypes, state.arguments)
+              encodeAbiParameters(inputTypes, state.arguments),
             ),
-            (_, value) => (typeof value === "bigint" ? value.toString() : value)
-          )
+            (_, value) =>
+              typeof value === "bigint" ? value.toString() : value,
+          ),
         ),
         contractCallValue: parseEther(state.ethValue).toString(),
         contractCallCustomAbiString: state.customAbiString,
@@ -1363,7 +1364,7 @@ const Content = (props) => {
     formConfigByActionType[type].initialState({ action, publicClient });
 
   const [actionState, setActionState] = useActionState(type, () =>
-    getInitialActionState(type)
+    getInitialActionState(type),
   );
 
   const hasRequiredInputs = formConfig.hasRequiredInputs({
@@ -1405,7 +1406,7 @@ const Content = (props) => {
             options={actionTypes
               .filter(
                 (t) =>
-                  t === type || formConfigByActionType[t].selectable !== false
+                  t === type || formConfigByActionType[t].selectable !== false,
               )
               .map((type) => ({
                 value: type,
@@ -1530,11 +1531,11 @@ const renderInput = (input, inputValue, setInputValue) => {
                     type: elementType,
                     remove: () =>
                       setInputValue((els) =>
-                        els.filter((_, i) => i !== elementIndex)
+                        els.filter((_, i) => i !== elementIndex),
                       ),
                   },
                   elementValue,
-                  setElementValue
+                  setElementValue,
                 )}
               </React.Fragment>
             );
@@ -1816,7 +1817,7 @@ const DecimalInput = ({ value, ...props }) => (
             firstNonZeroIndex === -1 ? integerPart.length : firstNonZeroIndex;
 
           const trimmedIntegerPart = integerPart.slice(
-            Math.min(leadingZeroCount, integerPart.length - 1)
+            Math.min(leadingZeroCount, integerPart.length - 1),
           );
 
           // Remove trailing decimal point
@@ -2009,11 +2010,11 @@ const useFetchPredictedStreamContractAddress = () => {
       const executorContract = getContractWithIdentifier(chainId, "executor");
       const streamFactoryContract = getContractWithIdentifier(
         chainId,
-        "stream-factory"
+        "stream-factory",
       );
       const paymentTokenContract = getContractWithIdentifier(
         chainId,
-        `${currency}-token`
+        `${currency}-token`,
       );
 
       let amount = 0;
@@ -2054,7 +2055,7 @@ const useFetchPredictedStreamContractAddress = () => {
         ],
       });
     },
-    [publicClient, chainId]
+    [publicClient, chainId],
   );
 };
 

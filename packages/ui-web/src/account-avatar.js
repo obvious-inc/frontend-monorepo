@@ -8,7 +8,7 @@ import Avatar from "./avatar.js";
 
 const usePlaceholderAvatar = (
   walletAddress,
-  { enabled = true, transparent = false } = {}
+  { enabled = true, transparent = false } = {},
 ) => {
   const [generatedPlaceholderAvatarUrl, setGeneratedPlaceholderAvatarUrl] =
     React.useState(null);
@@ -72,7 +72,7 @@ const AccountAvatar = React.forwardRef(
         {...props}
       />
     );
-  }
+  },
 );
 
 export default AccountAvatar;

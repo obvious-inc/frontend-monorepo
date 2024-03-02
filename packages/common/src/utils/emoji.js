@@ -41,7 +41,7 @@ export const search = (emoji, rawQuery) => {
       {
         value: (e) => {
           const token = buildAliasTokens(e).find((t) =>
-            t.toLowerCase().startsWith(query)
+            t.toLowerCase().startsWith(query),
           );
           return token?.length ?? Infinity;
         },
@@ -71,7 +71,7 @@ export const search = (emoji, rawQuery) => {
 
               return best;
             },
-            [Infinity, Infinity]
+            [Infinity, Infinity],
           );
 
           if (matchIndex === Infinity) return Infinity;
@@ -88,9 +88,9 @@ export const search = (emoji, rawQuery) => {
         value: (e) => e.description.length,
         order: "asc",
       },
-      (e) => e.description
+      (e) => e.description,
     ),
-    unorderedItems
+    unorderedItems,
   );
 
   return orderedItems;

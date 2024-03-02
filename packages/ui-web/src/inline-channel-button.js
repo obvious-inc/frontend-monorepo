@@ -14,7 +14,7 @@ const InlineChannelButton = React.forwardRef(
         {children}
       </InlineButton>
     );
-  }
+  },
 );
 
 export default InlineChannelButton;

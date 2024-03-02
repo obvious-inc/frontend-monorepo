@@ -95,7 +95,7 @@ export const Provider = ({ children }) => {
       setSelection,
       activeMarks,
       setActiveMarks,
-    ]
+    ],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
@@ -139,7 +139,7 @@ const useLinkDialog = ({ editorRef }) => {
       { ...state, isOpen: state != null },
       { open, close },
     ],
-    [state, open, close]
+    [state, open, close],
   );
 };
 
@@ -157,7 +157,7 @@ const useImageDialog = ({ editorRef }) => {
 
       setState({ url: node?.url, caption: node?.caption, at });
     },
-    [editorRef]
+    [editorRef],
   );
 
   const close = React.useCallback(() => {
@@ -169,7 +169,7 @@ const useImageDialog = ({ editorRef }) => {
       { ...state, isOpen: state != null },
       { open, close },
     ],
-    [state, open, close]
+    [state, open, close],
   );
 };
 
@@ -301,7 +301,7 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
       if (node.children.length === 0) {
         editor.insertNode(
           { type: "paragraph", children: [{ text: "" }] },
-          { at: [0] }
+          { at: [0] },
         );
         return;
       }
@@ -315,7 +315,7 @@ const withSaneishDefaultBehaviors = (editor, { mode } = {}) => {
       ) {
         editor.insertNode(
           { type: "paragraph", children: [{ text: "" }] },
-          { at: [node.children.length] }
+          { at: [node.children.length] },
         );
         return;
       }
@@ -407,7 +407,7 @@ const RichTextEditor = React.forwardRef(
       renderElement: customRenderElement,
       ...props
     },
-    ref
+    ref,
   ) => {
     const {
       editorRef: internalEditorRef,
@@ -437,7 +437,7 @@ const RichTextEditor = React.forwardRef(
           createHeadingsPlugin,
           createQuotesPlugin,
           createCodeBlocksPlugin,
-        ].map((fn) => fn({ mode: editorMode }))
+        ].map((fn) => fn({ mode: editorMode })),
       );
 
       const editor = compose(
@@ -448,7 +448,7 @@ const RichTextEditor = React.forwardRef(
         withSaneishDefaultBehaviors,
         withEditorCommands,
         withReact,
-        withHistory
+        withHistory,
       )(createSlateEditor(), { mode: editorMode });
 
       return {
@@ -473,16 +473,16 @@ const RichTextEditor = React.forwardRef(
               },
             }
           : props_.element.type === "image"
-          ? {
-              ...props_,
-              maxWidth: imagesMaxWidth,
-              maxHeight: imagesMaxHeight,
-              openEditDialog: () => {
-                const nodePath = ReactEditor.findPath(editor, props_.element);
-                imageDialogActions.open(nodePath);
-              },
-            }
-          : props_;
+            ? {
+                ...props_,
+                maxWidth: imagesMaxWidth,
+                maxHeight: imagesMaxHeight,
+                openEditDialog: () => {
+                  const nodePath = ReactEditor.findPath(editor, props_.element);
+                  imageDialogActions.open(nodePath);
+                },
+              }
+            : props_;
 
       const CustomComponent = customElementsByNodeType[props.element.type];
 
@@ -556,7 +556,7 @@ const RichTextEditor = React.forwardRef(
                   const [command, ...args] = parts;
                   trigger.handler(
                     command,
-                    args.map((a) => a.trim()).filter(Boolean)
+                    args.map((a) => a.trim()).filter(Boolean),
                   );
 
                   break;
@@ -652,7 +652,7 @@ const RichTextEditor = React.forwardRef(
                       await editor.focus(linkDialogState.selection);
                       editor.insertLink(
                         { label, url },
-                        { at: linkDialogState.selection }
+                        { at: linkDialogState.selection },
                       );
                     }}
                   />
@@ -694,7 +694,7 @@ const RichTextEditor = React.forwardRef(
                       ]);
                       editor.insertImage(
                         { url, caption, width, height },
-                        { at: imageDialogState.at }
+                        { at: imageDialogState.at },
                       );
                     }}
                   />
@@ -705,7 +705,7 @@ const RichTextEditor = React.forwardRef(
         )}
       </>
     );
-  }
+  },
 );
 
 const Element = (props) => {
@@ -1014,7 +1014,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
                 case "list-transform": {
                   editor.setNodes(
                     { type: blockType },
-                    { at: selectedListRootNodeEntry[1] }
+                    { at: selectedListRootNodeEntry[1] },
                   );
                   break;
                 }

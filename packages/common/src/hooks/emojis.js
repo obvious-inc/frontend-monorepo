@@ -26,7 +26,7 @@ export const Provider = ({ loader: loader_, children }) => {
 
   const entriesById = React.useMemo(
     () => indexBy((e) => e.id ?? e.emoji, entries),
-    [entries]
+    [entries],
   );
 
   const loader = useLatestCallback(async () => {
@@ -43,7 +43,7 @@ export const Provider = ({ loader: loader_, children }) => {
       entriesById,
       loader,
     }),
-    [entries, entriesById, loader]
+    [entries, entriesById, loader],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
@@ -69,7 +69,7 @@ const useRecentlyUsedEntries = () => {
       unique([...(recentlyUsedIds ?? []), ...defaultEmojiSet])
         .map((id) => entriesById[id])
         .filter(Boolean),
-    [recentlyUsedIds, entriesById]
+    [recentlyUsedIds, entriesById],
   );
 };
 

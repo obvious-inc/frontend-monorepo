@@ -51,7 +51,7 @@ import {
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import ActivityFeed, { VotingPowerNoggle } from "./activity-feed.js";
+import NounCountNoggles from "./noun-count-noggles.js";
 import {
   ProposalHeader,
   ProposalBody,
@@ -69,11 +69,13 @@ import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 import DiffBlock from "./diff-block.js";
 
-const CandidateEditDialog = React.lazy(() =>
-  import("./candidate-edit-dialog.js")
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
+
+const CandidateEditDialog = React.lazy(
+  () => import("./candidate-edit-dialog.js"),
 );
-const PromoteCandidateDialog = React.lazy(() =>
-  import("./promote-candidate-dialog.js")
+const PromoteCandidateDialog = React.lazy(
+  () => import("./promote-candidate-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -103,7 +105,7 @@ const ProposalCandidateScreenContent = ({
 
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
-    candidate.latestVersion.targetProposalId
+    candidate.latestVersion.targetProposalId,
   );
 
   const feedItems = useFeedItems(candidateId);
@@ -116,7 +118,7 @@ const ProposalCandidateScreenContent = ({
     {
       support: pendingSupport,
       reason: pendingFeedback.trim(),
-    }
+    },
   );
 
   const [isProposalUpdateDiffDialogOpen, toggleProposalUpdateDiffDialog] =
@@ -124,13 +126,13 @@ const ProposalCandidateScreenContent = ({
   const [hasPendingProposalUpdate, setPendingProposalUpdate] =
     React.useState(false);
   const submitProposalUpdate = useUpdateSponsoredProposalWithSignatures(
-    candidate?.latestVersion.targetProposalId
+    candidate?.latestVersion.targetProposalId,
   );
 
   const proposerDelegate = useDelegate(candidate.proposerId);
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId
+    (p) => p.proposerId,
   );
 
   useProposalCandidateFetch(candidateId);
@@ -156,11 +158,11 @@ const ProposalCandidateScreenContent = ({
     {
       excludeInvalid: true,
       activeProposerIds: [],
-    }
+    },
   );
 
   const sponsorsVotingPower = arrayUtils.unique(
-    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id))
+    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id)),
   ).length;
 
   const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
@@ -172,7 +174,7 @@ const ProposalCandidateScreenContent = ({
     updateTargetProposal == null ||
     updateTargetProposal.signers.some((signer) => {
       const signature = validSignaturesIncludingActiveProposers.find(
-        (s) => s.signer.id.toLowerCase() === signer.id.toLowerCase()
+        (s) => s.signer.id.toLowerCase() === signer.id.toLowerCase(),
       );
 
       return signature == null;
@@ -367,7 +369,9 @@ const ProposalCandidateScreenContent = ({
                   </div>
 
                   {feedItems.length !== 0 && (
-                    <ActivityFeed context="candidate" items={feedItems} />
+                    <React.Suspense fallback={null}>
+                      <ActivityFeed context="candidate" items={feedItems} />
+                    </React.Suspense>
                   )}
                 </Tabs.Item>
                 <Tabs.Item key="transactions" title="Transactions">
@@ -495,7 +499,7 @@ const ProposalCandidateScreenContent = ({
                                     validSignaturesIncludingActiveProposers.find(
                                       (s) =>
                                         s.signer.id.toLowerCase() ===
-                                        signer.id.toLowerCase()
+                                        signer.id.toLowerCase(),
                                     );
 
                                   return {
@@ -711,7 +715,7 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
   const candidate = useProposalCandidate(candidateId);
 
   const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId
+    (p) => p.proposerId,
   );
 
   const signatures = getSponsorSignatures(candidate, {
@@ -829,7 +833,7 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
                   </span>
                 </div>
 
-                <VotingPowerNoggle count={s.signer.nounsRepresented.length} />
+                <NounCountNoggles count={s.signer.nounsRepresented.length} />
               </div>
 
               <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
@@ -858,7 +862,7 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
 
                     const daysLeftUntilExpiration = datesDifferenceInDays(
                       s.expirationTimestamp,
-                      new Date()
+                      new Date(),
                     );
 
                     if (daysLeftUntilExpiration < -100)
@@ -919,7 +923,7 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
   const addSignatureToCandidate = useAddSignatureToProposalCandidate(
     candidate.proposerId,
     candidate.slug,
-    candidate.latestVersion
+    candidate.latestVersion,
   );
   return (
     <Button
@@ -931,7 +935,7 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
         setPending(true);
         try {
           const expirationTimestamp = Math.floor(
-            expirationDate.getTime() / 1000
+            expirationDate.getTime() / 1000,
           );
           const signature = await signCandidate(
             candidate.proposerId,
@@ -939,7 +943,7 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
             {
               expirationTimestamp,
               targetProposalId: candidate.latestVersion.targetProposalId,
-            }
+            },
           );
           await addSignatureToCandidate({
             signature,
@@ -996,7 +1000,7 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
   const candidate = useProposalCandidate(candidateId);
 
   const [expirationDate, setExpirationDate] = React.useState(
-    () => new Date(new Date().getTime() + ONE_DAY_IN_MILLIS)
+    () => new Date(new Date().getTime() + ONE_DAY_IN_MILLIS),
   );
   const [reason, setReason] = React.useState("");
 
@@ -1009,7 +1013,7 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
   const addSignatureToCandidate = useAddSignatureToProposalCandidate(
     candidate.proposerId,
     candidate.slug,
-    candidate.latestVersion
+    candidate.latestVersion,
   );
 
   return (
@@ -1036,7 +1040,7 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
               return addSignatureToCandidate({
                 signature,
                 expirationTimestamp: Math.floor(
-                  expirationDate.getTime() / 1000
+                  expirationDate.getTime() / 1000,
                 ),
                 reason,
               });
@@ -1154,19 +1158,19 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
 
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
-    { prefetch: true, replace: true }
+    { prefetch: true, replace: true },
   );
   const [isSponsorDialogOpen, toggleSponsorDialog] = useSearchParamToggleState(
     "sponsor",
-    { prefetch: true, replace: true }
+    { prefetch: true, replace: true },
   );
   const [isProposeDialogOpen, toggleProposeDialog] = useSearchParamToggleState(
     "propose",
-    { prefetch: true, replace: true }
+    { prefetch: true, replace: true },
   );
 
   const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId
+    (p) => p.proposerId,
   );
 
   const cancelCandidate = useCancelProposalCandidate(slug, {
@@ -1183,7 +1187,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
       // don't count votes from signers who have active or pending proposals
       // if (!activePendingProposers.includes(signature.signer.id)) {
       return s.signer.nounsRepresented.map((n) => n.id);
-    })
+    }),
   ).length;
 
   const proposerVotingPower =
@@ -1231,7 +1235,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
             (e) => {
               setPendingCancel(false);
               return Promise.reject(e);
-            }
+            },
           );
         },
         label: "Cancel",
@@ -1441,7 +1445,7 @@ const ProposalUpdateSponsorList = ({ candidateId }) => {
     >
       {proposal.signers.map((s) => {
         const signature = validSignatures.find(
-          (s_) => s_.signer.id.toLowerCase() === s.id.toLowerCase()
+          (s_) => s_.signer.id.toLowerCase() === s.id.toLowerCase(),
         );
 
         return (
@@ -1507,14 +1511,14 @@ const ProposalUpdateDiffDialogContent = ({
 
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
-    candidate?.latestVersion.targetProposalId
+    candidate?.latestVersion.targetProposalId,
   );
 
   if (candidate == null || updateTargetProposal == null) return null;
 
   const descriptionDiff = diffParagraphs(
     updateTargetProposal.description,
-    candidate.latestVersion.content.description
+    candidate.latestVersion.content.description,
   );
   const transactionsDiff = diffParagraphs(
     updateTargetProposal.transactions
@@ -1522,14 +1526,14 @@ const ProposalUpdateDiffDialogContent = ({
       .join("\n\n"),
     candidate.latestVersion.content.transactions
       .map((t) => stringifyTransaction(t, { chainId }))
-      .join("\n\n")
+      .join("\n\n"),
   );
 
   const hasDescriptionChanges = descriptionDiff.some(
-    (token) => token.added || token.removed
+    (token) => token.added || token.removed,
   );
   const hasTransactionChanges = transactionsDiff.some(
-    (token) => token.added || token.removed
+    (token) => token.added || token.removed,
   );
 
   const hasVisibleDiff = hasDescriptionChanges || hasTransactionChanges;

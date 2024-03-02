@@ -53,9 +53,9 @@ export const search = (channels, rawQuery) => {
         order: "desc",
       },
       (c) => c.memberUserIds.length ?? Infinity,
-      (c) => c.name?.toLowerCase()
+      (c) => c.name?.toLowerCase(),
     ),
-    unorderedChannels
+    unorderedChannels,
   );
 
   return orderedChannels;
@@ -67,5 +67,5 @@ export const createDefaultComparator = () =>
       value: (c) => c.memberUserIds.length ?? 0,
       order: "desc",
     },
-    (c) => c.name?.toLowerCase()
+    (c) => c.name?.toLowerCase(),
   );

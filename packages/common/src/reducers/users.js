@@ -31,8 +31,8 @@ const entriesById = (state = {}, action) => {
       const usersById = indexBy(
         (u) => u.id,
         action.userIds.map((id) =>
-          state[id] == null ? { id, unknown: true } : state[id]
-        )
+          state[id] == null ? { id, unknown: true } : state[id],
+        ),
       );
       return { ...state, ...usersById };
     }
@@ -104,10 +104,10 @@ const starsByUserId = (state = {}, action) => {
 export const selectAllUsers = createSelector(
   (state) =>
     Object.keys(state.users.entriesById).map((userId) =>
-      selectUser(state, userId)
+      selectUser(state, userId),
     ),
   (users) => users,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectUser = createSelector(
@@ -142,7 +142,7 @@ export const selectUser = createSelector(
       profilePicture: user.profilePicture,
     };
   },
-  { memoizeOptions: { maxSize: 1000 } }
+  { memoizeOptions: { maxSize: 1000 } },
 );
 
 export const selectUsers = createSelector(
@@ -151,11 +151,11 @@ export const selectUsers = createSelector(
       .map((userIdOrWalletAddress) =>
         userIdOrWalletAddress.startsWith("0x")
           ? selectUserFromWalletAddress(state, userIdOrWalletAddress)
-          : selectUser(state, userIdOrWalletAddress)
+          : selectUser(state, userIdOrWalletAddress),
       )
       .filter(Boolean),
   (users) => users,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectUserFromWalletAddress = (state, address) =>
@@ -169,7 +169,7 @@ export const selectUserFromWalletAddress = (state, address) =>
 export const selectStarredUserIds = createSelector(
   (state) => Object.keys(state.users.starsByUserId),
   (userIds) => userIds,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectStarredUsers = createSelector(
@@ -178,7 +178,7 @@ export const selectStarredUsers = createSelector(
       .map((id) => selectUser(state, id))
       .filter(Boolean),
   (users) => users,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectIsUserStarred = (state, id) =>

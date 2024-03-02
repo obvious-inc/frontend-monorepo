@@ -43,8 +43,8 @@ export const requestIdleCallback =
   typeof window === "undefined"
     ? undefined
     : typeof window.requestIdleCallback === "function"
-    ? window.requestIdleCallback
-    : window.setTimeout;
+      ? window.requestIdleCallback
+      : window.setTimeout;
 
 export const reloadPageOnce = () => {
   try {
@@ -63,7 +63,7 @@ export const reloadPageOnce = () => {
 
 export const searchRecords = (records, rawQuery) => {
   const queries = (Array.isArray(rawQuery) ? rawQuery : [rawQuery]).map((q) =>
-    q.trim().toLowerCase()
+    q.trim().toLowerCase(),
   );
 
   const filteredRecords = records
@@ -108,6 +108,6 @@ export const searchRecords = (records, rawQuery) => {
   return sortBy(
     { value: (r) => r.index, type: "index" },
     { value: (r) => r.fallbackSortProperty, order: "desc" },
-    filteredRecords
+    filteredRecords,
   );
 };

@@ -67,12 +67,12 @@ const GifPicker = ({
           setItems(gifs);
         });
       }, 800),
-    [searchGifs]
+    [searchGifs],
   );
 
   useFetch(
     ({ signal }) => throttledSearchGifs(trimmedQuery, { signal }),
-    [throttledSearchGifs, trimmedQuery]
+    [throttledSearchGifs, trimmedQuery],
   );
 
   const selectHighlightedItem = () => {

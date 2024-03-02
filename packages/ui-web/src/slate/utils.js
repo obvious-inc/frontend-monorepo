@@ -8,12 +8,12 @@ export const mergePlugins = (plugins) => {
     ...plugins
       .filter((p) => p.middleware != null)
       .map((p) => p.middleware)
-      .reverse()
+      .reverse(),
   );
 
   const elements = plugins.reduce(
     (acc, p) => (p.elements == null ? acc : { ...acc, ...p.elements }),
-    []
+    [],
   );
 
   const pipeEventHandler =
@@ -25,10 +25,10 @@ export const mergePlugins = (plugins) => {
 
   const handlers = {
     onChange: compose(
-      ...plugins.map((p) => pipeEventHandler(p.handlers?.onChange))
+      ...plugins.map((p) => pipeEventHandler(p.handlers?.onChange)),
     ),
     onKeyDown: compose(
-      ...plugins.map((p) => pipeEventHandler(p.handlers?.onKeyDown))
+      ...plugins.map((p) => pipeEventHandler(p.handlers?.onKeyDown)),
     ),
   };
 
@@ -274,13 +274,13 @@ export const intersectsSelection = (editor, nodePath) => {
   const [nodeStartPoint, nodeEndPoint] = Editor.edges(editor, nodePath);
   return Range.includes(
     { anchor: nodeStartPoint, focus: nodeEndPoint },
-    editor.selection
+    editor.selection,
   );
 };
 
 export const withBlockPrefixShortcut = (
   { prefix, elementType, instant = false, transform, afterTransform },
-  editor
+  editor,
 ) => {
   const { insertText } = editor;
 
@@ -353,7 +353,7 @@ export const withBlockPrefixShortcut = (
 
 export const withEmptyBlockBackwardDeleteTransform = (
   { fromElementType, toElementType },
-  editor
+  editor,
 ) => {
   const { deleteBackward } = editor;
 
