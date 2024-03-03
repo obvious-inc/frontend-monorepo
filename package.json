@@ -10,9 +10,10 @@
   },
   "resolutions": {
     "@babel/traverse": ">=7.23.2",
+    "axios": ">=1.6.0",
     "follow-redirects": ">=1.15.4",
-    "undici": ">=5.26.2",
-    "axios": ">=1.6.0"
+    "ip": ">=1.1.9",
+    "undici": ">=5.26.2"
   },
   "devDependencies": {
     "prettier": "^3.2.5",
