@@ -688,9 +688,14 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       />
 
                       {feedItems.length !== 0 && (
-                        <div style={{ marginTop: "3.2rem" }}>
-                          <ActivityFeed context="proposal" items={feedItems} />
-                        </div>
+                        <React.Suspense fallback={null}>
+                          <div style={{ marginTop: "3.2rem" }}>
+                            <ActivityFeed
+                              context="proposal"
+                              items={feedItems}
+                            />
+                          </div>
+                        </React.Suspense>
                       )}
                     </div>
                   </Tabs.Item>
@@ -717,6 +722,7 @@ export const ProposalActionForm = ({
   onSubmit,
 }) => {
   const [isPending, setPending] = React.useState(false);
+  // const [error, setError] = React.useState(null);
 
   const {
     address: connectedWalletAccountAddress,
@@ -839,12 +845,18 @@ export const ProposalActionForm = ({
           )}
         </div>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             setPending(true);
-            onSubmit().finally(() => {
+            // setError(null);
+            try {
+              await onSubmit();
+              // } catch (e) {
+              //   setError(e);
+              //   throw e;
+            } finally {
               setPending(false);
-            });
+            }
           }}
           css={(t) =>
             css({
@@ -889,11 +901,25 @@ export const ProposalActionForm = ({
             }
             disabled={disableForm}
           />
+          {/* {error != null && (
+            <div
+              css={(t) =>
+                css({
+                  padding: "0.3rem",
+                  color: t.colors.textDanger,
+                  whiteSpace: "pre-wrap",
+                  overflow: "auto",
+                })
+              }
+            >
+              Error: {error.message}
+            </div>
+          )} */}
           <div
             style={{
               display: "grid",
-              justifyContent: "flex-end",
               gridAutoFlow: "column",
+              justifyContent: "flex-end",
               gridGap: "1rem",
               marginTop: "1rem",
             }}

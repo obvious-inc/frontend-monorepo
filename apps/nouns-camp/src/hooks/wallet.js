@@ -42,7 +42,7 @@ export const Provider = ({ children }) => {
   );
 };
 
-const useConnectorsWithReadyState = () => {
+export const useConnectorsWithReadyState = () => {
   const connectors = useConnectors();
   const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
 
@@ -50,18 +50,17 @@ const useConnectorsWithReadyState = () => {
     let canceled = false;
 
     Promise.all(
-      connectors.map((c) =>
-        c.getProvider().then((p) => {
-          if (p == null) return c;
-          return { ...c, ready: true };
-        }),
-      ),
+      connectors.map(async (c) => {
+        const p = await c.getProvider();
+        if (p == null) return c;
+        return { ...c, ready: true };
+      }),
     ).then((connectorsWithReadyState) => {
+      if (canceled) return;
+
       const readyConnectorIds = connectorsWithReadyState
         .filter((c) => c.ready)
         .map((c) => c.id);
-
-      if (canceled) return;
 
       setReadyConnectorIds(readyConnectorIds);
     });
@@ -71,14 +70,16 @@ const useConnectorsWithReadyState = () => {
     };
   }, [connectors]);
 
-  return (
-    connectors
-      .map((c) => {
-        if (!readyConnectorIds.includes(c.id)) return c;
-        return { ...c, ready: true };
-      })
-      // Exclude the injected connector if it’s not available
-      .filter((c) => c.id !== "injected" || c.ready)
+  return React.useMemo(
+    () =>
+      connectors
+        .map((c) => {
+          if (!readyConnectorIds.includes(c.id)) return c;
+          return { ...c, ready: true };
+        })
+        // Exclude the injected connector if it’s not available
+        .filter((c) => c.id !== "injected" || c.ready),
+    [connectors, readyConnectorIds],
   );
 };
 

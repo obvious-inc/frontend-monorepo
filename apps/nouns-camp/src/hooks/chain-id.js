@@ -8,12 +8,12 @@ const supportedTestnetChainIds = [sepolia.id, goerli.id];
 const supportedChainIds = [defaultChainId, ...supportedTestnetChainIds];
 
 const useChainId = () => {
-  const { chain } = useAccount();
+  const { chainId } = useAccount();
 
-  if (chain == null || !supportedChainIds.includes(chain.id))
+  if (chainId == null || !supportedChainIds.includes(chainId))
     return defaultChainId;
 
-  return chain.id;
+  return chainId;
 };
 
 export const useConnectedChainId = () => useAccount().chainId;
