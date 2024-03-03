@@ -2,6 +2,7 @@
 
 import React from "react";
 import { I18nProvider } from "react-aria";
+import { useReconnect } from "wagmi";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   useAccountFetch,
@@ -11,6 +12,7 @@ import {
 import {
   Provider as ConnectWalletDialogProvider,
   useWallet,
+  useConnectorsWithReadyState,
 } from "../hooks/wallet.js";
 import { Provider as GlobalDialogsProvider } from "../hooks/global-dialogs.js";
 import AppUpdateBanner from "../components/app-update-banner.js";
@@ -38,6 +40,14 @@ const GlobalClientFetches = () => {
   useDelegateFetch(connectedAccountAddress);
 };
 
+const WalletReconnector = () => {
+  const { reconnect } = useReconnect();
+  const connectors = useConnectorsWithReadyState();
+  React.useEffect(() => {
+    reconnect();
+  }, [reconnect, connectors]);
+};
+
 export default function ClientAppProvider({ children }) {
   return (
     <I18nProvider locale="en-US">
@@ -47,6 +57,7 @@ export default function ClientAppProvider({ children }) {
             <AppUpdateBanner />
             {children}
             <GlobalClientFetches />
+            <WalletReconnector />
           </GlobalDialogsProvider>
         </ConnectWalletDialogProvider>
       </Tooltip.Provider>

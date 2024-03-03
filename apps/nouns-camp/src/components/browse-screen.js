@@ -1223,8 +1223,6 @@ const FeedTabContent = React.memo(() => {
 });
 
 const ProposalItem = React.memo(({ proposalId }) => {
-  if (!proposalId) return null;
-
   const proposal = useProposal(proposalId, { watch: false });
   const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
