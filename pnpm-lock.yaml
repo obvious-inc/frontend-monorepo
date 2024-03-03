@@ -6,9 +6,10 @@ settings:
 
 overrides:
   '@babel/traverse': '>=7.23.2'
-  follow-redirects: '>=1.15.4'
-  undici: '>=5.26.2'
   axios: '>=1.6.0'
+  follow-redirects: '>=1.15.4'
+  ip: '>=1.1.9'
+  undici: '>=5.26.2'
 
 importers:
 
@@ -4692,7 +4693,7 @@ packages:
       envinfo: 7.8.1
       execa: 1.0.0
       hermes-profile-transformer: 0.0.6
-      ip: 1.1.8
+      ip: 2.0.1
       node-stream-zip: 1.15.0
       ora: 5.4.1
       prompts: 2.4.2
@@ -4711,7 +4712,7 @@ packages:
       '@react-native-community/cli-tools': 10.1.1
       chalk: 4.1.2
       hermes-profile-transformer: 0.0.6
-      ip: 1.1.8
+      ip: 2.0.1
     transitivePeerDependencies:
       - encoding
     dev: false
@@ -11009,8 +11010,8 @@ packages:
     engines: {node: '>=8'}
     dev: false
 
-  /ip@1.1.8:
-    resolution: {integrity: sha512-PuExPYUiu6qMBQb4l06ecm6T6ujzhmh+MeJcW9wa89PoAz5pvd4zPgN5WJV104mb6S2T1AwNIAaB70JNrLQWhg==}
+  /ip@2.0.1:
+    resolution: {integrity: sha512-lJUL9imLTNi1ZfXT+DU6rBBdbiKGBuay9B6xGSPVjUeQwaH1RIGqef8RZkUtHioLmSNpPR5M4HVKJGm1j8FWVQ==}
     dev: false
 
   /iron-webcrypto@1.0.0:
