@@ -104,7 +104,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const { address: connectedAccountAddress } = useWallet();
   const connectedAccount = useAccount(connectedAccountAddress);
 
-  const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
+  const isMe = accountAddress?.toLowerCase() === connectedAccountAddress?.toLowerCase();
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
   const enableDelegation = connectedAccount?.nouns.length > 0;
 

@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.0-alpha.30]] - 2024-03-02
+## [1.0.0-alpha.31]] - 2024-03-03
+
+### Bug Fixes
+
+- Solve issue related to call `toLowerCase` on null account
+- Solve proposal item rendering issues
+- Solve proposal item rendering issues
+
+### Miscellaneous Tasks
+
+- Update git ignored files to include `.wrangler`
+
+### Revert
+
+- Bump the next group with 2 updates (#178)
+
+## [1.0.0-alpha.30] - 2024-03-02
 
 ### Features
 
