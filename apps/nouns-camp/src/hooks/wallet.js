@@ -76,8 +76,12 @@ export const useConnectorsWithReadyState = () => {
           if (!readyConnectorIds.includes(c.id)) return c;
           return { ...c, ready: true };
         })
-        // Exclude the injected connector if it’s not available
-        .filter((c) => c.id !== "injected" || c.ready),
+        .filter((c) => {
+          // Exclude the injected and safe connectors if they’re not available
+          // (safe only runs in iframe contexts)
+          const hideIfUnavailable = c.id === "injected" || c.id === "safe";
+          return c.ready || !hideIfUnavailable;
+        }),
     [connectors, readyConnectorIds],
   );
 };
