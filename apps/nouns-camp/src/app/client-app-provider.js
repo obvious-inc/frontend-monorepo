@@ -1,8 +1,9 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import React from "react";
 import { I18nProvider } from "react-aria";
-import { useReconnect } from "wagmi";
+import { useAccount, useReconnect } from "wagmi";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   useAccountFetch,
@@ -32,7 +33,7 @@ const dialogs = [
   },
 ];
 
-const GlobalClientFetches = () => {
+const GlobalClientFetcher = () => {
   const { address: connectedAccountAddress } = useWallet();
 
   useDelegatesFetch();
@@ -48,6 +49,17 @@ const WalletReconnector = () => {
   }, [reconnect, connectors]);
 };
 
+const SentryConfigurator = () => {
+  const { address } = useAccount();
+  React.useEffect(() => {
+    if (address == null) {
+      Sentry.setUser(null);
+      return;
+    }
+    Sentry.setUser({ id: address });
+  }, [address]);
+};
+
 export default function ClientAppProvider({ children }) {
   return (
     <I18nProvider locale="en-US">
@@ -56,8 +68,9 @@ export default function ClientAppProvider({ children }) {
           <GlobalDialogsProvider dialogs={dialogs}>
             <AppUpdateBanner />
             {children}
-            <GlobalClientFetches />
+            <GlobalClientFetcher />
             <WalletReconnector />
+            <SentryConfigurator />
           </GlobalDialogsProvider>
         </ConnectWalletDialogProvider>
       </Tooltip.Provider>
