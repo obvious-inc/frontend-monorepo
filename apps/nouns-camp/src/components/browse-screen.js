@@ -304,6 +304,7 @@ const BrowseScreen = () => {
     if (connectedAccount == null) return "proposals:ongoing";
 
     if (
+      p.proposerId &&
       p.proposerId.toLowerCase() === connectedAccount /*||
       p.signers.some((s) => s.id.toLowerCase() === connectedAccount)*/
     )
