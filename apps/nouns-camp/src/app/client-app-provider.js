@@ -41,11 +41,13 @@ const GlobalClientFetches = () => {
 };
 
 const WalletReconnector = () => {
+  const { isConnected } = useAccount();
   const { reconnect } = useReconnect();
   const connectors = useConnectorsWithReadyState();
   React.useEffect(() => {
+    if (isConnected) return;
     reconnect();
-  }, [reconnect, connectors]);
+  }, [isConnected, reconnect, connectors]);
 };
 
 export default function ClientAppProvider({ children }) {
