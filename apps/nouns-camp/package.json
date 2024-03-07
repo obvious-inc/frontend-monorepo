@@ -10,7 +10,7 @@
   "devDependencies": {
     "@cloudflare/next-on-pages": "^1.10.0",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.1.0",
+    "eslint-config-next": "^14.1.3",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-next-on-pages": "^1.10.0",
     "vercel": "^33.5.3",
@@ -41,7 +41,7 @@
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",
     "marked": "^12.0.1",
-    "next": "^14.1.0",
+    "next": "^14.1.3",
     "react": "18.2.0",
     "react-aria": "^3.32.1",
     "react-aria-components": "1.1.1",
