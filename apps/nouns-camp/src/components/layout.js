@@ -113,6 +113,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     isUnsupportedChain,
     isTestnet,
     isLoading: isLoadingWallet,
+    chain,
   } = useWallet();
 
   const connectedAccount = useAccount(connectedWalletAccountAddress);
@@ -178,14 +179,18 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       isTestnet || isUnsupportedChain ? "invert(1)" : undefined,
                   }}
                 />
-                {pathname !== "/" && (
+                {(pathname !== "/" || isTestnet || isUnsupportedChain) && (
                   <span
                     css={css({
                       marginLeft: "0.6rem",
                       "@media(max-width: 600px)": { display: "none" },
                     })}
                   >
-                    Camp
+                    {isUnsupportedChain
+                      ? "Unsupported chain"
+                      : isTestnet
+                        ? chain?.name
+                        : "Camp"}
                   </span>
                 )}
               </>

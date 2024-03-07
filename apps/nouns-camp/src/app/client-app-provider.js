@@ -42,11 +42,13 @@ const GlobalClientFetcher = () => {
 };
 
 const WalletReconnector = () => {
+  const { isConnected } = useAccount();
   const { reconnect } = useReconnect();
   const connectors = useConnectorsWithReadyState();
   React.useEffect(() => {
+    if (isConnected) return;
     reconnect();
-  }, [reconnect, connectors]);
+  }, [isConnected, reconnect, connectors]);
 };
 
 const SentryConfigurator = () => {

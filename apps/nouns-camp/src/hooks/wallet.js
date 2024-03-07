@@ -185,6 +185,7 @@ export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
   const {
     address: connectedAccountAddress,
+    chain,
     isConnected,
     isConnecting: isConnectingAccount,
     isReconnecting: isReconnectingAccount,
@@ -244,5 +245,6 @@ export const useWallet = () => {
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
     isBetaAccount: betaAccounts.includes(address),
+    chain,
   };
 };
