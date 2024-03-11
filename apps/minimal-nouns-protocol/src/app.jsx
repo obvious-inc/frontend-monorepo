@@ -1,51 +1,81 @@
 import React from "react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useConnectors } from "wagmi";
+import { useAddress } from "./addresses.js";
 import AccountDisplayName from "./components/account-display-name.jsx";
+import EtherscanLink from "./components/etherscan-link.jsx";
 
-const LazyAuction = React.lazy(() => import("./components/auction.jsx"));
-const LazyDelegation = React.lazy(() => import("./components/delegation.jsx"));
+const NounsDAOV3 = React.lazy(() => import("./components/nouns-dao-v3.jsx"));
+const NounsGovernor = React.lazy(
+  () => import("./components/nouns-governor.jsx"),
+);
+const AuctionHouse = React.lazy(() => import("./components/auction-house.jsx"));
+const Delegation = React.lazy(() => import("./components/nouns-token.jsx"));
 
 const App = () => {
-  const { isConnected } = useAccount();
-  if (!isConnected) return <ConnectScreen />;
-  return <MainScreen />;
-};
-
-const MainScreen = () => {
-  const [route, setRoute] = React.useState("auction");
+  const [contractIdentifier, setContractIdentifier] = React.useState(
+    "nouns-auction-house",
+  );
   const [params, setParams] = React.useState({});
+
+  const contractAddress = useAddress(contractIdentifier);
 
   return (
     <>
       <Header />
-
-      <main style={{ padding: "1.6rem" }}>
+      <main style={{ marginTop: "3.2rem" }}>
+        <label htmlFor="contract">Contract</label>
         <select
-          value={route}
+          id="contract"
+          value={contractIdentifier}
           onChange={(e) => {
-            setRoute(e.target.value);
+            setContractIdentifier(e.target.value);
           }}
+          style={{ width: "100%" }}
         >
           {[
-            { value: "auction", label: "Auction" },
-            { value: "delegation", label: "Delegation" },
+            { value: "nouns-auction-house", label: "Auction House" },
+            { value: "nouns-token", label: "Nouns Token" },
+            { value: "nouns-dao", label: "Nouns DAO V3" },
+            {
+              value: "nouns-governor",
+              label: "Nouns Governor",
+              disabled: true,
+            },
+            {
+              value: "delegation-token",
+              label: "Delegation token",
+              disabled: true,
+            },
           ].map((o) => (
             <option key={o.value} value={o.value} disabled={o.disabled}>
               {o.label}
             </option>
           ))}
         </select>
+        <p data-small data-compact>
+          <EtherscanLink
+            address={contractAddress}
+            data-dimmed
+            style={{ textDecoration: "none" }}
+          >
+            {contractAddress}
+          </EtherscanLink>
+        </p>
 
         <React.Suspense fallback={null}>
           <div style={{ padding: "3.2rem 0 0" }}>
             {(() => {
-              switch (route) {
-                case "auction":
-                  return <LazyAuction params={params} setParams={setParams} />;
-                case "delegation":
+              switch (contractIdentifier) {
+                case "nouns-dao":
+                  return <NounsDAOV3 params={params} setParams={setParams} />;
+                case "nouns-governor":
                   return (
-                    <LazyDelegation params={params} setParams={setParams} />
+                    <NounsGovernor params={params} setParams={setParams} />
                   );
+                case "nouns-auction-house":
+                  return <AuctionHouse params={params} setParams={setParams} />;
+                case "nouns-token":
+                  return <Delegation params={params} setParams={setParams} />;
                 default:
                   throw new Error();
               }
@@ -58,69 +88,123 @@ const MainScreen = () => {
 };
 
 const Header = () => {
-  const { address, chain } = useAccount();
+  const { address, chain, chainId, isConnected, isConnecting } = useAccount();
+  const { connect } = useConnect();
+  const connectors = useConnectorsWithReadyState();
   const { disconnect } = useDisconnect();
 
+  const [selectedConnectorId, setSelectedConnectorId] = React.useState(null);
+
   return (
-    <header
-      style={{
-        padding: "1.6rem",
-        display: "flex",
-        alignItems: "flex-end",
-        gap: "1.6rem",
-        borderBottom: "0.1rem solid hsl(0 0% 100% / 10%)",
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        Connected to <em>{chain == null ? "unsupported chain" : chain.name}</em>{" "}
-        as{" "}
-        <em>
-          <AccountDisplayName address={address} />
-        </em>
-      </div>
-      <button onClick={() => disconnect()}>Disconnect</button>
-    </header>
+    <>
+      <h1 style={{ margin: 0 }}>Nouns Protocol</h1>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "1.6rem",
+          marginTop: "0.8rem",
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {isConnected && (
+            <small>
+              Connected to{" "}
+              <em>
+                {chain == null ? `${chainId} (unsupported chain)` : chain.name}
+              </em>{" "}
+              as{" "}
+              <em>
+                <EtherscanLink address={address}>
+                  <AccountDisplayName address={address} />
+                </EtherscanLink>
+              </em>
+            </small>
+          )}
+        </div>
+        {isConnected ? (
+          <button data-small onClick={() => disconnect()}>
+            Disconnect
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: "0.8rem" }}>
+            <select
+              data-small
+              value={selectedConnectorId ?? ""}
+              onChange={(e) => {
+                setSelectedConnectorId(e.target.value);
+              }}
+            >
+              <option value="" disabled>
+                Select connector
+              </option>
+              {connectors.map((c) => (
+                <option key={c.id} value={c.id} disabled={!c.ready}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              data-small
+              onClick={() => {
+                const connector = connectors.find(
+                  (c) => c.id === selectedConnectorId,
+                );
+                connect({ connector });
+              }}
+              disabled={isConnecting || selectedConnectorId == null}
+            >
+              Connect
+            </button>
+          </div>
+        )}
+      </header>
+    </>
   );
 };
 
-const ConnectScreen = () => {
-  const { connectors, connect } = useConnect();
-  const [readyConnectorUids, setReadyConnectorUids] = React.useState([]);
+const useConnectorsWithReadyState = () => {
+  const connectors = useConnectors();
+  const [readyConnectorIds, setReadyConnectorIds] = React.useState([]);
 
   React.useEffect(() => {
-    for (const connector of connectors)
-      connector.getProvider().then((p) => {
-        if (p == null) {
-          setReadyConnectorUids((s) => s.filter((id) => id !== connector.uid));
-          return;
-        }
+    let canceled = false;
 
-        setReadyConnectorUids((s) =>
-          s.includes(connector.uid) ? s : [...s, connector.uid]
-        );
-      });
+    Promise.all(
+      connectors.map(async (c) => {
+        const p = await c.getProvider();
+        if (p == null) return c;
+        return { ...c, ready: true };
+      }),
+    ).then((connectorsWithReadyState) => {
+      if (canceled) return;
+
+      const readyConnectorIds = connectorsWithReadyState
+        .filter((c) => c.ready)
+        .map((c) => c.id);
+
+      setReadyConnectorIds(readyConnectorIds);
+    });
+
+    return () => {
+      canceled = true;
+    };
   }, [connectors]);
 
-  return (
-    <div style={{ padding: "1.6rem" }}>
-      <p style={{ margin: "0 0 1.6rem" }}>Connect wallet</p>
-      <div style={{ display: "flex", gap: "0.8rem" }}>
-        {connectors.map((connector) => {
-          const isReady = readyConnectorUids.find(
-            (uid) => uid === connector.uid
-          );
-          return (
-            <button
-              key={connector.uid}
-              onClick={() => connect({ connector })}
-              disabled={!isReady}
-            >
-              {connector.name}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+  return React.useMemo(
+    () =>
+      connectors
+        .map((c) => {
+          if (!readyConnectorIds.includes(c.id)) return c;
+          return { ...c, ready: true };
+        })
+        .filter((c) => {
+          // Exclude the injected and safe connectors if they’re not available
+          // (safe only runs in iframe contexts)
+          const hideIfUnavailable = c.id === "injected" || c.id === "safe";
+          return c.ready || !hideIfUnavailable;
+        }),
+    [connectors, readyConnectorIds],
   );
 };
 

@@ -3,7 +3,12 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, http, createConfig as createWagmiConfig } from "wagmi";
 import { mainnet, sepolia, goerli } from "wagmi/chains";
-import { injected, safe, walletConnect } from "wagmi/connectors";
+import {
+  walletConnect,
+  // coinbaseWallet,
+  safe,
+  injected,
+} from "wagmi/connectors";
 
 import App from "./app.jsx";
 import "./index.css";
@@ -11,16 +16,29 @@ import "./index.css";
 const wagmiConfig = createWagmiConfig({
   chains: [mainnet, sepolia, goerli],
   connectors: [
-    injected(),
     walletConnect({
-      projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID,
+      projectId: import.meta.env.PUBLIC_WALLET_CONNECT_PROJECT_ID,
     }),
+    // coinbaseWallet({ appName: "Nouns Camp" }),
     safe(),
+    injected(),
   ],
   transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
-    [goerli.id]: http(),
+    [mainnet.id]: http(
+      `https://eth-mainnet.g.alchemy.com/v2/${import.meta.env.PUBLIC_ALCHEMY_API_KEY}`,
+    ),
+    [sepolia.id]: http(
+      `https://eth-sepolia.g.alchemy.com/v2/${import.meta.env.PUBLIC_ALCHEMY_API_KEY}`,
+    ),
+    [goerli.id]: http(
+      `https://eth-goerli.g.alchemy.com/v2/${import.meta.env.PUBLIC_ALCHEMY_API_KEY}`,
+    ),
+  },
+  batch: {
+    multicall: {
+      wait: 250,
+      batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
+    },
   },
 });
 
@@ -33,5 +51,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         <App />
       </QueryClientProvider>
     </WagmiProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

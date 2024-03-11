@@ -650,7 +650,7 @@ query {
       ]
     }
   ) {
-    ...FullProposalFields 
+    ...FullProposalFields
   }
 }`;
 

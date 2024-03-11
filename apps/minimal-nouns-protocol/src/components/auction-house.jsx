@@ -1,48 +1,19 @@
 import { formatEther, parseEther } from "viem";
 import React from "react";
 import {
-  useBlockNumber,
-  useReadContract,
-  useReadContracts,
-  useSimulateContract,
-  useWriteContract,
-} from "wagmi";
-import auctionHouseAbi from "../auction-house-abi.js";
-import { useAddress } from "../addresses.js";
+  useAuctionHouseRead,
+  useAuctionHouseWrite,
+} from "../hooks/contracts.js";
 import AccountDisplayName from "./account-display-name.jsx";
+import NounImage from "./noun-image.jsx";
+import EtherscanLink from "./etherscan-link.jsx";
 
 const useAuction = () => {
-  const auctionHouseAddress = useAddress("auction-house-proxy");
-
-  const { data: blockNumber } = useBlockNumber({ watch: true });
-
-  const { data: auction, refetch } = useReadContract({
-    address: auctionHouseAddress,
-    abi: auctionHouseAbi,
-    functionName: "auction",
-  });
-
-  const { data: results } = useReadContracts({
-    contracts: [
-      {
-        address: auctionHouseAddress,
-        abi: auctionHouseAbi,
-        functionName: "reservePrice",
-      },
-      {
-        address: auctionHouseAddress,
-        abi: auctionHouseAbi,
-        functionName: "minBidIncrementPercentage",
-      },
-    ],
-  });
-
-  const reservePrice = results?.[0].result;
-  const minBidIncrementPercentage = results?.[1].result;
-
-  React.useEffect(() => {
-    refetch();
-  }, [blockNumber, refetch]);
+  const { data: auction } = useAuctionHouseRead("auction", { watch: true });
+  const { data: reservePrice } = useAuctionHouseRead("reservePrice");
+  const { data: minBidIncrementPercentage } = useAuctionHouseRead(
+    "minBidIncrementPercentage",
+  );
 
   if (auction == null) return null;
 
@@ -65,31 +36,6 @@ const useAuction = () => {
     minBidIncrementPercentage,
     isSettled,
   };
-};
-
-const useAuctionHouseWriteContract = (
-  functionName,
-  { watch = false, ...options } = {}
-) => {
-  const { data: blockNumber } = useBlockNumber({ watch });
-
-  const auctionHouseAddress = useAddress("auction-house-proxy");
-  const { data, refetch } = useSimulateContract({
-    address: auctionHouseAddress,
-    abi: auctionHouseAbi,
-    functionName,
-    ...options,
-  });
-
-  const { writeContractAsync, status, error } = useWriteContract();
-
-  React.useEffect(() => {
-    refetch();
-  }, [blockNumber, refetch]);
-
-  if (data?.request == null) return {};
-
-  return { call: () => writeContractAsync(data.request), status, error };
 };
 
 const Auction = () => {
@@ -122,36 +68,51 @@ const Auction = () => {
 
   const bidValue = getBidValue();
 
-  const { call: createBid, status: createBidStatus } =
-    useAuctionHouseWriteContract("createBid", {
+  const { call: createBid, status: createBidStatus } = useAuctionHouseWrite(
+    "createBid",
+    {
       args: [auction?.nounId],
       value: bidValue,
+      enabled:
+        auction != null &&
+        !didEnd &&
+        bidValue != null &&
+        bidValue > getMinBidValue(),
       watch: true,
-      query: {
-        enabled: auction != null && !didEnd && bidValue != null,
-      },
-    });
+    },
+  );
   const {
     call: settleCurrentAndCreateNewAuction,
-    status: settleCurrentAndCreateNewAuctionStatus,
-  } = useAuctionHouseWriteContract("settleCurrentAndCreateNewAuction", {
+    status: settleCurrentAndCreateNewAuctionCallStatus,
+  } = useAuctionHouseWrite("settleCurrentAndCreateNewAuction", {
     watch: true,
-    query: {
-      enabled: auction != null && didEnd,
-    },
+    enabled: auction != null && didEnd,
   });
 
   if (auction == null) return null;
 
   return (
     <>
-      <dl
+      <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "auto minmax(0,1fr)",
-          gap: "0.8rem 1.6rem",
+          width: "20rem",
+          aspectRatio: "1 / 1",
+          maxWidth: "100%",
+          margin: "0 0 1.6rem",
         }}
       >
+        <NounImage
+          nounId={auction.nounId}
+          style={{
+            display: "block",
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            borderRadius: "0.3rem",
+          }}
+        />
+      </div>
+      <dl>
         <dt>Noun</dt>
         <dd>{auction.nounId}</dd>
         {didEnd ? (
@@ -178,7 +139,10 @@ const Auction = () => {
               ) : (
                 <>
                   <FormattedEth value={auction.bidAmount} /> (
-                  <AccountDisplayName address={auction.bidderAddress} />)
+                  <EtherscanLink address={auction.bidderAddress}>
+                    <AccountDisplayName address={auction.bidderAddress} />
+                  </EtherscanLink>
+                  )
                 </>
               )}
             </dd>
@@ -198,13 +162,16 @@ const Auction = () => {
             onClick={() => settleCurrentAndCreateNewAuction()}
             disabled={
               settleCurrentAndCreateNewAuction == null ||
-              settleCurrentAndCreateNewAuctionStatus === "pending"
+              settleCurrentAndCreateNewAuctionCallStatus === "pending"
             }
           >
-            Settle current and create new auction
+            Settle and create new auction
           </button>
         ) : (
           <>
+            <label htmlFor="amount" style={{ marginBottom: "0.8rem" }}>
+              Bid amount
+            </label>
             <div
               style={{
                 display: "flex",
@@ -213,6 +180,7 @@ const Auction = () => {
               }}
             >
               <input
+                id="amount"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
                 placeholder={(() => {
@@ -220,6 +188,7 @@ const Auction = () => {
                   if (minBidValue == null) return "...";
                   return formatEther(minBidValue);
                 })()}
+                style={{ flex: 1, minWidth: 0 }}
               />
               <button
                 onClick={async () => {
@@ -234,7 +203,11 @@ const Auction = () => {
             {(() => {
               const minBidValue = getMinBidValue();
               if (minBidValue == null) return null;
-              return <p>Min bid {formatEther(minBidValue)} ETH</p>;
+              return (
+                <p data-small data-dimmed data-compact>
+                  Min bid {formatEther(minBidValue)} ETH
+                </p>
+              );
             })()}
           </>
         )}
