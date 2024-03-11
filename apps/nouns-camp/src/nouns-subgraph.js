@@ -494,7 +494,7 @@ query {
       ]
     }
   ) {
-    ...FullProposalFields 
+    ...FullProposalFields
   }
 }`;
 
