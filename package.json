@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha.32",
+  "version": "1.0.0-alpha.33",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "build": "turbo build --filter='./packages/*'",
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "prettier": "^3.2.5",
-    "turbo": "^1.12.4"
+    "turbo": "^1.12.5"
   },
   "engines": {
     "node": ">=18.0.0",

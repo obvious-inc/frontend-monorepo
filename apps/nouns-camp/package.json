@@ -8,13 +8,13 @@
     "lint": "next lint && prettier . --check"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "^1.9.0",
+    "@cloudflare/next-on-pages": "^1.10.0",
     "eslint": "^8.57.0",
-    "eslint-config-next": "^14.1.0",
+    "eslint-config-next": "^14.1.3",
     "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-next-on-pages": "^1.9.0",
-    "vercel": "^33.5.3",
-    "wrangler": "^3.30.1"
+    "eslint-plugin-next-on-pages": "^1.10.0",
+    "vercel": "^33.5.5",
+    "wrangler": "^3.32.0"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
@@ -35,13 +35,13 @@
     "@shades/ui-web": "workspace:0.0.0",
     "@vercel/analytics": "^1.2.2",
     "@vercel/edge-config": "^1.1.0",
-    "abitype": "^1.0.0",
+    "abitype": "^1.0.1",
     "date-fns": "^3.3.1",
     "diff": "^5.2.0",
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",
-    "marked": "^12.0.0",
-    "next": "^14.1.0",
+    "marked": "^12.0.1",
+    "next": "^14.1.3",
     "react": "18.2.0",
     "react-aria": "^3.32.1",
     "react-aria-components": "1.1.1",
@@ -54,6 +54,6 @@
     "use-debounce": "^10.0.0",
     "viem": "^2.7.10",
     "wagmi": "^2.5.7",
-    "zustand": "^4.5.1"
+    "zustand": "^4.5.2"
   }
 }
