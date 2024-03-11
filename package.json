@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha.32",
+  "version": "1.0.0-alpha.33",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "build": "turbo build --filter='./packages/*'",
