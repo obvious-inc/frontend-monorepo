@@ -76,8 +76,12 @@ export const useConnectorsWithReadyState = () => {
           if (!readyConnectorIds.includes(c.id)) return c;
           return { ...c, ready: true };
         })
-        // Exclude the injected connector if it’s not available
-        .filter((c) => c.id !== "injected" || c.ready),
+        .filter((c) => {
+          // Exclude the injected and safe connectors if they’re not available
+          // (safe only runs in iframe contexts)
+          const hideIfUnavailable = c.id === "injected" || c.id === "safe";
+          return c.ready || !hideIfUnavailable;
+        }),
     [connectors, readyConnectorIds],
   );
 };
@@ -180,6 +184,7 @@ export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
   const {
     address: connectedAccountAddress,
+    chain,
     isConnected,
     isConnecting: isConnectingAccount,
     isReconnecting: isReconnectingAccount,
@@ -239,5 +244,6 @@ export const useWallet = () => {
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
     isBetaAccount: betaAccounts.includes(address),
+    chain,
   };
 };

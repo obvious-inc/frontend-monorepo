@@ -97,6 +97,7 @@ const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
 const groupConfigByKey = {
   drafts: {},
+  "proposals:chronological": {},
   "proposals:new": { title: "Upcoming" },
   "proposals:ongoing": { title: "Ongoing" },
   "proposals:awaiting-vote": { title: "Not yet voted" },
@@ -157,6 +158,10 @@ const BrowseScreen = () => {
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
+  const [proposalSortStrategy, setProposalSortStrategy] = useCachedState(
+    "proposal-sorting-startegy",
+    "activity",
+  );
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
     "activity",
@@ -289,6 +294,9 @@ const BrowseScreen = () => {
   const groupProposal = (p) => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
 
+    if (proposalSortStrategy === "chronological")
+      return "proposals:chronological";
+
     if (["pending", "updatable"].includes(p.state)) return "proposals:new";
     if (isFinalProposalState(p.state) || isSucceededProposalState(p.state))
       return "proposals:past";
@@ -296,6 +304,7 @@ const BrowseScreen = () => {
     if (connectedAccount == null) return "proposals:ongoing";
 
     if (
+      p.proposerId &&
       p.proposerId.toLowerCase() === connectedAccount /*||
       p.signers.some((s) => s.id.toLowerCase() === connectedAccount)*/
     )
@@ -388,6 +397,22 @@ const BrowseScreen = () => {
                   items,
                 ),
           };
+
+        case "proposals:chronological": {
+          const sortedItems = isSearch
+            ? items
+            : arrayUtils.sortBy(
+                { value: (i) => Number(i.createdBlock), order: "desc" },
+                items,
+              );
+          const paginate = page != null;
+          return {
+            count: sortedItems.length,
+            items: paginate
+              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
+              : sortedItems,
+          };
+        }
 
         case "proposals:awaiting-vote":
           return {
@@ -662,10 +687,54 @@ const BrowseScreen = () => {
                           },
                         })}
                       >
+                        <div
+                          css={css({
+                            margin: "-0.4rem 0 2.4rem",
+                            "@media (min-width: 600px)": {
+                              margin: "-0.8rem 0 2.4rem",
+                            },
+                          })}
+                        >
+                          <Select
+                            size="small"
+                            aria-label="Proposal sorting"
+                            value={proposalSortStrategy}
+                            options={[
+                              { value: "activity", label: "By proposal state" },
+                              {
+                                value: "chronological",
+                                label: "Chronological",
+                              },
+                            ]}
+                            onChange={(value) => {
+                              setProposalSortStrategy(value);
+                            }}
+                            fullWidth={false}
+                            width="max-content"
+                            renderTriggerContent={(value, options) => (
+                              <>
+                                Order:{" "}
+                                <em
+                                  css={(t) =>
+                                    css({
+                                      fontStyle: "normal",
+                                      fontWeight: t.text.weights.emphasis,
+                                    })
+                                  }
+                                >
+                                  {
+                                    options.find((o) => o.value === value)
+                                      ?.label
+                                  }
+                                </em>
+                              </>
+                            )}
+                          />
+                        </div>
                         <SectionedList
                           showPlaceholder={!hasFetchedOnce}
                           sections={[
-                            // "drafts",
+                            "proposals:chronological",
                             "proposals:authored",
                             "proposals:sponsored-proposal-update-awaiting-signature",
                             "proposals:awaiting-vote",
@@ -682,15 +751,27 @@ const BrowseScreen = () => {
                                 items != null && items.length !== 0,
                             )}
                         />
-                        {page != null &&
-                          sectionsByName["proposals:past"] != null &&
-                          sectionsByName["proposals:past"].count >
-                            BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                        {(() => {
+                          if (page == null) return null;
+
+                          const truncatableItemCount =
+                            proposalSortStrategy === "chronological"
+                              ? sectionsByName["proposals:chronological"]?.count
+                              : sectionsByName["proposals:past"]?.count;
+
+                          const hasMoreItems =
+                            truncatableItemCount >
+                            BROWSE_LIST_PAGE_ITEM_COUNT * page;
+
+                          if (!hasMoreItems) return null;
+
+                          return (
                             <Pagination
                               showNext={() => setPage((p) => p + 1)}
                               showAll={() => setPage(null)}
                             />
-                          )}
+                          );
+                        })()}
                       </div>
                     </Tabs.Item>
                     <Tabs.Item key="candidates" title="Candidates">
@@ -715,11 +796,14 @@ const BrowseScreen = () => {
                             aria-label="Candidate sorting"
                             value={candidateSortStrategy}
                             options={[
-                              { value: "popularity", label: "Popularity" },
-                              { value: "activity", label: "Recent activity" },
+                              { value: "popularity", label: "By popularity" },
+                              {
+                                value: "activity",
+                                label: "By recent activity",
+                              },
                               {
                                 value: "connected-account-feedback",
-                                label: "Your feedback",
+                                label: "By your feedback activity",
                               },
                             ].filter(
                               (o) =>
@@ -734,7 +818,7 @@ const BrowseScreen = () => {
                             width="max-content"
                             renderTriggerContent={(value, options) => (
                               <>
-                                Sort by:{" "}
+                                Order:{" "}
                                 <em
                                   css={(t) =>
                                     css({

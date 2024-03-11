@@ -1,7 +1,11 @@
 {
-  "version": "1.0.0-alpha.33",
+  "version": "1.0.0-alpha.34",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
+    "predev": "pnpm run build",
+    "dev": "pnpm -r run --if-present dev",
+    "prestart": "pnpm run build",
+    "start": "pnpm -r run --if-present start",
     "build": "turbo build --filter='./packages/*'",
     "postbuild": "cd apps/nouns-camp && pnpx @cloudflare/next-on-pages",
     "lint": "turbo lint",
