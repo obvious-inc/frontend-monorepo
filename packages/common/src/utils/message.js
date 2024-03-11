@@ -268,6 +268,9 @@ export const stringifyBlocks = (
       case "code-block":
         return `\n\`\`\`${el.code}\`\`\`\n`;
 
+      case "code":
+        return `\`${el.code}\``;
+
       default:
         throw new Error(`Unsupported element type "${el.type}"`);
     }
@@ -291,9 +294,9 @@ export const toMarkdown = (blockElements) => {
   const renderTextNode = (l) => {
     let text = l.text;
 
-    if (l.bold) text = `**${text}**`;
-    if (l.italic) text = `*${text}*`;
-    if (l.strikethrough) text = `~~${text}~~`;
+    if (l.bold) text = `** ${text}** `;
+    if (l.italic) text = `* ${text}* `;
+    if (l.strikethrough) text = `~~${text} ~~`;
     return text;
   };
 
@@ -305,13 +308,13 @@ export const toMarkdown = (blockElements) => {
         return renderInlineChildren();
 
       case "heading-1":
-        return `# ${renderInlineChildren()}`;
+        return `# ${renderInlineChildren()} `;
       case "heading-2":
-        return `## ${renderInlineChildren()}`;
+        return `## ${renderInlineChildren()} `;
       case "heading-3":
-        return `### ${renderInlineChildren()}`;
+        return `### ${renderInlineChildren()} `;
       case "heading-4":
-        return `#### ${renderInlineChildren()}`;
+        return `#### ${renderInlineChildren()} `;
 
       case "quote":
       case "callout":
@@ -321,10 +324,10 @@ export const toMarkdown = (blockElements) => {
             .map(renderBlockElement)
             .join("\n\n")
             .split("\n")
-            .map((line) => `> ${line}`)
+            .map((line) => `> ${line} `)
             .join("\n");
 
-        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")}`;
+        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")} `;
 
       case "bulleted-list":
       case "numbered-list": {
@@ -345,9 +348,9 @@ export const toMarkdown = (blockElements) => {
 
           return `${listItemPrefix} ${renderedListItemChildBlocks
             .filter((s) => s.trim() !== "")
-            .join(skipBlockSpace ? "\n" : "\n\n")}`
+            .join(skipBlockSpace ? "\n" : "\n\n")} `
             .split("\n")
-            .join(`\n${indentSpace}`);
+            .join(`\n${indentSpace} `);
         });
 
         return children.join("\n");

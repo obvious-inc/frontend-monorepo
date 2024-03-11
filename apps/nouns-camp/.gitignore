@@ -1,2 +1,5 @@
 .next
 public/service-worker.js
+
+# Sentry Config File
+.sentryclirc

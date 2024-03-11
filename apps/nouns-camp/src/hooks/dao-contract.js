@@ -196,6 +196,7 @@ export const useCastProposalVote = (
   const {
     data: castVoteSimulationResult,
     isSuccess: castVoteSimulationSuccessful,
+    error: castVoteSimulationError,
   } = useSimulateContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
@@ -211,6 +212,7 @@ export const useCastProposalVote = (
   const {
     data: castVoteWithReasonSimulationResult,
     isSuccess: castVoteWithReasonSimulationSuccessful,
+    error: castVoteWithReasonSimulationError,
   } = useSimulateContract({
     address: getContractAddress(chainId),
     abi: parseAbi([
@@ -223,10 +225,16 @@ export const useCastProposalVote = (
     },
   });
 
+  const simulationError =
+    castVoteSimulationError || castVoteWithReasonSimulationError;
+
   const { writeContractAsync: writeContract } = useWriteContract();
 
+  if (simulationError != null)
+    console.warn("Unexpected simulation error", simulationError);
+
   if (hasReason && !castVoteWithReasonSimulationSuccessful) return null;
-  if (!castVoteSimulationSuccessful) return null;
+  if (!hasReason && !castVoteSimulationSuccessful) return null;
 
   return async () =>
     writeContract(
