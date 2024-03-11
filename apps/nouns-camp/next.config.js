@@ -14,8 +14,8 @@ const withSentry = (config) =>
     {
       // Suppresses source map uploading logs during build
       silent: true,
-      org: "trycashflow",
-      project: "camp",
+      org: "camp",
+      project: "camp-main",
     },
     {
       // Upload a larger set of source maps for prettier stack traces (increases build time)
