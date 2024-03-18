@@ -58,26 +58,31 @@ export const getSponsorSignatures = (
     }, []);
 };
 
+const buildFeedbackPostItems = (candidate) => {
+  const targetProposalId = candidate.latestVersion?.targetProposalId;
+  const posts = candidate.feedbackPosts ?? [];
+  return posts.map((p) => ({
+    type: "feedback-post",
+    id: `${candidate.id}-${p.id}`,
+    authorAccount: p.voterId,
+    body: p.reason == null || p.reason.trim() === "" ? null : p.reason,
+    support: p.support,
+    voteCount: p.voter.nounsRepresented?.length,
+    timestamp: p.createdTimestamp,
+    blockNumber: BigInt(p.createdBlock),
+    isPending: p.isPending,
+    candidateId: candidate.id,
+    targetProposalId,
+  }));
+};
+
 export const buildFeed = (candidate) => {
   if (candidate == null) return [];
 
   const candidateId = candidate.id;
   const targetProposalId = candidate.latestVersion?.targetProposalId;
 
-  const feedbackPostItems =
-    candidate.feedbackPosts?.map((p) => ({
-      type: "feedback-post",
-      id: `${candidate.id}-${p.id}`,
-      authorAccount: p.voterId,
-      body: p.reason,
-      support: p.support,
-      voteCount: p.voter.nounsRepresented?.length,
-      timestamp: p.createdTimestamp,
-      blockNumber: BigInt(p.createdBlock),
-      isPending: p.isPending,
-      candidateId,
-      targetProposalId,
-    })) ?? [];
+  const feedbackPostItems = buildFeedbackPostItems(candidate);
 
   const updateEventItems =
     candidate.versions
