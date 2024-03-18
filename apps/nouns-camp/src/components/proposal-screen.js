@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import NextLink from "next/link";
 import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
 import { notFound as nextNotFound } from "next/navigation";
@@ -15,6 +16,7 @@ import {
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
   CrossCircle as CrossCircleIcon,
+  Cross as CrossIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
@@ -62,6 +64,15 @@ import * as Tabs from "./tabs.js";
 import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
+
+const isBetaSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("beta") != null;
+
+const useFeatureFlag = () => {
+  const { isBetaAccount } = useWallet();
+  return isBetaAccount || isBetaSession;
+};
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -118,17 +129,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const isDesktopLayout = useMatchDesktopLayout();
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
+  const proposalActionInputRef = React.useRef();
 
   const proposal = useProposal(proposalId);
+  const feedItems = useFeedItems(proposalId);
 
-  const isFinalOrSucceededState =
-    isFinalProposalState(proposal.state) ||
-    isSucceededProposalState(proposal.state);
-
-  const [pendingFeedback, setPendingFeedback] = React.useState("");
-  const [pendingSupport, setPendingSupport] = React.useState(
-    isFinalOrSucceededState ? 2 : null,
-  );
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
 
@@ -140,6 +145,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         : proposal?.votes?.find(
             (v) => v.voterId.toLowerCase() === connectedWalletAccountAddress,
           );
+
+  const isFinalOrSucceededState =
+    isFinalProposalState(proposal.state) ||
+    isSucceededProposalState(proposal.state);
 
   const hasCastVote =
     castVoteCallSupportDetailed != null || connectedWalletVote != null;
@@ -157,13 +166,50 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     blockNumber: latestBlockNumber,
   });
 
+  const [formActionOverride, setFormActionOverride] = React.useState(null);
+
+  const possibleFormActions =
+    !hasCastVote && isVotingOngoing ? ["vote", "feedback"] : ["feedback"];
+
+  const defaultFormAction = possibleFormActions[0];
+
+  const currentFormAction =
+    formActionOverride != null &&
+    possibleFormActions.includes(formActionOverride)
+      ? formActionOverride
+      : defaultFormAction;
+
+  const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const [pendingSupport, setPendingSupport] = React.useState(() => {
+    if (isFinalOrSucceededState) return 2; // No signal
+    return null;
+  });
+  const [quotedFeedItemIds, setQuotedFeedItemIds] = React.useState([]);
+
+  const quotedFeedItems = React.useMemo(
+    () => quotedFeedItemIds.map((id) => feedItems.find((i) => i.id === id)),
+    [feedItems, quotedFeedItemIds],
+  );
+
+  const reasonWithMarkedQuotes = React.useMemo(() => {
+    const markedQuotes = quotedFeedItems.map((item) => {
+      const quotedBody = item.body
+        .trim()
+        .split("\n")
+        .map((l) => `> ${l}`)
+        .join("\n");
+      return `+1\n\n${quotedBody}`;
+    });
+    return `${pendingFeedback.trim()}\n\n${markedQuotes.join("\n\n")}`.trim();
+  }, [pendingFeedback, quotedFeedItems]);
+
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
-    reason: pendingFeedback.trim(),
+    reason: reasonWithMarkedQuotes,
   });
   const castProposalVote = useCastProposalVote(proposalId, {
     support: pendingSupport,
-    reason: pendingFeedback.trim(),
+    reason: reasonWithMarkedQuotes,
     enabled: isVotingOngoing,
   });
   const queueProposal = useQueueProposal(proposalId, {
@@ -176,20 +222,33 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const [hasPendingQueue, setPendingQueue] = React.useState(false);
   const [hasPendingExecute, setPendingExecute] = React.useState(false);
 
-  const feedItems = useFeedItems(proposalId);
+  const enableRevotes = useFeatureFlag("revotes");
 
-  const [formActionOverride, setFormActionOverride] = React.useState(null);
+  const onQuote = React.useCallback(
+    (postId) => {
+      setQuotedFeedItemIds((ids) =>
+        ids.includes(postId) ? ids : [...ids, postId],
+      );
 
-  const possibleFromActions =
-    !hasCastVote && isVotingOngoing ? ["vote", "feedback"] : ["feedback"];
+      const quotedPost = feedItems.find((i) => i.id === postId);
 
-  const defaultFormAction = possibleFromActions[0];
+      if (quotedPost != null) setPendingSupport(quotedPost.support);
 
-  const currentFormAction =
-    formActionOverride != null &&
-    possibleFromActions.includes(formActionOverride)
-      ? formActionOverride
-      : defaultFormAction;
+      const input = proposalActionInputRef.current;
+      input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      input.focus();
+      setTimeout(() => {
+        input.selectionStart = 0;
+        input.selectionEnd = 0;
+      }, 0);
+    },
+    [feedItems],
+  );
+
+  const cancelQuote = React.useCallback((id) => {
+    setQuotedFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
+    proposalActionInputRef.current.focus();
+  }, []);
 
   if (proposal == null) return null;
 
@@ -207,10 +266,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         return (
           <QueueIcon
             aria-hidden="true"
-            style={{
-              width: "1.4rem",
-              transform: "translateY(1px)",
-            }}
+            style={{ width: "1.4rem", transform: "translateY(1px)" }}
           />
         );
       case "canceled":
@@ -524,21 +580,28 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "3.2rem 0 4rem" }}>
                       <ProposalActionForm
+                        inputRef={proposalActionInputRef}
                         proposalId={proposalId}
                         mode={currentFormAction}
                         setMode={setFormActionOverride}
-                        availableModes={possibleFromActions}
+                        availableModes={possibleFormActions}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
                         setSupport={setPendingSupport}
                         onSubmit={handleFormSubmit}
+                        cancelQuote={cancelQuote}
+                        quotedFeedItems={quotedFeedItems}
                       />
                     </div>
 
                     {feedItems.length !== 0 && (
                       <React.Suspense fallback={null}>
-                        <ActivityFeed context="proposal" items={feedItems} />
+                        <ActivityFeed
+                          context="proposal"
+                          items={feedItems}
+                          onQuote={enableRevotes ? onQuote : undefined}
+                        />
                       </React.Suspense>
                     )}
                   </Tabs.Item>
@@ -644,16 +707,19 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         ) : (
                           <>
                             <ProposalActionForm
+                              inputRef={proposalActionInputRef}
                               size="small"
                               proposalId={proposalId}
                               mode={currentFormAction}
                               setMode={setFormActionOverride}
-                              availableModes={possibleFromActions}
+                              availableModes={possibleFormActions}
                               reason={pendingFeedback}
                               setReason={setPendingFeedback}
                               support={pendingSupport}
                               setSupport={setPendingSupport}
                               onSubmit={handleFormSubmit}
+                              cancelQuote={cancelQuote}
+                              quotedFeedItems={quotedFeedItems}
                             />
                           </>
                         )}
@@ -675,16 +741,19 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "2.4rem 0 6.4rem" }}>
                       <ProposalActionForm
+                        inputRef={proposalActionInputRef}
                         size="small"
                         proposalId={proposalId}
                         mode={currentFormAction}
                         setMode={setFormActionOverride}
-                        availableModes={possibleFromActions}
+                        availableModes={possibleFormActions}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
                         setSupport={setPendingSupport}
                         onSubmit={handleFormSubmit}
+                        cancelQuote={cancelQuote}
+                        quotedFeedItems={quotedFeedItems}
                       />
 
                       {feedItems.length !== 0 && (
@@ -693,6 +762,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                             <ActivityFeed
                               context="proposal"
                               items={feedItems}
+                              onQuote={enableRevotes ? onQuote : undefined}
                             />
                           </div>
                         </React.Suspense>
@@ -720,6 +790,9 @@ export const ProposalActionForm = ({
   support,
   setSupport,
   onSubmit,
+  quotedFeedItems,
+  cancelQuote,
+  inputRef,
 }) => {
   const [isPending, setPending] = React.useState(false);
   // const [error, setError] = React.useState(null);
@@ -743,6 +816,7 @@ export const ProposalActionForm = ({
   const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 
   const hasRequiredInputs = support != null;
+  const hasQuote = quotedFeedItems.length > 0;
 
   if (mode == null) throw new Error();
 
@@ -869,9 +943,10 @@ export const ProposalActionForm = ({
           style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
         >
           <AutoAdjustingHeightTextarea
+            ref={inputRef}
             id="message-input"
             rows={1}
-            placeholder="I believe..."
+            placeholder={hasQuote ? "Optional comment" : "I believe..."}
             value={reason}
             onChange={(e) => {
               setReason(e.target.value);
@@ -901,6 +976,74 @@ export const ProposalActionForm = ({
             }
             disabled={disableForm}
           />
+          {quotedFeedItems?.length > 0 && (
+            <ul
+              css={(t) =>
+                css({
+                  listStyle: "none",
+                  fontSize: "0.875em",
+                  margin: "0.8rem 0",
+                  li: {
+                    position: "relative",
+                    border: "0.1rem solid",
+                    borderRadius: "0.5rem",
+                    borderColor: t.colors.borderLighter,
+                    padding: "0.4rem 0.4rem 0.4rem 0.6rem",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                  },
+                  "li + li": { marginTop: "0.6rem" },
+                  button: { position: "relative" },
+                  "[data-cancel]": {
+                    padding: "0.3rem",
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": { color: t.colors.textAccent },
+                    },
+                  },
+                })
+              }
+            >
+              {quotedFeedItems.map((item) => (
+                <li key={item.id}>
+                  <NextLink
+                    href={`#${item.id}`}
+                    style={{ display: "block", position: "absolute", inset: 0 }}
+                  />
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={item.authorAccount}
+                    />
+                    :{" "}
+                    <MarkdownRichText
+                      text={item.body}
+                      displayImages={false}
+                      inline
+                      css={css({
+                        // Make all headings small
+                        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+                        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+                        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                          { marginBottom: "0.625em" },
+                      })}
+                    />
+                  </div>
+                  <button data-cancel onClick={() => cancelQuote(item.id)}>
+                    <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           {/* {error != null && (
             <div
               css={(t) =>
@@ -1040,13 +1183,13 @@ export const ProposalActionForm = ({
                     isLoading={isPending}
                     size={size}
                   >
-                    {mode === "vote"
-                      ? `Cast ${
-                          proposalVoteCount === 1
-                            ? "vote"
-                            : `${proposalVoteCount} votes`
-                        }`
-                      : "Submit comment"}
+                    {(() => {
+                      if (mode !== "vote") return "Submit comment";
+                      if (hasQuote) return "Submit revote";
+                      return proposalVoteCount === 1
+                        ? "Cast vote"
+                        : `${proposalVoteCount} votes`;
+                    })()}
                   </Button>
                 )}
               </>

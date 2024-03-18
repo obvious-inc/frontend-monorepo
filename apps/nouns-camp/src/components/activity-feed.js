@@ -3,11 +3,13 @@ import NextLink from "next/link";
 import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
+import Button from "@shades/ui-web/button";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
+import { useWallet } from "../hooks/wallet.js";
 import { useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -16,7 +18,7 @@ import MarkdownRichText from "./markdown-rich-text.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
-const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
+const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
   <ul
     css={(t) =>
       css({
@@ -83,15 +85,31 @@ const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
     style={{ "--vertical-spacing": spacing }}
   >
     {items.map((item) => (
-      <FeedItem key={item.id} {...item} context={context} />
+      <FeedItem key={item.id} {...item} context={context} onQuote={onQuote} />
     ))}
   </ul>
 );
 
-const FeedItem = React.memo(({ context, ...item }) => {
+const FeedItem = React.memo(({ context, onQuote, ...item }) => {
+  const { address: connectedAccount } = useWallet();
   const isIsolatedContext = ["proposal", "candidate"].includes(context);
+  const hasBody = item.body != null && item.body.trim() !== "";
+  const hasMultiParagraphBody =
+    hasBody && item.body.trim().split("\n").length > 1;
+  const showQuoteAction =
+    onQuote != null &&
+    context === "proposal" &&
+    ["vote", "feedback-post"].includes(item.type) &&
+    hasBody &&
+    connectedAccount !== item.authorAccount;
+
   return (
-    <div key={item.id} role="listitem" data-pending={item.isPending}>
+    <div
+      key={item.id}
+      id={item.id}
+      role="listitem"
+      data-pending={item.isPending}
+    >
       <div data-header>
         <div>
           {item.type === "event" || item.authorAccount == null ? (
@@ -167,12 +185,62 @@ const FeedItem = React.memo(({ context, ...item }) => {
         </div>
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-        {(item.body || null) != null && (
+        {hasBody && (
           <ItemBody
             text={item.body}
             displayImages={item.type === "event"}
             truncateLines={!isIsolatedContext}
           />
+        )}
+        {item.quotes?.length > 0 && (
+          <ul
+            css={(t) =>
+              css({
+                listStyle: "none",
+                fontSize: "0.875em",
+                marginBottom: "0.8rem",
+                li: {
+                  position: "relative",
+                  border: "0.1rem solid",
+                  borderRadius: "0.5rem",
+                  borderColor: t.colors.borderLighter,
+                  padding: "0.4rem 0.6rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
+                "li + li": { marginTop: "0.6rem" },
+              })
+            }
+            style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
+          >
+            {item.quotes.map((quote) => (
+              <li key={quote.id}>
+                <NextLink
+                  href={`#${quote.id}`}
+                  style={{ display: "block", position: "absolute", inset: 0 }}
+                />
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={quote.authorAccount}
+                  style={{ position: "relative" }}
+                />
+                :{" "}
+                <MarkdownRichText
+                  text={quote.body}
+                  displayImages={false}
+                  inline
+                  css={css({
+                    // Make all headings small
+                    "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+                    "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+                    "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                      { marginBottom: "0.625em" },
+                  })}
+                />
+              </li>
+            ))}
+          </ul>
         )}
         {item.type === "candidate-signature-added" && (
           <div
@@ -198,6 +266,31 @@ const FeedItem = React.memo(({ context, ...item }) => {
                 />
               </>
             )}
+          </div>
+        )}
+
+        {showQuoteAction && (
+          <div
+            css={css({ marginTop: "0.4rem", display: "flex", gap: "0.8rem" })}
+          >
+            <Button
+              size="tiny"
+              variant="opaque"
+              onClick={() => {
+                onQuote(item.id);
+              }}
+            >
+              +1
+            </Button>
+            {/* <Button
+              size="tiny"
+              variant="opaque"
+              icon={
+                <ReplyArrowIcon style={{ width: "1rem", height: "auto" }} />
+              }
+            >
+              Reply
+            </Button> */}
           </div>
         )}
       </div>
@@ -584,25 +677,38 @@ const ItemTitle = ({ item, context }) => {
 
     case "vote":
     case "feedback-post": {
-      const signalWord = item.type === "vote" ? "voted" : "signaled";
+      const signalWord = (() => {
+        if (item.type === "feedback-post") return "signaled";
+        const isRevote = item.quotes?.some((quote) => quote.type === "vote");
+        return isRevote ? "revoted" : "voted";
+      })();
       return (
         <span>
           {accountName}{" "}
-          {item.support === 0 ? (
-            <Signal negative>
-              {signalWord} against ({item.voteCount})
-            </Signal>
-          ) : item.support === 1 ? (
-            <Signal positive>
-              {signalWord} for ({item.voteCount})
-            </Signal>
-          ) : item.type === "vote" ? (
-            <Signal>abstained ({item.voteCount})</Signal>
-          ) : isIsolatedContext ? (
-            "commented"
-          ) : (
-            "commented on"
-          )}
+          {(() => {
+            switch (item.support) {
+              case 0:
+                return (
+                  <Signal negative>
+                    {signalWord} against ({item.voteCount})
+                  </Signal>
+                );
+              case 1:
+                return (
+                  <Signal positive>
+                    {signalWord} for ({item.voteCount})
+                  </Signal>
+                );
+              case 2:
+                return item.type === "vote" ? (
+                  <Signal>abstained ({item.voteCount})</Signal>
+                ) : isIsolatedContext ? (
+                  "commented"
+                ) : (
+                  "commented on"
+                );
+            }
+          })()}
           {!isIsolatedContext && (
             <>
               {" "}

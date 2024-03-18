@@ -1,6 +1,7 @@
 import { array as arrayUtils } from "@shades/common/utils";
 import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildPropdateFeed } from "./propdates.js";
+import { extractRepostQuotes, stripRepostQuotes } from "./markdown.js";
 
 export const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
@@ -53,6 +54,77 @@ export const isVotableState = (state) =>
 export const isActiveState = (state) =>
   ["pending", "updatable", "active", "objection-period"].includes(state);
 
+const buildVoteAndFeedbackPostFeedItems = ({ candidate }, proposal) => {
+  const ascendingQuoteSources = arrayUtils.sortBy("createdBlock", [
+    ...(proposal.votes ?? []).map((v) => ({ ...v, type: "vote" })),
+    ...(proposal.feedbackPosts ?? []),
+    ...(candidate?.feedbackPosts ?? []),
+  ]);
+
+  const extractQuotes = (p) => {
+    if (p.reason == null || p.reason.trim() === "") return [];
+    const markedQuoteBodies = extractRepostQuotes(p.reason);
+    const quoteIndeciesToDrop = [];
+    const quotes = markedQuoteBodies.reduce((quotes, text, i) => {
+      const post = ascendingQuoteSources.find(
+        (post) =>
+          post.reason != null &&
+          post.id !== p.id &&
+          post.reason.includes(text.trim()),
+      );
+      if (post == null) return quotes;
+      quoteIndeciesToDrop.push(i);
+      return [
+        ...quotes,
+        {
+          id: `${proposal.id}-${post.id}`,
+          authorAccount: post.voterId,
+          body: text,
+          type: post.type ?? "feedback-post",
+        },
+      ];
+    }, []);
+    const strippedReason = stripRepostQuotes(p.reason, quoteIndeciesToDrop);
+    return [quotes, strippedReason];
+  };
+
+  const votePosts = (proposal.votes ?? []).map((p) => {
+    const [quotes, strippedReason] = extractQuotes(p);
+    return {
+      type: "vote",
+      id: `${proposal.id}-${p.id}`,
+      support: p.support,
+      authorAccount: p.voterId,
+      blockNumber: p.createdBlock,
+      timestamp: p.createdTimestamp,
+      voteCount: p.votes,
+      proposalId: proposal.id,
+      isPending: p.isPending,
+      body: strippedReason,
+      quotes,
+    };
+  });
+
+  const feedbackPostItems = (proposal.feedbackPosts ?? []).map((p) => {
+    const [quotes, strippedReason] = extractQuotes(p);
+    return {
+      type: "feedback-post",
+      id: `${proposal.id}-${p.id}`,
+      support: p.support,
+      authorAccount: p.voterId,
+      timestamp: p.createdTimestamp,
+      blockNumber: p.createdBlock,
+      voteCount: p.votes,
+      proposalId: proposal.id,
+      isPending: p.isPending,
+      body: strippedReason,
+      quotes,
+    };
+  });
+
+  return [...feedbackPostItems, ...votePosts];
+};
+
 export const buildFeed = (
   proposal,
   { latestBlockNumber, candidate, includePropdates = true },
@@ -61,33 +133,10 @@ export const buildFeed = (
 
   const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
 
-  const feedbackPostItems =
-    proposal.feedbackPosts?.map((p) => ({
-      type: "feedback-post",
-      id: `${proposal.id}-${p.id}`,
-      body: p.reason,
-      support: p.support,
-      authorAccount: p.voterId,
-      timestamp: p.createdTimestamp,
-      blockNumber: p.createdBlock,
-      voteCount: p.votes,
-      proposalId: proposal.id,
-      isPending: p.isPending,
-    })) ?? [];
-
-  const voteItems =
-    proposal.votes?.map((v) => ({
-      type: "vote",
-      id: `${proposal.id}-${v.id}`,
-      body: v.reason,
-      support: v.support,
-      authorAccount: v.voterId,
-      blockNumber: v.createdBlock,
-      timestamp: v.createdTimestamp,
-      voteCount: v.votes,
-      proposalId: proposal.id,
-      isPending: v.isPending,
-    })) ?? [];
+  const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems(
+    { candidate },
+    proposal,
+  );
 
   const propdateItems =
     !includePropdates || proposal.propdates == null
@@ -110,8 +159,7 @@ export const buildFeed = (
 
   const items = [
     ...candidateItems,
-    ...feedbackPostItems,
-    ...voteItems,
+    ...voteAndFeedbackPostItems,
     ...propdateItems,
     ...updateEventItems,
   ];
