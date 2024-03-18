@@ -24,6 +24,9 @@ const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
       css({
         lineHeight: 1.4285714286, // 20px line height given font size if 14px
         fontSize: t.text.sizes.base,
+        '[role="listitem"]': {
+          scrollMargin: "3.2rem 0",
+        },
         '[role="listitem"] + [role="listitem"]': {
           marginTop: "var(--vertical-spacing)",
         },

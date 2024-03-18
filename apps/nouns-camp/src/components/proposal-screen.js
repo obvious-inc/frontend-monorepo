@@ -816,7 +816,7 @@ export const ProposalActionForm = ({
   const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 
   const hasRequiredInputs = support != null;
-  const hasQuote = quotedFeedItems.length > 0;
+  const hasQuote = quotedFeedItems?.length > 0;
 
   if (mode == null) throw new Error();
 
