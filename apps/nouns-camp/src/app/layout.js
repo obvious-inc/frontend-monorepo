@@ -68,11 +68,14 @@ const beforeInteractive = () => {
 
 const fetchConfig = async () => {
   try {
-    const betaAccounts = await getConfig("beta-accounts");
-    return { betaAccounts };
+    const [canaryAccounts = [], betaAccounts = []] = await Promise.all([
+      getConfig("canary-accounts"),
+      getConfig("beta-accounts"),
+    ]);
+    return { canaryAccounts, betaAccounts };
   } catch (e) {
     console.error(e);
-    return { betaAccounts: [] };
+    return { canaryAccounts: [], betaAccounts: [] };
   }
 };
 

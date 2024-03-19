@@ -57,7 +57,7 @@ const SettingsDialog = ({ isOpen, close }) => (
 );
 
 const Content = ({ titleProps, dismiss }) => {
-  const { isBetaAccount } = useWallet();
+  const { isCanaryAccount, isBetaAccount } = useWallet();
   const { connector } = useAccount();
 
   const [theme, setTheme] = useSetting("theme");
@@ -66,7 +66,11 @@ const Content = ({ titleProps, dismiss }) => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const betaFeaturesEnabled = isBetaAccount || searchParams.get("beta") != null;
+  const betaFeaturesEnabled =
+    isCanaryAccount ||
+    isBetaAccount ||
+    searchParams.get("canary") != null ||
+    searchParams.get("beta") != null;
 
   return (
     <FormDialog

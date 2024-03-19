@@ -53,6 +53,7 @@ import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
+import useFeatureFlag from "../hooks/feature-flag.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import Layout, { MainContentContainer } from "./layout.js";
@@ -65,15 +66,6 @@ import * as Tabs from "./tabs.js";
 import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
-
-const isBetaSession =
-  typeof location !== "undefined" &&
-  new URLSearchParams(location.search).get("beta") != null;
-
-const useFeatureFlag = () => {
-  const { isBetaAccount } = useWallet();
-  return isBetaAccount || isBetaSession;
-};
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
