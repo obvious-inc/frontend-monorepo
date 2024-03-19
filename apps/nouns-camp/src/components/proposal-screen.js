@@ -69,6 +69,18 @@ const isBetaSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("beta") != null;
 
+const useScrollToHash = () => {
+  const didScrollRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (didScrollRef.current || location.hash === "") return;
+    const el = document.getElementById(location.hash.slice(1));
+    if (el == null) return;
+    didScrollRef.current = true;
+    el.scrollIntoView();
+  });
+};
+
 const useFeatureFlag = () => {
   const { isBetaAccount } = useWallet();
   return isBetaAccount || isBetaSession;
@@ -250,10 +262,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     proposalActionInputRef.current.focus();
   }, []);
 
-  React.useEffect(() => {
-    if (proposal == null || location.hash === "") return;
-    document.getElementById(location.hash.slice(1))?.scrollIntoView();
-  }, [proposal]);
+  useScrollToHash();
 
   if (proposal == null) return null;
 
