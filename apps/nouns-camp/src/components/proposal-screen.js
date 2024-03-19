@@ -53,7 +53,6 @@ import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
-import useFeatureFlag from "../hooks/feature-flag.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import Layout, { MainContentContainer } from "./layout.js";
@@ -214,8 +213,6 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const [hasPendingQueue, setPendingQueue] = React.useState(false);
   const [hasPendingExecute, setPendingExecute] = React.useState(false);
-
-  const enableRevotes = useFeatureFlag("revotes");
 
   const onQuote = React.useCallback(
     (postId) => {
@@ -595,7 +592,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         <ActivityFeed
                           context="proposal"
                           items={feedItems}
-                          onQuote={enableRevotes ? onQuote : undefined}
+                          onQuote={onQuote}
                         />
                       </React.Suspense>
                     )}
@@ -757,7 +754,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                             <ActivityFeed
                               context="proposal"
                               items={feedItems}
-                              onQuote={enableRevotes ? onQuote : undefined}
+                              onQuote={onQuote}
                             />
                           </div>
                         </React.Suspense>

@@ -102,9 +102,9 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
     hasBody && item.body.trim().split("\n").length > 1;
   const showQuoteAction =
     onQuote != null &&
-    context === "proposal" &&
     ["vote", "feedback-post"].includes(item.type) &&
     hasBody &&
+    connectedAccount != null &&
     connectedAccount !== item.authorAccount;
 
   return (
