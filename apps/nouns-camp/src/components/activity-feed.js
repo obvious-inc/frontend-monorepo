@@ -4,6 +4,7 @@ import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Button from "@shades/ui-web/button";
+import { Retweet as RepostIcon } from "@shades/ui-web/icons";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -282,9 +283,8 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
               onClick={() => {
                 onQuote(item.id);
               }}
-            >
-              +1
-            </Button>
+              icon={<RepostIcon style={{ width: "1.1rem", height: "auto" }} />}
+            />
             {/* <Button
               size="tiny"
               variant="opaque"
