@@ -52,6 +52,7 @@ import {
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
+import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import Layout, { MainContentContainer } from "./layout.js";
@@ -68,18 +69,6 @@ import TransactionList, {
 const isBetaSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("beta") != null;
-
-const useScrollToHash = () => {
-  const didScrollRef = React.useRef(false);
-
-  React.useEffect(() => {
-    if (didScrollRef.current || location.hash === "") return;
-    const el = document.getElementById(location.hash.slice(1));
-    if (el == null) return;
-    didScrollRef.current = true;
-    el.scrollIntoView();
-  });
-};
 
 const useFeatureFlag = () => {
   const { isBetaAccount } = useWallet();
