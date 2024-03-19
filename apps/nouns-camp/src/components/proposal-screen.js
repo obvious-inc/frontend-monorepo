@@ -250,6 +250,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     proposalActionInputRef.current.focus();
   }, []);
 
+  React.useEffect(() => {
+    if (proposal == null || location.hash === "") return;
+    document.getElementById(location.hash.slice(1))?.scrollIntoView();
+  }, [proposal]);
+
   if (proposal == null) return null;
 
   const renderProposalStateIcon = () => {

@@ -26,7 +26,7 @@ const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
         lineHeight: 1.4285714286, // 20px line height given font size if 14px
         fontSize: t.text.sizes.base,
         '[role="listitem"]': {
-          scrollMargin: "3.2rem 0",
+          scrollMargin: "calc(3.2rem + 1.6rem) 0",
         },
         '[role="listitem"] + [role="listitem"]': {
           marginTop: "var(--vertical-spacing)",
@@ -221,7 +221,11 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
             {item.quotes.map((quote) => (
               <li key={quote.id}>
                 <NextLink
-                  href={`#${quote.id}`}
+                  href={
+                    context !== "proposal"
+                      ? `/proposals/${item.proposalId}#${quote.id}`
+                      : `#${quote.id}`
+                  }
                   style={{ display: "block", position: "absolute", inset: 0 }}
                 />
                 <AccountPreviewPopoverTrigger
