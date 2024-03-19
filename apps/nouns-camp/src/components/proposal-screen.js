@@ -1856,25 +1856,4 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
   );
 });
 
-// const MetaTags = ({ proposalId }) => {
-//   const proposal = useProposal(proposalId);
-
-//   if (proposal == null) return null;
-
-//   const title =
-//     proposal.title == null
-//       ? `Prop ${proposalId}`
-//       : `${proposal.title} (Prop ${proposalId})`;
-
-//   const { body } = proposal;
-
-//   return (
-//     <MetaTags_
-//       title={title}
-//       description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
-//       canonicalPathname={`/proposals/${proposalId}`}
-//     />
-//   );
-// };
-
 export default ProposalScreen;

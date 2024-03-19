@@ -189,13 +189,6 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
         </div>
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-        {hasBody && (
-          <ItemBody
-            text={item.body}
-            displayImages={item.type === "event"}
-            truncateLines={!isIsolatedContext}
-          />
-        )}
         {item.quotes?.length > 0 && (
           <ul
             css={(t) =>
@@ -250,6 +243,13 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
             ))}
           </ul>
         )}
+        {hasBody && (
+          <ItemBody
+            text={item.body}
+            displayImages={item.type === "event"}
+            truncateLines={!isIsolatedContext}
+          />
+        )}
         {item.type === "candidate-signature-added" && (
           <div
             css={(t) =>
@@ -279,7 +279,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
 
         {showQuoteAction && (
           <div
-            css={css({ marginTop: "0.4rem", display: "flex", gap: "0.8rem" })}
+            css={css({ marginTop: "0.8rem", display: "flex", gap: "0.8rem" })}
           >
             <Button
               size="tiny"
@@ -333,7 +333,7 @@ const ItemBody = React.memo(
     }, []);
 
     return (
-      <div css={css({ padding: "0.5rem 0" })}>
+      <div css={css({ margin: "0.5rem 0" })}>
         <div
           ref={containerRef}
           css={css({ overflow: "hidden" })}
