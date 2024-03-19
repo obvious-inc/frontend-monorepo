@@ -1199,7 +1199,7 @@ export const ProposalActionForm = ({
                   >
                     {(() => {
                       if (mode !== "vote") return "Submit comment";
-                      if (hasQuote) return "Submit revote";
+                      if (hasQuote) return "Cast revote";
                       return proposalVoteCount === 1
                         ? "Cast vote"
                         : `${proposalVoteCount} votes`;
