@@ -363,6 +363,8 @@ const ProfileView = () => {
   }, [usernameUpdateValue, checkUsernameAvailability, username]);
 
   React.useEffect(() => {
+    if (fid == null) return;
+
     const fetchTransfers = async (fid) => {
       const response = await fetch(
         FARCASTER_FNAME_API_ENDPOINT + `/transfers?fid=${fid}`,
