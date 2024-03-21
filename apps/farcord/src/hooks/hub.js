@@ -292,7 +292,7 @@ export const setUserData = async ({ fid, signer, dataType, value }) => {
       throw new Error("unknown data type");
   }
 
-  const messageResult = makeUserDataAdd(
+  const messageResult = await makeUserDataAdd(
     { type: hubDataType, value },
     { fid: Number(fid), network: FarcasterNetwork.MAINNET },
     farcastSigner,
