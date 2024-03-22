@@ -8,7 +8,6 @@ import {
 } from "@shades/common/utils";
 import RichText from "@shades/ui-web/rich-text";
 import Image from "@shades/ui-web/image";
-import Link from "@shades/ui-web/link";
 import Emoji from "@shades/ui-web/emoji";
 
 const setImageDimensions = async (blocks) => {
@@ -59,58 +58,30 @@ const useParsedMarkdownText = (text, { displayImages, awaitImages }) => {
 };
 
 const MarkdownRichText = React.forwardRef(
-  ({ text, awaitImages = false, displayImages = true, ...props }, ref) => {
+  (
+    {
+      text,
+      awaitImages = false,
+      displayImages = true,
+      renderElement,
+      ...props
+    },
+    ref,
+  ) => {
     const blocks = useParsedMarkdownText(text, { displayImages, awaitImages });
 
     if (blocks == null || blocks.length === 0) return null;
-
-    const lastBlockString =
-      blocks
-        .slice(-1)[0]
-        .children?.map((el) => el.text ?? "")
-        .join("") ?? "";
-
-    if (lastBlockString.toLowerCase() === "sent from voter.wtf")
-      return (
-        <>
-          {blocks.length >= 2 && (
-            <RichText ref={ref} blocks={blocks.slice(0, -1)} {...props} />
-          )}
-          <p style={{ margin: blocks.length > 2 ? "0.625em 0 0" : 0 }}>
-            <em
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  color: t.colors.textDimmed,
-                  fontStyle: "italic",
-                })
-              }
-            >
-              Sent from{" "}
-              <Link
-                component="a"
-                href="https://www.voter.wtf"
-                target="_blank"
-                rel="noreferrer"
-                color="currentColor"
-                css={(t) =>
-                  css({
-                    fontWeight: t.text.weights.emphasis,
-                  })
-                }
-              >
-                voter.wtf
-              </Link>
-            </em>
-          </p>
-        </>
-      );
 
     return (
       <RichText
         ref={ref}
         blocks={blocks}
         renderElement={(el, i) => {
+          if (renderElement != null) {
+            const result = renderElement(el, i);
+            if (result != null) return result;
+          }
+
           switch (el.type) {
             case "image":
               // Hack to allow image links
@@ -129,6 +100,9 @@ const MarkdownRichText = React.forwardRef(
                   return null;
                 }
               }
+              return null;
+
+            case "paragraph":
               return null;
 
             case "emoji":
