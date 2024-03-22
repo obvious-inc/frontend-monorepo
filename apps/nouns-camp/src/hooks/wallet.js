@@ -196,7 +196,7 @@ export const useWallet = () => {
     useSwitchChain();
   const chainId = useChainId();
   const connectedChainId = useConnectedChainId();
-  const { betaAccounts } = { betaAccounts:[] } /*useConfig()*/;
+  const { canaryAccounts, betaAccounts } = { canaryAccounts: [], betaAccounts:[] } /*useConfig()*/;
 
   const isUnsupportedChain =
     connectedChainId != null && chainId !== connectedChainId;
@@ -243,6 +243,7 @@ export const useWallet = () => {
     isLoading,
     isUnsupportedChain,
     isTestnet: chainId !== defaultChainId,
+    isCanaryAccount: canaryAccounts.includes(address),
     isBetaAccount: betaAccounts.includes(address),
     chain,
   };
