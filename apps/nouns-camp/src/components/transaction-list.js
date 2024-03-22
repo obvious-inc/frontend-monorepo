@@ -780,27 +780,42 @@ export const TransactionExplanation = ({ transaction: t }) => {
 export const FormattedEthWithConditionalTooltip = ({
   value,
   tokenSymbol = "ETH",
+  portal = false,
+  truncate = true,
+  decimals = 3,
+  truncationDots = true,
+  localeFormatting = false,
 }) => {
   const ethString = formatEther(value);
-  const [ethValue, ethDecimals] = ethString.split(".");
-  const truncateDecimals = ethDecimals != null && ethDecimals.length > 3;
+  let [ethValue, ethDecimals] = ethString.split(".");
+
+  if (localeFormatting) ethValue = parseFloat(ethValue).toLocaleString();
+
+  const truncateDecimals =
+    truncate && ethDecimals != null && ethDecimals.length > decimals;
+
+  if (!truncateDecimals)
+    return !tokenSymbol ? ethString : `${ethString} ${tokenSymbol}`;
+
   const truncatedEthString = [
     ethValue,
-    truncateDecimals ? `${ethDecimals.slice(0, 3)}...` : ethDecimals,
+    truncateDecimals
+      ? `${ethDecimals.slice(0, decimals)}${truncationDots ? "..." : ""}`
+      : ethDecimals,
   ]
     .filter(Boolean)
     .join(".");
 
-  if (!truncateDecimals) return `${ethString} ${tokenSymbol}`;
+  const formattedString = !tokenSymbol
+    ? truncatedEthString
+    : `${truncatedEthString} ${tokenSymbol}`;
 
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
-        <span role="button">
-          {truncatedEthString} {tokenSymbol}
-        </span>
+        <span role="button">{formattedString}</span>
       </Tooltip.Trigger>
-      <Tooltip.Content side="top" sideOffset={6}>
+      <Tooltip.Content side="top" sideOffset={6} portal={portal}>
         {ethString} {tokenSymbol}
       </Tooltip.Content>
     </Tooltip.Root>

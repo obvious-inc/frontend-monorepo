@@ -2,10 +2,6 @@ import { object as objectUtils } from "@shades/common/utils";
 import { mainnet, sepolia, goerli } from "./chains.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
-const USDC_TOKEN_CONTRACT_ADDRESS =
-  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-const WETH_TOKEN_CONTRACT_ADDRESS =
-  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 const DAO_LOGIC_PROXY_CONTRACT = "0x6f3e6272a167e8accb32072d08e0957f9c79223d";
 const DAO_EXECUTOR_PROXY_CONTRACT =
@@ -21,9 +17,11 @@ const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
-    "weth-token": WETH_TOKEN_CONTRACT_ADDRESS,
-    "usdc-token": USDC_TOKEN_CONTRACT_ADDRESS,
-    "lido-steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "weth-token": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "wsteth-token": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+    "reth-token": "0xae78736cd615f374d3085123a210448e74fc6393",
+    "usdc-token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
     "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
     "prop-house": "0x000000002c93cad6f9cfd00c603aef62458d8a48",
     "prop-house-timed-round-implementation":
@@ -36,7 +34,9 @@ const addressByIdentifierByChainId = {
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
     descriptor: DAO_DESCRIPTOR_CONTRACT,
+    "fork-escrow": "0x44d97D22B3d37d837cE4b22773aAd9d1566055D9",
     payer: DAO_PAYER_CONTRACT,
+    "executor-v1": "0x0BC3807Ec262cB779b38D65b38158acC3bfedE10",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
     "prop-house-nouns-house": "0xa1b73d8cb149ab30ec43f83f577646ac8fe7e617",
@@ -90,15 +90,15 @@ const metaByIdentifier = {
     token: "ETH",
   },
   "weth-token": {
-    name: "WETH Token",
-    token: "WETH",
+    name: "wETH Token",
+    token: "wETH",
   },
   "usdc-token": {
     name: "USDC Token",
     token: "USDC",
   },
-  "lido-steth-token": {
-    name: "Lido: stETH Token",
+  "steth-token": {
+    name: "stETH Token",
     token: "stETH",
   },
   "lido-withdrawal-queque": {

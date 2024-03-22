@@ -1,7 +1,7 @@
 import { useWallet } from "./wallet.js";
 
-const canaryFeatures = ["revotes"];
-const betaFeatures = [];
+const canaryFeatures = [];
+const betaFeatures = ["treasury-activity"];
 
 const isCanarySession =
   typeof location !== "undefined" &&
