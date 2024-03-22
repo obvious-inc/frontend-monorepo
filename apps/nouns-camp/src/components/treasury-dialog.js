@@ -2,9 +2,11 @@ import { formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
 import { useBalance, useReadContract } from "wagmi";
+import { array as arrayUtils } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import {
   parse as parseTransactions,
   extractAmounts as getRequestedAssets,
@@ -13,7 +15,6 @@ import { subgraphFetch as queryNounsSubgraph } from "../nouns-subgraph.js";
 import useContract from "../hooks/contract.js";
 import useChainId from "../hooks/chain-id.js";
 import { useSearchParams } from "../hooks/navigation.js";
-import useFeatureFlag from "../hooks/feature-flag.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
@@ -38,9 +39,9 @@ const useChainlinkUsdcToEthConverter = () => {
   return (usdc) => (usdc * 10n ** 23n) / rate;
 };
 
-const useAuctionProceeds = ({ days = 30 } = {}) => {
+const useRecentSettledAuctions = ({ count = 30 } = {}) => {
   const chainId = useChainId();
-  const [proceeds, setProceeds] = React.useState(null);
+  const [auctions, setAuctions] = React.useState(null);
 
   useFetch(async () => {
     const query = `{
@@ -48,25 +49,25 @@ const useAuctionProceeds = ({ days = 30 } = {}) => {
         where: { settled: true },
         orderDirection: desc,
         orderBy: startTime,
-        first: ${days}
+        first: ${Math.min(1000, count)}
       ) {
+        id
         amount
       }
     }`;
     const { auctions } = await queryNounsSubgraph({ chainId, query });
-    const proceeds = auctions.reduce(
-      (sum, { amount }) => sum + BigInt(amount),
-      BigInt(0),
-    );
-    setProceeds(proceeds);
-  }, [days, chainId]);
+    setAuctions(auctions);
+  }, [count, chainId]);
 
-  return proceeds;
+  return auctions;
 };
 
 const useAssetsDeployed = ({ days = 30 } = {}) => {
   const chainId = useChainId();
-  const [assets, setAssets] = React.useState(null);
+  const [{ assets, proposalIds }, setData] = React.useState({
+    assets: null,
+    proposalIds: null,
+  });
 
   useFetch(async () => {
     const nowSeconds = Math.floor(Date.now() / 1000);
@@ -77,6 +78,7 @@ const useAssetsDeployed = ({ days = 30 } = {}) => {
         orderBy: executedBlock,
         first: 1000
       ) {
+        id
         targets
         signatures
         calldatas
@@ -99,10 +101,14 @@ const useAssetsDeployed = ({ days = 30 } = {}) => {
       }
       return [...assets, asset];
     }, []);
-    setAssets(assets);
+    const proposalIds = arrayUtils.sortBy(
+      (id) => Number(id),
+      proposals.map(({ id }) => id),
+    );
+    setData({ assets, proposalIds });
   }, [chainId, days]);
 
-  return assets;
+  return { assets, proposalIds };
 };
 
 const useBalanceOf = ({ contract, account }) => {
@@ -210,22 +216,36 @@ const Content = ({ titleProps, dismiss }) => {
     forkEscrowNouns,
   } = useBalances();
 
-  const activityDayCount = searchParams.get("timeframe") ?? 30;
+  const [activityDayCount, setActivityDayCount] = React.useState(
+    () => searchParams.get("timeframe") ?? 30,
+  );
 
-  const auctionProceeds = useAuctionProceeds({ days: activityDayCount });
-  const assetsDeployed = useAssetsDeployed({ days: activityDayCount });
+  const auctions = useRecentSettledAuctions({ count: activityDayCount });
+  const { auctionProceeds, auctionNounIds } = React.useMemo(() => {
+    if (auctions == null) return {};
+    const auctionProceeds = auctions.reduce(
+      (sum, { amount }) => sum + BigInt(amount),
+      BigInt(0),
+    );
+    const auctionNounIds = arrayUtils.sortBy(
+      (id) => Number(id),
+      auctions.map(({ id }) => id),
+    );
+    return { auctionProceeds, auctionNounIds };
+  }, [auctions]);
+
+  const { assets: assetsDeployed, proposalIds: deployedProposalIds } =
+    useAssetsDeployed({ days: activityDayCount });
 
   const convertUsdcToEth = useChainlinkUsdcToEthConverter();
-  const showRecentActivity = useFeatureFlag("treasury-activity");
 
   return (
     <div
       css={css({
-        overflow: "auto",
-        padding: "1.5rem",
-        "@media (min-width: 600px)": {
-          padding: "2rem",
-        },
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
       })}
     >
       <DialogHeader
@@ -233,14 +253,26 @@ const Content = ({ titleProps, dismiss }) => {
         titleProps={titleProps}
         dismiss={dismiss}
         css={css({
-          margin: "0 0 2.4rem",
+          margin: "0",
+          padding: "1.5rem",
           "@media (min-width: 600px)": {
-            margin: "0 0 2.4rem",
+            margin: "0",
+            padding: "2rem",
           },
         })}
       />
-      <main>
-        <Heading>Asset overview</Heading>
+      <main
+        css={css({
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+          padding: "0.5rem 1.5rem 1.5rem",
+          "@media (min-width: 600px)": {
+            padding: "0 2rem 2rem",
+          },
+        })}
+      >
+        <Heading>Assets overview</Heading>
         <Dl>
           {[
             {
@@ -325,88 +357,159 @@ const Content = ({ titleProps, dismiss }) => {
           ))}
         </Dl>
 
-        {showRecentActivity && (
-          <>
-            <Heading>Activity last {activityDayCount} days</Heading>
-            <Dl>
-              <dt>Auction proceeds</dt>
-              <dd>
-                {auctionProceeds != null && (
-                  <FormattedEthWithConditionalTooltip
-                    portal
-                    value={auctionProceeds}
-                    decimals={2}
-                    truncationDots={false}
-                    localeFormatting
-                  />
+        <Heading>
+          Activity last{" "}
+          <span
+            css={(t) =>
+              css({
+                display: "inline-block",
+                position: "relative",
+                // background: t.colors.backgroundModifierNormal,
+                border: "0.1rem solid",
+                borderColor: t.colors.borderLighter,
+                borderRadius: "0.3rem",
+                padding: "0 0.4rem",
+              })
+            }
+          >
+            {activityDayCount} days
+            <select
+              value={activityDayCount}
+              onChange={(e) => {
+                setActivityDayCount(e.target.value);
+              }}
+              style={{ position: "absolute", inset: 0, opacity: 0 }}
+            >
+              {[30, 60, 90].map((count) => (
+                <option key={count} value={count}>
+                  {count} days
+                </option>
+              ))}
+            </select>
+          </span>
+        </Heading>
+        <Dl>
+          <dt>
+            <Tooltip.Root>
+              <Tooltip.Trigger>Auction proceeds</Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6} portal>
+                {auctionNounIds == null ? (
+                  "..."
+                ) : auctionNounIds.length === 1 ? (
+                  <>1 settled auction (Noun {auctionNounIds[0]})</>
+                ) : (
+                  <>
+                    {auctionNounIds.length} settled auctions
+                    <div css={(t) => css({ color: t.colors.textDimmed })}>
+                      Noun {auctionNounIds[0]} to{" "}
+                      {auctionNounIds[auctionNounIds.length - 1]}
+                    </div>
+                  </>
                 )}
-              </dd>
-              <dt>Assets deployed</dt>
-              <dd>
-                {assetsDeployed != null && (
-                  <ul
-                    css={css({
-                      listStyle: "none",
-                      "li + li": { marginTop: "0.4rem" },
-                    })}
-                  >
-                    {assetsDeployed.map((asset) => (
-                      <li key={asset.currency}>
-                        {(() => {
-                          switch (asset.currency) {
-                            case "eth":
-                              return (
-                                <FormattedEthWithConditionalTooltip
-                                  portal
-                                  value={asset.amount}
-                                  decimals={2}
-                                  truncationDots={false}
-                                  tokenSymbol="ETH"
-                                  localeFormatting
-                                />
-                              );
-
-                            case "usdc":
-                              return (
-                                <>
-                                  {formatUsdc(asset.amount)} USDC{" "}
-                                  {convertUsdcToEth != null && (
-                                    <span data-small>
-                                      ({"\u2248"}
-                                      <FormattedEthWithConditionalTooltip
-                                        portal
-                                        value={convertUsdcToEth(asset.amount)}
-                                        decimals={2}
-                                        truncationDots={false}
-                                        localeFormatting
-                                      />
-                                      )
-                                    </span>
-                                  )}
-                                </>
-                              );
-
-                            case "nouns": {
-                              const count = asset.tokens.length;
-                              return (
-                                <>
-                                  {count} {count === 1 ? "Noun" : "Nouns"}
-                                </>
-                              );
-                            }
-
-                            default:
-                              throw new Error();
-                          }
-                        })()}
-                      </li>
-                    ))}
-                  </ul>
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </dt>
+          <dd>
+            {auctionProceeds != null && (
+              <FormattedEthWithConditionalTooltip
+                portal
+                value={auctionProceeds}
+                decimals={2}
+                truncationDots={false}
+                localeFormatting
+              />
+            )}
+          </dd>
+          <dt>
+            <Tooltip.Root>
+              <Tooltip.Trigger>Assets deployed</Tooltip.Trigger>
+              <Tooltip.Content side="top" sideOffset={6} portal>
+                {deployedProposalIds == null ? (
+                  "..."
+                ) : deployedProposalIds.length === 1 ? (
+                  <>1 executed proposal (Prop {deployedProposalIds[0]})</>
+                ) : (
+                  <>
+                    {deployedProposalIds.length} executed proposals
+                    <div
+                      css={(t) =>
+                        css({
+                          color: t.colors.textDimmed,
+                          maxWidth: "24rem",
+                        })
+                      }
+                    >
+                      {deployedProposalIds.slice(0, -1).join(", ")}, and{" "}
+                      {deployedProposalIds.slice(-1)[0]}
+                    </div>
+                  </>
                 )}
-              </dd>
-            </Dl>
-          </>
-        )}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          </dt>
+          <dd>
+            {assetsDeployed != null && (
+              <ul
+                css={css({
+                  listStyle: "none",
+                  "li + li": { marginTop: "0.4rem" },
+                })}
+              >
+                {assetsDeployed.map((asset) => (
+                  <li key={asset.currency}>
+                    {(() => {
+                      switch (asset.currency) {
+                        case "eth":
+                          return (
+                            <FormattedEthWithConditionalTooltip
+                              portal
+                              value={asset.amount}
+                              decimals={2}
+                              truncationDots={false}
+                              tokenSymbol="ETH"
+                              localeFormatting
+                            />
+                          );
+
+                        case "usdc":
+                          return (
+                            <>
+                              {formatUsdc(asset.amount)} USDC{" "}
+                              {convertUsdcToEth != null && (
+                                <span data-small>
+                                  ({"\u2248"}
+                                  <FormattedEthWithConditionalTooltip
+                                    portal
+                                    value={convertUsdcToEth(asset.amount)}
+                                    decimals={2}
+                                    truncationDots={false}
+                                    localeFormatting
+                                  />
+                                  )
+                                </span>
+                              )}
+                            </>
+                          );
+
+                        case "nouns": {
+                          const count = asset.tokens.length;
+                          return (
+                            <>
+                              {count} {count === 1 ? "Noun" : "Nouns"}
+                            </>
+                          );
+                        }
+
+                        default:
+                          throw new Error();
+                      }
+                    })()}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+        </Dl>
 
         <Heading>Other contracts</Heading>
         <Dl>
@@ -528,7 +631,8 @@ const Heading = (props) => (
         fontSize: t.text.sizes.small,
         fontWeight: t.text.weights.emphasis,
         color: t.colors.textDimmed,
-        margin: "2.8rem 0 1rem",
+        margin: "0 0 1rem",
+        "* + &": { marginTop: "2.4rem" },
       })
     }
     {...props}
