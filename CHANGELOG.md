@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.35] - 2024-03-22
+
+### Features
+
+- Migrate updates from upstream (#219)
+
 ## [1.0.0-alpha.34] - 2024-03-11
 
 ### Bug Fixes
