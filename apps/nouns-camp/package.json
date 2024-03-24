@@ -28,7 +28,7 @@
     "@prophouse/sdk-react": "^1.0.31",
     "@radix-ui/react-toolbar": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.5",
-    "@sentry/nextjs": "^7.107.0",
+    "@sentry/nextjs": "^7.108.0",
     "@serwist/next": "^8.4.4",
     "@serwist/precaching": "^8.4.4",
     "@serwist/sw": "^8.4.4",
