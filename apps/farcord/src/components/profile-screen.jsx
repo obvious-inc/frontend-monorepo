@@ -23,7 +23,6 @@ import FormattedDate from "./formatted-date";
 import Input from "@shades/ui-web/input";
 import { PlusCircle as PlusCircleIcon } from "@shades/ui-web/icons";
 import { uploadImages } from "../utils/imgur";
-import { bytesToString, toHex } from "viem";
 
 const FARCASTER_FNAME_API_ENDPOINT = "https://fnames.farcaster.xyz";
 
@@ -196,13 +195,13 @@ const ProfileView = () => {
   const [usernameUpdateError, setUsernameUpdateError] = React.useState(null);
   const [usernameUpdateValue, setUsernameUpdateValue] = React.useState(null);
   const [isValidUsername, setIsValidUsername] = React.useState(
-    Boolean(usernameUpdateValue),
+    Boolean(usernameUpdateValue)
   );
   const [usernameTimelock, setUsernameTimelock] = React.useState(null);
 
   const [displayName, setDisplayName] = React.useState(null);
   const [displayNameUpdateValue, setDisplayNameUpdateValue] = React.useState(
-    userData?.displayName,
+    userData?.displayName
   );
   const [displayNameUpdatePending, setDisplayNameUpdatePending] =
     React.useState(false);
@@ -214,12 +213,26 @@ const ProfileView = () => {
   const [bioUpdatePending, setBioUpdatePending] = React.useState(false);
   const [bioUpdateError, setBioUpdateError] = React.useState(null);
 
+  const makeProof = async ({ username, accountAddress, proofTimestamp }) => {
+    if (!proofTimestamp) {
+      proofTimestamp = Math.floor(Date.now() / 1000);
+    }
+
+    const usernameProofClaim = {
+      owner: accountAddress,
+      name: username,
+      timestamp: BigInt(proofTimestamp),
+    };
+
+    return usernameProofClaim;
+  };
+
   const checkUsernameAvailability = useLatestCallback(async () => {
     if (!usernameUpdateValue) return;
     if (usernameUpdateValue == username) return;
 
     const response = await fetch(
-      FARCASTER_FNAME_API_ENDPOINT + `/transfers?name=${usernameUpdateValue}`,
+      FARCASTER_FNAME_API_ENDPOINT + `/transfers?name=${usernameUpdateValue}`
     );
     const data = await response.json();
     const transfers = data?.transfers || [];
@@ -236,16 +249,67 @@ const ProfileView = () => {
       return;
     }
 
-    const proofTimestamp = Math.floor(Date.now() / 1000);
-    const usernameProofClaim = {
-      owner: accountAddress,
-      name: usernameUpdateValue,
-      timestamp: BigInt(proofTimestamp),
-    };
-
     try {
       await switchToEthereumMainnet();
-      const signature = await signTypedData({
+
+      // first you need to unregister current username, if set
+      const currentUsernameResponse = await fetch(
+        `${FARCASTER_FNAME_API_ENDPOINT}/transfers/current?fid=${Number(fid)}`
+      );
+      const currentUsernameData = await currentUsernameResponse.json();
+      const currentUsername = currentUsernameData?.transfer?.username;
+
+      if (currentUsername) {
+        const unregisterProofTimestamp = Math.floor(Date.now() / 1000);
+        const unregisterProofClaim = await makeProof({
+          username: currentUsername,
+          accountAddress,
+          proofTimestamp: unregisterProofTimestamp,
+        });
+
+        const unregisterSignature = await signTypedData({
+          domain: EIP_712_USERNAME_DOMAIN,
+          types: { UserNameProof: EIP_712_USERNAME_PROOF },
+          primaryType: "UserNameProof",
+          message: unregisterProofClaim,
+        });
+
+        // need to unregister fname before registering a new one
+        const unregisterResponse = await fetch(
+          FARCASTER_FNAME_API_ENDPOINT + "/transfers",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: currentUsername,
+              from: Number(fid),
+              to: 0,
+              fid: Number(fid),
+              owner: accountAddress,
+              timestamp: unregisterProofTimestamp,
+              signature: unregisterSignature,
+            }),
+          }
+        );
+
+        const unregisterData = await unregisterResponse.json();
+
+        if (unregisterData?.error) {
+          setUsernameUpdateError(unregisterData.error);
+          return;
+        }
+      }
+
+      const registerProofTimestamp = Math.floor(Date.now() / 1000);
+      const usernameProofClaim = await makeProof({
+        username: usernameUpdateValue,
+        accountAddress,
+        proofTimestamp: registerProofTimestamp,
+      });
+
+      const registerSignature = await signTypedData({
         domain: EIP_712_USERNAME_DOMAIN,
         types: { UserNameProof: EIP_712_USERNAME_PROOF },
         primaryType: "UserNameProof",
@@ -265,10 +329,10 @@ const ProfileView = () => {
             to: Number(fid),
             fid: Number(fid),
             owner: accountAddress,
-            timestamp: proofTimestamp,
-            signature: signature,
+            timestamp: registerProofTimestamp,
+            signature: registerSignature,
           }),
-        },
+        }
       );
 
       const data = await response.json();
@@ -367,10 +431,12 @@ const ProfileView = () => {
 
     const fetchTransfers = async (fid) => {
       const response = await fetch(
-        FARCASTER_FNAME_API_ENDPOINT + `/transfers?fid=${fid}`,
+        FARCASTER_FNAME_API_ENDPOINT + `/transfers?fid=${fid}`
       );
       const data = await response.json();
-      const transfer = data?.transfers?.[0];
+
+      const transfer = data?.transfers?.[data.transfers.length - 1];
+
       if (!transfer) return;
 
       const { timestamp } = transfer;
@@ -393,11 +459,11 @@ const ProfileView = () => {
       let finalDatetime;
       await fetchUsernameProofsByFid({ fid }).then((proofs) => {
         for (const proof of proofs) {
-          const proofOwner = toHex(proof.owner);
+          const proofOwner = proof.owner;
           if (proofOwner.toLowerCase() !== accountAddress.toLowerCase())
             continue;
 
-          const namez = bytesToString(proof.name);
+          const namez = proof.name;
 
           if (finalDatetime && finalDatetime > proof.timestamp) continue;
           finalUsername = namez;
@@ -468,7 +534,7 @@ const ProfileView = () => {
                 (e) => {
                   // wallet_switchEthereumChain already pending
                   if (e.code === 4902) return;
-                },
+                }
               );
             }}
           >
@@ -732,7 +798,7 @@ const ProfileView = () => {
                 setHasUsernameUpdatePending(true);
                 setUsernameUpdateError(null);
                 await registerUsernameChange().finally(() =>
-                  setHasUsernameUpdatePending(false),
+                  setHasUsernameUpdatePending(false)
                 );
               }}
               css={css({
@@ -742,9 +808,10 @@ const ProfileView = () => {
                 flexDirection: "column",
               })}
             >
-              <h2>Set username</h2>
+              {!username ? <h2>Set username</h2> : <h2>Update username</h2>}
+
               <Small>
-                https://docs.farcaster.xyz/protocol/fnames.html#fname-policy
+                You can only change your username once every 28 days.
               </Small>
               <input
                 value={usernameUpdateValue ?? ""}
@@ -780,9 +847,9 @@ const ProfileView = () => {
                   !signer
                 }
               >
-                Set username
+                {username ? "Update username" : "Set username"}
               </Button>
-              {username != usernameUpdateValue && usernameTimelock ? (
+              {username != usernameUpdateValue && usernameTimelock && (
                 <Small
                   css={(t) =>
                     css({
@@ -803,12 +870,22 @@ const ProfileView = () => {
                   />
                   .
                 </Small>
-              ) : (
-                <Small style={{ marginTop: "1rem" }}>
-                  {hasUsernameUpdatePending
-                    ? "Please check your wallet to sign the message"
-                    : "You can only change your username once every 28 days."}
-                </Small>
+              )}
+
+              {hasUsernameUpdatePending && (
+                <>
+                  {username ? (
+                    <Small style={{ marginTop: "1rem" }}>
+                      You will be asked to sign 2 messages to first unregister{" "}
+                      <b>{username}</b> and then register{" "}
+                      <b>{usernameUpdateValue}</b>
+                    </Small>
+                  ) : (
+                    <Small style={{ marginTop: "1rem" }}>
+                      Please check your wallet to sign the message
+                    </Small>
+                  )}
+                </>
               )}
 
               {usernameUpdateError && (

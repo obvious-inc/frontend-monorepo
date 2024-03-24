@@ -21,7 +21,7 @@ const ProfileDropdownTrigger = React.forwardRef(
     const showCollapseButton =
       isMenuFloating || (!isMenuCollapsed && isHoveringSidebar);
 
-    const accountDescription = neynarUserData?.username;
+    const accountDescription = userData?.username ?? neynarUserData?.username;
 
     if (!subtitle) {
       if (!userData?.displayName) subtitle = "Set up your profile";
@@ -215,7 +215,7 @@ const ProfileDropdownTrigger = React.forwardRef(
         </div>
       </button>
     );
-  },
+  }
 );
 
 export default ProfileDropdownTrigger;

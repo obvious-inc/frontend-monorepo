@@ -11,6 +11,7 @@ import { followUser, unfollowUser, useIsFollower } from "../hooks/hub";
 import useSigner from "./signer";
 import useFarcasterAccount from "./farcaster-account";
 import { useUserByFid } from "../hooks/channel";
+import { useUserData as useHubUserData } from "../hooks/hub";
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
@@ -23,9 +24,11 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       children,
       ...props
     },
-    triggerRef,
+    triggerRef
   ) => {
     const user = useUserByFid(fid);
+    const hubUser = useHubUserData(fid);
+
     if (fid == null && user == null) return null;
 
     const disabled = user?.deleted;
@@ -41,7 +44,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
               disabled={props.disabled ?? disabled}
               css={css({ userSelect: "text", fontWeight: "unset" })}
             >
-              @{username ?? user?.username}
+              @{username ?? hubUser?.username ?? user?.username}
             </InlineButton>
           )}
         </Popover.Trigger>
@@ -50,11 +53,13 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  },
+  }
 );
 
 const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
   const user = useUserByFid(fid);
+  const hubUser = useHubUserData(fid);
+
   const { fid: mainFid } = useFarcasterAccount();
   const { signer } = useSigner();
 
@@ -89,6 +94,8 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
   }, [followsUser]);
 
   if (user == null) return null;
+
+  const username = hubUser?.username ?? user?.username;
 
   return (
     <div
@@ -134,7 +141,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
                 <a
-                  href={`https://warpcast.com/${user.username}`}
+                  href={`https://warpcast.com/${username}`}
                   rel="noreferrer"
                   target="_blank"
                   css={css({
@@ -145,7 +152,7 @@ const AccountPreview = React.forwardRef(({ fid, actions = [] }, ref) => {
                     },
                   })}
                 >
-                  {user.username} ({user.fid})
+                  {username} ({user.fid})
                 </a>
               </Tooltip.Trigger>
               <Tooltip.Content portal={false} side="top" sideOffset={4}>
