@@ -7,7 +7,7 @@ export const approximateBlockTimestamp = (blockNumber, referenceBlock) => {
   const blockNumberDiff = Number(blockNumber) - Number(referenceBlock.number);
   return new Date(
     referenceBlock.timestamp.getTime() +
-      blockNumberDiff * secondsPerBlock * 1000
+      blockNumberDiff * secondsPerBlock * 1000,
   );
 };
 
@@ -26,7 +26,7 @@ const useApproximateBlockTimestampCalculator = () => {
 
       return approximateBlockTimestamp(blockNumber, referenceBlock);
     },
-    [latestBlockNumber]
+    [latestBlockNumber],
   );
 };
 

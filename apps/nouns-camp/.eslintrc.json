@@ -1,0 +1,16 @@
+{
+  "extends": ["next/core-web-vitals", "prettier"],
+  "rules": {
+    "import/no-anonymous-default-export": "off",
+    "jsx-a11y/alt-text": "off",
+    "react/prop-types": "off",
+    "react/display-name": "off",
+    "react/no-unknown-property": [2, { "ignore": ["css"] }],
+    "@next/next/no-img-element": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}

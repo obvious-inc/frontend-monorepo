@@ -244,7 +244,7 @@ export const createCss = (t) => ({
   // Inline mode
   '&[data-inline="true"]': {
     // All block elements
-    'p, ul, ol, li, h1, h2, h3, h4, h5 ,h6, aside, pre:has(code), .grid, table, button.image, [role="separator"], hr':
+    'p, ul, ol, li, h1, h2, h3, h4, h5 ,h6, aside, pre:has(code), .grid, table, button.image, [role="separator"], hr, hr:after, [role="separator"]:after':
       {
         display: "inline",
         padding: 0,
@@ -375,8 +375,8 @@ const createRenderer = ({
           el.label != null
             ? el.label
             : el.children != null
-            ? children()
-            : el.url;
+              ? children()
+              : el.url;
         return (
           <a
             key={i}
@@ -413,11 +413,7 @@ const createRenderer = ({
         return <td key={i}>{children()}</td>;
 
       case "horizontal-divider":
-        return (
-          <div key={i}>
-            <hr />
-          </div>
-        );
+        return <hr key={i} />;
 
       case "attachments":
       case "image-grid": {
@@ -529,11 +525,11 @@ const ImageComponent = ({
     maxWidth === null && maxHeight === null
       ? width
       : width == null
-      ? null
-      : dimensionUtils.fitInsideBounds(
-          { width, height },
-          { width: maxWidth, height: maxHeight }
-        ).width;
+        ? null
+        : dimensionUtils.fitInsideBounds(
+            { width, height },
+            { width: maxWidth, height: maxHeight },
+          ).width;
 
   const hasDimensions = fittedWidth != null;
 
@@ -585,7 +581,7 @@ const RichText = React.forwardRef(
       raw = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     const render = createRenderer({
       inline,
@@ -624,7 +620,7 @@ const RichText = React.forwardRef(
         {render(blocks)}
       </div>
     );
-  }
+  },
 );
 
 export default RichText;

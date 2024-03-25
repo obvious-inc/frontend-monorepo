@@ -61,7 +61,7 @@ export const Provider = ({ store, children }) => {
 
   const getCachedState = React.useCallback(
     (key) => cachedStateMap.get(key),
-    [cachedStateMap]
+    [cachedStateMap],
   );
 
   const setCachedState = React.useCallback(
@@ -71,12 +71,12 @@ export const Provider = ({ store, children }) => {
         next.set(key, value);
         return next;
       }),
-    []
+    [],
   );
 
   const contextValue = React.useMemo(
     () => ({ store, getCachedState, setCachedState }),
-    [store, getCachedState, setCachedState]
+    [store, getCachedState, setCachedState],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
@@ -110,12 +110,12 @@ export const useCachedState = (key, initialState, { middleware } = {}) => {
       if (cachedValue != null) {
         setCachedState(
           key,
-          middleware == null ? cachedValue : middleware(cachedValue)
+          middleware == null ? cachedValue : middleware(cachedValue),
         );
       } else {
         setCachedState(
           key,
-          typeof initialState === "function" ? initialState() : initialState
+          typeof initialState === "function" ? initialState() : initialState,
         );
       }
       setInitialized(true);

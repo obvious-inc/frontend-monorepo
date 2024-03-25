@@ -34,7 +34,7 @@ const useReverseScrollPositionMaintainer = (scrollContainerRef) => {
 
       prevScrollHeightRef.current = el.scrollHeight;
     },
-    { subtree: true, childList: true }
+    { subtree: true, childList: true },
   );
 
   useScrollListener(scrollContainerRef, () => {
@@ -71,7 +71,7 @@ const useScroll = ({
         ...options,
       });
     },
-    [scrollContainerRef, didScrollToBottomRef]
+    [scrollContainerRef, didScrollToBottomRef],
   );
 
   // Restore cached scroll position
@@ -117,7 +117,7 @@ const ReverseVerticalScrollView = React.forwardRef(
       onScrollToBottom,
       children,
     },
-    ref
+    ref,
   ) => {
     const scrollContainerRef = React.useRef();
 
@@ -138,7 +138,7 @@ const ReverseVerticalScrollView = React.forwardRef(
         if (!didScrollToBottomRef.current) return;
         scrollToBottom();
       },
-      { subtree: true, childList: true }
+      { subtree: true, childList: true },
     );
 
     React.useImperativeHandle(ref, () => ({ scrollToBottom }), [
@@ -184,7 +184,7 @@ const ReverseVerticalScrollView = React.forwardRef(
         </div>
       </div>
     );
-  }
+  },
 );
 
 export default ReverseVerticalScrollView;

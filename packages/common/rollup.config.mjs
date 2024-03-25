@@ -28,20 +28,18 @@ const createConfig = ({ file, dependencies = [] }) => ({
 });
 
 const entrypoints = [
-  { file: "app.js", dependencies: ["viem", "react", "reselect", "zustand"] },
-  { file: "apis.js" },
   {
-    file: "wallet.js",
+    file: "app.js",
     dependencies: [
-      "react",
+      "@emotion/react/jsx-runtime",
       "viem",
-      "viem/chains",
-      "viem/accounts",
-      "wagmi",
-      "wagmi/chains",
+      "react",
+      "reselect",
+      "zustand",
     ],
   },
-  { file: "utils.js" },
+  { file: "apis.js" },
+  { file: "utils.js", dependencies: ["marked"] },
   {
     file: "react.js",
     dependencies: [
@@ -52,17 +50,15 @@ const entrypoints = [
     ],
   },
   {
+    file: "ethereum-react/index.js",
+    dependencies: ["viem", "react", "wagmi"],
+  },
+  {
     file: "nouns/index.js",
-    dependencies: ["viem", "@nouns/assets", "@nouns/sdk"],
+    dependencies: ["@nouns/assets", "@nouns/sdk"],
   },
   { file: "emoji.js" },
   { file: "custom-emoji.js" },
 ];
 
-export default [
-  ...entrypoints.map(createConfig),
-  createConfig({
-    file: "index.js",
-    dependencies: [...new Set(entrypoints.flatMap((e) => e.dependencies))],
-  }),
-];
+export default entrypoints.map(createConfig);

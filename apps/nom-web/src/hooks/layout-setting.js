@@ -7,8 +7,8 @@ const useLayoutSetting = () => {
   const layout = compactModeOverride
     ? "compact"
     : bubblesModeOverride
-    ? "bubbles"
-    : layoutSetting;
+      ? "bubbles"
+      : layoutSetting;
   return layout ?? "normal";
 };
 

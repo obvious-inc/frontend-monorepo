@@ -15,6 +15,7 @@ const FormDialog = ({
   submit,
   submitLabel = "Save",
   cancelLabel = "Cancel",
+  children,
 }) => {
   const firstInputRef = React.useRef();
 
@@ -23,7 +24,7 @@ const FormDialog = ({
   const [state, setState] = React.useState(() =>
     controls.reduce((acc, c) => {
       return { ...acc, [c.key]: c.initialValue ?? "" };
-    }, {})
+    }, {}),
   );
 
   const hasRequiredInput = controls.every((c) => {
@@ -133,6 +134,7 @@ const FormDialog = ({
           ))}
         </form>
       </main>
+      {children}
 
       <DialogFooter
         cancel={dismiss}

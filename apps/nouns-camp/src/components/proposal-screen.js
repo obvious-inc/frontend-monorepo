@@ -1,12 +1,10 @@
+"use client";
+
 import React from "react";
-import va from "@vercel/analytics";
+import NextLink from "next/link";
 import { formatUnits } from "viem";
 import { useBlockNumber } from "wagmi";
-import {
-  Link as RouterLink,
-  useParams,
-  useSearchParams,
-} from "react-router-dom";
+import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import {
@@ -18,18 +16,20 @@ import {
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
   CrossCircle as CrossCircleIcon,
+  Cross as CrossIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
-import Dialog from "@shades/ui-web/dialog";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
+  EXECUTION_GRACE_PERIOD_IN_MILLIS,
   buildFeed as buildProposalFeed,
   isVotableState as isVotableProposalState,
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
+  isExecutable as isProposalExecutable,
 } from "../utils/proposals.js";
 import {
   useProposal,
@@ -38,28 +38,38 @@ import {
   useDelegate,
 } from "../store.js";
 import {
+  useNavigate,
+  useSearchParams,
+  useSearchParamToggleState,
+} from "../hooks/navigation.js";
+import {
+  useCancelProposal,
   useCastProposalVote,
   useDynamicQuorum,
+  useQueueProposal,
+  useExecuteProposal,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
+import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import MetaTags_ from "./meta-tags.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
-import ActivityFeed from "./activity-feed.js";
 import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 
-const ProposalEditDialog = React.lazy(() =>
-  import("./proposal-edit-dialog.js")
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
+
+const ProposalEditDialog = React.lazy(
+  () => import("./proposal-edit-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -83,7 +93,7 @@ const useFeedItems = (proposalId) => {
 
   return React.useMemo(
     () => buildProposalFeed(proposal, { latestBlockNumber, candidate }),
-    [proposal, latestBlockNumber, candidate]
+    [proposal, latestBlockNumber, candidate],
   );
 };
 
@@ -96,7 +106,7 @@ const getDelegateVotes = (proposal) => {
         const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[v.support];
         return { ...acc, [voteGroup]: acc[voteGroup] + 1 };
       },
-      { for: 0, against: 0, abstain: 0 }
+      { for: 0, against: 0, abstain: 0 },
     );
 };
 
@@ -111,17 +121,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const isDesktopLayout = useMatchDesktopLayout();
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
+  const proposalActionInputRef = React.useRef();
 
   const proposal = useProposal(proposalId);
+  const feedItems = useFeedItems(proposalId);
 
-  const isFinalOrSucceededState =
-    isFinalProposalState(proposal.state) ||
-    isSucceededProposalState(proposal.state);
-
-  const [pendingFeedback, setPendingFeedback] = React.useState("");
-  const [pendingSupport, setPendingSupport] = React.useState(
-    isFinalOrSucceededState ? 2 : null
-  );
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
 
@@ -129,12 +133,14 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     castVoteCallSupportDetailed != null
       ? { support: castVoteCallSupportDetailed }
       : connectedWalletAccountAddress == null
-      ? null
-      : proposal?.votes?.find(
-          (v) =>
-            v.voterId.toLowerCase() ===
-            connectedWalletAccountAddress.toLowerCase()
-        );
+        ? null
+        : proposal?.votes?.find(
+            (v) => v.voterId.toLowerCase() === connectedWalletAccountAddress,
+          );
+
+  const isFinalOrSucceededState =
+    isFinalProposalState(proposal.state) ||
+    isSucceededProposalState(proposal.state);
 
   const hasCastVote =
     castVoteCallSupportDetailed != null || connectedWalletVote != null;
@@ -148,30 +154,93 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     latestBlockNumber > Number(proposal.startBlock);
   const isVotingOngoing = hasVotingStarted && !hasVotingEnded;
 
-  const sendProposalFeedback = useSendProposalFeedback(proposalId, {
-    support: pendingSupport,
-    reason: pendingFeedback.trim(),
+  const isExecutable = isProposalExecutable(proposal, {
+    blockNumber: latestBlockNumber,
   });
-  const castProposalVote = useCastProposalVote(proposalId, {
-    support: pendingSupport,
-    reason: pendingFeedback.trim(),
-    enabled: isVotingOngoing,
-  });
-
-  const feedItems = useFeedItems(proposalId);
 
   const [formActionOverride, setFormActionOverride] = React.useState(null);
 
-  const possibleFromActions =
+  const possibleFormActions =
     !hasCastVote && isVotingOngoing ? ["vote", "feedback"] : ["feedback"];
 
-  const defaultFormAction = possibleFromActions[0];
+  const defaultFormAction = possibleFormActions[0];
 
   const currentFormAction =
     formActionOverride != null &&
-    possibleFromActions.includes(formActionOverride)
+    possibleFormActions.includes(formActionOverride)
       ? formActionOverride
       : defaultFormAction;
+
+  const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const [pendingSupport, setPendingSupport] = React.useState(() => {
+    if (isFinalOrSucceededState) return 2; // No signal
+    return null;
+  });
+  const [quotedFeedItemIds, setQuotedFeedItemIds] = React.useState([]);
+
+  const quotedFeedItems = React.useMemo(
+    () => quotedFeedItemIds.map((id) => feedItems.find((i) => i.id === id)),
+    [feedItems, quotedFeedItemIds],
+  );
+
+  const reasonWithMarkedQuotes = React.useMemo(() => {
+    const markedQuotes = quotedFeedItems.map((item) => {
+      const quotedBody = item.body
+        .trim()
+        .split("\n")
+        .map((l) => `> ${l}`)
+        .join("\n");
+      return `+1\n\n${quotedBody}`;
+    });
+    return `${pendingFeedback.trim()}\n\n${markedQuotes.join("\n\n")}`.trim();
+  }, [pendingFeedback, quotedFeedItems]);
+
+  const sendProposalFeedback = useSendProposalFeedback(proposalId, {
+    support: pendingSupport,
+    reason: reasonWithMarkedQuotes,
+  });
+  const castProposalVote = useCastProposalVote(proposalId, {
+    support: pendingSupport,
+    reason: reasonWithMarkedQuotes,
+    enabled: isVotingOngoing,
+  });
+  const queueProposal = useQueueProposal(proposalId, {
+    enabled: proposal.state === "succeeded",
+  });
+  const executeProposal = useExecuteProposal(proposalId, {
+    enabled: proposal.state === "queued" && isExecutable,
+  });
+
+  const [hasPendingQueue, setPendingQueue] = React.useState(false);
+  const [hasPendingExecute, setPendingExecute] = React.useState(false);
+
+  const onQuote = React.useCallback(
+    (postId) => {
+      setQuotedFeedItemIds((ids) =>
+        ids.includes(postId) ? ids : [...ids, postId],
+      );
+
+      const quotedPost = feedItems.find((i) => i.id === postId);
+
+      if (quotedPost != null) setPendingSupport(quotedPost.support);
+
+      const input = proposalActionInputRef.current;
+      input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      input.focus();
+      setTimeout(() => {
+        input.selectionStart = 0;
+        input.selectionEnd = 0;
+      }, 0);
+    },
+    [feedItems],
+  );
+
+  const cancelQuote = React.useCallback((id) => {
+    setQuotedFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
+    proposalActionInputRef.current.focus();
+  }, []);
+
+  useScrollToHash();
 
   if (proposal == null) return null;
 
@@ -189,10 +258,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         return (
           <QueueIcon
             aria-hidden="true"
-            style={{
-              width: "1.4rem",
-              transform: "translateY(1px)",
-            }}
+            style={{ width: "1.4rem", transform: "translateY(1px)" }}
           />
         );
       case "canceled":
@@ -228,7 +294,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         const startDate = calculateBlockTimestamp(proposal.startBlock);
         const { minutes, hours, days } = dateUtils.differenceUnits(
           startDate,
-          new Date()
+          new Date(),
         );
 
         if (minutes < 1) return <>Starts in less than 1 minute</>;
@@ -245,24 +311,118 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
         return <>Starts in {Math.round(hours / 24)} days</>;
       }
+
       case "vetoed":
       case "canceled":
       case "executed":
       case "defeated":
         return `Proposal ${proposalId} has been ${proposal.state}`;
-      case "queued":
-        return `Proposal ${proposalId} succeeded and has been queued for execution`;
-      case "expired":
+
       case "succeeded":
+        return (
+          <>
+            <p>Proposal {proposalId} has succeeded</p>
+            {connectedWalletAccountAddress != null && (
+              <p style={{ padding: "0.4rem 0" }}>
+                <Button
+                  size="small"
+                  disabled={queueProposal == null || hasPendingQueue}
+                  onClick={async () => {
+                    try {
+                      setPendingQueue(true);
+                      await queueProposal();
+                    } catch (e) {
+                      alert("Ops, looks like something went wrong!");
+                    } finally {
+                      setPendingQueue(false);
+                    }
+                  }}
+                  isLoading={hasPendingQueue}
+                >
+                  Queue proposal
+                </Button>
+              </p>
+            )}
+          </>
+        );
+
+      case "queued":
+        return (
+          <>
+            <p>Proposal {proposalId} succeeded and has been queued.</p>
+            <p
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {isExecutable ? (
+                <>
+                  The proposal will expire if not executed before{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    day="numeric"
+                    month="short"
+                    value={
+                      new Date(
+                        proposal.executionEtaTimestamp.getTime() +
+                          EXECUTION_GRACE_PERIOD_IN_MILLIS,
+                      )
+                    }
+                  />
+                  .
+                </>
+              ) : (
+                <>
+                  The proposal may be executed after a short delay (
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    day="numeric"
+                    month="short"
+                    value={proposal.executionEtaTimestamp}
+                  />
+                  ).
+                </>
+              )}
+            </p>
+            {connectedWalletAccountAddress != null && (
+              <p style={{ padding: "0.4rem 0" }}>
+                <Button
+                  size="small"
+                  variant={isExecutable ? "primary" : undefined}
+                  disabled={executeProposal == null || !isExecutable}
+                  onClick={async () => {
+                    try {
+                      setPendingExecute(true);
+                      await executeProposal();
+                    } catch (e) {
+                      alert("Ops, looks like something went wrong!");
+                    } finally {
+                      setPendingExecute(false);
+                    }
+                  }}
+                  isLoading={hasPendingExecute}
+                >
+                  Execute proposal
+                </Button>
+              </p>
+            )}
+          </>
+        );
+
+      case "expired":
         return `Proposal ${proposalId} has ${proposal.state}`;
+
       case "active":
       case "objection-period": {
         const endDate = calculateBlockTimestamp(
-          proposal.objectionPeriodEndBlock ?? proposal.endBlock
+          proposal.objectionPeriodEndBlock ?? proposal.endBlock,
         );
         const { minutes, hours, days } = dateUtils.differenceUnits(
           endDate,
-          new Date()
+          new Date(),
         );
 
         if (minutes < 1) return <>Voting ends in less than 1 minute</>;
@@ -287,7 +447,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const handleFormSubmit = async () => {
     if (currentFormAction === "vote") {
-      // A prepared contract write takes a second to to do its thing after every
+      // A contract simulation  takes a second to to do its thing after every
       // argument change, so this might be null. This seems like a nicer
       // behavior compared to disabling the submit button on every keystroke
       if (castProposalVote == null) return;
@@ -312,51 +472,55 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               <div
                 css={css({
                   padding: "2rem 0 6rem",
+                  transition: "0.15s opacity ease-out",
                   "@media (min-width: 600px)": {
                     padding: "6rem 0",
                   },
                 })}
+                style={{ opacity: latestBlockNumber == null ? 0 : 1 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "1rem",
-                    marginBottom: "4.8rem",
-                  }}
-                >
-                  {isVotingOngoing && hasCastVote && (
-                    <Callout css={(t) => css({ fontSize: t.text.sizes.base })}>
-                      You voted{" "}
-                      <span
-                        css={(t) =>
-                          css({
-                            textTransform: "uppercase",
-                            fontWeight: t.text.weights.emphasis,
-                            "--color-for": t.colors.textPositive,
-                            "--color-against": t.colors.textNegative,
-                            "--color-abstain": t.colors.textMuted,
-                          })
-                        }
-                        style={{
-                          color: `var(--color-${supportToString(
-                            connectedWalletVote.support
-                          )})`,
-                        }}
-                      >
-                        {supportToString(connectedWalletVote.support)}
-                      </span>
-                    </Callout>
-                  )}
-                  {hasVotingStarted && (
-                    <Callout
-                      icon={renderProposalStateIcon()}
-                      css={(t) => css({ fontSize: t.text.sizes.base })}
+                {isVotingOngoing && hasCastVote && (
+                  <Callout
+                    css={(t) =>
+                      css({ fontSize: t.text.sizes.base, margin: "0 0 1rem" })
+                    }
+                  >
+                    You voted{" "}
+                    <span
+                      css={(t) =>
+                        css({
+                          textTransform: "uppercase",
+                          fontWeight: t.text.weights.emphasis,
+                          "--color-for": t.colors.textPositive,
+                          "--color-against": t.colors.textNegative,
+                          "--color-abstain": t.colors.textMuted,
+                        })
+                      }
+                      style={{
+                        color: `var(--color-${supportToString(
+                          connectedWalletVote.support,
+                        )})`,
+                      }}
                     >
-                      {renderProposalStateText()}
-                    </Callout>
-                  )}
-                </div>
+                      {supportToString(connectedWalletVote.support)}
+                    </span>
+                  </Callout>
+                )}
+
+                {hasVotingStarted && proposal.state != null && (
+                  <Callout
+                    icon={renderProposalStateIcon()}
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.base,
+                        marginBottom: "4.8rem",
+                      })
+                    }
+                  >
+                    {renderProposalStateText()}
+                  </Callout>
+                )}
+
                 {hasVotingStarted ? (
                   <Tooltip.Root>
                     <Tooltip.Trigger asChild>
@@ -379,7 +543,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       />
                     </Tooltip.Content>
                   </Tooltip.Root>
-                ) : (
+                ) : proposal.state != null ? (
                   <Callout
                     icon={renderProposalStateIcon()}
                     css={(t) =>
@@ -391,7 +555,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   >
                     {renderProposalStateText()}
                   </Callout>
-                )}
+                ) : null}
                 <Tabs.Root
                   aria-label="Proposal info"
                   defaultSelectedKey="activity"
@@ -408,20 +572,29 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "3.2rem 0 4rem" }}>
                       <ProposalActionForm
+                        inputRef={proposalActionInputRef}
                         proposalId={proposalId}
                         mode={currentFormAction}
                         setMode={setFormActionOverride}
-                        availableModes={possibleFromActions}
+                        availableModes={possibleFormActions}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
                         setSupport={setPendingSupport}
                         onSubmit={handleFormSubmit}
+                        cancelQuote={cancelQuote}
+                        quotedFeedItems={quotedFeedItems}
                       />
                     </div>
 
                     {feedItems.length !== 0 && (
-                      <ActivityFeed context="proposal" items={feedItems} />
+                      <React.Suspense fallback={null}>
+                        <ActivityFeed
+                          context="proposal"
+                          items={feedItems}
+                          onQuote={onQuote}
+                        />
+                      </React.Suspense>
                     )}
                   </Tabs.Item>
                   <Tabs.Item key="transactions" title="Transactions">
@@ -444,12 +617,31 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               },
             })}
           >
+            {/* Display state callout for "important" states on mobile */}
+            {!isDesktopLayout &&
+              ["active", "objection-period", "succeeded", "queued"].includes(
+                proposal.state,
+              ) && (
+                <Callout
+                  icon={renderProposalStateIcon()}
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.base,
+                      margin: "0 0 4rem",
+                    })
+                  }
+                >
+                  {renderProposalStateText()}
+                </Callout>
+              )}
             <ProposalHeader
               title={proposal.title === null ? "Untitled" : proposal.title}
               proposerId={proposal.proposerId}
               sponsorIds={proposal.signers?.map((s) => s.id)}
               createdAt={proposal.createdTimestamp}
+              updatedAt={proposal.lastUpdatedTimestamp}
               transactions={proposal.transactions}
+              hasPassed={isFinalOrSucceededState}
             />
             {isDesktopLayout ? (
               <ProposalBody markdownText={proposal.body} />
@@ -507,16 +699,19 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         ) : (
                           <>
                             <ProposalActionForm
+                              inputRef={proposalActionInputRef}
                               size="small"
                               proposalId={proposalId}
                               mode={currentFormAction}
                               setMode={setFormActionOverride}
-                              availableModes={possibleFromActions}
+                              availableModes={possibleFormActions}
                               reason={pendingFeedback}
                               setReason={setPendingFeedback}
                               support={pendingSupport}
                               setSupport={setPendingSupport}
                               onSubmit={handleFormSubmit}
+                              cancelQuote={cancelQuote}
+                              quotedFeedItems={quotedFeedItems}
                             />
                           </>
                         )}
@@ -538,22 +733,31 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "2.4rem 0 6.4rem" }}>
                       <ProposalActionForm
+                        inputRef={proposalActionInputRef}
                         size="small"
                         proposalId={proposalId}
                         mode={currentFormAction}
                         setMode={setFormActionOverride}
-                        availableModes={possibleFromActions}
+                        availableModes={possibleFormActions}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
                         setSupport={setPendingSupport}
                         onSubmit={handleFormSubmit}
+                        cancelQuote={cancelQuote}
+                        quotedFeedItems={quotedFeedItems}
                       />
 
                       {feedItems.length !== 0 && (
-                        <div style={{ marginTop: "3.2rem" }}>
-                          <ActivityFeed context="proposal" items={feedItems} />
-                        </div>
+                        <React.Suspense fallback={null}>
+                          <div style={{ marginTop: "3.2rem" }}>
+                            <ActivityFeed
+                              context="proposal"
+                              items={feedItems}
+                              onQuote={onQuote}
+                            />
+                          </div>
+                        </React.Suspense>
                       )}
                     </div>
                   </Tabs.Item>
@@ -578,8 +782,12 @@ export const ProposalActionForm = ({
   support,
   setSupport,
   onSubmit,
+  quotedFeedItems,
+  cancelQuote,
+  inputRef,
 }) => {
   const [isPending, setPending] = React.useState(false);
+  // const [error, setError] = React.useState(null);
 
   const {
     address: connectedWalletAccountAddress,
@@ -600,6 +808,7 @@ export const ProposalActionForm = ({
   const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 
   const hasRequiredInputs = support != null;
+  const hasQuote = quotedFeedItems?.length > 0;
 
   if (mode == null) throw new Error();
 
@@ -691,7 +900,7 @@ export const ProposalActionForm = ({
                   label: { vote: "Cast vote", feedback: "Post comment" }[m],
                 }))}
                 size="tiny"
-                variant="default-opaque"
+                variant="opaque"
                 width="max-content"
                 align="right"
                 buttonProps={{
@@ -702,12 +911,18 @@ export const ProposalActionForm = ({
           )}
         </div>
         <form
-          onSubmit={(e) => {
+          onSubmit={async (e) => {
             e.preventDefault();
             setPending(true);
-            onSubmit().finally(() => {
+            // setError(null);
+            try {
+              await onSubmit();
+              // } catch (e) {
+              //   setError(e);
+              //   throw e;
+            } finally {
               setPending(false);
-            });
+            }
           }}
           css={(t) =>
             css({
@@ -720,9 +935,10 @@ export const ProposalActionForm = ({
           style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
         >
           <AutoAdjustingHeightTextarea
+            ref={inputRef}
             id="message-input"
             rows={1}
-            placeholder="I believe..."
+            placeholder={hasQuote ? "Optional comment" : "I believe..."}
             value={reason}
             onChange={(e) => {
               setReason(e.target.value);
@@ -752,11 +968,93 @@ export const ProposalActionForm = ({
             }
             disabled={disableForm}
           />
+          {quotedFeedItems?.length > 0 && (
+            <ul
+              css={(t) =>
+                css({
+                  listStyle: "none",
+                  fontSize: "0.875em",
+                  margin: "0.8rem 0",
+                  li: {
+                    position: "relative",
+                    border: "0.1rem solid",
+                    borderRadius: "0.5rem",
+                    borderColor: t.colors.borderLighter,
+                    padding: "0.4rem 0.4rem 0.4rem 0.6rem",
+                    whiteSpace: "nowrap",
+                    display: "flex",
+                    alignItems: "center",
+                  },
+                  "li + li": { marginTop: "0.6rem" },
+                  button: { position: "relative" },
+                  "[data-cancel]": {
+                    padding: "0.3rem",
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": { color: t.colors.textAccent },
+                    },
+                  },
+                })
+              }
+            >
+              {quotedFeedItems.map((item) => (
+                <li key={item.id}>
+                  <NextLink
+                    href={`#${item.id}`}
+                    style={{ display: "block", position: "absolute", inset: 0 }}
+                  />
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={item.authorAccount}
+                    />
+                    :{" "}
+                    <MarkdownRichText
+                      text={item.body}
+                      displayImages={false}
+                      inline
+                      css={css({
+                        // Make all headings small
+                        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+                        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+                        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                          { marginBottom: "0.625em" },
+                      })}
+                    />
+                  </div>
+                  <button data-cancel onClick={() => cancelQuote(item.id)}>
+                    <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {/* {error != null && (
+            <div
+              css={(t) =>
+                css({
+                  padding: "0.3rem",
+                  color: t.colors.textDanger,
+                  whiteSpace: "pre-wrap",
+                  overflow: "auto",
+                })
+              }
+            >
+              Error: {error.message}
+            </div>
+          )} */}
           <div
             style={{
               display: "grid",
-              justifyContent: "flex-end",
               gridAutoFlow: "column",
+              justifyContent: "flex-end",
               gridGap: "1rem",
               marginTop: "1rem",
             }}
@@ -765,9 +1063,6 @@ export const ProposalActionForm = ({
               <Button
                 type="button"
                 onClick={() => {
-                  va.track("Connect Wallet", {
-                    location: "vote/feedback form",
-                  });
                   requestWalletAccess();
                 }}
                 size={size}
@@ -880,13 +1175,13 @@ export const ProposalActionForm = ({
                     isLoading={isPending}
                     size={size}
                   >
-                    {mode === "vote"
-                      ? `Cast ${
-                          proposalVoteCount === 1
-                            ? "vote"
-                            : `${proposalVoteCount} votes`
-                        }`
-                      : "Submit comment"}
+                    {(() => {
+                      if (mode !== "vote") return "Submit comment";
+                      if (hasQuote) return "Cast revote";
+                      return proposalVoteCount === 1
+                        ? "Cast vote"
+                        : `${proposalVoteCount} votes`;
+                    })()}
                   </Button>
                 )}
               </>
@@ -923,6 +1218,7 @@ export const ProposalHeader = ({
   proposerId,
   sponsorIds = [],
   transactions = [],
+  hasPassed,
 }) => {
   const requestedAmounts = extractAmountsFromTransactions(transactions);
   return (
@@ -960,7 +1256,14 @@ export const ProposalHeader = ({
           })
         }
       >
-        Proposed by{" "}
+        Proposed{" "}
+        <FormattedDateWithTooltip
+          capitalize={false}
+          value={createdAt}
+          day="numeric"
+          month="short"
+        />{" "}
+        by{" "}
         <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
         {sponsorIds.length !== 0 && (
           <>
@@ -980,13 +1283,26 @@ export const ProposalHeader = ({
               capitalize={false}
               value={updatedAt}
               day="numeric"
-              month="long"
+              month="short"
             />
           </>
         )}
         {requestedAmounts.length !== 0 && (
           <div style={{ marginTop: "1.6rem" }}>
-            <RequestedAmounts amounts={requestedAmounts} />
+            <Callout
+              css={(t) =>
+                css({
+                  color: t.colors.textNormal,
+                  em: {
+                    fontStyle: "normal",
+                    fontWeight: t.text.weights.emphasis,
+                  },
+                })
+              }
+            >
+              {hasPassed ? "Requested" : "Requesting"}{" "}
+              <RequestedAmounts amounts={requestedAmounts} />
+            </Callout>
           </div>
         )}
       </div>
@@ -1039,15 +1355,7 @@ export const ProposalBody = React.memo(({ markdownText }) => {
 });
 
 const RequestedAmounts = ({ amounts }) => (
-  <Callout
-    css={(t) =>
-      css({
-        color: t.colors.textNormal,
-        em: { fontStyle: "normal", fontWeight: t.text.weights.emphasis },
-      })
-    }
-  >
-    Requesting{" "}
+  <>
     {amounts.map(({ currency, amount, tokens }, i) => {
       const formattedAmount = () => {
         switch (currency) {
@@ -1069,7 +1377,12 @@ const RequestedAmounts = ({ amounts }) => (
 
           case "nouns":
             return tokens.length === 1 ? (
-              <>Noun {tokens[0]}</>
+              <NounPreviewPopoverTrigger
+                nounId={tokens[0]}
+                popoverPlacement="top"
+                showAvatar={false}
+                inline
+              />
             ) : (
               <>{tokens.length} nouns</>
             );
@@ -1086,16 +1399,17 @@ const RequestedAmounts = ({ amounts }) => (
         </React.Fragment>
       );
     })}
-  </Callout>
+  </>
 );
 
-const ProposalScreen = () => {
-  const { proposalId } = useParams();
+const ProposalScreen = ({ proposalId }) => {
+  const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const scrollContainerRef = React.useRef();
 
@@ -1106,23 +1420,21 @@ const ProposalScreen = () => {
     connectedWalletAccountAddress.toLowerCase() ===
       proposal?.proposerId?.toLowerCase();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const isSponsor =
+    connectedWalletAccountAddress != null &&
+    proposal?.signers != null &&
+    proposal.signers.some(
+      (s) => s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase(),
+    );
 
-  const isBetaSession = searchParams.get("beta") != null;
+  const cancelProposal = useCancelProposal(proposalId, {
+    enabled: isProposer || isSponsor,
+  });
 
-  const isDialogOpen = searchParams.get("proposal-dialog") != null;
-
-  const openDialog = React.useCallback(() => {
-    setSearchParams({ "proposal-dialog": 1 });
-  }, [setSearchParams]);
-
-  const closeDialog = React.useCallback(() => {
-    setSearchParams((params) => {
-      const newParams = new URLSearchParams(params);
-      newParams.delete("proposal-dialog");
-      return newParams;
-    });
-  }, [setSearchParams]);
+  const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
+    "edit",
+    { replace: true, prefetch: "true" },
+  );
 
   useProposalFetch(proposalId, {
     onError: (e) => {
@@ -1136,9 +1448,50 @@ const ProposalScreen = () => {
     },
   });
 
+  const getActions = () => {
+    if (proposal == null) return [];
+    if (proposal.state === "canceled") return undefined;
+
+    const actions = [];
+
+    if (isProposer && proposal.state === "updatable")
+      actions.push({
+        onSelect: toggleEditDialog,
+        label: "Edit",
+      });
+
+    if (!isFinalProposalState(proposal.state) && (isProposer || isSponsor))
+      actions.push({
+        onSelect: () => {
+          if (!confirm("Are you sure you wish to cancel this proposal?"))
+            return;
+
+          setPendingCancel(true);
+
+          cancelProposal().then(
+            () => {
+              navigate("/", { replace: true });
+            },
+            (e) => {
+              setPendingCancel(false);
+              return Promise.reject(e);
+            },
+          );
+        },
+        label: "Cancel",
+        buttonProps: {
+          isLoading: hasPendingCancel,
+          disabled: cancelProposal == null || hasPendingCancel,
+        },
+      });
+
+    return actions.length === 0 ? undefined : actions;
+  };
+
+  if (notFound) nextNotFound();
+
   return (
     <>
-      <MetaTags proposalId={proposalId} />
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1149,30 +1502,20 @@ const ProposalScreen = () => {
               <>
                 Proposal {proposalId}
                 {proposal?.state != null && (
-                  <>
-                    <ProposalStateTag
-                      size="small"
-                      proposalId={proposalId}
-                      style={{
-                        marginLeft: "0.6rem",
-                        transform: "translateY(-0.1rem)",
-                      }}
-                    />
-                  </>
+                  <ProposalStateTag
+                    size="small"
+                    proposalId={proposalId}
+                    style={{
+                      marginLeft: "0.6rem",
+                      transform: "translateY(-0.1rem)",
+                    }}
+                  />
                 )}
               </>
             ),
           },
         ]}
-        actions={
-          proposal?.state == null
-            ? null
-            : isBetaSession &&
-              isProposer &&
-              !isFinalProposalState(proposal.state)
-            ? [{ onSelect: openDialog, label: "Edit" }]
-            : undefined
-        }
+        actions={getActions()}
       >
         {proposal == null ? (
           <div
@@ -1185,47 +1528,7 @@ const ProposalScreen = () => {
               paddingBottom: "10vh",
             }}
           >
-            {notFound ? (
-              <div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.headerLarger,
-                      fontWeight: t.text.weights.header,
-                      margin: "0 0 1.6rem",
-                      lineHeight: 1.3,
-                    })
-                  }
-                >
-                  Not found
-                </div>
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.large,
-                      wordBreak: "break-word",
-                      margin: "0 0 4.8rem",
-                    })
-                  }
-                >
-                  Found no proposal with id{" "}
-                  <span
-                    css={(t) => css({ fontWeight: t.text.weights.emphasis })}
-                  >
-                    {proposalId}
-                  </span>
-                  .
-                </div>
-                <Button
-                  component={RouterLink}
-                  to="/"
-                  variant="primary"
-                  size="large"
-                >
-                  Go back
-                </Button>
-              </div>
-            ) : fetchError != null ? (
+            {fetchError != null ? (
               "Something went wrong"
             ) : (
               <Spinner size="2rem" />
@@ -1239,24 +1542,20 @@ const ProposalScreen = () => {
         )}
       </Layout>
 
-      {isDialogOpen && proposal != null && (
-        <Dialog isOpen tray onRequestClose={closeDialog} width="131.2rem">
-          {({ titleProps }) => (
-            <ErrorBoundary
-              onError={() => {
-                reloadPageOnce();
-              }}
-            >
-              <React.Suspense fallback={null}>
-                <ProposalEditDialog
-                  proposalId={proposalId}
-                  titleProps={titleProps}
-                  dismiss={closeDialog}
-                />
-              </React.Suspense>
-            </ErrorBoundary>
-          )}
-        </Dialog>
+      {isEditDialogOpen && proposal != null && (
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <ProposalEditDialog
+              proposalId={proposalId}
+              isOpen
+              close={toggleEditDialog}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
       )}
     </>
   );
@@ -1525,7 +1824,9 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
           })
         }
       >
-        <div>{quorumVotes != null && <>Quorum {quorumVotes}</>}</div>
+        <div>
+          {quorumVotes == null ? <>&nbsp;</> : <>Quorum {quorumVotes}</>}
+        </div>
         {isVotingOngoing && (
           <div>
             {againstVotes <= forVotes && quorumVotes > forVotes && (
@@ -1541,26 +1842,5 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
     </div>
   );
 });
-
-const MetaTags = ({ proposalId }) => {
-  const proposal = useProposal(proposalId);
-
-  if (proposal == null) return null;
-
-  const title =
-    proposal.title == null
-      ? `Prop ${proposalId}`
-      : `${proposal.title} (Prop ${proposalId})`;
-
-  const { body } = proposal;
-
-  return (
-    <MetaTags_
-      title={title}
-      description={body?.length > 600 ? `${body.slice(0, 600)}...` : body}
-      canonicalPathname={`/proposals/${proposalId}`}
-    />
-  );
-};
 
 export default ProposalScreen;

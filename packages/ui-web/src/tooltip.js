@@ -15,6 +15,7 @@ export const Content = React.forwardRef(({ portal = true, ...props }, ref) => {
       collisionPadding={10}
       css={(t) =>
         css({
+          zIndex: 10,
           fontSize: t.text.sizes.small,
           fontWeight: t.text.weights.normal,
           textAlign: "left",

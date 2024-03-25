@@ -86,8 +86,8 @@ const createParsers = ({ buildCloudflareImageUrl }) => ({
         description != null
           ? parseStringToMessageBlocks(description)
           : body != null
-          ? body
-          : null,
+            ? body
+            : null,
       body,
       kind: rawChannel.kind,
       createdAt: rawChannel.created_at,
@@ -167,8 +167,8 @@ const createParsers = ({ buildCloudflareImageUrl }) => ({
     const authorId = isSystemMessage
       ? "system"
       : isAppMessage
-      ? appId
-      : authorUserId;
+        ? appId
+        : authorUserId;
 
     return {
       id: rawMessage.id,
@@ -537,7 +537,7 @@ export default ({
 
   const fetchStarredItems = () =>
     authorizedFetch("/stars", { priority: "low" }).then((res) =>
-      res.map((s) => pickKeys(["id", "type", "reference"], s))
+      res.map((s) => pickKeys(["id", "type", "reference"], s)),
     );
 
   const fetchBlockedUsers = () =>
@@ -551,11 +551,11 @@ export default ({
       (preferences) => {
         const notificationSettingsByChannelId = mapValues(
           (s) => (s.muted ? "off" : s.mentions ? "mentions" : "all"),
-          preferences?.channels ?? {}
+          preferences?.channels ?? {},
         );
 
         return { notificationSettingsByChannelId };
-      }
+      },
     );
 
   const starItem = ({ type, reference }) =>
@@ -585,7 +585,7 @@ export default ({
     // TODO: Change this
     const missingChannelStars = starredItems.filter(
       (i) =>
-        i.type === "channel" && rawChannels.every((c) => c.id !== i.reference)
+        i.type === "channel" && rawChannels.every((c) => c.id !== i.reference),
     );
 
     const missingStarredChannels = (
@@ -595,8 +595,8 @@ export default ({
             // 403 may happen if you have starred a channel you no longer have access to
             if (e.code !== 403 && e.code !== 404) console.error(e);
             return null;
-          })
-        )
+          }),
+        ),
       )
     ).filter(Boolean);
 
@@ -740,8 +740,8 @@ export default ({
               setting === "off"
                 ? { muted: true }
                 : setting === "mentions"
-                ? { mentions: true }
-                : {},
+                  ? { mentions: true }
+                  : {},
           },
         }),
       });
@@ -770,7 +770,7 @@ export default ({
         `/channels/${channelId}/messages/${messageId}`,
         {
           allowUnauthorized: true,
-        }
+        },
       );
 
       if (rawMessage != null) return parseMessage(rawMessage);
@@ -783,7 +783,7 @@ export default ({
     },
     fetchMessages(
       channelId,
-      { limit = 50, beforeMessageId, afterMessageId } = {}
+      { limit = 50, beforeMessageId, afterMessageId } = {},
     ) {
       if (limit == null) throw new Error(`Missing required "limit" argument`);
 
@@ -792,7 +792,7 @@ export default ({
           ["before", beforeMessageId],
           ["after", afterMessageId],
           ["limit", limit],
-        ].filter((e) => e[1] != null)
+        ].filter((e) => e[1] != null),
       );
 
       const url = [`/channels/${channelId}/messages`, searchParams.toString()]
@@ -803,13 +803,13 @@ export default ({
         (rawMessages) => {
           const messages = rawMessages.map(parseMessage);
           return messages;
-        }
+        },
       );
     },
     async fetchLastChannelMessage(channelId) {
       const [message] = await authorizedFetch(
         `/channels/${channelId}/messages?limit=1`,
-        { allowUnauthorized: true }
+        { allowUnauthorized: true },
       ).then((ms) => ms.map(parseMessage));
 
       if (message == null) return null;
@@ -819,7 +819,7 @@ export default ({
       const fetchLastNonReplyBeforeMessage = async (messageId) => {
         const [message] = await authorizedFetch(
           `/channels/${channelId}/messages?limit=1&before=${messageId}`,
-          { allowUnauthorized: true }
+          { allowUnauthorized: true },
         ).then((ms) => ms.map(parseMessage));
         if (message.replyTargetMessageId == null) return message;
         return fetchLastNonReplyBeforeMessage(message.id);
@@ -829,7 +829,7 @@ export default ({
     },
     async createChannelMessage(
       channelId,
-      { blocks, stringContent, replyTargetMessageId }
+      { blocks, stringContent, replyTargetMessageId },
     ) {
       const rawMessage = await authorizedFetch("/messages", {
         method: "POST",
@@ -872,13 +872,13 @@ export default ({
     addMessageReaction(messageId, { emoji }) {
       return authorizedFetch(
         `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
-        { method: "POST" }
+        { method: "POST" },
       );
     },
     removeMessageReaction(messageId, { emoji }) {
       return authorizedFetch(
         `/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
-        { method: "DELETE" }
+        { method: "DELETE" },
       );
     },
     fetchChannel,
@@ -999,7 +999,7 @@ export default ({
             small: buildCloudflareImageUrl(f.id, { size: "small" }),
             large: buildCloudflareImageUrl(f.id, { size: "large" }),
           },
-        }))
+        })),
       );
     },
     uploadImageWithUrl(url) {
@@ -1023,13 +1023,13 @@ export default ({
     promptDalle(prompt) {
       return authorizedFetch(
         `/integrations/dalle/generate?prompt=${encodeURIComponent(prompt)}`,
-        { method: "POST" }
+        { method: "POST" },
       );
     },
     promptChatGPT(prompt) {
       return authorizedFetch(
         `/integrations/chatgpt?message=${encodeURIComponent(prompt)}`,
-        { method: "POST" }
+        { method: "POST" },
       );
     },
     markChannelReadAt,

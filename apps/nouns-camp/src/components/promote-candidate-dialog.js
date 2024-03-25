@@ -1,13 +1,15 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useNavigate } from "react-router-dom";
+import NextLink from "next/link";
 import { ListBox, ListBoxItem } from "react-aria-components";
 import {
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
+import Spinner from "@shades/ui-web/spinner";
 import { Label } from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
@@ -24,16 +26,23 @@ import {
   useProposalThreshold,
   useCreateProposal,
   useCreateProposalWithSignatures,
+  useActiveProposalId,
 } from "../hooks/dao-contract.js";
+import { useWallet } from "../hooks/wallet.js";
+import { useNavigate } from "../hooks/navigation.js";
 
 const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const navigate = useNavigate();
+  const { address: connectedWalletAccountAddress } = useWallet();
 
   const candidate = useProposalCandidate(candidateId);
   const proposerDelegate = useDelegate(candidate.proposerId);
   const proposalThreshold = useProposalThreshold();
   const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId
+    (p) => p.proposerId,
+  );
+  const authoredActiveProposalId = useActiveProposalId(
+    connectedWalletAccountAddress,
   );
 
   const { fetchProposal } = useActions();
@@ -51,13 +60,13 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   });
 
   const selectedSignatures = [...selectedSignerIds].map((id) =>
-    validSignatures.find((s) => s.signer.id === id)
+    validSignatures.find((s) => s.signer.id === id),
   );
 
   const selectedSponsorsVotingPower = arrayUtils.unique(
     selectedSignatures.flatMap((s) =>
-      s.signer.nounsRepresented.map((n) => n.id)
-    )
+      s.signer.nounsRepresented.map((n) => n.id),
+    ),
   ).length;
 
   const proposerVotingPower =
@@ -84,7 +93,6 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
             return createProposalWithSignatures({
               description,
               transactions,
-              // TODO: Make sure sort order mirrors the original proposal for updates
               proposerSignatures: selectedSignatures.map((s) => ({
                 sig: s.sig,
                 signer: s.signer.id,
@@ -103,7 +111,7 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
               retries: 100,
             })
             .then(() => {
-              navigate(`/${res.id}`);
+              navigate(`/proposals/${res.id}`);
             });
         },
         (e) => {
@@ -111,11 +119,11 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
             return Promise.reject(e);
 
           alert(
-            "Ops, looks like something went wrong submitting your proposal!"
+            "Ops, looks like something went wrong submitting your proposal!",
           );
           console.error(e);
           return Promise.reject(e);
-        }
+        },
       )
       .catch(() => {
         // This should only happen for errors occuring after a successful submit
@@ -142,12 +150,51 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
             },
           })}
         >
-          <DialogHeader
-            title="Promote candidate"
-            titleProps={titleProps}
-            dismiss={dismiss}
-          />
-          {canProposeWithoutSponsors && validSignatures.length === 0 ? (
+          <DialogHeader title="Promote candidate" titleProps={titleProps} />
+          {authoredActiveProposalId === undefined ? (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "6.4rem 0",
+              }}
+            >
+              <Spinner />
+            </div>
+          ) : authoredActiveProposalId != null ? (
+            <>
+              <main>
+                <Callout style={{ margin: "0 0 3.2rem" }}>
+                  You already have an active proposal. You may submit a new one
+                  when voting for{" "}
+                  <Link
+                    underline
+                    component={NextLink}
+                    href={`/proposals/${authoredActiveProposalId}`}
+                  >
+                    Proposal {authoredActiveProposalId}
+                  </Link>{" "}
+                  ends.
+                </Callout>
+              </main>
+              <footer
+                css={css({
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginTop: "2.5rem",
+                  "@media (min-width: 600px)": {
+                    marginTop: "3rem",
+                  },
+                })}
+              >
+                <div css={css({ display: "flex", gap: "1rem" })}>
+                  <Button type="button" size="medium" onClick={dismiss}>
+                    Close
+                  </Button>
+                </div>
+              </footer>
+            </>
+          ) : canProposeWithoutSponsors && validSignatures.length === 0 ? (
             <>
               <main>
                 <Callout style={{ margin: "0 0 3.2rem" }}>
@@ -171,11 +218,13 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
                     Cancel
                   </Button>
                   <Button
-                    type="submit"
                     size="medium"
                     variant="primary"
                     isLoading={hasPendingSubmit}
                     disabled={hasPendingSubmit}
+                    onClick={() => {
+                      submit("propose");
+                    }}
                   >
                     Propose without sponsors
                   </Button>
@@ -361,7 +410,7 @@ const SignatureListBox = ({
 );
 
 const SignatureItemContent = ({ signature }) => {
-  const { displayName } = useAccountDisplayName(signature.signer.id);
+  const displayName = useAccountDisplayName(signature.signer.id);
   const votingPower = signature.signer.nounsRepresented.length;
   return (
     <div css={css({ display: "flex", alignItems: "center", gap: "1rem" })}>

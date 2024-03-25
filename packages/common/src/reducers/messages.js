@@ -24,7 +24,7 @@ const entriesById = (state = {}, action) => {
     case "server-event:message-created":
       if (action.data.message.author === action.user?.id) {
         const optimisticEntries = Object.values(state).filter(
-          (m) => m.isOptimistic
+          (m) => m.isOptimistic,
         );
 
         if (optimisticEntries.length > 0) return state;
@@ -82,7 +82,7 @@ const entriesById = (state = {}, action) => {
     case "add-message-reaction:request-sent": {
       const message = state[action.messageId];
       const existingReaction = message.reactions.find(
-        (r) => r.emoji === action.emoji
+        (r) => r.emoji === action.emoji,
       );
       return {
         ...state,
@@ -103,7 +103,7 @@ const entriesById = (state = {}, action) => {
                         count: r.count + 1,
                         users: [...r.users, action.userId],
                       }
-                    : r
+                    : r,
                 ),
         },
       };
@@ -127,10 +127,10 @@ const entriesById = (state = {}, action) => {
                         ...r,
                         count: r.count - 1,
                         users: r.users.filter(
-                          (userId) => userId !== action.userId
+                          (userId) => userId !== action.userId,
                         ),
                       }
-                    : r
+                    : r,
                 ),
         },
       };
@@ -169,7 +169,7 @@ const createIndexReducer = (propertyName) => {
             const newIds = ms.map((m) => m.id);
             return unique([...previousIds, ...newIds]);
           },
-          groupBy((m) => m[propertyName], action.messages)
+          groupBy((m) => m[propertyName], action.messages),
         );
 
         return { ...state, ...messageIdsByProperty };
@@ -226,7 +226,7 @@ const createIndexReducer = (propertyName) => {
           ...state,
           // Remove the optimistic entry
           [property]: messageIds.filter(
-            (id) => id !== action.optimisticEntryId
+            (id) => id !== action.optimisticEntryId,
           ),
         };
       }
@@ -235,13 +235,13 @@ const createIndexReducer = (propertyName) => {
         return mapValues(
           (messageIds) =>
             messageIds.filter((id) => id !== action.data.message.id),
-          state
+          state,
         );
 
       case "message-delete-request-successful":
         return mapValues(
           (messageIds) => messageIds.filter((id) => id !== action.messageId),
-          state
+          state,
         );
 
       case "logout":
@@ -256,7 +256,7 @@ const createIndexReducer = (propertyName) => {
 const entryIdsByChannelId = createIndexReducer("channelId");
 
 const entryIdsByReplyTargetMessageId = createIndexReducer(
-  "replyTargetMessageId"
+  "replyTargetMessageId",
 );
 
 export const selectMessage = createSelector(
@@ -303,7 +303,7 @@ export const selectMessage = createSelector(
     app,
     blockedUserIds,
     replyMessageIds,
-    isUnread
+    isUnread,
   ) => {
     if (rawMessage == null || rawMessage.type == null) return null;
 
@@ -332,7 +332,7 @@ export const selectMessage = createSelector(
 
     return message;
   },
-  { memoizeOptions: { maxSize: 1000 } }
+  { memoizeOptions: { maxSize: 1000 } },
 );
 
 export const selectReplyMessageIds = (state, messageId) =>
@@ -370,13 +370,13 @@ export const selectSortedChannelMessageIds = createSelector(
 
     const sortedMessages = sort(
       (m1, m2) => new Date(m1.createdAt) - new Date(m2.createdAt),
-      messages
+      messages,
     );
 
     return sortedMessages.map((m) => m.id);
   },
   (messages) => messages,
-  { memoizeOptions: { maxSize: 100, equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { maxSize: 100, equalityCheck: arrayShallowEquals } },
 );
 
 export const selectChannelMessages = createSelector(
@@ -388,7 +388,7 @@ export const selectChannelMessages = createSelector(
       .filter((m) => m != null && !m.deleted);
   },
   (messages) => messages,
-  { memoizeOptions: { equalityCheck: arrayShallowEquals, maxSize: 1000 } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals, maxSize: 1000 } },
 );
 
 export const selectSortedMessageReplies = createSelector(
@@ -400,7 +400,7 @@ export const selectSortedMessageReplies = createSelector(
   },
   (messages) =>
     sort((m1, m2) => new Date(m1.createdAt) - new Date(m2.createdAt), messages),
-  { memoizeOptions: { equalityCheck: arrayShallowEquals } }
+  { memoizeOptions: { equalityCheck: arrayShallowEquals } },
 );
 
 export const selectStringifiedMessageContent = (state, messageId) => {

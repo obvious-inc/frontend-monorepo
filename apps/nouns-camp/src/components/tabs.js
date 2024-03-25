@@ -43,6 +43,9 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
               paddingBottom: "0.2rem",
               overflowY: "hidden",
               overflowX: "auto",
+              "::-webkit-scrollbar": {
+                display: "none",
+              },
             },
             '[role="tab"]': {
               padding: "0.5rem",

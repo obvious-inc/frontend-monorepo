@@ -1,11 +1,12 @@
 import React from "react";
-import { diffLines } from "diff";
-import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
   message as messageUtils,
+  function as functionUtils,
 } from "@shades/common/utils";
+import { useFetch } from "@shades/common/react";
+import Link from "@shades/ui-web/link";
 import Button from "@shades/ui-web/button";
 import Input from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
@@ -20,24 +21,38 @@ import {
   resolveAction as resolveActionTransactions,
   buildActions as buildActionsFromTransactions,
   isEqual as areTransactionsEqual,
+  stringify as stringifyTransaction,
 } from "../utils/transactions.js";
-import { useProposal } from "../store.js";
+import { diffParagraphs } from "../utils/diff.js";
+import {
+  useActions,
+  useProposal,
+  useAccountProposalCandidates,
+} from "../store.js";
 import useChainId from "../hooks/chain-id.js";
-import { useUpdateProposal, useCancelProposal } from "../hooks/dao-contract.js";
+import { useWallet } from "../hooks/wallet.js";
+import { useNavigate } from "../hooks/navigation.js";
+import { useUpdateProposal } from "../hooks/dao-contract.js";
+import { useCreateProposalCandidate } from "../hooks/data-contract.js";
+import DiffBlock from "./diff-block.js";
 import ProposalEditor from "./proposal-editor.js";
 
-const createMarkdownDescription = ({ title, body }) => {
+export const createMarkdownDescription = ({ title, body }) => {
   const markdownBody = messageUtils.toMarkdown(richTextToMessageBlocks(body));
   return `# ${title.trim()}\n\n${markdownBody}`;
 };
 
-// TODO: only editable during updatable period
-
-const ProposalEditDialog = ({ proposalId, dismiss }) => {
+const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const chainId = useChainId();
+
+  const { address: connectedAccountAddress } = useWallet();
+
   const scrollContainerRef = React.useRef();
+
+  const { fetchProposalCandidate, fetchProposalCandidatesByAccount } =
+    useActions();
 
   const proposal = useProposal(proposalId);
 
@@ -50,8 +65,9 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   }, [persistedMarkdownBody]);
 
   const persistedActions = React.useMemo(
-    () => buildActionsFromTransactions(proposal.transactions, { chainId }),
-    [proposal, chainId]
+    () =>
+      buildActionsFromTransactions(proposal.transactions ?? [], { chainId }),
+    [proposal, chainId],
   );
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
@@ -62,7 +78,6 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -70,7 +85,7 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
 
   const hasBodyChanges = React.useMemo(() => {
     const markdownBody = messageUtils.toMarkdown(
-      richTextToMessageBlocks(deferredBody)
+      richTextToMessageBlocks(deferredBody),
     );
     return markdownBody !== persistedMarkdownBody;
   }, [deferredBody, persistedMarkdownBody]);
@@ -84,26 +99,49 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
         resolveActionTransactions(a, { chainId }),
         {
           chainId,
-        }
+        },
       );
       const persistedTransactions = unparseTransactions(
         resolveActionTransactions(persistedAction, { chainId }),
-        { chainId }
+        { chainId },
       );
 
-      return areTransactionsEqual(transactions, persistedTransactions);
+      return !areTransactionsEqual(transactions, persistedTransactions);
     });
 
   const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
 
-  const diff = React.useMemo(
-    () =>
-      diffLines(
-        proposal.description,
-        createMarkdownDescription({ title, body: deferredBody })
-      ),
-    [title, deferredBody, proposal.description]
-  );
+  const createDescriptionDiff = () =>
+    diffParagraphs(
+      proposal.description,
+      createMarkdownDescription({ title, body: deferredBody }),
+    );
+  const createTransactionsDiff = () =>
+    diffParagraphs(
+      (proposal.transactions ?? [])
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n"),
+      actions
+        .flatMap((a) => resolveActionTransactions(a, { chainId }))
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n"),
+    );
+
+  const dismissDialog = () => {
+    if (!hasChanges) {
+      closeDialog();
+      return;
+    }
+
+    if (
+      !confirm(
+        "This will discard all your changes. Are you sure you wish to continue?",
+      )
+    )
+      return;
+
+    closeDialog();
+  };
 
   // const usdcSumValue = actions.reduce((sum, a) => {
   //   switch (a.type) {
@@ -117,29 +155,77 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   // }, BigInt(0));
 
   // const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  //
+  useFetch(
+    connectedAccountAddress == null
+      ? null
+      : () => fetchProposalCandidatesByAccount(connectedAccountAddress),
+    [connectedAccountAddress],
+  );
+
+  const accountProposalCandidates = useAccountProposalCandidates(
+    connectedAccountAddress,
+  );
 
   const updateProposal = useUpdateProposal(proposalId);
-  const cancelProposal = useCancelProposal(proposalId);
+  const createCandidate = useCreateProposalCandidate();
 
-  const submit = async ({ updateMessage }) => {
-    const getDescription = () => {
+  const isSponsoredUpdate = proposal.signers.length > 0;
+
+  const submit = async ({ updateMessage } = {}) => {
+    const buildUpdateCandidateSlug = () => {
+      const slugifiedTitle =
+        title.toLowerCase().replace(/\s+/g, "-") + "-update";
+      let index = 0;
+      while (slugifiedTitle) {
+        const slug = [slugifiedTitle, index].filter(Boolean).join("-");
+        if (accountProposalCandidates.find((c) => c.slug === slug) == null)
+          return slug;
+        index += 1;
+      }
+    };
+
+    const getDescriptionIfChanged = () => {
       if (!hasTitleChanges && !hasBodyChanges) return null;
       return createMarkdownDescription({ title, body });
     };
 
-    const getTransactions = () => {
+    const getTransactionsIfChanged = () => {
       if (!hasActionChanges) return null;
       return actions.flatMap((a) => resolveActionTransactions(a, { chainId }));
     };
 
     try {
       setPendingSubmit(true);
-      await updateProposal({
-        description: getDescription(),
-        transactions: getTransactions(),
-        updateMessage,
-      });
-      dismiss();
+
+      if (isSponsoredUpdate) {
+        const { slug: createdCandidateSlug } = await createCandidate({
+          targetProposalId: proposalId,
+          slug: buildUpdateCandidateSlug(),
+          description: createMarkdownDescription({ title, body }),
+          transactions: actions.flatMap((a) =>
+            resolveActionTransactions(a, { chainId }),
+          ),
+        });
+        const candidateId = [
+          connectedAccountAddress,
+          encodeURIComponent(createdCandidateSlug),
+        ].join("-");
+
+        await functionUtils.retryAsync(
+          () => fetchProposalCandidate(candidateId),
+          { retries: 100 },
+        );
+
+        navigate(`/candidates/${candidateId}`, { replace: true });
+      } else {
+        await updateProposal({
+          description: getDescriptionIfChanged(),
+          transactions: getTransactionsIfChanged(),
+          updateMessage,
+        });
+        closeDialog();
+      }
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -149,7 +235,12 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
   };
 
   return (
-    <>
+    <Dialog
+      isOpen={isOpen}
+      tray
+      onRequestClose={dismissDialog}
+      width="135.6rem"
+    >
       <div
         ref={scrollContainerRef}
         css={css({
@@ -160,46 +251,23 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
           },
         })}
       >
-        {proposal.signers.length > 0 ? (
-          <div css={css({ padding: "6.4rem 3.2rem", textAlign: "center" })}>
-            Updating sponsored proposals not yet supported. THOON! :tm:
-          </div>
-        ) : (
-          <ProposalEditor
-            title={title}
-            body={body}
-            actions={actions}
-            setTitle={setTitle}
-            setBody={setBody}
-            setActions={setActions}
-            proposerId={proposal.proposerId}
-            onSubmit={() => {
-              setShowPreviewDialog(true);
-            }}
-            submitLabel="Preview update"
-            submitDisabled={!hasChanges}
-            onDelete={() => {
-              if (!confirm("Are you sure you wish to cancel this proposal?"))
-                return;
-
-              setPendingCancel(true);
-              cancelProposal().then(
-                () => {
-                  navigate("/", { replace: true });
-                },
-                (e) => {
-                  setPendingCancel(false);
-                  return Promise.reject(e);
-                }
-              );
-            }}
-            deleteLabel="Cancel"
-            hasPendingDelete={hasPendingCancel}
-            containerHeight="calc(100vh - 6rem)"
-            scrollContainerRef={scrollContainerRef}
-            background={theme.colors.dialogBackground}
-          />
-        )}
+        <ProposalEditor
+          title={title}
+          body={body}
+          actions={actions}
+          setTitle={setTitle}
+          setBody={setBody}
+          setActions={setActions}
+          proposerId={proposal.proposerId}
+          onSubmit={() => {
+            setShowPreviewDialog(true);
+          }}
+          submitLabel="Preview update"
+          submitDisabled={!hasChanges}
+          containerHeight="calc(100vh - 6rem)"
+          scrollContainerRef={scrollContainerRef}
+          background={theme.colors.dialogBackground}
+        />
       </div>
 
       {showPreviewDialog && (
@@ -208,8 +276,19 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
           close={() => {
             setShowPreviewDialog(false);
           }}
-          diff={diff}
-          submit={() => {
+          createDescriptionDiff={createDescriptionDiff}
+          createTransactionsDiff={createTransactionsDiff}
+          submitDisabled={isSponsoredUpdate && createCandidate == null}
+          submitLabel={
+            isSponsoredUpdate
+              ? "Create update candidate"
+              : "Continue to submission"
+          }
+          submit={async () => {
+            if (isSponsoredUpdate) {
+              await submit();
+              return;
+            }
             setShowPreviewDialog(false);
             setShowSubmitDialog(true);
           }}
@@ -226,14 +305,17 @@ const ProposalEditDialog = ({ proposalId, dismiss }) => {
           submit={submit}
         />
       )}
-    </>
+    </Dialog>
   );
 };
 
-const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
+export const SubmitUpdateDialog = ({
+  isOpen,
+  hasPendingSubmit,
+  submit,
+  close,
+}) => {
   const [updateMessage, setUpdateMessage] = React.useState("");
-
-  const hasMessage = updateMessage.trim() !== "";
 
   return (
     <Dialog
@@ -241,7 +323,7 @@ const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
       onRequestClose={() => {
         close();
       }}
-      width="58rem"
+      width="54rem"
       css={css({ overflow: "auto" })}
     >
       {({ titleProps }) => (
@@ -258,31 +340,27 @@ const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
             },
           })}
         >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
+          <DialogHeader title="Submit" titleProps={titleProps} />
           <main>
             <Input
               multiline
-              label="Update message"
+              label="Update comment (optional)"
               rows={3}
               placeholder="..."
               value={updateMessage}
               onChange={(e) => {
                 setUpdateMessage(e.target.value);
               }}
+              disabled={hasPendingSubmit}
             />
           </main>
           <DialogFooter
             cancel={close}
             cancelButtonLabel="Cancel"
-            submit
             submitButtonLabel="Submit update"
             submitButtonProps={{
               isLoading: hasPendingSubmit,
-              disabled: !hasMessage || hasPendingSubmit,
+              disabled: hasPendingSubmit,
             }}
           />
         </form>
@@ -291,7 +369,28 @@ const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
   );
 };
 
-export const PreviewUpdateDialog = ({ isOpen, diff, submit, close }) => {
+export const PreviewUpdateDialog = ({
+  isOpen,
+  createDescriptionDiff,
+  createTransactionsDiff,
+  submitLabel,
+  submitDisabled,
+  submit,
+  close,
+}) => {
+  const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
+  const descriptionDiff = createDescriptionDiff();
+  const transactionsDiff = createTransactionsDiff();
+  const hasDescriptionChanges = descriptionDiff.some(
+    (token) => token.added || token.removed,
+  );
+  const hasTransactionChanges = transactionsDiff.some(
+    (token) => token.added || token.removed,
+  );
+
+  const hasVisibleDiff = hasDescriptionChanges || hasTransactionChanges;
+
   return (
     <Dialog
       isOpen={isOpen}
@@ -308,16 +407,30 @@ export const PreviewUpdateDialog = ({ isOpen, diff, submit, close }) => {
             minHeight: 0,
             display: "flex",
             flexDirection: "column",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
           })}
         >
           <DialogHeader
             title="Update preview"
+            subtitle={
+              <>
+                Diff formatted as{" "}
+                <Link
+                  component="a"
+                  href="https://daringfireball.net/projects/markdown/syntax"
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Markdown
+                </Link>
+              </>
+            }
             titleProps={titleProps}
-            dismiss={close}
+            css={css({
+              padding: "1.5rem 1.5rem 0",
+              "@media (min-width: 600px)": {
+                padding: "2rem 2rem 0",
+              },
+            })}
           />
           <main
             css={(t) =>
@@ -325,51 +438,57 @@ export const PreviewUpdateDialog = ({ isOpen, diff, submit, close }) => {
                 flex: 1,
                 minHeight: 0,
                 overflow: "auto",
-                fontSize: t.text.sizes.base,
-                whiteSpace: "pre-wrap",
-                fontFamily: t.fontStacks.monospace,
-                lineHeight: 1.65,
-                userSelect: "text",
-                margin: "0 -1.5rem",
+                fontSize: t.text.sizes.small,
+                padding: "0 1.5rem",
                 "@media (min-width: 600px)": {
-                  margin: "0 -2rem",
+                  fontSize: t.text.sizes.base,
+                  padding: "0 2rem",
                 },
-                "[data-line]": {
-                  borderLeft: "0.3rem solid transparent",
-                  padding: "0 1.2rem",
+                "[data-diff]": {
+                  margin: "0 -1.5rem",
                   "@media (min-width: 600px)": {
-                    padding: "0 1.7rem",
+                    margin: "0 -2rem",
                   },
                 },
-                "[data-added]": {
-                  background: "hsl(122deg 35% 50% / 15%)",
-                  borderColor: "hsl(122deg 35% 50% / 50%)",
+                h2: {
+                  fontSize: t.text.sizes.header,
+                  fontWeight: t.text.weights.header,
+                  margin: "0 0 1.6rem",
                 },
-                "[data-removed]": {
-                  background: "hsl(3deg 75% 60% / 13%)",
-                  borderColor: "hsl(3deg 75% 60% / 50%)",
+                "* + h2": {
+                  marginTop: "6.4rem",
                 },
               })
             }
           >
-            {diff.map((line, i) => (
-              <div
-                key={i}
-                data-line
-                data-added={line.added || undefined}
-                data-removed={line.removed || undefined}
-              >
-                {line.value}
-              </div>
-            ))}
+            {!hasVisibleDiff ? (
+              <>
+                <h2>Content</h2>
+                <DiffBlock diff={descriptionDiff} data-diff />
+              </>
+            ) : (
+              <>
+                <h2>Content</h2>
+                <DiffBlock diff={descriptionDiff} data-diff />
+
+                {hasTransactionChanges && (
+                  <>
+                    <h2>Actions</h2>
+                    <DiffBlock diff={transactionsDiff} data-diff />
+                  </>
+                )}
+              </>
+            )}
           </main>
           <footer
             css={css({
               display: "flex",
               justifyContent: "flex-end",
               marginTop: "1.5rem",
+              padding: "0 1.5rem 1.5rem",
               "@media (min-width: 600px)": {
                 marginTop: "2rem",
+                padding: "0 2rem 2rem",
               },
             })}
           >
@@ -377,8 +496,21 @@ export const PreviewUpdateDialog = ({ isOpen, diff, submit, close }) => {
               <Button size="medium" onClick={close}>
                 Cancel
               </Button>
-              <Button size="medium" variant="primary" onClick={submit}>
-                Continue to submission
+              <Button
+                size="medium"
+                variant="primary"
+                disabled={submitDisabled || hasPendingSubmit}
+                isLoading={hasPendingSubmit}
+                onClick={async () => {
+                  try {
+                    setPendingSubmit(true);
+                    await submit();
+                  } finally {
+                    setPendingSubmit(false);
+                  }
+                }}
+              >
+                {submitLabel}
               </Button>
             </div>
           </footer>

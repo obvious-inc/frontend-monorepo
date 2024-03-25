@@ -7,7 +7,7 @@ const useIsOnScreen = (ref) => {
     if (!ref.current) return;
 
     const observer = new IntersectionObserver(([entry]) =>
-      setIntersecting(entry.isIntersecting)
+      setIntersecting(entry.isIntersecting),
     );
 
     observer.observe(ref.current);

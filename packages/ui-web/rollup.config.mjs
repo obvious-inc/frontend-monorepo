@@ -58,6 +58,7 @@ const entrypoints = [
       "@shades/common/app",
       "@shades/common/utils",
       "@shades/common/react",
+      "@shades/common/ethereum-react",
       "slate",
       "slate-history",
       "slate-react",
@@ -143,6 +144,7 @@ const entrypoints = [
       "@shades/common/utils",
       "@shades/common/app",
       "@shades/common/react",
+      "@shades/common/ethereum-react",
       "react",
       "slate",
       "slate-react",
@@ -160,8 +162,10 @@ const entrypoints = [
     dependencies: [
       "@shades/common/utils",
       "@shades/common/react",
+      "@shades/common/ethereum-react",
       "@shades/common/nouns",
       "@shades/common/app",
+      "lodash.throttle",
       "react",
       "wagmi",
       "slate",
@@ -174,13 +178,35 @@ const entrypoints = [
       ...emotionDeps,
     ],
   },
-  { file: "emoji.js", dependencies: ["react", ...emotionDeps] },
+  {
+    file: "emoji.js",
+    dependencies: [
+      "react",
+      "@shades/common/app",
+      "@shades/common/utils",
+      ...emotionDeps,
+    ],
+  },
   {
     file: "emoji-picker.js",
     dependencies: [
       "@shades/common/app",
       "@shades/common/react",
       "@shades/common/utils",
+      "lodash.throttle",
+      "react",
+      "react-aria",
+      "@react-stately/overlays",
+      ...emotionDeps,
+    ],
+  },
+  {
+    file: "gif-picker.js",
+    dependencies: [
+      "@shades/common/app",
+      "@shades/common/react",
+      "@shades/common/utils",
+      "lodash.throttle",
       "react",
       "react-aria",
       "@react-stately/overlays",
@@ -210,22 +236,6 @@ const entrypoints = [
     ],
   },
   {
-    file: "account-preview-popover-trigger.js",
-    dependencies: [
-      "@shades/common/app",
-      "@shades/common/utils",
-      "@shades/common/react",
-      "@shades/common/nouns",
-      "react",
-      "react-aria",
-      "@react-stately/overlays",
-      "@radix-ui/react-tooltip",
-      "viem",
-      "wagmi",
-      ...emotionDeps,
-    ],
-  },
-  {
     file: "channel-avatar.js",
     dependencies: [
       "@shades/common/app",
@@ -238,7 +248,12 @@ const entrypoints = [
   },
   {
     file: "inline-user-button.js",
-    dependencies: ["react", "@shades/common/app", ...emotionDeps],
+    dependencies: [
+      "react",
+      "@shades/common/ethereum-react",
+      "@shades/common/app",
+      ...emotionDeps,
+    ],
   },
   {
     file: "inline-channel-button.js",
@@ -254,12 +269,19 @@ const entrypoints = [
       ...emotionDeps,
     ],
   },
+  {
+    file: "slate/index.js",
+    dependencies: [
+      "react",
+      "slate",
+      "slate-react",
+      "is-hotkey",
+      "@shades/common/utils",
+      "@shades/common/ethereum-react",
+      "@shades/common/app",
+      ...emotionDeps,
+    ],
+  },
 ];
 
-export default [
-  ...entrypoints.map(createConfig),
-  createConfig({
-    file: "index.js",
-    dependencies: [...new Set(entrypoints.flatMap((e) => e.dependencies))],
-  }),
-];
+export default entrypoints.map(createConfig);

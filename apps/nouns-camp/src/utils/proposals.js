@@ -1,11 +1,20 @@
 import { array as arrayUtils } from "@shades/common/utils";
 import { buildFeed as buildCandidateFeed } from "./candidates.js";
+import { buildFeed as buildPropdateFeed } from "./propdates.js";
+import { extractRepostQuotes, stripRepostQuotes } from "./markdown.js";
 
-const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
+export const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 const isDefeated = (proposal) =>
   Number(proposal.forVotes) <= Number(proposal.againstVotes) ||
   Number(proposal.forVotes) < Number(proposal.quorumVotes);
+
+export const isExecutable = (proposal, { blockNumber }) => {
+  const state = getState(proposal, { blockNumber });
+  if (state !== "queued" || proposal.executionEtaTimestamp == null)
+    return false;
+  return new Date().getTime() >= proposal.executionEtaTimestamp;
+};
 
 export const getState = (proposal, { blockNumber }) => {
   if (proposal.status === "VETOED") return "vetoed";
@@ -20,11 +29,13 @@ export const getState = (proposal, { blockNumber }) => {
 
   if (isDefeated(proposal)) return "defeated";
 
-  if (proposal.executionETA === null) return "succeeded"; // Not yet queued
+  if (proposal.executionEtaTimestamp === null) return "succeeded"; // Not yet queued
 
   if (
+    proposal.executionEtaTimestamp != null &&
     new Date().getTime() >=
-    Number(proposal.executionETA) * 1000 + EXECUTION_GRACE_PERIOD_IN_MILLIS
+      proposal.executionEtaTimestamp.getTime() +
+        EXECUTION_GRACE_PERIOD_IN_MILLIS
   )
     return "expired";
 
@@ -43,26 +54,62 @@ export const isVotableState = (state) =>
 export const isActiveState = (state) =>
   ["pending", "updatable", "active", "objection-period"].includes(state);
 
-export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
-  if (proposal == null) return [];
+const buildVoteAndFeedbackPostFeedItems = ({ candidate }, proposal) => {
+  const ascendingQuoteSources = arrayUtils.sortBy("createdBlock", [
+    ...(proposal.votes ?? []).map((v) => ({ ...v, type: "vote" })),
+    ...(proposal.feedbackPosts ?? []),
+    ...(candidate?.feedbackPosts ?? []),
+  ]);
 
-  const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
-
-  const createdEventItem = {
-    type: "event",
-    eventType: "proposal-created",
-    id: `${proposal.id}-created`,
-    timestamp: proposal.createdTimestamp,
-    blockNumber: proposal.createdBlock,
-    authorAccount: proposal.proposerId,
-    proposalId: proposal.id,
+  const extractQuotes = (p) => {
+    if (p.reason == null || p.reason.trim() === "") return [];
+    const markedQuoteBodies = extractRepostQuotes(p.reason);
+    const quoteIndeciesToDrop = [];
+    const quotes = markedQuoteBodies.reduce((quotes, text, i) => {
+      const post = ascendingQuoteSources.find(
+        (post) =>
+          post.reason != null &&
+          post.id !== p.id &&
+          post.reason.includes(text.trim()),
+      );
+      if (post == null) return quotes;
+      quoteIndeciesToDrop.push(i);
+      return [
+        ...quotes,
+        {
+          id: `${proposal.id}-${post.id}`,
+          authorAccount: post.voterId,
+          body: text,
+          type: post.type ?? "feedback-post",
+        },
+      ];
+    }, []);
+    const strippedReason = stripRepostQuotes(p.reason, quoteIndeciesToDrop);
+    return [quotes, strippedReason];
   };
 
-  const feedbackPostItems =
-    proposal.feedbackPosts?.map((p) => ({
+  const votePosts = (proposal.votes ?? []).map((p) => {
+    const [quotes, strippedReason] = extractQuotes(p);
+    return {
+      type: "vote",
+      id: `${proposal.id}-${p.id}`,
+      support: p.support,
+      authorAccount: p.voterId,
+      blockNumber: p.createdBlock,
+      timestamp: p.createdTimestamp,
+      voteCount: p.votes,
+      proposalId: proposal.id,
+      isPending: p.isPending,
+      body: strippedReason,
+      quotes,
+    };
+  });
+
+  const feedbackPostItems = (proposal.feedbackPosts ?? []).map((p) => {
+    const [quotes, strippedReason] = extractQuotes(p);
+    return {
       type: "feedback-post",
       id: `${proposal.id}-${p.id}`,
-      body: p.reason,
       support: p.support,
       authorAccount: p.voterId,
       timestamp: p.createdTimestamp,
@@ -70,35 +117,31 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
       voteCount: p.votes,
       proposalId: proposal.id,
       isPending: p.isPending,
-    })) ?? [];
+      body: strippedReason,
+      quotes,
+    };
+  });
 
-  const voteItems =
-    proposal.votes?.map((v) => ({
-      type: "vote",
-      id: `${proposal.id}-${v.id}`,
-      body: v.reason,
-      support: v.support,
-      authorAccount: v.voterId,
-      blockNumber: v.createdBlock,
-      timestamp: v.createdTimestamp,
-      voteCount: v.votes,
-      proposalId: proposal.id,
-      isPending: v.isPending,
-    })) ?? [];
+  return [...feedbackPostItems, ...votePosts];
+};
+
+export const buildFeed = (
+  proposal,
+  { latestBlockNumber, candidate, includePropdates = true },
+) => {
+  if (proposal == null) return [];
+
+  const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
+
+  const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems(
+    { candidate },
+    proposal,
+  );
 
   const propdateItems =
-    proposal.propdates?.map((p) => ({
-      type: "event",
-      eventType: p.markedCompleted
-        ? "propdate-marked-completed"
-        : "propdate-posted",
-      id: `propdate-${p.id}`,
-      body: p.update,
-      blockNumber: p.blockNumber,
-      authorAccount: p.authorAccount,
-      timestamp: p.blockTimestamp,
-      proposalId: proposal.id,
-    })) ?? [];
+    !includePropdates || proposal.propdates == null
+      ? []
+      : buildPropdateFeed(proposal.propdates);
 
   const updateEventItems =
     proposal.versions
@@ -116,12 +159,21 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
 
   const items = [
     ...candidateItems,
-    ...feedbackPostItems,
-    ...voteItems,
+    ...voteAndFeedbackPostItems,
     ...propdateItems,
     ...updateEventItems,
-    createdEventItem,
   ];
+
+  if (proposal.createdTimestamp != null)
+    items.push({
+      type: "event",
+      eventType: "proposal-created",
+      id: `${proposal.id}-created`,
+      timestamp: proposal.createdTimestamp,
+      blockNumber: proposal.createdBlock,
+      authorAccount: proposal.proposerId,
+      proposalId: proposal.id,
+    });
 
   if (proposal.canceledBlock != null)
     items.push({
@@ -198,7 +250,7 @@ export const buildFeed = (proposal, { latestBlockNumber, candidate }) => {
 
   return arrayUtils.sortBy(
     { value: (i) => i.blockNumber, order: "desc" },
-    items
+    items,
   );
 };
 

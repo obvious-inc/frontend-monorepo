@@ -31,7 +31,7 @@ const middleware = (editor) => {
           // divider above it
           editor.insertNodes(
             { type: DIVIDER_ELEMENT_TYPE, children: [{ text: "" }] },
-            { at: path }
+            { at: path },
           );
         },
         afterTransform: () => {
@@ -50,20 +50,20 @@ const middleware = (editor) => {
             const at = Path.next(selectedBlockNodePath);
             editor.insertNodes(
               { type: "paragraph", children: [{ text: "" }] },
-              { at }
+              { at },
             );
             editor.select(editor.start(at));
             return;
           }
 
           const selectableStartPoint = editor.start(
-            nextSelectableBlockNodePath
+            nextSelectableBlockNodePath,
           );
           editor.select(selectableStartPoint);
         },
       },
-      editor
-    )
+      editor,
+    ),
   )(editor);
 };
 

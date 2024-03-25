@@ -98,13 +98,13 @@ const middleware = (editor) => {
     (e) =>
       withBlockPrefixShortcut(
         { prefix: ">>", elementType: CALLOUT_ELEMENT_TYPE },
-        e
+        e,
       ),
     (e) =>
       withEmptyBlockBackwardDeleteTransform(
         { fromElementType: CALLOUT_ELEMENT_TYPE, toElementType: "paragraph" },
-        e
-      )
+        e,
+      ),
   )(editor);
 };
 

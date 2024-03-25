@@ -1,21 +1,21 @@
-import { mainnet, sepolia } from "wagmi/chains";
-import { useNetwork } from "wagmi";
+import { mainnet, sepolia, goerli } from "wagmi/chains";
+import { useAccount } from "wagmi";
 
 export const defaultChainId = mainnet.id;
 
-const supportedTestnetChainIds = [sepolia.id];
+const supportedTestnetChainIds = [sepolia.id, goerli.id];
 
 const supportedChainIds = [defaultChainId, ...supportedTestnetChainIds];
 
 const useChainId = () => {
-  const { chain } = useNetwork();
+  const { chainId } = useAccount();
 
-  if (chain == null || !supportedChainIds.includes(chain.id))
+  if (chainId == null || !supportedChainIds.includes(chainId))
     return defaultChainId;
 
-  return chain.id;
+  return chainId;
 };
 
-export const useConnectedChainId = () => useNetwork().chain?.id;
+export const useConnectedChainId = () => useAccount().chainId;
 
 export default useChainId;

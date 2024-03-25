@@ -1,4 +1,4 @@
-import { formatAbiParameters } from "abitype";
+import { formatAbiParameter } from "abitype";
 import {
   decodeAbiParameters,
   encodeAbiParameters,
@@ -8,13 +8,31 @@ import {
   formatUnits,
   formatEther,
 } from "viem";
-import { string as stringUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
+import {
+  CREATE_AND_FUND_ROUND_INPUT_TYPES as PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES,
+  encodeTimedRoundConfig as encodePropHouseTimedRoundConfig,
+  decodeTimedRoundConfig as decodePropHouseTimedRoundConfig,
+} from "../utils/prop-house-transactions.js";
+
+// Not importing from Prophouse SDK here to work around vercel edge runtime issues
+const ProphouseAssetType = {
+  ETH: 0,
+};
 
 const decimalsByCurrency = {
   eth: 18,
   weth: 18,
   usdc: 6,
+};
+
+const normalizeSignature = (s) => {
+  if (s == null) return null;
+  return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
 };
 
 const CREATE_STREAM_SIGNATURE =
@@ -23,17 +41,11 @@ const CREATE_STREAM_SIGNATURE =
 const decodeCalldataWithSignature = ({ signature, calldata }) => {
   try {
     const { name, inputs: inputTypes } = parseAbiItem(`function ${signature}`);
-    if (inputTypes.length === 0) return { name, inputs: [] };
+    if (inputTypes.length === 0) return { name, inputs: [], inputTypes: [] };
 
     try {
       const inputs = decodeAbiParameters(inputTypes, calldata);
-      return {
-        name,
-        inputs: inputs.map((value, i) => ({
-          value,
-          type: inputTypes[i]?.type,
-        })),
-      };
+      return { name, inputs, inputTypes };
     } catch (e) {
       return { name, calldataDecodingFailed: true };
     }
@@ -53,30 +65,34 @@ export const parse = (data, { chainId }) => {
   const nounsExecutorContract = resolveIdentifier(chainId, "executor");
   const nounsTokenContract = resolveIdentifier(chainId, "token");
   const wethTokenContract = resolveIdentifier(chainId, "weth-token");
+  const usdcTokenContract = resolveIdentifier(chainId, "usdc-token");
 
   const transactions = data.targets.map((target, i) => ({
-    target,
+    target: target.toLowerCase(),
     signature: data.signatures[i] || null,
     calldata: data.calldatas[i],
     value: BigInt(data.values[i]),
   }));
 
   const predictedStreamContractAddresses = transactions
-    .filter((t) => t.signature === CREATE_STREAM_SIGNATURE)
+    .filter(
+      (t) =>
+        normalizeSignature(t.signature) ===
+        normalizeSignature(CREATE_STREAM_SIGNATURE),
+    )
     .map((t) => {
       const { inputs } = decodeCalldataWithSignature({
         signature: t.signature,
         calldata: t.calldata,
       });
-      return inputs[6].value.toLowerCase();
+      return inputs[6].toLowerCase();
     });
 
   return transactions.map(({ target, signature, calldata, value }) => {
     const isEthTransfer = signature == null && calldata === "0x";
 
     if (isEthTransfer)
-      return target.toLowerCase() ===
-        nounsTokenBuyerContract.address.toLowerCase()
+      return target === nounsTokenBuyerContract.address
         ? { type: "payer-top-up", target, value }
         : { type: "transfer", target, value };
 
@@ -88,6 +104,7 @@ export const parse = (data, { chainId }) => {
     const {
       name: functionName,
       inputs: functionInputs,
+      inputTypes: functionInputTypes,
       calldataDecodingFailed,
     } = decodeCalldataWithSignature({ signature, calldata });
 
@@ -101,58 +118,59 @@ export const parse = (data, { chainId }) => {
         error: "calldata-decoding-failed",
       };
 
-    if (signature === CREATE_STREAM_SIGNATURE) {
-      const tokenContractAddress = functionInputs[2].value.toLowerCase();
+    if (
+      normalizeSignature(signature) ===
+      normalizeSignature(CREATE_STREAM_SIGNATURE)
+    ) {
+      const tokenContractAddress = functionInputs[2].toLowerCase();
       const tokenContract = resolveAddress(chainId, tokenContractAddress);
       return {
         type: "stream",
         target,
         functionName,
         functionInputs,
-        receiverAddress: functionInputs[0].value.toLowerCase(),
+        functionInputTypes,
+        receiverAddress: functionInputs[0].toLowerCase(),
         token: tokenContract.token,
-        tokenAmount: functionInputs[1].value,
+        tokenAmount: functionInputs[1],
         tokenContractAddress,
-        startDate: new Date(Number(functionInputs[3].value) * 1000),
-        endDate: new Date(Number(functionInputs[4].value) * 1000),
-        streamContractAddress: functionInputs[6].value.toLowerCase(),
+        startDate: new Date(Number(functionInputs[3]) * 1000),
+        endDate: new Date(Number(functionInputs[4]) * 1000),
+        streamContractAddress: functionInputs[6].toLowerCase(),
       };
     }
 
-    if (
-      target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
-      functionName === "deposit"
-    ) {
+    if (target === wethTokenContract.address && functionName === "deposit") {
       return {
         type: "weth-deposit",
         target,
         functionName,
         functionInputs,
+        functionInputTypes,
         value,
       };
     }
 
-    if (
-      target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
-      functionName === "approve"
-    ) {
+    if (target === wethTokenContract.address && functionName === "approve") {
       return {
         type: "weth-approval",
         target,
         functionName,
         functionInputs,
-        receiverAddress: functionInputs[0].value,
-        wethAmount: BigInt(functionInputs[1].value),
+        functionInputTypes,
+        receiverAddress: functionInputs[0],
+        wethAmount: BigInt(functionInputs[1]),
       };
     }
 
     if (
-      target.toLowerCase() === wethTokenContract.address.toLowerCase() &&
-      signature === "transfer(address,uint256)"
+      target === wethTokenContract.address &&
+      normalizeSignature(signature) ===
+        normalizeSignature("transfer(address,uint256)")
     ) {
-      const receiverAddress = functionInputs[0].value.toLowerCase();
+      const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
-        (a) => a === receiverAddress
+        (a) => a === receiverAddress,
       );
 
       return {
@@ -160,18 +178,35 @@ export const parse = (data, { chainId }) => {
         target,
         functionName,
         functionInputs,
-        receiverAddress: functionInputs[0].value,
-        wethAmount: BigInt(functionInputs[1].value),
+        functionInputTypes,
+        receiverAddress: functionInputs[0],
+        wethAmount: BigInt(functionInputs[1]),
       };
     }
 
     if (
-      target.toLowerCase() === nounsPayerContract.address.toLowerCase() &&
-      signature === "sendOrRegisterDebt(address,uint256)"
+      target === usdcTokenContract.address &&
+      signature === "approve(address,uint256)"
     ) {
-      const receiverAddress = functionInputs[0].value.toLowerCase();
+      return {
+        type: "usdc-approval",
+        spenderAddress: functionInputs[0],
+        usdcAmount: BigInt(functionInputs[1]),
+        target,
+        functionName,
+        functionInputs,
+        functionInputTypes,
+      };
+    }
+
+    if (
+      target === nounsPayerContract.address &&
+      normalizeSignature(signature) ===
+        normalizeSignature("sendOrRegisterDebt(address,uint256)")
+    ) {
+      const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
-        (a) => a === receiverAddress
+        (a) => a === receiverAddress,
       );
 
       return {
@@ -181,39 +216,96 @@ export const parse = (data, { chainId }) => {
         target,
         functionName,
         functionInputs,
-        receiverAddress: functionInputs[0].value,
-        usdcAmount: BigInt(functionInputs[1].value),
+        functionInputTypes,
+        receiverAddress: functionInputs[0],
+        usdcAmount: BigInt(functionInputs[1]),
       };
     }
 
     if (
-      target.toLowerCase() === nounsTokenContract.address.toLowerCase() &&
-      stringUtils.removeWhitespace(signature) ===
-        "safeTransferFrom(address,address,uint256)" &&
-      functionInputs[0].value.toLowerCase() ===
+      target === nounsTokenContract.address &&
+      (normalizeSignature(signature) ===
+        normalizeSignature("transferFrom(address,address,uint256)") ||
+        normalizeSignature(signature) ===
+          normalizeSignature("safeTransferFrom(address,address,uint256)")) &&
+      functionInputs[0].toLowerCase() ===
         nounsExecutorContract.address.toLowerCase()
     )
       return {
         type: "treasury-noun-transfer",
-        nounId: parseInt(functionInputs[2].value),
-        receiverAddress: functionInputs[1].value,
+        nounId: parseInt(functionInputs[2]),
+        receiverAddress: functionInputs[1],
+        safe:
+          normalizeSignature(signature) ===
+          normalizeSignature("safeTransferFrom(address,address,uint256)"),
         target,
         functionName,
         functionInputs,
+        functionInputTypes,
       };
 
     if (
-      target.toLowerCase() === nounsGovernanceContract.address.toLowerCase() &&
-      stringUtils.removeWhitespace(signature) ===
-        "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)"
+      target === nounsGovernanceContract.address &&
+      normalizeSignature(signature) ===
+        normalizeSignature(
+          "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
+        )
     ) {
       return {
         type: "escrow-noun-transfer",
-        nounIds: functionInputs[0].value.map((id) => parseInt(id)),
-        receiverAddress: functionInputs[1].value,
+        nounIds: functionInputs[0].map((id) => parseInt(id)),
+        receiverAddress: functionInputs[1],
         target,
         functionName,
         functionInputs,
+        functionInputTypes,
+      };
+    }
+
+    if (
+      target === resolveIdentifier(chainId, "prop-house")?.address &&
+      normalizeSignature(signature) ===
+        normalizeSignature(
+          "createAndFundRoundOnExistingHouse(address, (address impl, bytes config, string title, string description), (uint8 assetType, address token, uint256 identifier, uint256 amount)[])",
+        )
+    ) {
+      const [houseAddress, { impl, config, title, description }, assets] =
+        functionInputs;
+
+      const resolveRoundType = (implementationAddress) => {
+        const { identifier } = resolveAddress(chainId, implementationAddress);
+        switch (identifier) {
+          case "prop-house-timed-round-implementation":
+            return "timed";
+          default:
+            throw new Error();
+        }
+      };
+
+      const roundType = resolveRoundType(impl);
+
+      const decodeRoundConfig = (roundType, encodedConfig) => {
+        switch (roundType) {
+          case "timed":
+            return decodePropHouseTimedRoundConfig(encodedConfig);
+          default:
+            throw new Error();
+        }
+      };
+
+      return {
+        type: "prop-house-create-and-fund-round",
+        houseAddress,
+        title,
+        description,
+        roundType,
+        roundConfig: decodeRoundConfig(roundType, config),
+        assets,
+        target,
+        functionName,
+        functionInputs,
+        functionInputTypes,
+        value,
       };
     }
 
@@ -223,6 +315,7 @@ export const parse = (data, { chainId }) => {
         target,
         functionName,
         functionInputs,
+        functionInputTypes,
         value,
       };
 
@@ -231,24 +324,28 @@ export const parse = (data, { chainId }) => {
       target,
       functionName,
       functionInputs,
+      functionInputTypes,
     };
   });
 };
 
 export const unparse = (transactions, { chainId }) => {
+  const nounsGovernanceContract = resolveIdentifier(chainId, "dao");
+  const nounsExecutorContract = resolveIdentifier(chainId, "executor");
+  const nounsTokenContract = resolveIdentifier(chainId, "token");
   const wethTokenContract = resolveIdentifier(chainId, "weth-token");
   const nounsPayerContract = resolveIdentifier(chainId, "payer");
   const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
   const nounsStreamFactoryContract = resolveIdentifier(
     chainId,
-    "stream-factory"
+    "stream-factory",
   );
 
   return transactions.reduce(
     (acc, t) => {
       const append = (t) => ({
         targets: [...acc.targets, t.target],
-        values: [...acc.values, t.value],
+        values: [...acc.values, t.value?.toString()],
         signatures: [...acc.signatures, t.signature],
         calldatas: [...acc.calldatas, t.calldata],
       });
@@ -279,7 +376,7 @@ export const unparse = (transactions, { chainId }) => {
             signature: "sendOrRegisterDebt(address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
-              [t.receiverAddress, t.usdcAmount]
+              [t.receiverAddress, t.usdcAmount],
             ),
           });
 
@@ -299,14 +396,14 @@ export const unparse = (transactions, { chainId }) => {
             signature: "transfer(address,uint256)",
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
-              [t.receiverAddress, t.wethAmount]
+              [t.receiverAddress, t.wethAmount],
             ),
           });
 
         case "stream": {
           const tokenContract = resolveIdentifier(
             chainId,
-            `${t.token.toLowerCase()}-token`
+            `${t.token.toLowerCase()}-token`,
           );
           return append({
             target: nounsStreamFactoryContract.address,
@@ -330,22 +427,107 @@ export const unparse = (transactions, { chainId }) => {
                 t.endDate.getTime() / 1000,
                 0,
                 t.streamContractAddress,
-              ]
+              ],
+            ),
+          });
+        }
+
+        case "treasury-noun-transfer":
+          return append({
+            target: nounsTokenContract.address,
+            value: "",
+            signature: !t.safe
+              ? "transferFrom(address,address,uint256)"
+              : "safeTransferFrom(address,address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "address" }, { type: "uint256" }],
+              [nounsExecutorContract.address, t.receiverAddress, t.nounId],
+            ),
+          });
+
+        case "escrow-noun-transfer":
+          return append({
+            target: nounsGovernanceContract.address,
+            value: "",
+            signature:
+              "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
+            calldata: encodeAbiParameters(
+              [{ type: "uint256[]" }, { type: "address" }],
+              [t.nounIds, t.receiverAddress],
+            ),
+          });
+
+        case "prop-house-create-and-fund-round": {
+          const signature = `createAndFundRoundOnExistingHouse(${PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES.map(
+            (t) => formatAbiParameter(t),
+          ).join(",")}`;
+
+          const [propHousePrimaryAddress, timedRoundImplAddress] = [
+            "prop-house",
+            "prop-house-timed-round-implementation",
+          ].map((id) => resolveIdentifier(chainId, id).address);
+
+          const getRoundStruct = () => {
+            switch (t.roundType) {
+              case "timed":
+                return {
+                  impl: timedRoundImplAddress,
+                  title: t.title,
+                  description: t.description,
+                  config: encodePropHouseTimedRoundConfig(t.roundConfig),
+                };
+              default:
+                throw new Error();
+            }
+          };
+
+          return append({
+            target: propHousePrimaryAddress,
+            signature,
+            calldata: encodeAbiParameters(
+              PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES,
+              [t.houseAddress, getRoundStruct(), t.assets],
+            ),
+            value: t.value,
+          });
+        }
+
+        // Fallback strategy
+        case "usdc-approval": {
+          if (
+            t.target == null ||
+            t.functionName == null ||
+            !Array.isArray(t.functionInputTypes) ||
+            !Array.isArray(t.functionInputs)
+          )
+            throw new Error(`Unknown transaction type "${t.type}"`);
+
+          const signature = `${t.functionName}(${t.functionInputTypes
+            .map((t) => formatAbiParameter(t))
+            .join(",")})`;
+          return append({
+            target: t.target,
+            value: t.value ?? "0",
+            signature,
+            calldata: encodeAbiParameters(
+              t.functionInputTypes,
+              t.functionInputs,
             ),
           });
         }
 
         case "function-call":
         case "payable-function-call": {
-          const formattedInputs = formatAbiParameters(t.functionInputs);
-          const signature = `${t.functionName}(${formattedInputs})`;
+          const signature = `${t.functionName}(${t.functionInputTypes
+            .map((t) => formatAbiParameter(t))
+            .join(",")})`;
           return append({
             target: t.target,
             value: t.type === "payable-function-call" ? t.value : "0",
             signature,
             calldata: encodeAbiParameters(
+              t.functionInputTypes,
               t.functionInputs,
-              t.functionInputs.map((i) => i.value)
             ),
           });
         }
@@ -359,13 +541,11 @@ export const unparse = (transactions, { chainId }) => {
             calldata: t.calldata ?? "0x",
           });
 
-        // TODO
-
         default:
           throw new Error(`Unknown transaction type "${t.type}"`);
       }
     },
-    { targets: [], values: [], signatures: [], calldatas: [] }
+    { targets: [], values: [], signatures: [], calldatas: [] },
   );
 };
 
@@ -376,18 +556,19 @@ export const extractAmounts = (parsedTransactions) => {
       t.type !== "payer-top-up" &&
       // Exclude WETH deposits as these are handled separately
       t.type !== "weth-deposit" &&
-      t.value != null
+      t.value != null,
   );
   const wethTransfers = parsedTransactions.filter(
     (t) =>
       t.type === "weth-transfer" ||
       t.type === "weth-approval" ||
-      t.type === "weth-stream-funding"
+      t.type === "weth-stream-funding",
   );
   const usdcTransfers = parsedTransactions.filter(
     (t) =>
+      t.type === "usdc-approval" ||
       t.type === "usdc-transfer-via-payer" ||
-      t.type === "usdc-stream-funding-via-payer"
+      t.type === "usdc-stream-funding-via-payer",
   );
   const treasuryNounTransferNounIds = parsedTransactions
     .filter((t) => t.type === "treasury-noun-transfer")
@@ -398,15 +579,15 @@ export const extractAmounts = (parsedTransactions) => {
 
   const ethAmount = ethTransfersAndPayableCalls.reduce(
     (sum, t) => sum + t.value,
-    BigInt(0)
+    BigInt(0),
   );
   const wethAmount = wethTransfers.reduce(
     (sum, t) => sum + t.wethAmount,
-    BigInt(0)
+    BigInt(0),
   );
   const usdcAmount = usdcTransfers.reduce(
     (sum, t) => sum + t.usdcAmount,
-    BigInt(0)
+    BigInt(0),
   );
 
   return [
@@ -421,8 +602,36 @@ export const extractAmounts = (parsedTransactions) => {
 };
 
 export const buildActions = (transactions, { chainId }) => {
+  const getTransactionIndex = (t) => transactions.findIndex((t_) => t_ === t);
+
   let transactionsLeft = [...transactions];
   const actions = [];
+
+  const extractPropHouseAction = () => {
+    const { address: propHouseNounsHouseAddress } = resolveIdentifier(
+      chainId,
+      "prop-house-nouns-house",
+    );
+
+    const createRoundTx = transactionsLeft.find(
+      (t) =>
+        t.type === "prop-house-create-and-fund-round" &&
+        // We don’t support selecting custom houses
+        t.houseAddress === propHouseNounsHouseAddress,
+    );
+
+    if (createRoundTx == null) return null;
+
+    transactionsLeft = transactionsLeft.filter((t) => t !== createRoundTx);
+
+    return {
+      type: "prop-house-timed-round",
+      title: createRoundTx.title,
+      description: createRoundTx.description,
+      roundConfig: createRoundTx.roundConfig,
+      firstTransactionIndex: getTransactionIndex(createRoundTx),
+    };
+  };
 
   const extractStreamAction = () => {
     const streamTx = transactionsLeft.find((t) => t.type === "stream");
@@ -433,13 +642,14 @@ export const buildActions = (transactions, { chainId }) => {
       (t) =>
         t.type === "usdc-stream-funding-via-payer" &&
         t.receiverAddress.toLowerCase() ===
-          streamTx.streamContractAddress.toLowerCase()
+          streamTx.streamContractAddress.toLowerCase(),
     );
 
     if (usdcFundingTx != null) {
       transactionsLeft = transactionsLeft.filter(
-        (t) => t !== streamTx && t !== usdcFundingTx
+        (t) => t !== streamTx && t !== usdcFundingTx,
       );
+
       return {
         type: "streaming-payment",
         target: streamTx.receiverAddress,
@@ -448,6 +658,9 @@ export const buildActions = (transactions, { chainId }) => {
         startTimestamp: streamTx.startDate.getTime(),
         endTimestamp: streamTx.endDate.getTime(),
         predictedStreamContractAddress: streamTx.streamContractAddress,
+        firstTransactionIndex: Math.min(
+          ...[streamTx, usdcFundingTx].map(getTransactionIndex),
+        ),
       };
     }
 
@@ -455,7 +668,7 @@ export const buildActions = (transactions, { chainId }) => {
       (t) =>
         t.type === "weth-stream-funding" &&
         t.receiverAddress.toLowerCase() ===
-          streamTx.streamContractAddress.toLowerCase()
+          streamTx.streamContractAddress.toLowerCase(),
     );
 
     if (wethFundingTx == null) return null;
@@ -463,13 +676,13 @@ export const buildActions = (transactions, { chainId }) => {
     const wethDepositTx = transactionsLeft.find(
       (t) =>
         t.type === "weth-deposit" &&
-        t.value.toString() === wethFundingTx.wethAmount.toString()
+        t.value.toString() === wethFundingTx.wethAmount.toString(),
     );
 
     if (wethDepositTx == null) return null;
 
     transactionsLeft = transactionsLeft.filter(
-      (t) => t !== streamTx && t !== wethFundingTx && t !== wethDepositTx
+      (t) => t !== streamTx && t !== wethFundingTx && t !== wethDepositTx,
     );
 
     return {
@@ -480,6 +693,9 @@ export const buildActions = (transactions, { chainId }) => {
       startTimestamp: streamTx.startDate.getTime(),
       endTimestamp: streamTx.endDate.getTime(),
       predictedStreamContractAddress: streamTx.streamContractAddress,
+      firstTransactionIndex: Math.min(
+        ...[streamTx, wethFundingTx, wethDepositTx].map(getTransactionIndex),
+      ),
     };
   };
 
@@ -493,11 +709,12 @@ export const buildActions = (transactions, { chainId }) => {
         target: transferTx.target,
         currency: "eth",
         amount: formatEther(transferTx.value),
+        firstTransactionIndex: getTransactionIndex(transferTx),
       };
     }
 
     const usdcTransferTx = transactionsLeft.find(
-      (t) => t.type === "usdc-transfer-via-payer"
+      (t) => t.type === "usdc-transfer-via-payer",
     );
 
     if (usdcTransferTx != null) {
@@ -508,8 +725,9 @@ export const buildActions = (transactions, { chainId }) => {
         currency: "usdc",
         amount: formatUnits(
           usdcTransferTx.usdcAmount,
-          decimalsByCurrency["usdc"]
+          decimalsByCurrency["usdc"],
         ),
+        firstTransactionIndex: getTransactionIndex(usdcTransferTx),
       };
     }
 
@@ -526,34 +744,46 @@ export const buildActions = (transactions, { chainId }) => {
     return {
       type: "payer-top-up",
       amount: formatEther(topUpTx.value),
+      firstTransactionIndex: getTransactionIndex(topUpTx),
     };
   };
 
   const extractCustomTransactionAction = () => {
     if (transactionsLeft.length === 0) return null;
 
-    const { targets, signatures, calldatas, values } = unparse(
-      [transactionsLeft[0]],
-      { chainId }
-    );
+    const tx = transactionsLeft[0];
+
+    const { targets, signatures, calldatas, values } = unparse([tx], {
+      chainId,
+    });
 
     transactionsLeft = transactionsLeft.slice(1);
 
-    const { name, inputs } = decodeCalldataWithSignature({
+    const { name, inputs, inputTypes } = decodeCalldataWithSignature({
       signature: signatures[0],
       calldata: calldatas[0],
     });
+    const signature = `${name}(${inputTypes
+      .map((t) => formatAbiParameter(t))
+      .join(",")})`;
 
     return {
       type: "custom-transaction",
       contractCallTarget: targets[0],
-      contractCallSignature: `${name}(${inputs.map((i) => i.type).join(", ")})`,
-      contractCallArguments: inputs.map((i) => i.value),
+      contractCallSignature: signature,
+      contractCallArguments: inputs,
       contractCallValue: values[0],
+      firstTransactionIndex: getTransactionIndex(tx),
     };
   };
 
   while (transactionsLeft.length > 0) {
+    const propHouseAction = extractPropHouseAction();
+    if (propHouseAction != null) {
+      actions.push(propHouseAction);
+      continue;
+    }
+
     const streamAction = extractStreamAction();
     if (streamAction != null) {
       actions.push(streamAction);
@@ -581,7 +811,7 @@ export const buildActions = (transactions, { chainId }) => {
     throw new Error();
   }
 
-  return actions;
+  return arrayUtils.sortBy("firstTransactionIndex", actions);
 };
 
 export const resolveAction = (a, { chainId }) => {
@@ -655,6 +885,32 @@ export const resolveAction = (a, { chainId }) => {
         }
       }
 
+      case "prop-house-timed-round": {
+        const { address: propHouseNounsHouseAddress } = resolveIdentifier(
+          chainId,
+          "prop-house-nouns-house",
+        );
+        const getValue = () =>
+          a.roundConfig.awards.reduce((sum, award) => {
+            // Only support ETH for now
+            if (award.assetType !== ProphouseAssetType.ETH) throw new Error();
+            return sum + award.amount;
+          }, 0n);
+
+        return [
+          {
+            type: "prop-house-create-and-fund-round",
+            houseAddress: propHouseNounsHouseAddress,
+            title: a.title,
+            description: a.description,
+            roundType: "timed",
+            roundConfig: a.roundConfig,
+            assets: a.roundConfig.awards,
+            value: getValue(),
+          },
+        ];
+      }
+
       case "payer-top-up":
         return [
           {
@@ -665,13 +921,9 @@ export const resolveAction = (a, { chainId }) => {
         ];
 
       case "custom-transaction": {
-        const { name: functionName, inputs: inputTypes } = parseAbiItem(
-          `function ${a.contractCallSignature}`
+        const { name: functionName, inputs: functionInputTypes } = parseAbiItem(
+          `function ${a.contractCallSignature}`,
         );
-        const functionInputs = a.contractCallArguments.map((value, i) => ({
-          ...inputTypes[i],
-          value,
-        }));
 
         if (a.contractCallValue > 0)
           return [
@@ -679,7 +931,8 @@ export const resolveAction = (a, { chainId }) => {
               type: "payable-function-call",
               target: a.contractCallTarget,
               functionName,
-              functionInputs,
+              functionInputs: a.contractCallArguments,
+              functionInputTypes,
               value: a.contractCallValue,
             },
           ];
@@ -689,7 +942,8 @@ export const resolveAction = (a, { chainId }) => {
             type: "function-call",
             target: a.contractCallTarget,
             functionName,
-            functionInputs,
+            functionInputs: a.contractCallArguments,
+            functionInputTypes,
           },
         ];
       }
@@ -702,10 +956,45 @@ export const resolveAction = (a, { chainId }) => {
   return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
 };
 
+export const stringify = (parsedTransaction, { chainId }) => {
+  const { targets, values, signatures, calldatas } = unparse(
+    [parsedTransaction],
+    { chainId },
+  );
+
+  if (signatures[0] == null || signatures[0] === "") {
+    return [
+      targets[0] == null ? null : `target: ${targets[0]}`,
+      (calldatas[0] ?? "0x") === "0x" ? null : `calldata: ${calldatas[0]}`,
+      (values[0] ?? "0") === "0" ? null : `value: ${values[0]}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  const { name: functionName, inputs: inputTypes } = parseAbiItem(
+    `function ${signatures[0]}`,
+  );
+  const inputs = decodeAbiParameters(inputTypes, calldatas[0]);
+
+  const truncatedTarget = `${targets[0].slice(0, 6)}...${targets[0].slice(-4)}`;
+
+  const formattedFunctionCall =
+    inputs.length === 0
+      ? `${truncatedTarget}.${functionName}()`
+      : `${truncatedTarget}.${functionName}(\n  ${inputs
+          .map(ethereumUtils.formatSolidityArgument)
+          .join(",\n  ")}\n)`;
+
+  if (values[0] == null || values[0] === "0") return formattedFunctionCall;
+
+  return formattedFunctionCall + `\n value: ${values[0]}`;
+};
+
 export const isEqual = (ts1, ts2) => {
   if (ts1.targets.length !== ts2.targets.length) return false;
 
-  return ts1.targets.some((target1, i) => {
+  return ts1.targets.every((target1, i) => {
     const [signature1, calldata1, value1] = [
       ts1.signatures[i],
       ts1.calldatas[i],
@@ -719,10 +1008,10 @@ export const isEqual = (ts1, ts2) => {
     ];
 
     return (
-      target1 !== target2 ||
-      signature1 !== signature2 ||
-      calldata1 !== calldata2 ||
-      value1 !== value2
+      target1 === target2 &&
+      signature1 === signature2 &&
+      calldata1 === calldata2 &&
+      value1 === value2
     );
   });
 };

@@ -51,7 +51,7 @@ export const Root = ({
   const { triggerProps, overlayProps } = useOverlayTrigger(
     { type: "dialog" },
     state,
-    triggerRef
+    triggerRef,
   );
 
   return (
@@ -100,13 +100,13 @@ export const Trigger = React.forwardRef(
         {children}
       </button>
     );
-  }
+  },
 );
 
 const ContentInner = React.forwardRef(
   (
     { width = "auto", widthFollowTrigger, children, ...props },
-    forwardedRef
+    forwardedRef,
   ) => {
     const {
       isDialog,
@@ -140,7 +140,7 @@ const ContentInner = React.forwardRef(
         containerPadding,
         ...popoverInputProps,
       },
-      state
+      state,
     );
 
     const ref = useComposedRefs(popoverRef, forwardedRef);
@@ -170,11 +170,16 @@ const ContentInner = React.forwardRef(
           ref={ref}
           css={(t) =>
             css({
+              // Since Emotion’s <Global /> doesn’t work yet in Next we have
+              // to specify this on anything that’s outside the root div
+              colorScheme: t.name === "dark" ? "dark" : "light",
+
               minWidth: widthFollowTrigger ? 0 : "min-content",
               width: widthFollowTrigger
                 ? anchorRef.current?.offsetWidth ?? "auto"
                 : width,
               maxWidth: "calc(100vw - 2rem)",
+              color: t.colors.textNormal,
               background: t.colors.popoverBackground,
               borderRadius: "0.6rem",
               boxShadow: t.shadows.elevationHigh,
@@ -197,7 +202,7 @@ const ContentInner = React.forwardRef(
         </div>
       </>
     );
-  }
+  },
 );
 
 export const Content = React.forwardRef((props, ref) => {

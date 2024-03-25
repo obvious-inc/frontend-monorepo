@@ -1,15 +1,10 @@
 import React from "react";
-import { diffLines } from "diff";
-import { useNavigate } from "react-router-dom";
 import { css, useTheme } from "@emotion/react";
 import {
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import Input from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
-import DialogHeader from "@shades/ui-web/dialog-header";
-import DialogFooter from "@shades/ui-web/dialog-footer";
 import {
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
@@ -19,24 +14,21 @@ import {
   resolveAction as resolveActionTransactions,
   buildActions as buildActionsFromTransactions,
   isEqual as areTransactionsEqual,
+  stringify as stringifyTransaction,
 } from "../utils/transactions.js";
+import { diffParagraphs } from "../utils/diff.js";
 import { useProposalCandidate } from "../store.js";
 import useChainId from "../hooks/chain-id.js";
-import {
-  useUpdateProposalCandidate,
-  useCancelProposalCandidate,
-} from "../hooks/data-contract.js";
+import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
-import { PreviewUpdateDialog } from "./proposal-edit-dialog.js";
+import {
+  PreviewUpdateDialog,
+  SubmitUpdateDialog,
+  createMarkdownDescription,
+} from "./proposal-edit-dialog.js";
 
-const createMarkdownDescription = ({ title, body }) => {
-  const markdownBody = messageUtils.toMarkdown(richTextToMessageBlocks(body));
-  return `# ${title.trim()}\n\n${markdownBody}`;
-};
-
-const CandidateEditDialog = ({ candidateId, dismiss }) => {
+const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
-  const navigate = useNavigate();
   const chainId = useChainId();
   const scrollContainerRef = React.useRef();
 
@@ -57,9 +49,9 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
         candidate.latestVersion.content.transactions,
         {
           chainId,
-        }
+        },
       ),
-    [candidate, chainId]
+    [candidate, chainId],
   );
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
@@ -70,7 +62,7 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
   const [actions, setActions] = React.useState(persistedActions);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
+  // const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -79,55 +71,75 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
 
     if (hasTitleChanges) return true;
 
-    const hasActionChanges =
-      actions.length !== persistedActions.length ||
-      actions.some((a, i) => {
-        const persistedAction = persistedActions[i];
+    const transactions = unparseTransactions(
+      actions.flatMap((a) => resolveActionTransactions(a, { chainId })),
+      { chainId },
+    );
 
-        const transactions = unparseTransactions(
-          resolveActionTransactions(a, { chainId }),
-          {
-            chainId,
-          }
-        );
-        const persistedTransactions = unparseTransactions(
-          resolveActionTransactions(persistedAction, { chainId }),
-          { chainId }
-        );
+    const persistedTransactions = {
+      targets: candidate.latestVersion.content.targets,
+      signatures: candidate.latestVersion.content.signatures,
+      calldatas: candidate.latestVersion.content.calldatas,
+      values: candidate.latestVersion.content.values,
+    };
 
-        return areTransactionsEqual(transactions, persistedTransactions);
-      });
+    const hasActionChanges = !areTransactionsEqual(
+      transactions,
+      persistedTransactions,
+    );
 
     if (hasActionChanges) return true;
 
     const markdownBody = messageUtils.toMarkdown(
-      richTextToMessageBlocks(deferredBody)
+      richTextToMessageBlocks(deferredBody),
     );
 
     const hasBodyChanges = markdownBody !== persistedMarkdownBody;
 
     return hasBodyChanges;
   }, [
+    candidate,
     title,
     persistedTitle,
     deferredBody,
     persistedMarkdownBody,
     actions,
-    persistedActions,
     chainId,
   ]);
 
-  const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
-  const cancelProposalCandidate = useCancelProposalCandidate(candidate.slug);
+  const dismissDialog = () => {
+    if (!hasChanges) {
+      closeDialog();
+      return;
+    }
 
-  const diff = React.useMemo(
-    () =>
-      diffLines(
-        persistedDescription,
-        createMarkdownDescription({ title, body: deferredBody })
-      ),
-    [title, deferredBody, persistedDescription]
-  );
+    if (
+      !confirm(
+        "This will discard all your changes. Are you sure you wish to continue?",
+      )
+    )
+      return;
+
+    closeDialog();
+  };
+
+  const updateProposalCandidate = useUpdateProposalCandidate(candidate.slug);
+
+  const createDescriptionDiff = () =>
+    diffParagraphs(
+      persistedDescription,
+      createMarkdownDescription({ title, body: deferredBody }),
+    );
+  const createTransactionsDiff = () =>
+    diffParagraphs(
+      candidate.latestVersion.content.transactions
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n"),
+      actions
+        .flatMap((a) => resolveActionTransactions(a, { chainId }))
+        .map((t) => stringifyTransaction(t, { chainId }))
+        .join("\n\n"),
+    );
 
   const submit = async ({ updateMessage }) => {
     try {
@@ -135,15 +147,16 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
 
       const description = createMarkdownDescription({ title, body });
       const transactions = actions.flatMap((a) =>
-        resolveActionTransactions(a, { chainId })
+        resolveActionTransactions(a, { chainId }),
       );
 
       await updateProposalCandidate({
         description,
         transactions,
+        targetProposalId: candidate.latestVersion.targetProposalId,
         updateMessage,
       });
-      dismiss();
+      closeDialog();
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -152,13 +165,13 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
     }
   };
 
-  // React.useEffect(() => {
-  //   const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
-  //   setBody(messageToRichTextBlocks(messageBlocks));
-  // }, [persistedTitle, persistedMarkdownBody]);
-
   return (
-    <>
+    <Dialog
+      isOpen={isOpen}
+      tray
+      onRequestClose={dismissDialog}
+      width="135.6rem"
+    >
       <div
         ref={scrollContainerRef}
         css={css({
@@ -183,24 +196,6 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           submitLabel="Preview update"
           submitDisabled={!hasChanges}
           hasPendingSubmit={hasPendingSubmit}
-          onDelete={() => {
-            if (!confirm("Are you sure you wish to cancel this candidate?"))
-              return;
-
-            setPendingCancel(true);
-
-            cancelProposalCandidate().then(
-              () => {
-                navigate("/", { replace: true });
-              },
-              (e) => {
-                setPendingCancel(false);
-                return Promise.reject(e);
-              }
-            );
-          }}
-          deleteLabel="Cancel"
-          hasPendingDelete={hasPendingCancel}
           containerHeight="calc(100vh - 6rem)"
           scrollContainerRef={scrollContainerRef}
           background={theme.colors.dialogBackground}
@@ -213,7 +208,9 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           close={() => {
             setShowPreviewDialog(false);
           }}
-          diff={diff}
+          createDescriptionDiff={createDescriptionDiff}
+          createTransactionsDiff={createTransactionsDiff}
+          submitLabel="Continue to submission"
           submit={() => {
             setShowPreviewDialog(false);
             setShowSubmitDialog(true);
@@ -230,65 +227,6 @@ const CandidateEditDialog = ({ candidateId, dismiss }) => {
           hasPendingSubmit={hasPendingSubmit}
           submit={submit}
         />
-      )}
-    </>
-  );
-};
-
-const SubmitUpdateDialog = ({ isOpen, hasPendingSubmit, submit, close }) => {
-  const [updateMessage, setUpdateMessage] = React.useState("");
-
-  return (
-    <Dialog
-      isOpen={isOpen}
-      onRequestClose={() => {
-        close();
-      }}
-      width="54rem"
-      css={css({ overflow: "auto" })}
-    >
-      {({ titleProps }) => (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submit({ updateMessage });
-          }}
-          css={css({
-            overflow: "auto",
-            padding: "1.5rem",
-            "@media (min-width: 600px)": {
-              padding: "2rem",
-            },
-          })}
-        >
-          <DialogHeader
-            title="Submit"
-            titleProps={titleProps}
-            dismiss={close}
-          />
-          <main>
-            <Input
-              multiline
-              label="Update message (optional)"
-              rows={3}
-              placeholder="..."
-              value={updateMessage}
-              onChange={(e) => {
-                setUpdateMessage(e.target.value);
-              }}
-              disabled={hasPendingSubmit}
-            />
-          </main>
-          <DialogFooter
-            cancel={close}
-            cancelButtonLabel="Cancel"
-            submitButtonLabel="Submit update"
-            submitButtonProps={{
-              isLoading: hasPendingSubmit,
-              disabled: hasPendingSubmit,
-            }}
-          />
-        </form>
       )}
     </Dialog>
   );

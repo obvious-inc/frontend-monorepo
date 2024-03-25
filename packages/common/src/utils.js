@@ -11,12 +11,6 @@ export * as permission from "./utils/permissions.js";
 export * as emoji from "./utils/emoji.js";
 export * as ethereum from "./utils/ethereum.js";
 export * as markdown from "./utils/markdown.js";
-export {
-  isTouchDevice,
-  getImageFileDimensions,
-  getImageDimensionsFromUrl,
-  requestIdleCallback,
-  reloadPageOnce,
-} from "./utils/misc";
 export * as dimension from "./utils/dimensions.js";
+export * from "./utils/misc";
 export { default as invariant } from "./utils/invariant.js";

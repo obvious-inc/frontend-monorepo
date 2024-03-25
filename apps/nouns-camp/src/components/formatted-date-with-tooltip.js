@@ -13,6 +13,7 @@ const FormattedDateWithTooltip = React.memo(
     disableRelative,
     disableTooltip,
     capitalize = true,
+    children,
     ...props
   }) => {
     if (value == null) throw new Error();
@@ -26,20 +27,7 @@ const FormattedDateWithTooltip = React.memo(
       const dayDifference = datesDifferenceInDays(valueDate, new Date());
 
       if (Math.abs(dayDifference) > relativeDayThreshold)
-        return (
-          <>
-            {!tinyRelative && (
-              <>
-                <span
-                  style={{ textTransform: capitalize ? "capitalize" : "none" }}
-                >
-                  on
-                </span>{" "}
-              </>
-            )}
-            <FormattedDate value={valueDate} {...props} />
-          </>
-        );
+        return <FormattedDate value={valueDate} {...props} />;
 
       if (tinyRelative) {
         const { seconds, minutes, hours, days, weeks } =
@@ -57,12 +45,12 @@ const FormattedDateWithTooltip = React.memo(
             {dayDifference === 0
               ? "today"
               : dayDifference === 1
-              ? "tomorrow"
-              : dayDifference === -1
-              ? "yesterday"
-              : dayDifference > 0
-              ? `in ${dayDifference} days`
-              : `${Math.abs(dayDifference)} days ago`}
+                ? "tomorrow"
+                : dayDifference === -1
+                  ? "yesterday"
+                  : dayDifference > 0
+                    ? `in ${dayDifference} days`
+                    : `${Math.abs(dayDifference)} days ago`}
           </span>
           {Math.abs(dayDifference) <= 1 && (
             <>
@@ -86,7 +74,7 @@ const FormattedDateWithTooltip = React.memo(
     return (
       <Tooltip.Root>
         <Tooltip.Trigger asChild>
-          <span>{format()}</span>
+          <span>{children ?? format()}</span>
         </Tooltip.Trigger>
         <Tooltip.Content side="top" sideOffset={tooltipSideOffset}>
           <FormattedDate
@@ -101,7 +89,7 @@ const FormattedDateWithTooltip = React.memo(
         </Tooltip.Content>
       </Tooltip.Root>
     );
-  }
+  },
 );
 
 export default FormattedDateWithTooltip;

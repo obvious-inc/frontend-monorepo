@@ -19,7 +19,7 @@ const Input = React.forwardRef(
       labelProps,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [id] = React.useState(() => genId());
 
@@ -27,8 +27,8 @@ const Input = React.forwardRef(
       CustomComponent != null
         ? CustomComponent
         : multiline
-        ? AutoAdjustingHeightTextarea
-        : "input";
+          ? AutoAdjustingHeightTextarea
+          : "input";
 
     const renderInput = (extraProps) => (
       <Component
@@ -55,7 +55,7 @@ const Input = React.forwardRef(
             "::placeholder": { color: t.colors.inputPlaceholder },
             "&:disabled": { color: t.colors.textMuted },
             "&:focus-visible": { boxShadow: t.shadows.focus },
-            '&[type="date"]': {
+            '&[type="date"], &[type="time"]': {
               WebkitAppearance: "none",
               minHeight: "3.6rem",
               "::-webkit-datetime-edit": {
@@ -77,8 +77,8 @@ const Input = React.forwardRef(
             size === "small"
               ? "0.5rem 0.7rem"
               : size === "large"
-              ? "0.9rem 1.1rem"
-              : "0.7rem 0.9rem",
+                ? "0.9rem 1.1rem"
+                : "0.7rem 0.9rem",
           "--text-size":
             size === "large"
               ? "var(--text-size-large)"
@@ -114,7 +114,7 @@ const Input = React.forwardRef(
         )}
       </div>
     );
-  }
+  },
 );
 
 export const Label = (props) => (

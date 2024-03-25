@@ -1,4 +1,20 @@
+import { isAddress } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
+
+export const normalizeId = (id) => {
+  const parts = id.toLowerCase().split("-");
+  const proposerFirst = isAddress(
+    parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`,
+  );
+  const rawProposerId = proposerFirst ? parts[0] : parts.slice(-1)[0];
+  const proposerId = rawProposerId.startsWith("0x")
+    ? rawProposerId
+    : `0x${rawProposerId}`;
+
+  const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
+
+  return `${proposerId}-${slug}`;
+};
 
 export const extractSlugFromId = (candidateId) => {
   const slugParts = candidateId.split("-").slice(1);
@@ -13,7 +29,7 @@ export const makeUrlId = (id) => {
 
 export const getSponsorSignatures = (
   candidate,
-  { excludeInvalid = false, activeProposerIds } = {}
+  { excludeInvalid = false, activeProposerIds } = {},
 ) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
@@ -42,36 +58,31 @@ export const getSponsorSignatures = (
     }, []);
 };
 
+const buildFeedbackPostItems = (candidate) => {
+  const targetProposalId = candidate.latestVersion?.targetProposalId;
+  const posts = candidate.feedbackPosts ?? [];
+  return posts.map((p) => ({
+    type: "feedback-post",
+    id: `${candidate.id}-${p.id}`,
+    authorAccount: p.voterId,
+    body: p.reason == null || p.reason.trim() === "" ? null : p.reason,
+    support: p.support,
+    voteCount: p.voter.nounsRepresented?.length,
+    timestamp: p.createdTimestamp,
+    blockNumber: BigInt(p.createdBlock),
+    isPending: p.isPending,
+    candidateId: candidate.id,
+    targetProposalId,
+  }));
+};
+
 export const buildFeed = (candidate) => {
   if (candidate == null) return [];
 
   const candidateId = candidate.id;
   const targetProposalId = candidate.latestVersion?.targetProposalId;
 
-  const createdEventItem = {
-    type: "event",
-    eventType: "candidate-created",
-    id: `${candidate.id}-created`,
-    timestamp: candidate.createdTimestamp,
-    blockNumber: candidate.createdBlock,
-    authorAccount: candidate.proposerId,
-    candidateId,
-    targetProposalId,
-  };
-  const feedbackPostItems =
-    candidate.feedbackPosts?.map((p) => ({
-      type: "feedback-post",
-      id: `${candidate.id}-${p.id}`,
-      authorAccount: p.voterId,
-      body: p.reason,
-      support: p.support,
-      voteCount: p.voter.nounsRepresented?.length,
-      timestamp: p.createdTimestamp,
-      blockNumber: BigInt(p.createdBlock),
-      isPending: p.isPending,
-      candidateId,
-      targetProposalId,
-    })) ?? [];
+  const feedbackPostItems = buildFeedbackPostItems(candidate);
 
   const updateEventItems =
     candidate.versions
@@ -79,7 +90,7 @@ export const buildFeed = (candidate) => {
       .map((v) => ({
         type: "event",
         eventType: "candidate-updated",
-        id: `candidate-update-${v.createdBlock}`,
+        id: `candidate-update-${candidate.id}-${v.id}`,
         body: v.updateMessage,
         blockNumber: v.createdBlock,
         timestamp: v.createdTimestamp,
@@ -87,7 +98,19 @@ export const buildFeed = (candidate) => {
         authorAccount: candidate.proposerId, // only proposer can update
       })) ?? [];
 
-  const items = [createdEventItem, ...updateEventItems, ...feedbackPostItems];
+  const items = [...updateEventItems, ...feedbackPostItems];
+
+  if (candidate.createdBlock != null)
+    items.push({
+      type: "event",
+      eventType: "candidate-created",
+      id: `${candidate.id}-created`,
+      timestamp: candidate.createdTimestamp,
+      blockNumber: candidate.createdBlock,
+      authorAccount: candidate.proposerId,
+      candidateId,
+      targetProposalId,
+    });
 
   if (candidate.canceledBlock != null)
     items.push({
@@ -102,7 +125,7 @@ export const buildFeed = (candidate) => {
 
   const signatureItems = getSponsorSignatures(candidate).map((s) => ({
     type: "candidate-signature-added",
-    id: `candidate-signature-added-${s.sig}`,
+    id: `candidate-signature-added-${candidate.id}-${s.sig}`,
     authorAccount: s.signer.id,
     body: s.reason,
     voteCount: s.signer.nounsRepresented?.length,
@@ -130,7 +153,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
 
   const sponsorNounIds = signatures.flatMap((s) =>
-    s.signer.nounsRepresented.map((n) => n.id)
+    s.signer.nounsRepresented.map((n) => n.id),
   );
 
   const sponsoringNounIds = arrayUtils.unique([
@@ -141,13 +164,13 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
     [
       ...signatures.map((s) => s.signer.id),
       proposerDelegateNounIds.length === 0 ? null : proposerDelegate.id,
-    ].filter(Boolean)
+    ].filter(Boolean),
   );
 
   // Sort first to make sure we pick the most recent feedback from per voter
   const sortedFeedbackPosts = arrayUtils.sortBy(
     { value: (c) => c.createdTimestamp, order: "desc" },
-    candidate.feedbackPosts ?? []
+    candidate.feedbackPosts ?? [],
   );
 
   const supportByNounId = sortedFeedbackPosts.reduce(
@@ -163,7 +186,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
       return { ...supportByNounId, ...newSupportByNounId };
     },
     // Assume that the sponsors will vote for
-    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
+    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {}),
   );
 
   const supportByDelegateId = sortedFeedbackPosts.reduce(
@@ -172,7 +195,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
       return { ...supportByDelegateId, [post.voterId]: post.support };
     },
     // Assume that sponsors will vote for
-    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {})
+    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {}),
   );
 
   const countSignals = (supportList) =>
@@ -181,7 +204,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
         const signalGroup = { 0: "against", 1: "for", 2: "abstain" }[support];
         return { ...acc, [signalGroup]: acc[signalGroup] + 1 };
       },
-      { for: 0, against: 0, abstain: 0 }
+      { for: 0, against: 0, abstain: 0 },
     );
 
   return {

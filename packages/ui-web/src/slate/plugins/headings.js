@@ -87,8 +87,8 @@ const middleware = (editor) => {
     (e) =>
       withEmptyBlockBackwardDeleteTransform(
         { fromElementType: elementTypes, toElementType: "paragraph" },
-        e
-      )
+        e,
+      ),
   )(editor);
 };
 

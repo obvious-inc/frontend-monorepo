@@ -1,34 +1,37 @@
 import React from "react";
-import { Link as RouterLink } from "react-router-dom";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { Noggles as NogglesIcon } from "@shades/ui-web/icons";
-import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
+import Button from "@shades/ui-web/button";
+import { Retweet as RepostIcon } from "@shades/ui-web/icons";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
+import { useWallet } from "../hooks/wallet.js";
 import { useNoun, useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
+import MarkdownRichText from "./markdown-rich-text.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 
-const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
+const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
-const BODY_TRUNCATION_HEIGHT_THRESHOLD = "18em";
-
-const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
+const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
   <ul
     css={(t) =>
       css({
         lineHeight: 1.4285714286, // 20px line height given font size if 14px
         fontSize: t.text.sizes.base,
+        '[role="listitem"]': {
+          scrollMargin: "calc(3.2rem + 1.6rem) 0",
+        },
         '[role="listitem"] + [role="listitem"]': {
           marginTop: "var(--vertical-spacing)",
         },
@@ -90,15 +93,31 @@ const ActivityFeed = ({ context, items = [], spacing = "2rem" }) => (
     style={{ "--vertical-spacing": spacing }}
   >
     {items.map((item) => (
-      <FeedItem key={item.id} {...item} context={context} />
+      <FeedItem key={item.id} {...item} context={context} onQuote={onQuote} />
     ))}
   </ul>
 );
 
-const FeedItem = React.memo(({ context, ...item }) => {
+const FeedItem = React.memo(({ context, onQuote, ...item }) => {
+  const { address: connectedAccount } = useWallet();
   const isIsolatedContext = ["proposal", "candidate"].includes(context);
+  const hasBody = item.body != null && item.body.trim() !== "";
+  const hasMultiParagraphBody =
+    hasBody && item.body.trim().split("\n").length > 1;
+  const showQuoteAction =
+    onQuote != null &&
+    ["vote", "feedback-post"].includes(item.type) &&
+    hasBody &&
+    connectedAccount != null &&
+    connectedAccount !== item.authorAccount;
+
   return (
-    <div key={item.id} role="listitem" data-pending={item.isPending}>
+    <div
+      key={item.id}
+      id={item.id}
+      role="listitem"
+      data-pending={item.isPending}
+    >
       <div data-header>
         <div>
           {item.type === "event" || item.authorAccount == null ? (
@@ -129,10 +148,10 @@ const FeedItem = React.memo(({ context, ...item }) => {
                 css({
                   flex: 1,
                   minWidth: 0,
-                  display: "-webkit-box",
-                  WebkitBoxOrient: "vertical",
-                  WebkitLineClamp: 2,
-                  overflow: "hidden",
+                  // display: "-webkit-box",
+                  // WebkitBoxOrient: "vertical",
+                  // WebkitLineClamp: 2,
+                  // overflow: "hidden",
                   color: t.colors.textDimmed,
                 })
               }
@@ -174,28 +193,66 @@ const FeedItem = React.memo(({ context, ...item }) => {
         </div>
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-        {(item.body || null) != null && (
-          <React.Suspense
-            fallback={
-              <div
-                css={(t) =>
-                  css({
-                    margin: "0.5rem 0",
-                    background: t.colors.backgroundModifierNormal,
-                    borderRadius: "0.3rem",
-                  })
-                }
-              >
-                &nbsp;
-              </div>
+        {item.quotes?.length > 0 && (
+          <ul
+            css={(t) =>
+              css({
+                listStyle: "none",
+                fontSize: "0.875em",
+                marginBottom: "0.8rem",
+                li: {
+                  position: "relative",
+                  border: "0.1rem solid",
+                  borderRadius: "0.5rem",
+                  borderColor: t.colors.borderLighter,
+                  padding: "0.4rem 0.6rem",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                },
+                "li + li": { marginTop: "0.6rem" },
+              })
             }
+            style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
           >
-            <ItemBody
-              text={item.body}
-              displayImages={item.type === "event"}
-              truncateLines={!isIsolatedContext}
-            />
-          </React.Suspense>
+            {item.quotes.map((quote) => (
+              <li key={quote.id}>
+                <NextLink
+                  href={
+                    context !== "proposal"
+                      ? `/proposals/${item.proposalId}#${quote.id}`
+                      : `#${quote.id}`
+                  }
+                  style={{ display: "block", position: "absolute", inset: 0 }}
+                />
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={quote.authorAccount}
+                  style={{ position: "relative" }}
+                />
+                :{" "}
+                <MarkdownRichText
+                  text={quote.body}
+                  displayImages={false}
+                  inline
+                  css={css({
+                    // Make all headings small
+                    "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+                    "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+                    "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                      { marginBottom: "0.625em" },
+                  })}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+        {hasBody && (
+          <ItemBody
+            text={item.body}
+            displayImages={item.type === "event"}
+            truncateLines={!isIsolatedContext}
+          />
         )}
         {item.type === "candidate-signature-added" && (
           <div
@@ -223,6 +280,30 @@ const FeedItem = React.memo(({ context, ...item }) => {
             )}
           </div>
         )}
+
+        {showQuoteAction && (
+          <div
+            css={css({ marginTop: "0.8rem", display: "flex", gap: "0.8rem" })}
+          >
+            <Button
+              size="tiny"
+              variant="opaque"
+              onClick={() => {
+                onQuote(item.id);
+              }}
+              icon={<RepostIcon style={{ width: "1.1rem", height: "auto" }} />}
+            />
+            {/* <Button
+              size="tiny"
+              variant="opaque"
+              icon={
+                <ReplyArrowIcon style={{ width: "1rem", height: "auto" }} />
+              }
+            >
+              Reply
+            </Button> */}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -236,18 +317,15 @@ const ItemBody = React.memo(
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
       React.useState(null);
 
-    const isCollapsed = enableLineTruncation && isCollapsed_;
-    const isEffectivelyTruncating = isCollapsed && exceedsTruncationThreshold;
+    const isEnabled = enableLineTruncation && exceedsTruncationThreshold;
+    const isCollapsed = isEnabled && isCollapsed_;
 
     React.useEffect(() => {
-      if (!isCollapsed) return;
-
       const observer = new ResizeObserver(() => {
         if (containerRef.current == null) return;
         setExceedsTruncationThreshold(
-          containerRef.current.scrollHeight -
-            containerRef.current.offsetHeight >
-            100
+          containerRef.current.scrollHeight >
+            BODY_TRUNCATION_HEIGHT_THRESHOLD + 100
         );
       });
 
@@ -256,18 +334,18 @@ const ItemBody = React.memo(
       return () => {
         observer.disconnect();
       };
-    }, [isCollapsed]);
+    }, []);
 
     return (
-      <div css={css({ padding: "0.5rem 0" })}>
+      <div css={css({ margin: "0.5rem 0" })}>
         <div
           ref={containerRef}
           css={css({ overflow: "hidden" })}
           style={{
             maxHeight: isCollapsed
-              ? BODY_TRUNCATION_HEIGHT_THRESHOLD
+              ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
               : undefined,
-            maskImage: isEffectivelyTruncating
+            maskImage: isCollapsed
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
           }}
@@ -288,7 +366,7 @@ const ItemBody = React.memo(
           />
         </div>
 
-        {enableLineTruncation && exceedsTruncationThreshold && (
+        {isEnabled && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
@@ -320,9 +398,9 @@ const ItemTitle = ({ item, context }) => {
               proposal.title
             } `;
       return (
-        <RouterLink to={`/proposals/${proposalId}`}>
+        <NextLink prefetch href={`/proposals/${proposalId}`}>
           {children ?? title}
-        </RouterLink>
+        </NextLink>
       );
     }
 
@@ -331,13 +409,14 @@ const ItemTitle = ({ item, context }) => {
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
       return (
-        <RouterLink
-          to={`/candidates/${encodeURIComponent(
+        <NextLink
+          prefetch
+          href={`/candidates/${encodeURIComponent(
             makeCandidateUrlId(candidateId)
           )}`}
         >
           {children ?? title}
-        </RouterLink>
+        </NextLink>
       );
     }
 
@@ -609,25 +688,38 @@ const ItemTitle = ({ item, context }) => {
 
     case "vote":
     case "feedback-post": {
-      const signalWord = item.type === "vote" ? "voted" : "signaled";
+      const signalWord = (() => {
+        if (item.type === "feedback-post") return "signaled";
+        const isRevote = item.quotes?.some((quote) => quote.type === "vote");
+        return isRevote ? "revoted" : "voted";
+      })();
       return (
         <span>
           {accountName}{" "}
-          {item.support === 0 ? (
-            <Signal negative>
-              {signalWord} against ({item.voteCount})
-            </Signal>
-          ) : item.support === 1 ? (
-            <Signal positive>
-              {signalWord} for ({item.voteCount})
-            </Signal>
-          ) : item.type === "vote" ? (
-            <Signal>abstained</Signal>
-          ) : isIsolatedContext ? (
-            "commented"
-          ) : (
-            "commented on"
-          )}
+          {(() => {
+            switch (item.support) {
+              case 0:
+                return (
+                  <Signal negative>
+                    {signalWord} against ({item.voteCount})
+                  </Signal>
+                );
+              case 1:
+                return (
+                  <Signal positive>
+                    {signalWord} for ({item.voteCount})
+                  </Signal>
+                );
+              case 2:
+                return item.type === "vote" ? (
+                  <Signal>abstained ({item.voteCount})</Signal>
+                ) : isIsolatedContext ? (
+                  "commented"
+                ) : (
+                  "commented on"
+                );
+            }
+          })()}
           {!isIsolatedContext && (
             <>
               {" "}
@@ -865,41 +957,11 @@ const Signal = ({ positive, negative, ...props }) => (
       "--color": positive
         ? "var(--positive-text)"
         : negative
-        ? "var(--negative-text)"
-        : "var(--neutral-text)",
+          ? "var(--negative-text)"
+          : "var(--neutral-text)",
     }}
     {...props}
   />
-);
-
-export const VotingPowerNoggle = ({ count }) => (
-  <Tooltip.Root>
-    <Tooltip.Trigger asChild>
-      <span
-        css={(t) =>
-          css({
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.5rem",
-            fontSize: t.text.sizes.small,
-            color: t.colors.textDimmed,
-          })
-        }
-      >
-        {count}
-        <NogglesIcon
-          style={{
-            display: "inline-flex",
-            width: "1.7rem",
-            height: "auto",
-          }}
-        />
-      </span>
-    </Tooltip.Trigger>
-    <Tooltip.Content side="top" sideOffset={5}>
-      {count} {count === 1 ? "noun" : "nouns"}
-    </Tooltip.Content>
-  </Tooltip.Root>
 );
 
 export default ActivityFeed;

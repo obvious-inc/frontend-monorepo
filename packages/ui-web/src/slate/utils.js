@@ -8,12 +8,12 @@ export const mergePlugins = (plugins) => {
     ...plugins
       .filter((p) => p.middleware != null)
       .map((p) => p.middleware)
-      .reverse()
+      .reverse(),
   );
 
   const elements = plugins.reduce(
     (acc, p) => (p.elements == null ? acc : { ...acc, ...p.elements }),
-    []
+    [],
   );
 
   const pipeEventHandler =
@@ -25,10 +25,10 @@ export const mergePlugins = (plugins) => {
 
   const handlers = {
     onChange: compose(
-      ...plugins.map((p) => pipeEventHandler(p.handlers?.onChange))
+      ...plugins.map((p) => pipeEventHandler(p.handlers?.onChange)),
     ),
     onKeyDown: compose(
-      ...plugins.map((p) => pipeEventHandler(p.handlers?.onKeyDown))
+      ...plugins.map((p) => pipeEventHandler(p.handlers?.onKeyDown)),
     ),
   };
 
@@ -61,8 +61,13 @@ export const isNodeEmpty = (el, options = {}) => {
 };
 
 // TODO: move to element specific plugins
-export const toMessageBlocks = (nodes) =>
-  nodes.map((n) => {
+export const toMessageBlocks = (nodes) => {
+  const stringify = (n) => {
+    if (n.children == null) return n.text;
+    return n.children.map(stringify).join("");
+  };
+
+  return nodes.map((n) => {
     if (n.type == null) return n;
 
     if (n.type === "code-block")
@@ -81,11 +86,7 @@ export const toMessageBlocks = (nodes) =>
 
     if (n.type.startsWith("heading-")) {
       // Merge content into a single child
-      let text = "";
-      for (const node of n.children) {
-        text += node.text;
-      }
-      return { type: n.type, children: [{ text }] };
+      return { type: n.type, children: [{ text: stringify(n) }] };
     }
 
     if (n.children == null) return n;
@@ -100,6 +101,7 @@ export const toMessageBlocks = (nodes) =>
           : children.filter((n) => !isNodeEmpty(n, { trim: false })),
     };
   });
+};
 
 // TODO: move to element specific plugins
 export const fromMessageBlocks = (blocks) =>
@@ -272,13 +274,13 @@ export const intersectsSelection = (editor, nodePath) => {
   const [nodeStartPoint, nodeEndPoint] = Editor.edges(editor, nodePath);
   return Range.includes(
     { anchor: nodeStartPoint, focus: nodeEndPoint },
-    editor.selection
+    editor.selection,
   );
 };
 
 export const withBlockPrefixShortcut = (
   { prefix, elementType, instant = false, transform, afterTransform },
-  editor
+  editor,
 ) => {
   const { insertText } = editor;
 
@@ -351,7 +353,7 @@ export const withBlockPrefixShortcut = (
 
 export const withEmptyBlockBackwardDeleteTransform = (
   { fromElementType, toElementType },
-  editor
+  editor,
 ) => {
   const { deleteBackward } = editor;
 

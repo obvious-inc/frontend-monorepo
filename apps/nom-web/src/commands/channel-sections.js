@@ -29,7 +29,7 @@ const commands = {
 
       const channelSections = state.selectServerChannelSections(serverId);
       const section = channelSections.find(
-        (s) => s.name.toLowerCase() === name.toLowerCase()
+        (s) => s.name.toLowerCase() === name.toLowerCase(),
       );
 
       if (section == null) {
@@ -90,7 +90,7 @@ const commands = {
 
       const sections = state.selectServerChannelSections(serverId);
       const section = sections.find(
-        (s) => s.name.toLowerCase() === name.toLowerCase()
+        (s) => s.name.toLowerCase() === name.toLowerCase(),
       );
 
       const updatedSections = sections.map((s) => ({
@@ -126,15 +126,17 @@ const commands = {
       const currentSection = state.selectChannelSectionWithChild(channelId);
 
       const currentSectionIndex = sections.findIndex(
-        (s) => s.id === currentSection.id
+        (s) => s.id === currentSection.id,
       );
 
       const nextIndex = Math.max(
         0,
         Math.min(
           sections.length - 1,
-          direction === "up" ? currentSectionIndex - 1 : currentSectionIndex + 1
-        )
+          direction === "up"
+            ? currentSectionIndex - 1
+            : currentSectionIndex + 1,
+        ),
       );
 
       const reorderedSections = [...sections];

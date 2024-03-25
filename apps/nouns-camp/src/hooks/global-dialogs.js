@@ -13,7 +13,7 @@ export const Provider = ({ dialogs, children }) => {
         return next;
       });
     },
-    [setOpenDialogs]
+    [setOpenDialogs],
   );
 
   const close = React.useCallback(
@@ -24,7 +24,7 @@ export const Provider = ({ dialogs, children }) => {
         return next;
       });
     },
-    [setOpenDialogs]
+    [setOpenDialogs],
   );
 
   const toggle = React.useCallback(
@@ -41,12 +41,12 @@ export const Provider = ({ dialogs, children }) => {
         return next;
       });
     },
-    [setOpenDialogs]
+    [setOpenDialogs],
   );
 
   const contextValue = React.useMemo(
     () => ({ openDialogs, open, close, toggle }),
-    [openDialogs, open, close, toggle]
+    [openDialogs, open, close, toggle],
   );
 
   return (
@@ -60,7 +60,7 @@ export const Provider = ({ dialogs, children }) => {
               isOpen={openDialogs.has(key)}
               close={() => close(key)}
             />
-          ) : null
+          ) : null,
         )}
       </React.Suspense>
     </Context.Provider>

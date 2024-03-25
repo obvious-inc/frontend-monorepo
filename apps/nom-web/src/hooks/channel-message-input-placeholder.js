@@ -39,7 +39,7 @@ const useMessageInputPlaceholder = (channelId) => {
       const walletAddressIsMember = channel.members?.some(
         (m) =>
           m.walletAddress != null &&
-          m.walletAddress.toLowerCase() === walletAccountAddress.toLowerCase()
+          m.walletAddress.toLowerCase() === walletAccountAddress.toLowerCase(),
       );
 
       return walletAddressIsMember

@@ -38,7 +38,7 @@ const Select = React.forwardRef(
       buttonProps,
       ...props
     },
-    forwardedRef
+    forwardedRef,
   ) => {
     const selectProps = {
       ...props,
@@ -143,7 +143,7 @@ const Select = React.forwardRef(
         </Popover.Root>
       </>
     );
-  }
+  },
 );
 
 const ListBox = ({ state, ...props }) => {

@@ -1,4 +1,8 @@
 node_modules
+dist
 .env
+.env.local
 .vercel
+.next
+.turbo
 .DS_Store

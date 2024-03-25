@@ -1,5 +1,6 @@
 import { marked } from "marked";
-import { string as stringUtils, emoji as emojiUtils } from "../utils.js";
+import { getUserPerceivedCharacters } from "./string.js";
+import { isEmoji } from "./emoji.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -13,11 +14,34 @@ const fixUrl = (url) => {
   }
 };
 
+const commonHtmlEnties = {
+  amp: "&",
+  apos: "'",
+  lt: "<",
+  gt: ">",
+  nbsp: " ",
+  quot: '"',
+};
+
 const decodeHtmlEntities = (string) => {
-  if (!string.match(/(&.+;)/gi)) return string;
+  const partiallyDecodedString = string
+    .replace(/&#(\d+);/gi, (_, numStr) =>
+      String.fromCharCode(parseInt(numStr, 10)),
+    )
+    .replace(
+      /&([^;]+);/g,
+      (match, entity) => commonHtmlEnties[entity] || match,
+    );
+
+  if (
+    typeof document === "undefined" ||
+    !partiallyDecodedString.match(/(&.+;)/gi)
+  )
+    return partiallyDecodedString;
+
   // textareas are magical
   const textareaEl = document.createElement("textarea");
-  textareaEl.innerHTML = string;
+  textareaEl.innerHTML = partiallyDecodedString;
   return textareaEl.value;
 };
 
@@ -38,10 +62,10 @@ const parseToken = (token, context = {}) => {
       const children = parseChildren(token, parseToken, context);
 
       if (children.length === 1 && children[0].type === "text") {
-        const maybeEmojiChars = stringUtils.getUserPerceivedCharacters(
-          children[0].text.trim()
+        const maybeEmojiChars = getUserPerceivedCharacters(
+          children[0].text.trim(),
         );
-        if (maybeEmojiChars.every(emojiUtils.isEmoji))
+        if (maybeEmojiChars.every(isEmoji))
           return {
             type: "paragraph",
             children: maybeEmojiChars.map((c) => ({
@@ -52,7 +76,7 @@ const parseToken = (token, context = {}) => {
       }
 
       const isImageParagraph = children.every(
-        (t) => t.type === "image" || t.text?.trim() === ""
+        (t) => t.type === "image" || t.text?.trim() === "",
       );
 
       if (isImageParagraph)
@@ -158,7 +182,7 @@ const parseToken = (token, context = {}) => {
 
     case "link": {
       const isImageUrl = ["jpg", "png", "gif"].some((ext) =>
-        token.href.endsWith(`.${ext}`)
+        token.href.endsWith(`.${ext}`),
       );
 
       const hasLabel = token.text !== token.href;
@@ -253,4 +277,16 @@ export const toMessageBlocks = (text, { displayImages = true } = {}) => {
   return tokens
     .map((t, index) => parseToken(t, { displayImages, index }))
     .filter(Boolean);
+};
+
+export const getFirstParagraph = (string) => {
+  const blocks = string.split("\n");
+  const firstParagraph = blocks.find((line_) => {
+    const line = line_.trim();
+    return (
+      line !== "" &&
+      ["#", "-", "*", "!", "[", "`"].every((token) => !line.startsWith(token))
+    );
+  });
+  return firstParagraph ?? blocks[0];
 };

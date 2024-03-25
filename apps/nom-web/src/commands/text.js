@@ -56,7 +56,7 @@ export default {
         executePrependTextCommand(editor, text, command);
       },
     }),
-    prependTextCommands
+    prependTextCommands,
   ),
   ...mapValues(
     ({ text, ...rest }, command) => ({
@@ -65,6 +65,6 @@ export default {
         executeAppendTextCommand(editor, text, command);
       },
     }),
-    appendTextCommands
+    appendTextCommands,
   ),
 };

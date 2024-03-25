@@ -24,6 +24,8 @@ const baseStyles = (t, { align }) => ({
   "&:focus-visible": { boxShadow: t.shadows.focus },
 });
 
+const textDangerHoverModifier = "rgb(235 87 87 / 10%)";
+
 const stylesByVariant = (t, { danger }) => ({
   default: {
     color: danger ? t.colors.textDanger : t.colors.textNormal,
@@ -31,13 +33,15 @@ const stylesByVariant = (t, { danger }) => ({
     borderColor: danger ? t.colors.borderDanger : t.colors.borderLight,
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
-        background: danger ? "rgb(235 87 87 / 10%)" : t.colors.buttonHover,
+        background: danger
+          ? textDangerHoverModifier
+          : t.colors.backgroundModifierNormal,
       },
     },
   },
-  "default-opaque": {
+  opaque: {
     color: t.colors.textNormal,
-    background: t.colors.buttonHover,
+    background: t.colors.backgroundModifierNormal,
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
         color: t.colors.textAccent,
@@ -45,13 +49,14 @@ const stylesByVariant = (t, { danger }) => ({
     },
   },
   transparent: {
-    color: t.colors.textNormal,
-    // borderColor: t.colors.borderLight,
+    color: danger ? t.colors.textDanger : t.colors.textNormal,
     background: "none",
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
-        color: t.colors.textAccent,
-        background: t.colors.buttonHover,
+        color: danger ? t.colors.textDanger : t.colors.textAccent,
+        background: danger
+          ? textDangerHoverModifier
+          : t.colors.backgroundModifierNormal,
       },
     },
   },
@@ -157,7 +162,7 @@ const Button = React.forwardRef(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const { buttonProps } = useButton(
       {
@@ -168,7 +173,7 @@ const Button = React.forwardRef(
         onPress: onPress ?? onClick,
         onPressStart,
       },
-      ref
+      ref,
     );
 
     const iconLayout =
@@ -266,7 +271,7 @@ const Button = React.forwardRef(
         )}
       </Component>
     );
-  }
+  },
 );
 
 const dotsAnimation = keyframes({

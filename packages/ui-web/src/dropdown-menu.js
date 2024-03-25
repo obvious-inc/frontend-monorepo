@@ -115,7 +115,7 @@ const Menu = (props) => {
           <MenuSection key={item.key} section={item} state={state} />
         ) : (
           <MenuItem key={item.key} item={item} state={state} />
-        )
+        ),
       )}
     </ul>
   );
@@ -165,8 +165,8 @@ const MenuItem = ({ item, state }) => {
         "--color": item.props.primary
           ? "var(--text-primary)"
           : item.props.danger
-          ? "var(--text-danger)"
-          : undefined,
+            ? "var(--text-danger)"
+            : undefined,
       }}
     >
       {item.rendered}

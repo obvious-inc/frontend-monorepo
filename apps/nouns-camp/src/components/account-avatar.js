@@ -9,7 +9,7 @@ const { reverse } = arrayUtils;
 
 const useNounAvatars = (
   seeds,
-  { enabled = true, transparent = false } = {}
+  { enabled = true, transparent = false } = {},
 ) => {
   const [avatarUrls, setAvatarUrls] = React.useState(null);
 
@@ -17,7 +17,7 @@ const useNounAvatars = (
     if (!enabled || seeds == null) return;
     import("@shades/common/nouns").then((module) => {
       const urls = seeds.map((seed) =>
-        module.buildDataUriFromSeed(seed, { transparent })
+        module.buildDataUriFromSeed(seed, { transparent }),
       );
       setAvatarUrls(urls);
     });
@@ -33,9 +33,10 @@ const NounsAccountAvatar = React.forwardRef(
       placeholder = true,
       transparent = false,
       maxStackCount = 2,
+      ensOnly = false,
       ...props
     },
-    ref
+    ref,
   ) => {
     const delegate = useDelegate(accountAddress);
     const nounSeeds = delegate?.nounsRepresented.map((n) => n.seed);
@@ -49,7 +50,7 @@ const NounsAccountAvatar = React.forwardRef(
     const enablePlaceholder = ensAvatarUrl == null;
 
     const nounAvatarUrls = useNounAvatars(nounSeeds, {
-      enabled: enablePlaceholder,
+      enabled: !ensOnly && enablePlaceholder,
       transparent,
     });
 
@@ -72,13 +73,13 @@ const NounsAccountAvatar = React.forwardRef(
         ref={ref}
         url={imageUrl}
         borderRadius={nounAvatarUrl == null ? "0.3rem" : undefined}
-        signature={ensName ?? accountAddress.slice(2)}
+        signature={ensName ?? accountAddress?.slice(2)}
         signatureLength={2}
         signatureFontSize="0.95rem"
         {...props}
       />
     );
-  }
+  },
 );
 
 const AvatarStack = ({

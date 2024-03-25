@@ -32,7 +32,7 @@ const useChannelMessagesFetcher = (channelId) => {
         delete pendingPromisesByQueryKey[queryKey];
       }
     },
-    [channelId, fetchMessages]
+    [channelId, fetchMessages],
   );
 };
 

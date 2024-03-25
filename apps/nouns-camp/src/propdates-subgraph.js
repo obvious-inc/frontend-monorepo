@@ -1,3 +1,5 @@
+const subgraphUrl = process.env.NEXT_PUBLIC_PROPDATES_SUBGRAPH_URL;
+
 const PROPDATE_FIELDS = `
 fragment PropdateFields on PropUpdate {
   id
@@ -11,18 +13,18 @@ fragment PropdateFields on PropUpdate {
   }
 }`;
 
-const PROPDATES_QUERY = `
+const createPropdatesQuery = ({ startBlock, endBlock }) => `
 ${PROPDATE_FIELDS}
 query {
-  propUpdates(orderBy: blockNumber, orderDirection: desc, first: 100) {
+  propUpdates(where: {blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, orderBy: blockNumber, orderDirection: desc, first: 1000) {
     ...PropdateFields
   }
 }`;
 
-const createPropdatesQuery = (proposalId) => `
+const createPropdatesForProposalQuery = (proposalId) => `
 ${PROPDATE_FIELDS}
 query {
-  propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 100) {
+  propUpdates(where: { prop: "${proposalId}" }, orderBy: blockNumber, orderDirection: desc, first: 1000) {
     ...PropdateFields
   }
 }`;
@@ -45,13 +47,13 @@ const parseUpdate = (u) => ({
   proposalId: u.prop.id,
 });
 
-export const fetchPropdates = (proposalId) =>
-  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+export const fetchPropdates = async (chainId, ...args) => {
+  if (chainId !== 1) return [];
+  return fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query:
-        proposalId == null ? PROPDATES_QUERY : createPropdatesQuery(proposalId),
+      query: createPropdatesQuery(...args),
     }),
   })
     .then((res) => {
@@ -62,9 +64,30 @@ export const fetchPropdates = (proposalId) =>
       if (body.data.propUpdates == null) throw new Error("not-found");
       return body.data.propUpdates.map(parseUpdate);
     });
+};
 
-export const fetchPropdatesByAccount = (id) =>
-  fetch(process.env.PROPDATES_SUBGRAPH_URL, {
+export const fetchPropdatesForProposal = async (chainId, ...args) => {
+  if (chainId !== 1) return [];
+  return fetch(subgraphUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query: createPropdatesForProposalQuery(...args),
+    }),
+  })
+    .then((res) => {
+      if (res.ok) return res.json();
+      return Promise.reject(new Error(res.statusText));
+    })
+    .then((body) => {
+      if (body.data.propUpdates == null) throw new Error("not-found");
+      return body.data.propUpdates.map(parseUpdate);
+    });
+};
+
+export const fetchPropdatesByAccount = async (chainId, id) => {
+  if (chainId !== 1) return [];
+  return fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -79,3 +102,4 @@ export const fetchPropdatesByAccount = (id) =>
       if (body.data.propUpdates == null) throw new Error("not-found");
       return body.data.propUpdates.map(parseUpdate);
     });
+};

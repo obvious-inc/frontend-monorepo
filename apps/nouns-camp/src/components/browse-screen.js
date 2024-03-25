@@ -1,18 +1,24 @@
+"use client";
+
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
-import { Link as RouterLink, useSearchParams } from "react-router-dom";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useBlockNumber } from "wagmi";
+import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName, useCachedState } from "@shades/common/app";
+import { useCachedState } from "@shades/common/app";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import {
   array as arrayUtils,
   object as objectUtils,
   date as dateUtils,
+  searchRecords,
 } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import {
@@ -30,7 +36,10 @@ import {
   buildFeed as buildCandidateFeed,
   getSignals as getCandidateSignals,
   makeUrlId as makeCandidateUrlId,
+  getSponsorSignatures as getCandidateSponsorSignatures,
 } from "../utils/candidates.js";
+import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
+import { useSearchParams } from "../hooks/navigation.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -39,22 +48,25 @@ import {
   useProposal,
   useProposals,
   useProposalCandidates,
+  useProposalUpdateCandidates,
   useProposalCandidate,
   useProposalCandidateVotingPower,
+  usePropdates,
+  useEnsCache,
 } from "../store.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/drafts.js";
-import MetaTags from "./meta-tags.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 import Tag from "./tag.js";
 import ProposalStateTag from "./proposal-state-tag.js";
-import ActivityFeed_ from "./activity-feed.js";
+
+const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
 const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
@@ -66,91 +78,27 @@ const getCandidateScore = (candidate) => {
   return signals.delegates.for - signals.delegates.against;
 };
 
-const searchProposals = (items, rawQuery) => {
+const searchEns = (nameByAddress, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
+  const ensEntries = Object.entries(nameByAddress);
 
-  const filteredItems = items
-    .map((i) => {
-      const title = i.title ?? i.latestVersion?.content.title ?? i.name;
-      const authorAccountAddress = i.proposerId;
-      const id = i.id;
+  const matchingRecords = ensEntries.reduce((matches, [address, name]) => {
+    const index = name.toLowerCase().indexOf(query);
+    if (index === -1) return matches;
+    return [...matches, { address, index }];
+  }, []);
 
-      const tokens = [title, authorAccountAddress, id];
-
-      let bestIndex;
-
-      for (const token of tokens) {
-        if (token == null) continue;
-        const index = token.trim().toLowerCase().indexOf(query);
-        if (index === 0) {
-          bestIndex = 0;
-          break;
-        }
-        if (index === -1) continue;
-        if (bestIndex == null || index < bestIndex) {
-          bestIndex = index;
-        }
-      }
-
-      return {
-        ...i,
-        index: bestIndex ?? -1,
-      };
-    })
-    .filter((i) => i.index !== -1);
-
-  return arrayUtils.sortBy(
-    { value: (i) => i.index, type: "index" },
-    filteredItems
-  );
-};
-
-const useFeedItems = ({ filter }) => {
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
-  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
-
-  const proposals = useProposals({ state: true, propdates: true });
-  const candidates = useProposalCandidates({
-    includeCanceled: true,
-    includePromoted: true,
-  });
-
-  return React.useMemo(() => {
-    const buildProposalItems = () =>
-      proposals.flatMap((p) => buildProposalFeed(p, { latestBlockNumber }));
-    const buildCandidateItems = () =>
-      candidates.flatMap((c) => buildCandidateFeed(c));
-
-    const buildFeedItems = () => {
-      switch (filter) {
-        case "proposals":
-          return buildProposalItems();
-        case "candidates":
-          return buildCandidateItems();
-        case "propdates":
-          return buildProposalItems().filter(
-            (i) => i.type === "event" && i.eventType.startsWith("propdate")
-          );
-        default:
-          return [...buildProposalItems(), ...buildCandidateItems()];
-      }
-    };
-
-    return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
-      buildFeedItems()
-    );
-  }, [proposals, candidates, filter, latestBlockNumber]);
+  return arrayUtils
+    .sortBy({ value: (r) => r.index, type: "index" }, matchingRecords)
+    .map((r) => r.address);
 };
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
 const groupConfigByKey = {
   drafts: {},
-  "proposals:new": { title: "New" },
+  "proposals:chronological": {},
+  "proposals:new": { title: "Upcoming" },
   "proposals:ongoing": { title: "Ongoing" },
   "proposals:awaiting-vote": { title: "Not yet voted" },
   "proposals:authored": { title: "Authored" },
@@ -169,7 +117,10 @@ const groupConfigByKey = {
   },
   "candidates:popular": {
     title: "Trending",
-    description: `The most popular candidate active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+    description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
+  "proposals:sponsored-proposal-update-awaiting-signature": {
+    title: "Missing your signature",
   },
   "candidates:inactive": {
     title: "Stale",
@@ -192,18 +143,32 @@ const BrowseScreen = () => {
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
+  const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
+
   const proposals = useProposals({ state: true });
-  const candidates = useProposalCandidates();
+  const candidates = useProposalCandidates({
+    includeCanceled: false,
+    includePromoted: false,
+    includeProposalUpdates: false,
+  });
+  const proposalUpdateCandidates = useProposalUpdateCandidates({
+    includeTargetProposal: true,
+  });
+
   const { items: proposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
+  const [proposalSortStrategy, setProposalSortStrategy] = useCachedState(
+    "proposal-sorting-startegy",
+    "activity",
+  );
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
-    "popularity"
+    "activity",
   );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedBrowseDataOnce
+    hasFetchedBrowseDataOnce,
   );
 
   const candidateSortStrategies =
@@ -212,19 +177,44 @@ const BrowseScreen = () => {
       : ["activity", "popularity", "connected-account-feedback"];
 
   const candidateSortStrategy = candidateSortStrategies.includes(
-    candidateSortStrategy_
+    candidateSortStrategy_,
   )
     ? candidateSortStrategy_
     : "popularity";
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
-    [proposals]
+    [proposals],
   );
   const filteredCandidates = React.useMemo(
     () => candidates.filter((c) => c.latestVersion != null),
-    [candidates]
+    [candidates],
   );
+  const filteredProposalUpdateCandidates = React.useMemo(() => {
+    const hasSigned = (c) => {
+      const signatures = getCandidateSponsorSignatures(c, {
+        excludeInvalid: true,
+        activeProposerIds: [],
+      });
+      return signatures.some(
+        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress,
+      );
+    };
+
+    // Include authored updates, as well as sponsored updates not yet signed
+    return proposalUpdateCandidates.filter((c) => {
+      if (c.latestVersion == null) return false;
+
+      if (c.proposerId.toLowerCase() === connectedWalletAccountAddress)
+        return true;
+
+      const isSponsor = c.targetProposal.signers.some(
+        (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
+      );
+
+      return isSponsor && !hasSigned(c);
+    });
+  }, [proposalUpdateCandidates, connectedWalletAccountAddress]);
 
   const filteredItems = React.useMemo(() => {
     const filteredProposalDrafts =
@@ -233,26 +223,79 @@ const BrowseScreen = () => {
         : proposalDrafts
             .filter((d) => {
               if (d.name.trim() !== "") return true;
-
-              const isMarkdown = typeof d.body === "string";
-
-              return isMarkdown
-                ? d.body.trim() !== ""
-                : d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
+              return d.body.some(
+                (n) => !isRichTextNodeEmpty(n, { trim: true }),
+              );
             })
             .map((d) => ({ ...d, type: "draft" }));
 
-    const items = [
-      ...filteredProposalDrafts,
-      ...filteredCandidates,
-      ...filteredProposals,
-    ];
+    if (deferredQuery === "")
+      return [
+        ...filteredProposalDrafts,
+        ...filteredCandidates,
+        ...filteredProposals,
+        ...filteredProposalUpdateCandidates,
+      ];
 
-    return deferredQuery === "" ? items : searchProposals(items, deferredQuery);
-  }, [deferredQuery, filteredProposals, filteredCandidates, proposalDrafts]);
+    const matchingAddresses = searchEns(primaryEnsNameByAddress, deferredQuery);
+
+    const matchingRecords = searchRecords(
+      [
+        ...filteredProposalDrafts.map((d) => ({
+          type: "draft",
+          data: d,
+          tokens: [
+            { value: d.id, exact: true },
+            { value: d.proposerId, exact: true },
+            { value: d.name },
+          ],
+          fallbackSortProperty: Infinity,
+        })),
+        ...filteredProposals.map((p) => ({
+          type: "proposal",
+          data: p,
+          tokens: [
+            { value: p.id, exact: true },
+            { value: p.proposerId, exact: true },
+            { value: p.title },
+            ...(p.signers ?? []).map((s) => ({ value: s.id, exact: true })),
+          ],
+          fallbackSortProperty: p.createdBlock,
+        })),
+        ...[...filteredCandidates, ...filteredProposalUpdateCandidates].map(
+          (c) => ({
+            type: "candidate",
+            data: c,
+            tokens: [
+              { value: c.id, exact: true },
+              { value: c.proposerId, exact: true },
+              { value: c.latestVersion?.content.title },
+              ...(c.latestVersion?.content.contentSignatures ?? []).map(
+                (s) => ({ value: s.signer.id, exact: true }),
+              ),
+            ],
+            fallbackSortProperty: c.createdBlock,
+          }),
+        ),
+      ],
+      [deferredQuery, ...matchingAddresses],
+    );
+
+    return matchingRecords.map((r) => r.data);
+  }, [
+    deferredQuery,
+    filteredProposals,
+    filteredCandidates,
+    filteredProposalUpdateCandidates,
+    proposalDrafts,
+    primaryEnsNameByAddress,
+  ]);
 
   const groupProposal = (p) => {
     const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
+
+    if (proposalSortStrategy === "chronological")
+      return "proposals:chronological";
 
     if (["pending", "updatable"].includes(p.state)) return "proposals:new";
     if (isFinalProposalState(p.state) || isSucceededProposalState(p.state))
@@ -277,21 +320,27 @@ const BrowseScreen = () => {
   };
 
   const candidateActiveThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS)
+    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS),
   );
   const candidateNewThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS)
+    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS),
   );
 
   const groupCandidate = (c) => {
-    const connectedAccount = connectedWalletAccountAddress?.toLowerCase();
     const { content } = c.latestVersion;
+    const connectedAccount = connectedWalletAccountAddress;
+
+    if (c.latestVersion.targetProposalId != null)
+      return c.proposerId.toLowerCase() == connectedAccount
+        ? "proposals:authored"
+        : "proposals:sponsored-proposal-update-awaiting-signature";
+
     const isActive =
       c.createdTimestamp > candidateActiveThreshold ||
       c.lastUpdatedTimestamp > candidateActiveThreshold ||
       (c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.createdTimestamp > candidateActiveThreshold
+          (p) => p.createdTimestamp > candidateActiveThreshold,
         ));
 
     if (!isActive) return "candidates:inactive";
@@ -302,7 +351,7 @@ const BrowseScreen = () => {
       const hasFeedback =
         c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.voter.id.toLowerCase() === connectedAccount
+          (p) => p.voter.id.toLowerCase() === connectedAccount,
         );
 
       if (
@@ -320,7 +369,7 @@ const BrowseScreen = () => {
 
     if (
       content.contentSignatures.some(
-        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount
+        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
       )
     )
       return "candidates:sponsored";
@@ -344,9 +393,25 @@ const BrowseScreen = () => {
               ? items
               : arrayUtils.sortBy(
                   { value: (i) => Number(i.id), order: "desc" },
-                  items
+                  items,
                 ),
           };
+
+        case "proposals:chronological": {
+          const sortedItems = isSearch
+            ? items
+            : arrayUtils.sortBy(
+                { value: (i) => Number(i.createdBlock), order: "desc" },
+                items,
+              );
+          const paginate = page != null;
+          return {
+            count: sortedItems.length,
+            items: paginate
+              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
+              : sortedItems,
+          };
+        }
 
         case "proposals:awaiting-vote":
           return {
@@ -355,7 +420,7 @@ const BrowseScreen = () => {
               ? items
               : arrayUtils.sortBy(
                   (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                  items
+                  items,
                 ),
           };
 
@@ -370,9 +435,9 @@ const BrowseScreen = () => {
                   value: (i) => Number(i.startBlock),
                   order: "desc",
                 },
-                items
+                items,
               );
-          const paginate = groupKey === "proposals:past";
+          const paginate = page != null && groupKey === "proposals:past";
           return {
             title,
             count: sortedItems.length,
@@ -389,7 +454,9 @@ const BrowseScreen = () => {
         case "candidates:feedback-given":
         case "candidates:feedback-missing":
         case "candidates:popular":
-        case "candidates:inactive": {
+        case "candidates:authored-proposal-update":
+        case "candidates:inactive":
+        case "proposals:sponsored-proposal-update-awaiting-signature": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
@@ -403,14 +470,14 @@ const BrowseScreen = () => {
                         Math.max(
                           i.lastUpdatedTimestamp,
                           ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
-                            [])
+                            []),
                         ),
                       order: "desc",
                     },
-                items
+                items,
               );
 
-          const paginate = groupKey === "candidates:inactive";
+          const paginate = page != null && groupKey === "candidates:inactive";
 
           return {
             title,
@@ -434,7 +501,7 @@ const BrowseScreen = () => {
       if (i.type === "draft") return "drafts";
       if (i.slug != null) return groupCandidate(i);
       return groupProposal(i);
-    }, filteredItems)
+    }, filteredItems),
   );
 
   const { fetchBrowseScreenData } = useActions();
@@ -443,23 +510,49 @@ const BrowseScreen = () => {
     () =>
       fetchBrowseScreenData({ first: 40 }).then(() => {
         setHasFetchedOnce(true);
+        if (hasFetchedOnce) return;
         hasFetchedBrowseDataOnce = true;
         fetchBrowseScreenData({ skip: 40, first: 1000 });
       }),
-    [fetchBrowseScreenData]
+    [fetchBrowseScreenData],
   );
+
+  const handleSearchInputChange = useDebouncedCallback((query) => {
+    setPage(1);
+
+    // Clear search from path if query is empty
+    if (query.trim() === "") {
+      setSearchParams(
+        (p) => {
+          const newParams = new URLSearchParams(p);
+          newParams.delete("q");
+          return newParams;
+        },
+        { replace: true },
+      );
+      return;
+    }
+
+    setSearchParams(
+      (p) => {
+        const newParams = new URLSearchParams(p);
+        newParams.set("q", query);
+        return newParams;
+      },
+      { replace: true },
+    );
+  });
 
   return (
     <>
-      <MetaTags />
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
           {
             label: "New Proposal",
             buttonProps: {
-              component: RouterLink,
-              to: "/new",
+              component: NextLink,
+              href: "/new",
               icon: <PlusIcon style={{ width: "0.9rem" }} />,
             },
           },
@@ -470,14 +563,15 @@ const BrowseScreen = () => {
             sidebar={
               isDesktopLayout ? (
                 <FeedSidebar
-                  align="right"
-                  visible={filteredProposals.length > 0}
+                  // Hiding until the first fetch is done to avoid flickering
+                  visible={hasFetchedOnce}
                 />
               ) : null
             }
           >
             <div
               css={css({
+                containerType: "inline-size",
                 padding: "0 0 3.2rem",
                 "@media (min-width: 600px)": {
                   padding: "6rem 0 8rem",
@@ -504,26 +598,10 @@ const BrowseScreen = () => {
               >
                 <Input
                   placeholder="Search..."
-                  value={query}
+                  defaultValue={query}
                   size="large"
                   onChange={(e) => {
-                    setPage(1);
-
-                    // Clear search from path if query is empty
-                    if (e.target.value.trim() === "") {
-                      setSearchParams((p) => {
-                        const newParams = new URLSearchParams(p);
-                        newParams.delete("q");
-                        return newParams;
-                      });
-                      return;
-                    }
-
-                    setSearchParams((p) => {
-                      const newParams = new URLSearchParams(p);
-                      newParams.set("q", e.target.value);
-                      return newParams;
-                    });
+                    handleSearchInputChange(e.target.value);
                   }}
                   css={css({ flex: 1, minWidth: 0 })}
                 />
@@ -535,27 +613,25 @@ const BrowseScreen = () => {
                   <SectionedList
                     sections={[
                       {
-                        items: filteredItems.slice(
-                          0,
-                          BROWSE_LIST_PAGE_ITEM_COUNT * page
-                        ),
+                        items:
+                          page == null
+                            ? filteredItems
+                            : filteredItems.slice(
+                                0,
+                                BROWSE_LIST_PAGE_ITEM_COUNT * page,
+                              ),
                       },
                     ]}
                     style={{ marginTop: "2rem" }}
                   />
-                  {filteredItems.length >
-                    BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setPage((p) => p + 1);
-                        }}
-                      >
-                        Show more
-                      </Button>
-                    </div>
-                  )}
+                  {page != null &&
+                    filteredItems.length >
+                      BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                      <Pagination
+                        showNext={() => setPage((p) => p + 1)}
+                        showAll={() => setPage(null)}
+                      />
+                    )}
                 </>
               ) : (
                 <>
@@ -598,9 +674,7 @@ const BrowseScreen = () => {
                   >
                     {!isDesktopLayout && (
                       <Tabs.Item key="activity" title="Activity">
-                        <FeedTabContent
-                          visible={filteredProposals.length > 0}
-                        />
+                        <FeedTabContent />
                       </Tabs.Item>
                     )}
                     <Tabs.Item key="proposals" title="Proposals">
@@ -612,39 +686,91 @@ const BrowseScreen = () => {
                           },
                         })}
                       >
+                        <div
+                          css={css({
+                            margin: "-0.4rem 0 2.4rem",
+                            "@media (min-width: 600px)": {
+                              margin: "-0.8rem 0 2.4rem",
+                            },
+                          })}
+                        >
+                          <Select
+                            size="small"
+                            aria-label="Proposal sorting"
+                            value={proposalSortStrategy}
+                            options={[
+                              { value: "activity", label: "By proposal state" },
+                              {
+                                value: "chronological",
+                                label: "Chronological",
+                              },
+                            ]}
+                            onChange={(value) => {
+                              setProposalSortStrategy(value);
+                            }}
+                            fullWidth={false}
+                            width="max-content"
+                            renderTriggerContent={(value, options) => (
+                              <>
+                                Order:{" "}
+                                <em
+                                  css={(t) =>
+                                    css({
+                                      fontStyle: "normal",
+                                      fontWeight: t.text.weights.emphasis,
+                                    })
+                                  }
+                                >
+                                  {
+                                    options.find((o) => o.value === value)
+                                      ?.label
+                                  }
+                                </em>
+                              </>
+                            )}
+                          />
+                        </div>
                         <SectionedList
                           showPlaceholder={!hasFetchedOnce}
                           sections={[
-                            // "drafts",
+                            "proposals:chronological",
                             "proposals:authored",
+                            "proposals:sponsored-proposal-update-awaiting-signature",
                             "proposals:awaiting-vote",
                             "proposals:ongoing",
                             "proposals:new",
                             "proposals:past",
                           ]
                             .map(
-                              (sectionName) => sectionsByName[sectionName] ?? {}
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
                             )
                             .filter(
-                              ({ items }) => items != null && items.length !== 0
+                              ({ items }) =>
+                                items != null && items.length !== 0,
                             )}
                         />
-                        {sectionsByName["proposals:past"] != null &&
-                          sectionsByName["proposals:past"].count >
-                            BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                            <div
-                              css={{ textAlign: "center", padding: "3.2rem 0" }}
-                            >
-                              <Button
-                                size="small"
-                                onClick={() => {
-                                  setPage((p) => p + 1);
-                                }}
-                              >
-                                Show more
-                              </Button>
-                            </div>
-                          )}
+                        {(() => {
+                          if (page == null) return null;
+
+                          const truncatableItemCount =
+                            proposalSortStrategy === "chronological"
+                              ? sectionsByName["proposals:chronological"]?.count
+                              : sectionsByName["proposals:past"]?.count;
+
+                          const hasMoreItems =
+                            truncatableItemCount >
+                            BROWSE_LIST_PAGE_ITEM_COUNT * page;
+
+                          if (!hasMoreItems) return null;
+
+                          return (
+                            <Pagination
+                              showNext={() => setPage((p) => p + 1)}
+                              showAll={() => setPage(null)}
+                            />
+                          );
+                        })()}
                       </div>
                     </Tabs.Item>
                     <Tabs.Item key="candidates" title="Candidates">
@@ -669,17 +795,20 @@ const BrowseScreen = () => {
                             aria-label="Candidate sorting"
                             value={candidateSortStrategy}
                             options={[
-                              { value: "popularity", label: "Popularity" },
-                              { value: "activity", label: "Recent activity" },
+                              { value: "popularity", label: "By popularity" },
+                              {
+                                value: "activity",
+                                label: "By recent activity",
+                              },
                               {
                                 value: "connected-account-feedback",
-                                label: "Your feedback",
+                                label: "By your feedback activity",
                               },
                             ].filter(
                               (o) =>
                                 // A connected wallet is required for feedback filter to work
                                 connectedWalletAccountAddress != null ||
-                                o.value !== "connected-account-feedback"
+                                o.value !== "connected-account-feedback",
                             )}
                             onChange={(value) => {
                               setCandidateSortStrategy(value);
@@ -688,7 +817,7 @@ const BrowseScreen = () => {
                             width="max-content"
                             renderTriggerContent={(value, options) => (
                               <>
-                                Sort by:{" "}
+                                Order:{" "}
                                 <em
                                   css={(t) =>
                                     css({
@@ -720,27 +849,22 @@ const BrowseScreen = () => {
                             "candidates:inactive",
                           ]
                             .map(
-                              (sectionName) => sectionsByName[sectionName] ?? {}
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
                             )
                             .filter(
-                              ({ items }) => items != null && items.length !== 0
+                              ({ items }) =>
+                                items != null && items.length !== 0,
                             )}
                         />
-                        {sectionsByName["candidates:inactive"] != null &&
+                        {page != null &&
+                          sectionsByName["candidates:inactive"] != null &&
                           sectionsByName["candidates:inactive"].count >
                             BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                            <div
-                              css={{ textAlign: "center", padding: "3.2rem 0" }}
-                            >
-                              <Button
-                                size="small"
-                                onClick={() => {
-                                  setPage((p) => p + 1);
-                                }}
-                              >
-                                Show more
-                              </Button>
-                            </div>
+                            <Pagination
+                              showNext={() => setPage((p) => p + 1)}
+                              showAll={() => setPage(null)}
+                            />
                           )}
                       </div>
                     </Tabs.Item>
@@ -865,20 +989,17 @@ export const SectionedList = ({
             },
           },
           // Mobile-only
-          "@container(max-width: 600px)": {
+          "@container(max-width: 580px)": {
             "[data-desktop-only]": {
               display: "none",
             },
           },
           // Desktop-only
-          "@container(min-width: 600px)": {
+          "@container(min-width: 580px)": {
             "[data-mobile-only]": {
               display: "none",
             },
             "[data-group] li + li": { marginTop: "0.4rem" },
-            // "[data-title]": {
-            //   whiteSpace: "normal",
-            // },
           },
           // Hover enhancement
           "@media(hover: hover)": {
@@ -934,55 +1055,106 @@ export const SectionedList = ({
 
 const FEED_PAGE_ITEM_COUNT = 30;
 
-let hasFetchedActicityFeedOnce = false;
+let hasFetchedActivityFeedOnce = false;
 
-const ActivityFeed = React.memo(({ filter = "all" }) => {
-  const { data: latestBlockNumber } = useBlockNumber({
-    watch: true,
-    cache: 20_000,
-  });
+const useActivityFeedItems = ({ filter = "all" }) => {
+  const { fetchNounsActivity } = useActions();
 
-  const { fetchNounsActivity, fetchPropdates } = useActions();
-
-  const [page, setPage] = React.useState(2);
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
-    hasFetchedActicityFeedOnce
+    hasFetchedActivityFeedOnce,
   );
 
-  const feedItems = useFeedItems({ filter });
-  const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
+  const { data: eagerLatestBlockNumber } = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
-  // Fetch feed items
+  // Fetch feed data
   useFetch(
     latestBlockNumber == null
       ? null
-      : () =>
+      : () => {
           fetchNounsActivity({
             startBlock:
-              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3),
+              latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 2),
             endBlock: latestBlockNumber,
           }).then(() => {
+            if (hasFetchedOnce) return;
+
             setHasFetchedOnce(true);
-            hasFetchedActicityFeedOnce = true;
+            hasFetchedActivityFeedOnce = true;
+
             fetchNounsActivity({
               startBlock:
                 latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
               endBlock:
-                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 3) - 1n,
+                latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 2) - 1n,
             });
-          }),
-    [latestBlockNumber, fetchNounsActivity]
+          });
+        },
+    [latestBlockNumber, fetchNounsActivity],
   );
 
-  useFetch(() => fetchPropdates(), [fetchPropdates]);
+  const proposals = useProposals({ state: true, propdates: true });
+  const candidates = useProposalCandidates({
+    includeCanceled: true,
+    includePromoted: true,
+    includeProposalUpdates: true,
+  });
+  const propdates = usePropdates();
 
-  if (visibleItems.length === 0 || !hasFetchedOnce) return null;
+  return React.useMemo(() => {
+    if (!hasFetchedOnce) return [];
+
+    const buildProposalItems = () =>
+      proposals.flatMap((p) =>
+        buildProposalFeed(p, { latestBlockNumber, includePropdates: false }),
+      );
+    const buildCandidateItems = () =>
+      candidates.flatMap((c) => buildCandidateFeed(c));
+    const buildPropdateItems = () => buildPropdateFeed(propdates);
+
+    const buildFeedItems = () => {
+      switch (filter) {
+        case "proposals":
+          return [...buildProposalItems(), ...buildPropdateItems()];
+        case "candidates":
+          return buildCandidateItems();
+        case "propdates":
+          return buildPropdateItems();
+        default:
+          return [
+            ...buildProposalItems(),
+            ...buildCandidateItems(),
+            ...buildPropdateItems(),
+          ];
+      }
+    };
+
+    return arrayUtils.sortBy(
+      { value: (i) => i.blockNumber, order: "desc" },
+      buildFeedItems(),
+    );
+  }, [
+    proposals,
+    candidates,
+    propdates,
+    filter,
+    latestBlockNumber,
+    hasFetchedOnce,
+  ]);
+};
+
+const TruncatedActivityFeed = ({ items }) => {
+  const [page, setPage] = React.useState(2);
+  const visibleItems = items.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   return (
     <>
-      <ActivityFeed_ items={visibleItems} />
+      <ActivityFeed items={visibleItems} />
 
-      {feedItems.length > visibleItems.length && (
+      {items.length > visibleItems.length && (
         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
           <Button
             size="small"
@@ -996,149 +1168,160 @@ const ActivityFeed = React.memo(({ filter = "all" }) => {
       )}
     </>
   );
-});
+};
 
-const FeedSidebar = React.memo(({ visible = true }) => {
+const FeedSidebar = React.memo(({ visible }) => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
-    "all"
+    "all",
   );
-
-  if (!visible) return null;
+  const feedItems = useActivityFeedItems({ filter });
 
   return (
     <div
       css={css({
+        transition: "0.2s ease-out opacity",
         padding: "1rem 0 3.2rem",
         "@media (min-width: 600px)": {
           padding: "6rem 0 8rem",
         },
       })}
+      style={{ opacity: visible && feedItems.length > 0 ? 1 : 0 }}
     >
-      <div
-        css={css({
-          height: "4.05rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-end",
-          margin: "0 0 2rem",
-        })}
-      >
-        <Select
-          size="small"
-          aria-label="Feed filter"
-          value={filter}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "proposals", label: "Proposal activity only" },
-            { value: "candidates", label: "Candidate activity only" },
-            { value: "propdates", label: "Propdates only" },
-          ]}
-          onChange={(value) => {
-            setFilter(value);
-          }}
-          fullWidth={false}
-          align="right"
-          width="max-content"
-          renderTriggerContent={(value) => {
-            const filterLabel = {
-              all: "Everything",
-              proposals: "Proposal activity",
-              candidates: "Candidate activity",
-              propdates: "Propdates",
-            }[value];
-            return (
-              <>
-                Show:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {filterLabel}
-                </em>
-              </>
-            );
-          }}
-        />
-      </div>
+      <React.Suspense fallback={null}>
+        <div
+          css={css({
+            height: "4.05rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            margin: "0 0 2rem",
+          })}
+        >
+          <Select
+            size="small"
+            aria-label="Feed filter"
+            value={filter}
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "proposals", label: "Proposal activity only" },
+              { value: "candidates", label: "Candidate activity only" },
+              { value: "propdates", label: "Propdates only" },
+            ]}
+            onChange={(value) => {
+              setFilter(value);
+            }}
+            fullWidth={false}
+            align="right"
+            width="max-content"
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                all: "Everything",
+                proposals: "Proposal activity",
+                candidates: "Candidate activity",
+                propdates: "Propdates",
+              }[value];
+              return (
+                <>
+                  Show:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {filterLabel}
+                  </em>
+                </>
+              );
+            }}
+          />
+        </div>
 
-      <ActivityFeed filter={filter} />
+        <TruncatedActivityFeed items={feedItems} />
+      </React.Suspense>
     </div>
   );
 });
 
-const FeedTabContent = React.memo(({ visible }) => {
+const FeedTabContent = React.memo(() => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
-    "all"
+    "all",
   );
-
-  if (!visible) return null;
+  const feedItems = useActivityFeedItems({ filter });
 
   return (
-    <div css={css({ padding: "2rem 0" })}>
-      <div css={css({ margin: "0 0 2.8rem" })}>
-        <Select
-          size="small"
-          aria-label="Feed filter"
-          value={filter}
-          options={[
-            { value: "all", label: "Everything" },
-            { value: "proposals", label: "Proposal activity only" },
-            { value: "candidates", label: "Candidate activity only" },
-          ]}
-          onChange={(value) => {
-            setFilter(value);
-          }}
-          fullWidth={false}
-          width="max-content"
-          renderTriggerContent={(value) => {
-            const filterLabel = {
-              all: "Everything",
-              proposals: "Proposal activity",
-              candidates: "Candidate activity",
-            }[value];
-            return (
-              <>
-                Show:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {filterLabel}
-                </em>
-              </>
-            );
-          }}
-        />
-      </div>
+    <div
+      css={css({ transition: "0.2s ease-out opacity", padding: "2rem 0" })}
+      style={{ opacity: feedItems.length === 0 ? 0 : 1 }}
+    >
+      <React.Suspense fallback={null}>
+        <div css={css({ margin: "0 0 2.8rem" })}>
+          <Select
+            size="small"
+            aria-label="Feed filter"
+            value={filter}
+            options={[
+              { value: "all", label: "Everything" },
+              { value: "proposals", label: "Proposal activity only" },
+              { value: "candidates", label: "Candidate activity only" },
+            ]}
+            onChange={(value) => {
+              setFilter(value);
+            }}
+            fullWidth={false}
+            width="max-content"
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                all: "Everything",
+                proposals: "Proposal activity",
+                candidates: "Candidate activity",
+              }[value];
+              return (
+                <>
+                  Show:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {filterLabel}
+                  </em>
+                </>
+              );
+            }}
+          />
+        </div>
 
-      <ActivityFeed filter={filter} />
+        <TruncatedActivityFeed items={feedItems} />
+      </React.Suspense>
     </div>
   );
 });
 
 const ProposalItem = React.memo(({ proposalId }) => {
-  const proposal = useProposal(proposalId);
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    proposal?.proposerId
-  );
+  const proposal = useProposal(proposalId, { watch: false });
+  const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
+  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+
+  const statusText = renderPropStatusText({
+    proposal,
+    calculateBlockTimestamp,
+  });
+
+  const showVoteStatus = !["pending", "updatable"].includes(proposal.state);
 
   const isDimmed =
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
 
-  const tagWithStatusText = <PropTagWithStatusText proposalId={proposalId} />;
-
   return (
-    <RouterLink to={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
+    <NextLink prefetch href={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
       <div
         css={css({
           display: "grid",
@@ -1164,29 +1347,71 @@ const ProposalItem = React.memo(({ proposalId }) => {
           <div data-title>
             {proposal.title === null ? "Untitled" : proposal.title}
           </div>
-          <div data-small data-mobile-only css={css({ marginTop: "0.2rem" })}>
-            <PropStatusText proposalId={proposalId} />
+          <div
+            data-small
+            data-mobile-only
+            css={css({
+              marginTop: "0.3rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              gap: "0.5rem",
+            })}
+          >
+            <ProposalStateTag proposalId={proposalId} />
+            {showVoteStatus && <ProposalVotesTag proposalId={proposalId} />}
+            {statusText != null && (
+              <div data-small style={{ padding: "0 0.1rem" }}>
+                {statusText}
+              </div>
+            )}
           </div>
+          {showVoteStatus && statusText != null && (
+            <div
+              data-small
+              data-desktop-only
+              css={css({ marginTop: "0.2rem" })}
+            >
+              {statusText}
+            </div>
+          )}
         </div>
-        <div data-small>{tagWithStatusText}</div>
+        <div
+          data-desktop-only
+          css={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            gap: "1.2rem",
+            textAlign: "right",
+          })}
+        >
+          {showVoteStatus ? (
+            <ProposalVotesTag proposalId={proposalId} />
+          ) : (
+            <span data-small data-nowrap>
+              {statusText}
+            </span>
+          )}
+          <ProposalStateTag
+            proposalId={proposalId}
+            style={{ minWidth: "7.6rem" }}
+          />
+        </div>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 });
 
-const PropStatusText = React.memo(({ proposalId }) => {
-  const proposal = useProposal(proposalId);
-
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
+const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   switch (proposal.state) {
     case "updatable": {
       const updatePeriodEndDate = calculateBlockTimestamp(
-        proposal.updatePeriodEndBlock
+        proposal.updatePeriodEndBlock,
       );
       const { minutes, hours, days } = dateUtils.differenceUnits(
         updatePeriodEndDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Closes for changes in less than 1 minute</>;
@@ -1208,7 +1433,7 @@ const PropStatusText = React.memo(({ proposalId }) => {
       const startDate = calculateBlockTimestamp(proposal.startBlock);
       const { minutes, hours, days } = dateUtils.differenceUnits(
         startDate,
-        new Date()
+        new Date(),
       );
 
       if (minutes < 1) return <>Starts in less than 1 minute</>;
@@ -1229,60 +1454,26 @@ const PropStatusText = React.memo(({ proposalId }) => {
     case "active":
     case "objection-period": {
       const endDate = calculateBlockTimestamp(
-        proposal.objectionPeriodEndBlock ?? proposal.endBlock
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock,
       );
-      const renderTimeLeft = () => {
-        const { minutes, hours, days } = dateUtils.differenceUnits(
-          endDate,
-          new Date()
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        endDate,
+        new Date(),
+      );
+
+      if (minutes < 1) return <>Ends in less than 1 minute</>;
+
+      if (hours <= 1)
+        return (
+          <>
+            Ends in {Math.max(minutes, 0)}{" "}
+            {minutes === 1 ? "minute" : "minutes"}
+          </>
         );
 
-        if (minutes < 1) return <>Ends in less than 1 minute</>;
+      if (days <= 1) return <>Ends in {Math.round(minutes / 60)} hours</>;
 
-        if (hours <= 1)
-          return (
-            <>
-              Ends in {Math.max(minutes, 0)}{" "}
-              {minutes === 1 ? "minute" : "minutes"}
-            </>
-          );
-
-        if (days <= 1) return <>Ends in {Math.round(minutes / 60)} hours</>;
-
-        return <>Ends in {Math.round(hours / 24)} days</>;
-      };
-
-      return (
-        <>
-          <div
-            css={(t) =>
-              css({
-                display: "inline-flex",
-                '[role="separator"]:before': {
-                  content: '",\u{00a0}"',
-                },
-                "@media(min-width: 800px)": {
-                  flexDirection: "row-reverse",
-                  '[role="separator"]:before': {
-                    content: '"|"',
-                    color: t.colors.borderLight,
-                    margin: "0 1rem",
-                  },
-                  "[data-description]::first-letter": {
-                    textTransform: "uppercase",
-                  },
-                },
-              })
-            }
-          >
-            <span data-votes>
-              {proposal.forVotes} For {"-"} {proposal.againstVotes} Against
-            </span>
-            <span role="separator" aria-orientation="vertical" />
-            <span data-description>{renderTimeLeft()}</span>
-          </div>
-        </>
-      );
+      return <>Ends in {Math.round(hours / 24)} days</>;
     }
 
     case "queued":
@@ -1299,36 +1490,90 @@ const PropStatusText = React.memo(({ proposalId }) => {
     default:
       return null;
   }
-});
+};
 
-const PropTagWithStatusText = ({ proposalId }) => {
-  const statusText = <PropStatusText proposalId={proposalId} />;
+const ProposalVotesTag = React.memo(({ proposalId }) => {
+  const { address: connectedWalletAccountAddress } = useWallet();
+  const proposal = useProposal(proposalId, { watch: false });
+
+  const vote = proposal.votes?.find(
+    (v) => v.voterId === connectedWalletAccountAddress,
+  );
 
   return (
-    <div
-      css={css({
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "flex-end",
-        gap: "1.6rem",
-        textAlign: "right",
-      })}
+    <span
+      css={(t) =>
+        css({
+          display: "inline-flex",
+          gap: "0.1rem",
+          whiteSpace: "nowrap",
+          fontSize: t.text.sizes.micro,
+          lineHeight: 1.2,
+          color: t.colors.textDimmed,
+          borderRadius: "0.2rem",
+          "@media(min-width: 600px)": {
+            fontSize: t.text.sizes.tiny,
+          },
+          "& > *": {
+            display: "flex",
+            padding: "0.3rem 0.5rem",
+            background: t.colors.backgroundModifierNormal,
+            minWidth: "1.86rem",
+            justifyContent: "center",
+          },
+          "& > *:first-of-type": {
+            borderTopLeftRadius: "0.2rem",
+            borderBottomLeftRadius: "0.2rem",
+          },
+          "& > *:last-of-type": {
+            borderTopRightRadius: "0.2rem",
+            borderBottomRightRadius: "0.2rem",
+          },
+          '[data-voted="true"]': {
+            color: t.colors.textNormal,
+            fontWeight: t.text.weights.smallTextEmphasis,
+            background: t.colors.backgroundModifierStrong,
+          },
+          "[data-arrow]": {
+            width: "0.9rem",
+            marginLeft: "0.2rem",
+            marginRight: "-0.1rem",
+          },
+          '[data-arrow="up"]': {
+            transform: "scaleY(-1)",
+          },
+        })
+      }
     >
-      {statusText != null && (
-        <div data-desktop-only data-nowrap>
-          {statusText}
-        </div>
-      )}
-      <ProposalStateTag proposalId={proposalId} />
-    </div>
+      <span data-for={proposal.forVotes} data-voted={vote?.support === 1}>
+        {proposal.forVotes}
+        <ArrowDownSmallIcon data-arrow="up" />
+      </span>
+      <span
+        data-abstain={proposal.abstainVotes}
+        data-voted={vote?.support === 2}
+      >
+        {proposal.abstainVotes}
+      </span>
+      <span
+        data-against={proposal.againstVotes}
+        data-voted={vote?.support === 0}
+      >
+        {proposal.againstVotes}
+        <ArrowDownSmallIcon data-arrow="down" />
+      </span>
+    </span>
   );
-};
+});
 
 const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    candidate.proposerId
+  const updateTargetProposal = useProposal(
+    candidate.latestVersion.targetProposalId,
+    { watch: false },
   );
+
+  const authorAccountDisplayName = useAccountDisplayName(candidate.proposerId);
 
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
@@ -1340,7 +1585,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   //   signals.delegates.abstain;
 
   const isCanceled = candidate.canceledTimestamp != null;
-
+  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
   const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
 
   const hasUpdate =
@@ -1350,7 +1595,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
 
   const feedbackPostsAscending = arrayUtils.sortBy(
     (p) => p.createdBlock,
-    candidate?.feedbackPosts ?? []
+    candidate?.feedbackPosts ?? [],
   );
   const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
 
@@ -1362,39 +1607,72 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
       mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
       ? "feedback"
       : hasUpdate
-      ? "update"
-      : "create";
+        ? "update"
+        : "create";
 
   const feedbackAuthorAccounts = arrayUtils.unique(
-    feedbackPostsAscending.map((p) => p.voterId)
+    feedbackPostsAscending.map((p) => p.voterId),
   );
 
+  const showScoreStack = !isProposalUpdate;
+
+  const renderProposalUpdateStatusText = () => {
+    if (updateTargetProposal?.signers == null) return "...";
+
+    const validSignatures = getCandidateSponsorSignatures(candidate, {
+      excludeInvalid: true,
+      activeProposerIds: [],
+    });
+
+    const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+
+    const missingSigners = updateTargetProposal.signers.filter((s) => {
+      const signerId = s.id.toLowerCase();
+      return !signerIds.includes(signerId);
+    });
+
+    const sponsorCount =
+      updateTargetProposal.signers.length - missingSigners.length;
+
+    return (
+      <>
+        {sponsorCount} / {updateTargetProposal.signers.length} sponsors signed
+      </>
+    );
+  };
+
   return (
-    <RouterLink
-      to={`/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`}
+    <NextLink
+      prefetch
+      href={`/candidates/${encodeURIComponent(
+        makeCandidateUrlId(candidateId),
+      )}`}
     >
       <div
         css={css({
-          "@container(min-width: 540px)": {
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) auto",
-            gridGap: "3.2rem",
-            alignItems: "stretch",
-          },
+          display: "grid",
+          gridTemplateColumns: "minmax(0,1fr) auto",
+          gridGap: "3.2rem",
+          alignItems: "stretch",
         })}
       >
         <div
           css={css({
             display: "grid",
-            gridTemplateColumns: "2.2rem minmax(0,1fr)",
+            gridTemplateColumns: "minmax(0,1fr)",
             gridGap: "1.2rem",
             alignItems: "center",
           })}
+          style={{
+            gridTemplateColumns: showScoreStack
+              ? "2.2rem minmax(0,1fr)"
+              : undefined,
+          }}
         >
-          <div />
+          {showScoreStack && <div />}
           <div>
             <div data-small>
-              Candidate by{" "}
+              {isProposalUpdate ? "Proposal update" : "Candidate"} by{" "}
               <em
                 css={(t) =>
                   css({
@@ -1411,69 +1689,77 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
               css={css({ margin: "0.1rem 0", position: "relative" })}
             >
               {candidate.latestVersion.content.title}
-              <div
-                css={css({
-                  position: "absolute",
-                  right: "calc(100% + 1.2rem)",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                })}
-              >
-                <ScoreStack {...signals.delegates} />
-              </div>
+              {showScoreStack && (
+                <div
+                  css={css({
+                    position: "absolute",
+                    right: "calc(100% + 1.2rem)",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  })}
+                >
+                  <ScoreStack {...signals.delegates} />
+                </div>
+              )}
             </div>
             <div data-small>
-              {mostRecentActivity === "update" ? (
-                <>
-                  Last updated{" "}
-                  <FormattedDateWithTooltip
-                    relativeDayThreshold={5}
-                    capitalize={false}
-                    value={candidate.lastUpdatedTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
-                </>
-              ) : mostRecentActivity === "feedback" ? (
-                <>
-                  Last comment{" "}
-                  <FormattedDateWithTooltip
-                    relativeDayThreshold={5}
-                    capitalize={false}
-                    value={mostRecentFeedbackPost.createdTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
-                </>
+              {isProposalUpdate ? (
+                renderProposalUpdateStatusText()
               ) : (
                 <>
-                  Created{" "}
-                  <FormattedDateWithTooltip
-                    relativeDayThreshold={5}
-                    capitalize={false}
-                    value={candidate.createdTimestamp}
-                    day="numeric"
-                    month="short"
-                  />
+                  {mostRecentActivity === "update" ? (
+                    <>
+                      Last updated{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={candidate.lastUpdatedTimestamp}
+                        day="numeric"
+                        month="short"
+                      />
+                    </>
+                  ) : mostRecentActivity === "feedback" ? (
+                    <>
+                      Last comment{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={mostRecentFeedbackPost.createdTimestamp}
+                        day="numeric"
+                        month="short"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      Created{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={candidate.createdTimestamp}
+                        day="numeric"
+                        month="short"
+                      />
+                    </>
+                  )}
+                  {isProposalThresholdMet && (
+                    <span>
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        css={(t) =>
+                          css({
+                            ":before": {
+                              content: '"–"',
+                              color: t.colors.textMuted,
+                              margin: "0 0.5rem",
+                            },
+                          })
+                        }
+                      />
+                      Sponsor threshold met
+                    </span>
+                  )}
                 </>
-              )}
-              {isProposalThresholdMet && (
-                <span>
-                  <span
-                    role="separator"
-                    aria-orientation="vertical"
-                    css={(t) =>
-                      css({
-                        ":before": {
-                          content: '"–"',
-                          color: t.colors.textMuted,
-                          margin: "0 0.5rem",
-                        },
-                      })
-                    }
-                  />
-                  Sponsor threshold met
-                </span>
               )}
             </div>
           </div>
@@ -1515,7 +1801,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
             <Tag variant="error" size="large">
               Canceled
             </Tag>
-          ) : candidate.latestVersion.targetProposalId != null ? (
+          ) : isProposalUpdate ? (
             <Tag variant="special" size="large">
               Prop {candidate.latestVersion.targetProposalId} update
             </Tag>
@@ -1530,19 +1816,19 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
           {/* )} */}
         </div>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 });
 
 const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
-  const { displayName: authorAccountDisplayName } = useAccountDisplayName(
-    connectedAccountAddress
+  const authorAccountDisplayName = useAccountDisplayName(
+    connectedAccountAddress,
   );
 
   return (
-    <RouterLink to={`/new/${draftId}`}>
+    <NextLink prefetch href={`/new/${draftId}`}>
       <div
         css={css({
           display: "grid",
@@ -1569,7 +1855,7 @@ const ProposalDraftItem = ({ draftId }) => {
         </div>
         <Tag size="large">Draft</Tag>
       </div>
-    </RouterLink>
+    </NextLink>
   );
 };
 
@@ -1668,8 +1954,8 @@ const DraftTabContent = ({ items = [] }) => {
         description="You have no drafts"
         buttonLabel="New proposal"
         buttonProps={{
-          component: RouterLink,
-          to: "/new",
+          component: NextLink,
+          href: "/new",
           icon: <PlusIcon style={{ width: "1rem" }} />,
         }}
         css={css({ padding: "3.2rem 0" })}
@@ -1689,5 +1975,31 @@ const DraftTabContent = ({ items = [] }) => {
     />
   );
 };
+
+const Pagination = ({ showNext, showAll }) => (
+  <div
+    css={{
+      textAlign: "center",
+      padding: "3.2rem 0",
+      "@container (min-width: 600px)": {
+        padding: "4.8rem 0",
+      },
+    }}
+  >
+    <Button size="small" onClick={showNext}>
+      Show more
+    </Button>
+    <div style={{ marginTop: "1.6rem" }}>
+      <Link
+        size="small"
+        component="button"
+        color={(t) => t.colors.textDimmed}
+        onClick={showAll}
+      >
+        Show all
+      </Link>
+    </div>
+  </div>
+);
 
 export default BrowseScreen;

@@ -68,7 +68,7 @@ const useActionDispatcher = () => {
       for (let listener of afterActionListeners) listener(action);
       return result;
     },
-    [dispatch_]
+    [dispatch_],
   );
 
   return dispatch;
@@ -108,8 +108,8 @@ export const Provider = ({ api, children }) => {
     authenticationData === undefined
       ? "loading"
       : authenticationData != null
-      ? "authenticated"
-      : "not-authenticated";
+        ? "authenticated"
+        : "not-authenticated";
 
   React.useEffect(() => {
     api.getAuthenticationData().then((authenticationData) => {
@@ -125,7 +125,7 @@ export const Provider = ({ api, children }) => {
     (selector) =>
       // eslint-disable-next-line
       useLatestCallback((...args) => selector(getStoreState(), ...args)),
-    selectorFunctions
+    selectorFunctions,
   );
 
   const actions = mapValues(
@@ -138,7 +138,7 @@ export const Provider = ({ api, children }) => {
       getStoreState,
       cacheStore,
       setAuthenticationData,
-    })
+    }),
   );
 
   React.useEffect(() => {
@@ -208,7 +208,7 @@ export const Provider = ({ api, children }) => {
       };
       const disconnect_ = await api.connect(
         { userId: user.id, authenticationData },
-        listener
+        listener,
       );
       disconnect = disconnect_;
       document.addEventListener("visibilitychange", visibilityChangeHandler);
@@ -237,7 +237,7 @@ export const Provider = ({ api, children }) => {
       ...Object.values(selectors),
       // eslint-disable-next-line
       ...Object.values(actions),
-    ]
+    ],
   );
 
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;

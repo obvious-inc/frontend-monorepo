@@ -10,7 +10,7 @@ const TWO_DAYS_IN_SECONDS = ONE_HOUR_IN_SECONDS * 48;
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
   return new Request(
-    `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`
+    `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`,
   );
 };
 
@@ -18,7 +18,7 @@ const parseCamelCasedString = (str) => {
   const parsed = str.replace(
     /[A-Z]+(?![a-z])|[A-Z]/g,
     (matchCapitalLetter, matchOffset) =>
-      `${matchOffset === 0 ? "" : " "}${matchCapitalLetter.toLowerCase()}`
+      `${matchOffset === 0 ? "" : " "}${matchCapitalLetter.toLowerCase()}`,
   );
   return `${parsed[0].toUpperCase()}${parsed.slice(1)}`;
 };
@@ -36,7 +36,7 @@ const parseTransaction = (tx) => {
       functionSignature == null
         ? null
         : parseCamelCasedString(
-            functionSignature.slice(0, functionSignature.indexOf("("))
+            functionSignature.slice(0, functionSignature.indexOf("(")),
           ),
   };
 };
@@ -52,7 +52,7 @@ const fetchAbi = async (address) => {
         module: "contract",
         action: "getabi",
         address,
-      })
+      }),
     )
   ).json();
 
@@ -80,7 +80,7 @@ export default async (req) => {
         headers: {
           "content-type": "application/json",
         },
-      }
+      },
     );
 
   const response = await fetch(
@@ -93,7 +93,7 @@ export default async (req) => {
       page: searchParams.get("page") ?? 1,
       sort: "desc",
       offset: 50, // Page size
-    })
+    }),
   );
 
   if (!response.ok) return response;
@@ -124,7 +124,7 @@ export default async (req) => {
         data: inputData,
       });
       const functionAbi = abi.find(
-        (e) => e.type === "function" && e.name === functionName
+        (e) => e.type === "function" && e.name === functionName,
       );
       const parsedInput = functionAbi.inputs.map((input, i) => {
         const rawValue = args[i];

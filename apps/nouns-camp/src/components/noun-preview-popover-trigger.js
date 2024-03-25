@@ -1,7 +1,9 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useAccountDisplayName } from "@shades/common/app";
+import NextLink from "next/link";
+import { useEnsName } from "wagmi";
 import { useFetch } from "@shades/common/react";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
@@ -13,7 +15,6 @@ import { resolveIdentifier } from "../contracts.js";
 import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
-import { Link } from "react-router-dom";
 
 const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
@@ -54,12 +55,13 @@ const NounPreviewPopoverTrigger = React.forwardRef(
     {
       nounId,
       contextAccount,
+      showAvatar = true,
       inline = false,
       popoverPlacement = "bottom",
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     const renderTrigger = () => {
       if (children != null) return children;
@@ -78,16 +80,18 @@ const NounPreviewPopoverTrigger = React.forwardRef(
               },
             })}
           >
-            <NounAvatar
-              id={nounId}
-              size="1.2em"
-              signatureFallback={false}
-              css={css({
-                display: "inline-block",
-                marginRight: "0.3em",
-                verticalAlign: "sub",
-              })}
-            />
+            {showAvatar && (
+              <NounAvatar
+                id={nounId}
+                size="1.2em"
+                signatureFallback={false}
+                css={css({
+                  display: "inline-block",
+                  marginRight: "0.3em",
+                  verticalAlign: "sub",
+                })}
+              />
+            )}
             <InlineButton
               data-noun-id
               component="div"
@@ -118,21 +122,23 @@ const NounPreviewPopoverTrigger = React.forwardRef(
             })
           }
         >
-          <div css={css({ position: "relative", zIndex: 1 })}>
-            <NounAvatar id={nounId} size="4rem" />
-            {contextAccount != null && (
-              <DelegationStatusDot
-                nounId={nounId}
-                contextAccount={contextAccount}
-                cssProps={{
-                  top: "3rem",
-                  left: "3rem",
-                  height: "1.2rem",
-                  width: "1.2rem",
-                }}
-              />
-            )}
-          </div>
+          {showAvatar && (
+            <div css={css({ position: "relative", zIndex: 1 })}>
+              <NounAvatar id={nounId} size="4rem" />
+              {contextAccount != null && (
+                <DelegationStatusDot
+                  nounId={nounId}
+                  contextAccount={contextAccount}
+                  cssProps={{
+                    top: "3rem",
+                    left: "3rem",
+                    height: "1.2rem",
+                    width: "1.2rem",
+                  }}
+                />
+              )}
+            </div>
+          )}
           <div data-id>{nounId}</div>
         </button>
       );
@@ -146,7 +152,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const NounEvents = ({ nounId, contextAccount }) => {
@@ -193,10 +199,10 @@ const NounEvents = ({ nounId, contextAccount }) => {
 const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
   const transactionHash = event.id.split("_")[0];
-  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
-    useAccountDisplayName(event.newAccountId);
-  const { displayName: ownerDisplayName, ensName: ownerEns } =
-    useAccountDisplayName(noun.ownerId);
+  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
+  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const ownerDisplayName = useAccountDisplayName(noun.ownerId);
+  const { data: ownerEns } = useEnsName({ address: noun.ownerId });
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -231,8 +237,8 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
         {delegatingText}{" "}
       </span>
       <span>
-        <Link
-          to={`/campers/${previousAccountAddress}`}
+        <NextLink
+          href={`/campers/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -247,7 +253,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
           }
         >
           {previousAccount}
-        </Link>
+        </NextLink>
       </span>{" "}
       since{" "}
       <span>
@@ -288,12 +294,14 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
     sourceAddress: contextAccount,
   });
 
-  const { displayName: newAccountDisplayName, ensName: newAccountEns } =
-    useAccountDisplayName(event.newAccountId);
-  const {
-    displayName: previousAccountDisplayName,
-    ensName: previousAccountEns,
-  } = useAccountDisplayName(event.previousAccountId);
+  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
+  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const previousAccountDisplayName = useAccountDisplayName(
+    event.previousAccountId,
+  );
+  const { data: previousAccountEns } = useEnsName({
+    address: event.previousAccountId,
+  });
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -319,8 +327,8 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const transferredFromText = transferredFromAuction
     ? "Auction House"
     : transferredFromTreasury
-    ? "Nouns Treasury"
-    : previousAccount;
+      ? "Nouns Treasury"
+      : previousAccount;
 
   const amount = transferredFromAuction
     ? parseInt(noun.auction.amount)
@@ -356,9 +364,9 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <Link to={`/campers/${previousAccountAddress}`}>
+        <NextLink href={`/campers/${previousAccountAddress}`}>
           {transferredFromText}
-        </Link>
+        </NextLink>
       </span>{" "}
       on{" "}
       <span>

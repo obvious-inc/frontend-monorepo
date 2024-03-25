@@ -84,7 +84,7 @@ export const isEqual = (ns1, ns2, options = {}) => {
     if (!Array.isArray(ns2)) return false;
 
     const [ns1_, ns2_] = [ns1, ns2].map((ns) =>
-      filterEmpty ? ns.filter((n) => !isEmpty(n)) : ns
+      filterEmpty ? ns.filter((n) => !isEmpty(n)) : ns,
     );
 
     if (ns1_.length !== ns2_.length) return false;
@@ -101,7 +101,7 @@ export const isEqual = (ns1, ns2, options = {}) => {
   // Text nodes
   if (n1.text != null)
     return ["text", "bold", "italic", "strikethrough"].every(
-      (p) => n1[p] === n2[p]
+      (p) => n1[p] === n2[p],
     );
 
   // The rest is for element nodes
@@ -202,7 +202,7 @@ export const parseString = (string) => {
 
 export const stringifyBlocks = (
   blockElements,
-  { humanReadable = true, renderUser, renderChannelLink } = {}
+  { humanReadable = true, renderUser, renderChannelLink } = {},
 ) => {
   const stringifyTextNode = (l) => {
     let text = l.text;
@@ -268,6 +268,9 @@ export const stringifyBlocks = (
       case "code-block":
         return `\n\`\`\`${el.code}\`\`\`\n`;
 
+      case "code":
+        return `\`${el.code}\``;
+
       default:
         throw new Error(`Unsupported element type "${el.type}"`);
     }
@@ -291,9 +294,9 @@ export const toMarkdown = (blockElements) => {
   const renderTextNode = (l) => {
     let text = l.text;
 
-    if (l.bold) text = `**${text}**`;
-    if (l.italic) text = `*${text}*`;
-    if (l.strikethrough) text = `~~${text}~~`;
+    if (l.bold) text = `** ${text}** `;
+    if (l.italic) text = `* ${text}* `;
+    if (l.strikethrough) text = `~~${text} ~~`;
     return text;
   };
 
@@ -305,13 +308,13 @@ export const toMarkdown = (blockElements) => {
         return renderInlineChildren();
 
       case "heading-1":
-        return `# ${renderInlineChildren()}`;
+        return `# ${renderInlineChildren()} `;
       case "heading-2":
-        return `## ${renderInlineChildren()}`;
+        return `## ${renderInlineChildren()} `;
       case "heading-3":
-        return `### ${renderInlineChildren()}`;
+        return `### ${renderInlineChildren()} `;
       case "heading-4":
-        return `#### ${renderInlineChildren()}`;
+        return `#### ${renderInlineChildren()} `;
 
       case "quote":
       case "callout":
@@ -321,10 +324,10 @@ export const toMarkdown = (blockElements) => {
             .map(renderBlockElement)
             .join("\n\n")
             .split("\n")
-            .map((line) => `> ${line}`)
+            .map((line) => `> ${line} `)
             .join("\n");
 
-        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")}`;
+        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")} `;
 
       case "bulleted-list":
       case "numbered-list": {
@@ -345,9 +348,9 @@ export const toMarkdown = (blockElements) => {
 
           return `${listItemPrefix} ${renderedListItemChildBlocks
             .filter((s) => s.trim() !== "")
-            .join(skipBlockSpace ? "\n" : "\n\n")}`
+            .join(skipBlockSpace ? "\n" : "\n\n")} `
             .split("\n")
-            .join(`\n${indentSpace}`);
+            .join(`\n${indentSpace} `);
         });
 
         return children.join("\n");
@@ -358,14 +361,16 @@ export const toMarkdown = (blockElements) => {
         return el.children.map(renderBlockElement).join("\n");
 
       case "image": {
+        const alt = el.alt || "";
+
         if (el.caption == null || el.caption.trim() === "")
-          return `![${el.alt}](${el.url})`;
+          return `![${alt}](${el.url})`;
 
         try {
           new URL(el.caption);
-          return `[![${el.alt}](${el.url} "${el.caption}")](${el.caption})`;
+          return `[![${alt}](${el.url} "${el.caption}")](${el.caption})`;
         } catch (e) {
-          return `![${el.alt}](${el.url} "${el.caption}")`;
+          return `![${alt}](${el.url} "${el.caption}")`;
         }
       }
 
@@ -384,8 +389,8 @@ export const toMarkdown = (blockElements) => {
           ...(body?.children ?? []),
         ].map((rowEl) =>
           rowEl.children.map((cellEl) =>
-            cellEl.children.map(renderNode).join("")
-          )
+            cellEl.children.map(renderNode).join(""),
+          ),
         );
 
         const columnWidths = rows.reduce((widths, cells) => {
@@ -421,8 +426,9 @@ export const toMarkdown = (blockElements) => {
     }
   };
 
-  const renderNode = (node) => {
-    if (node.type == null || node.type === "text") return renderTextNode(node);
+  const renderNode = (node, i, all) => {
+    if (node.type == null || node.type === "text")
+      return renderTextNode(node, i, all);
 
     switch (node.type) {
       case "image":

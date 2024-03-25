@@ -15,7 +15,7 @@ const Avatar = React.forwardRef(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const sharedProps = {
       ref,
@@ -47,6 +47,7 @@ const Avatar = React.forwardRef(
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            position: "relative",
           }),
         ]}
       >
@@ -54,6 +55,14 @@ const Avatar = React.forwardRef(
           <div
             css={(t) =>
               css({
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 textTransform: "uppercase",
                 fontSize: `var(--custom-signature-font-size, 1.1rem)`,
                 color: t.colors.textDimmed,
@@ -70,7 +79,7 @@ const Avatar = React.forwardRef(
         )}
       </div>
     );
-  }
+  },
 );
 
 export default Avatar;

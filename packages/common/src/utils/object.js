@@ -11,12 +11,12 @@ export const omitKeys = (keysOrPredicate, obj) => {
 
 export const pickKeys = (keys, obj) =>
   Object.fromEntries(
-    Object.entries(obj).filter(([key_]) => keys.includes(key_))
+    Object.entries(obj).filter(([key_]) => keys.includes(key_)),
   );
 
 export const mapValues = (mapper, obj) =>
   Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [key, mapper(value, key, obj)])
+    Object.entries(obj).map(([key, value]) => [key, mapper(value, key, obj)]),
   );
 
 export const filter = (predicate, obj) =>

@@ -1,7 +1,6 @@
 {
   "name": "@shades/common",
   "version": "0.0.0",
-  "main": "dist/index.js",
   "private": true,
   "scripts": {
     "dev": "rollup -c -w",
@@ -12,16 +11,15 @@
   "exports": {
     "./app": "./dist/app.js",
     "./apis": "./dist/apis.js",
-    "./wallet": "./dist/wallet.js",
     "./utils": "./dist/utils.js",
     "./react": "./dist/react.js",
+    "./ethereum-react": "./dist/ethereum-react/index.js",
     "./nouns": "./dist/nouns/index.js",
     "./emoji": "./dist/emoji.js",
     "./custom-emoji": "./dist/custom-emoji.js"
   },
   "devDependencies": {
     "@swc/core": "^1.3.57",
-    "prettier": "^2.8.8",
     "rollup": "^3.21.0",
     "rollup-plugin-swc3": "^0.8.1"
   }

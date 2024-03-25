@@ -30,14 +30,14 @@ const ModalDialog = React.forwardRef(
       children,
       ...dialogProps
     },
-    dialogRef
+    dialogRef,
   ) => {
     const modalRef = React.useRef(null);
 
     const { modalProps, underlayProps } = useModalOverlay(
       { isDismissable: true },
       { isOpen, close: onRequestClose },
-      modalRef
+      modalRef,
     );
 
     if (!isOpen) return null;
@@ -51,6 +51,10 @@ const ModalDialog = React.forwardRef(
           css={[
             (t) =>
               css({
+                // Since Emotion’s <Global /> doesn’t work yet in Next we have
+                // to specify this on anything that’s outside the root div
+                colorScheme: t.name === "dark" ? "dark" : "light",
+
                 position: "fixed",
                 zIndex: 10,
                 top: 0,
@@ -99,8 +103,8 @@ const ModalDialog = React.forwardRef(
             "--background": transparent
               ? "none"
               : backdrop === "light"
-              ? "hsl(0 0% 0% / 20%)"
-              : undefined,
+                ? "hsl(0 0% 0% / 20%)"
+                : undefined,
           }}
         >
           <div
@@ -108,7 +112,7 @@ const ModalDialog = React.forwardRef(
             data-modal
             {...modalProps}
             {...customModalProps}
-            css={customModalProps?.css}
+            css={[customModalProps?.css]}
             style={{ "--desktop-set-height": height }}
           >
             <Dialog
@@ -128,7 +132,7 @@ const ModalDialog = React.forwardRef(
         </div>
       </Overlay>
     );
-  }
+  },
 );
 
 export default ModalDialog;

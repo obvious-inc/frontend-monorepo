@@ -1,40 +1,48 @@
+import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
 import { useEnsName, useEnsAvatar } from "wagmi";
-import { Link as RouterLink } from "react-router-dom";
 import { css } from "@emotion/react";
-import { useAccountDisplayName } from "@shades/common/app";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineUserButton from "@shades/ui-web/inline-user-button";
-import { useDelegate } from "../store.js";
+import { useDelegate, useAccount } from "../store.js";
+import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
-import { Link } from "react-router-dom";
+import NextLink from "next/link";
 
-const isAdminSession =
-  process.env.NODE_ENV !== "production" ||
-  new URLSearchParams(location.search).get("admin") != null;
+const isProduction = process.env.NODE_ENV === "production";
+
+const isDebugSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("debug") != null;
 
 const AccountPreviewPopoverTrigger = React.forwardRef(
   (
     {
       accountAddress,
       showAvatar = false,
+      avatarFallback = false,
+      avatarBackground,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     const avatar = showAvatar ? (
       <AccountAvatar
         address={accountAddress}
         size="1.2em"
-        placeholder={false}
+        placeholder={avatarFallback}
+        background={avatarBackground}
         css={css({
           display: "inline-block",
           marginRight: "0.3em",
@@ -89,20 +97,31 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
+  const { address: connectedAccountAddress } = useWallet();
+  const connectedAccount = useAccount(connectedAccountAddress);
+
+  const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
+  const enableImpersonation = !isMe && (!isProduction || isDebugSession);
+  const enableDelegation = connectedAccount?.nouns.length > 0;
+
   const delegate = useDelegate(accountAddress);
 
-  const { displayName, truncatedAddress } =
-    useAccountDisplayName(accountAddress);
+  const displayName = useAccountDisplayName(accountAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(
+    checksumEncodeAddress(accountAddress),
+  );
 
   const { data: ensName } = useEnsName({ address: accountAddress });
   const { data: ensAvatarUrl } = useEnsAvatar({
     name: ensName,
     enabled: ensName != null,
   });
+
+  const { open: openDelegationDialog } = useDialog("delegation");
 
   const accountLink = `/campers/${ensName ?? accountAddress}`;
 
@@ -193,8 +212,9 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
         })}
       >
         <div css={css({ flex: 1, minWidth: 0 })}>
-          <Link
-            to={accountLink}
+          <NextLink
+            prefetch
+            href={accountLink}
             css={css({
               display: "flex",
               alignItems: "center",
@@ -250,7 +270,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 </div>
               )}
             </div>
-          </Link>
+          </NextLink>
         </div>
         <div
           css={css({
@@ -259,7 +279,12 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
             gap: "0.6rem",
           })}
         >
-          <Button size="default" component={RouterLink} to={accountLink}>
+          <Button
+            size="default"
+            component={NextLink}
+            prefetch
+            href={accountLink}
+          >
             View profile
           </Button>
           <DropdownMenu.Root placement="bottom end" offset={18} crossOffset={5}>
@@ -283,6 +308,30 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 {
                   id: "main",
                   children: [
+                    !enableDelegation
+                      ? null
+                      : isMe
+                        ? {
+                            id: "manage-delegation",
+                            label: "Manage delegation",
+                          }
+                        : {
+                            id: "delegate-to-account",
+                            label: "Delegate to this account",
+                          },
+                    {
+                      id: "copy-account-address",
+                      label: "Copy account address",
+                    },
+                    enableImpersonation && {
+                      id: "impersonate-account",
+                      label: "Impersonate account",
+                    },
+                  ].filter(Boolean),
+                },
+                {
+                  id: "external",
+                  children: [
                     {
                       id: "open-etherscan",
                       label: "Etherscan",
@@ -305,55 +354,17 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     },
                   ],
                 },
-                {
-                  id: "misc",
-                  children: [
-                    {
-                      id: "copy-account-address",
-                      label: "Copy account address",
-                    },
-                    isAdminSession && {
-                      id: "impersonate-account",
-                      label: "Impersonate account",
-                    },
-                  ],
-                },
-              ].filter(Boolean)}
+              ]}
               onAction={(key) => {
                 switch (key) {
-                  case "open-etherscan":
-                    window.open(
-                      `https://etherscan.io/address/${accountAddress}`,
-                      "_blank"
-                    );
+                  case "manage-delegation":
+                    openDelegationDialog();
+                    close();
                     break;
 
-                  case "open-mogu":
-                    window.open(
-                      `https://mmmogu.com/address/${accountAddress}`,
-                      "_blank"
-                    );
-                    break;
-
-                  case "open-agora":
-                    window.open(
-                      `https://nounsagora.com/delegate/${accountAddress}`,
-                      "_blank"
-                    );
-                    break;
-
-                  case "open-nounskarma":
-                    window.open(
-                      `https://nounskarma.xyz/player/${accountAddress}`,
-                      "_blank"
-                    );
-                    break;
-
-                  case "open-rainbow":
-                    window.open(
-                      `https://rainbow.me/${accountAddress}`,
-                      "_blank"
-                    );
+                  case "delegate-to-account":
+                    openDelegationDialog({ target: accountAddress });
+                    close();
                     break;
 
                   case "copy-account-address":
@@ -368,6 +379,41 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     close();
                     break;
                   }
+
+                  case "open-etherscan":
+                    window.open(
+                      `https://etherscan.io/address/${accountAddress}`,
+                      "_blank",
+                    );
+                    break;
+
+                  case "open-mogu":
+                    window.open(
+                      `https://mmmogu.com/address/${accountAddress}`,
+                      "_blank",
+                    );
+                    break;
+
+                  case "open-agora":
+                    window.open(
+                      `https://nounsagora.com/delegate/${accountAddress}`,
+                      "_blank",
+                    );
+                    break;
+
+                  case "open-nounskarma":
+                    window.open(
+                      `https://nounskarma.xyz/player/${accountAddress}`,
+                      "_blank",
+                    );
+                    break;
+
+                  case "open-rainbow":
+                    window.open(
+                      `https://rainbow.me/${accountAddress}`,
+                      "_blank",
+                    );
+                    break;
                 }
               }}
             >

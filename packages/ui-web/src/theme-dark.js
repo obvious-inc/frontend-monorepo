@@ -24,6 +24,7 @@ const backgroundNormal = "hsl(0 0% 13%)";
 const backgroundDark = "hsl(0 0% 10%)";
 const backgroundLight = "hsl(0 0% 15%)";
 const backgroundLighter = "hsl(0 0% 17%)";
+const backgroundLightest = "hsl(0 0% 23%)";
 
 const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
 const backgroundModifierNormal = "hsl(0 0% 100% / 5.5%)";
@@ -35,6 +36,7 @@ const backgroundModifierSelected = createPrimary({
 
 const normalTextSize = "1.4rem";
 const largeText = "1.6rem";
+const largerText = "1.8rem";
 
 const textSizes = {
   micro: "0.95rem",
@@ -44,6 +46,7 @@ const textSizes = {
   // todo: remove default
   default: normalTextSize,
   large: largeText,
+  larger: largerText,
   huge: "3.2rem",
   header: largeText,
   headerLarge: "2rem",
@@ -60,6 +63,7 @@ const textWeights = {
   header: "700",
   smallHeader: "600",
   emphasis: "600",
+  smallTextEmphasis: "500",
   menuListBoxItem: "500",
   numberBadge: "500",
 };
@@ -76,6 +80,7 @@ const fontStacks = {
 
 export default {
   name: "dark",
+  colorScheme: "dark",
   sidebarWidth: "25rem",
   avatars: {
     borderRadius: "50%",
@@ -130,19 +135,20 @@ export default {
     textAccent: "white",
     textHeaderSecondary: "hsl(0 0% 72%)",
     textPrimary: primaryTintLighter,
+    textPrimaryModifierHover: createPrimary({ saturation: 1, lightness: 0.6 }),
     textHighlight: "#ffd376", // Light yellow
     textHighlightBackground: "#b8810e66",
     textSelectionBackground: createPrimary({ saturation: 1, lightness: 0 }),
     textDanger,
     link: primaryTintLighter,
     linkModifierHover: createPrimary({ saturation: 1, lightness: 0.65 }),
-    borderLight: "hsl(0 0% 100% / 20%)",
-    borderLightModifierHover: "hsl(0 0% 100% / 25%)",
-    borderLighter: "hsl(0 0% 100% / 12%)",
+    borderLight: "hsl(0 0% 100% / 16%)",
+    borderLighter: "hsl(0 0% 100% / 10%)",
     borderDanger: "rgb(110, 54, 48)",
     backgroundPrimary: backgroundDark,
     backgroundSecondary: backgroundNormal,
     backgroundTertiary: backgroundLight,
+    backgroundQuarternary: backgroundLightest,
     dialogBackground: backgroundNormal,
     popoverBackground: backgroundLight,
     backgroundTooltip: backgroundLighter,

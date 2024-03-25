@@ -41,9 +41,9 @@ export const search = (users, rawQuery) => {
         if (!matchString(u.displayName ?? "", query)) return Infinity;
         return u.displayName?.length;
       },
-      (u) => u.displayName?.toLowerCase()
+      (u) => u.displayName?.toLowerCase(),
     ),
-    unorderedUsers
+    unorderedUsers,
   );
 
   return orderedUsers;
@@ -56,5 +56,5 @@ export const createDefaultComparator = () =>
     (u) => u.onlineStatus === "online",
     (u) => u.isStarred ?? false,
     (u) => u.displayName != null,
-    (u) => u.displayName?.toLowerCase()
+    (u) => u.displayName?.toLowerCase(),
   );
