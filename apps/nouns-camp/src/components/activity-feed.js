@@ -216,7 +216,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                 <NextLink
                   href={
                     context !== "proposal"
-                      ? `/proposals/${item.proposalId}#${quote.id}`
+                      ? `/proposals/${item.proposalId}?tab=activity#${quote.id}`
                       : `#${quote.id}`
                   }
                   style={{ display: "block", position: "absolute", inset: 0 }}
