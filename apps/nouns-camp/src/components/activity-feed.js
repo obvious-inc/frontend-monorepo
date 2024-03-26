@@ -245,11 +245,11 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                       {(() => {
                         switch (quote.support) {
                           case 0:
-                            return <span data-againts>(against)</span>;
+                            return <Signal negative>(against)</Signal>;
                           case 1:
-                            return <span data-for>(for)</span>;
+                            return <Signal positive>(for)</Signal>;
                           case 2:
-                            return <span data-abstain>(abstained)</span>;
+                            return <Signal>(abstained)</Signal>;
                         }
                       })()}
                     </span>
