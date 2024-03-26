@@ -1176,11 +1176,18 @@ export const ProposalActionForm = ({
                     size={size}
                   >
                     {(() => {
-                      if (mode !== "vote") return "Submit comment";
-                      if (hasQuote) return "Cast revote";
-                      return proposalVoteCount === 1
-                        ? "Cast vote"
-                        : `${proposalVoteCount} votes`;
+                      switch (mode) {
+                        case "vote":
+                          return hasQuote
+                            ? "Cast revote"
+                            : proposalVoteCount === 1
+                              ? "Cast vote"
+                              : `Cast ${proposalVoteCount ?? "..."} votes`;
+                        case "feedback":
+                          return hasQuote ? "Submit repost" : "Submit comment";
+                        default:
+                          throw new Error();
+                      }
                     })()}
                   </Button>
                 )}
