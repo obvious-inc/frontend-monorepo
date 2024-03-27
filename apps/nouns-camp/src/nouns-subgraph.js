@@ -138,19 +138,29 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
 }`;
 
 const createDelegatesQuery = ({
-  accountIds,
+  includeVotes = false,
   includeZeroVotingPower = false,
 } = {}) => `
 query {
   delegates(first: 1000${
-    accountIds != null
-      ? `, where: {id_in: [${accountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
-      : !includeZeroVotingPower
-        ? ", where: {nounsRepresented_: {}}"
-        : ""
+    // accountIds != null
+    //   ? `, where: {id_in: [${accountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
+    !includeZeroVotingPower
+      ? ", where: {nounsRepresented_: {}}"
+      : ", where: {votes_: {}}"
   }) {
     id
     delegatedVotes
+    ${
+      includeVotes
+        ? `
+      votes(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+        id
+        blockNumber
+        supportDetailed
+      }`
+        : ""
+    }
     nounsRepresented(first: 1000) {
       id
       seed {
@@ -836,11 +846,12 @@ const parseFeedbackPost = (post) => ({
 const parseProposalVote = (v) => ({
   id: v.id,
   createdBlock: BigInt(v.blockNumber),
-  createdTimestamp: parseTimestamp(v.blockTimestamp),
+  createdTimestamp:
+    v.blockTimestamp == null ? undefined : parseTimestamp(v.blockTimestamp),
   reason: v.reason,
   support: v.supportDetailed,
-  votes: Number(v.votes),
-  voterId: v.voter.id,
+  votes: v.votes == null ? undefined : Number(v.votes),
+  voterId: v.voter?.id,
   proposalId: v.proposal?.id,
 });
 
@@ -1160,10 +1171,10 @@ export const fetchProposalCandidate = async (chainId, rawId) => {
   );
 };
 
-export const fetchDelegates = (chainId, optionalAccountIds) =>
+export const fetchDelegates = (chainId, options) =>
   subgraphFetch({
     chainId,
-    query: createDelegatesQuery({ accountIds: optionalAccountIds }),
+    query: createDelegatesQuery(options),
   }).then((data) => {
     return data.delegates.map(parseDelegate);
   });

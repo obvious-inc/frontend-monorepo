@@ -374,39 +374,37 @@ const createStore = ({ initialState }) =>
         ),
       fetchProposalCandidate,
       fetchProposalCandidates,
-      fetchDelegates: (chainId, client, optionalAccountIds) =>
-        NounsSubgraph.fetchDelegates(chainId, optionalAccountIds).then(
-          (delegates) => {
-            const delegatesById = arrayUtils.indexBy(
-              (d) => d.id.toLowerCase(),
-              delegates,
-            );
-            const nounsById = arrayUtils.indexBy(
-              (n) => n.id,
-              delegates.flatMap((d) => d.nounsRepresented),
-            );
+      fetchDelegates: (chainId, client, options) =>
+        NounsSubgraph.fetchDelegates(chainId, options).then((delegates) => {
+          const delegatesById = arrayUtils.indexBy(
+            (d) => d.id.toLowerCase(),
+            delegates,
+          );
+          const nounsById = arrayUtils.indexBy(
+            (n) => n.id,
+            delegates.flatMap((d) => d.nounsRepresented),
+          );
 
-            set((s) => ({
-              delegatesById: objectUtils.merge(
-                mergeDelegates,
-                s.delegatesById,
-                delegatesById,
-              ),
-              nounsById: objectUtils.merge(
-                (n1, n2) => ({ ...n1, ...n2 }),
-                s.nounsById,
-                nounsById,
-              ),
-            }));
+          set((s) => ({
+            delegatesById: objectUtils.merge(
+              mergeDelegates,
+              s.delegatesById,
+              delegatesById,
+            ),
+            nounsById: objectUtils.merge(
+              (n1, n2) => ({ ...n1, ...n2 }),
+              s.nounsById,
+              nounsById,
+            ),
+          }));
 
-            reverseResolveEnsAddresses(
-              client,
-              delegates.map((d) => d.id),
-            );
+          reverseResolveEnsAddresses(
+            client,
+            delegates.map((d) => d.id),
+          );
 
-            return delegates;
-          },
-        ),
+          return delegates;
+        }),
       fetchDelegate: (chainId, id) =>
         NounsSubgraph.fetchDelegate(chainId, id).then((delegate) => {
           const createdProposalsById = arrayUtils.indexBy(
@@ -1040,11 +1038,19 @@ export const useDelegate = (id) =>
   useStore(React.useCallback((s) => s.delegatesById[id?.toLowerCase()], [id]));
 
 export const useDelegates = () =>
-  useStore((s) => Object.values(s.delegatesById));
+  useStore((s) => {
+    return Object.values(s.delegatesById);
+  });
 
-export const useDelegatesFetch = () => {
+export const useDelegatesFetch = ({
+  includeVotes = false,
+  includeZeroVotingPower = false,
+} = {}) => {
   const { fetchDelegates } = useActions();
-  useFetch(() => fetchDelegates(), [fetchDelegates]);
+  useFetch(
+    () => fetchDelegates({ includeVotes, includeZeroVotingPower }),
+    [fetchDelegates, includeVotes, includeZeroVotingPower],
+  );
 };
 
 export const useDelegateFetch = (id, options) => {

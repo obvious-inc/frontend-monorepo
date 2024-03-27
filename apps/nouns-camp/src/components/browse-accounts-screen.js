@@ -18,6 +18,7 @@ import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import {
+  useDelegatesFetch,
   useDelegates,
   useDelegate,
   useAccount,
@@ -29,6 +30,7 @@ import { useDialog } from "../hooks/global-dialogs.js";
 import useContract from "../hooks/contract.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import AccountAvatar from "./account-avatar.js";
+import { VotesTagGroup } from "./browse-screen.js";
 
 const isDebugSession =
   typeof location !== "undefined" &&
@@ -58,7 +60,7 @@ const BrowseAccountsScreen = () => {
   const { address: treasuryAddress } = useContract("executor");
   const { address: forkEscrowAddress } = useContract("fork-escrow");
 
-  const [sortStrategy, setSortStrategy] = React.useState("voting-power");
+  const [sortStrategy, setSortStrategy] = React.useState("votes-cast");
   const [sortOrder, setSortOrder] = React.useState("desc");
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
@@ -73,11 +75,22 @@ const BrowseAccountsScreen = () => {
       (a) => a.id !== treasuryAddress && a.id !== forkEscrowAddress,
     );
 
-    const sort = (accounts) =>
-      arrayUtils.sortBy(
-        { value: (a) => a.nounsRepresented.length, order: sortOrder },
-        accounts,
-      );
+    const sort = (accounts) => {
+      switch (sortStrategy) {
+        case "voting-power":
+          return arrayUtils.sortBy(
+            { value: (a) => a.nounsRepresented.length, order: sortOrder },
+            accounts,
+          );
+        case "votes-cast":
+          return arrayUtils.sortBy(
+            { value: (a) => a.votes?.length ?? 0, order: sortOrder },
+            accounts,
+          );
+        default:
+          throw new Error(`Invalid sort strategy: ${sortStrategy}`);
+      }
+    };
 
     if (matchingAddresses == null) return sort(accountsExcludingContracts);
     const filteredAccounts = accountsExcludingContracts.filter((a) =>
@@ -86,6 +99,7 @@ const BrowseAccountsScreen = () => {
     return sort(filteredAccounts);
   }, [
     matchingAddresses,
+    sortStrategy,
     sortOrder,
     accounts,
     treasuryAddress,
@@ -115,6 +129,8 @@ const BrowseAccountsScreen = () => {
       { replace: true },
     );
   });
+
+  useDelegatesFetch({ includeZeroVotingPower: true, includeVotes: true });
 
   return (
     <>
@@ -187,15 +203,12 @@ const BrowseAccountsScreen = () => {
                   value={sortStrategy}
                   options={[
                     {
-                      value: "voting-power",
-                      label: "By voting power",
-                      property: "Voting power",
+                      value: "votes-cast",
+                      label: "Votes cast",
                     },
                     {
-                      value: "votes-cast",
-                      label: "By votes cast",
-                      property: "Cast votes",
-                      disabled: true,
+                      value: "voting-power",
+                      label: "Voting power",
                     },
                   ]}
                   onChange={(value) => {
@@ -214,7 +227,7 @@ const BrowseAccountsScreen = () => {
                           })
                         }
                       >
-                        {options.find((o) => o.value === value)?.property}
+                        {options.find((o) => o.value === value)?.label}
                       </em>
                     </>
                   )}
@@ -288,7 +301,7 @@ const BrowseAccountsScreen = () => {
                           flex: 1,
                           minWidth: 0,
                           display: "grid",
-                          gridTemplateColumns: "1fr auto",
+                          gridTemplateColumns: "1fr auto auto",
                           alignItems: "center",
                           gap: "1.2rem",
                         },
@@ -397,158 +410,197 @@ const AccountListItem = React.memo(({ address: accountAddress }) => {
             </span>
           </div>
           {isVisible && (
-            <DropdownMenu.Root
-              placement="bottom end"
-              offset={18}
-              crossOffset={5}
-            >
-              <DropdownMenu.Trigger asChild>
-                <Button
-                  variant="transparent"
-                  size="small"
-                  icon={
-                    <DotsHorizontalIcon
-                      style={{ width: "1.8rem", height: "auto" }}
-                    />
-                  }
-                  style={{ pointerEvents: "all" }}
-                />
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Content
-                css={css({
-                  width: "min-content",
-                  minWidth: "min-content",
-                  maxWidth: "calc(100vw - 2rem)",
-                })}
-                items={[
-                  {
-                    id: "main",
-                    children: [
-                      !enableDelegation
-                        ? null
-                        : isMe
-                          ? {
-                              id: "manage-delegation",
-                              label: "Manage delegation",
-                            }
-                          : {
-                              id: "delegate-to-account",
-                              label: "Delegate to this account",
-                            },
-                      {
-                        id: "copy-account-address",
-                        label: "Copy account address",
-                      },
-                      enableImpersonation && {
-                        id: "impersonate-account",
-                        label: "Impersonate account",
-                      },
-                    ].filter(Boolean),
-                  },
-                  {
-                    id: "external",
-                    children: [
-                      {
-                        id: "open-etherscan",
-                        label: "Etherscan",
-                      },
-                      {
-                        id: "open-mogu",
-                        label: "Mogu",
-                      },
-                      {
-                        id: "open-agora",
-                        label: "Agora",
-                      },
-                      {
-                        id: "open-nounskarma",
-                        label: "NounsKarma",
-                      },
-                      {
-                        id: "open-rainbow",
-                        label: "Rainbow",
-                      },
-                    ],
-                  },
-                ]}
-                onAction={(key) => {
-                  switch (key) {
-                    case "manage-delegation":
-                      openDelegationDialog();
-                      close();
-                      break;
-
-                    case "delegate-to-account":
-                      openDelegationDialog({ target: accountAddress });
-                      close();
-                      break;
-
-                    case "copy-account-address":
-                      navigator.clipboard.writeText(
-                        accountAddress.toLowerCase(),
-                      );
-                      close();
-                      break;
-
-                    case "impersonate-account": {
-                      const searchParams = new URLSearchParams(location.search);
-                      searchParams.set("impersonate", accountAddress);
-                      location.replace(`${location.pathname}?${searchParams}`);
-                      close();
-                      break;
-                    }
-
-                    case "open-etherscan":
-                      window.open(
-                        `https://etherscan.io/address/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-mogu":
-                      window.open(
-                        `https://mmmogu.com/address/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-agora":
-                      window.open(
-                        `https://nounsagora.com/delegate/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-nounskarma":
-                      window.open(
-                        `https://nounskarma.xyz/player/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-rainbow":
-                      window.open(
-                        `https://rainbow.me/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-                  }
-                }}
+            <>
+              {delegate?.votes == null ? (
+                <div />
+              ) : delegate.votes.length > 0 ? (
+                <DelegateVotesTagGroup votes={delegate?.votes} />
+              ) : (
+                <div className="small dimmed">No votes</div>
+              )}
+              <DropdownMenu.Root
+                placement="bottom end"
+                offset={18}
+                crossOffset={5}
               >
-                {(item) => (
-                  <DropdownMenu.Section items={item.children}>
-                    {(item) => (
-                      <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
-                    )}
-                  </DropdownMenu.Section>
-                )}
-              </DropdownMenu.Content>
-            </DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <Button
+                    variant="transparent"
+                    size="small"
+                    icon={
+                      <DotsHorizontalIcon
+                        style={{ width: "1.8rem", height: "auto" }}
+                      />
+                    }
+                    style={{ pointerEvents: "all" }}
+                  />
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content
+                  css={css({
+                    width: "min-content",
+                    minWidth: "min-content",
+                    maxWidth: "calc(100vw - 2rem)",
+                  })}
+                  items={[
+                    {
+                      id: "main",
+                      children: [
+                        !enableDelegation
+                          ? null
+                          : isMe
+                            ? {
+                                id: "manage-delegation",
+                                label: "Manage delegation",
+                              }
+                            : {
+                                id: "delegate-to-account",
+                                label: "Delegate to this account",
+                              },
+                        {
+                          id: "copy-account-address",
+                          label: "Copy account address",
+                        },
+                        enableImpersonation && {
+                          id: "impersonate-account",
+                          label: "Impersonate account",
+                        },
+                      ].filter(Boolean),
+                    },
+                    {
+                      id: "external",
+                      children: [
+                        {
+                          id: "open-etherscan",
+                          label: "Etherscan",
+                        },
+                        {
+                          id: "open-mogu",
+                          label: "Mogu",
+                        },
+                        {
+                          id: "open-agora",
+                          label: "Agora",
+                        },
+                        {
+                          id: "open-nounskarma",
+                          label: "NounsKarma",
+                        },
+                        {
+                          id: "open-rainbow",
+                          label: "Rainbow",
+                        },
+                      ],
+                    },
+                  ]}
+                  onAction={(key) => {
+                    switch (key) {
+                      case "manage-delegation":
+                        openDelegationDialog();
+                        close();
+                        break;
+
+                      case "delegate-to-account":
+                        openDelegationDialog({ target: accountAddress });
+                        close();
+                        break;
+
+                      case "copy-account-address":
+                        navigator.clipboard.writeText(
+                          accountAddress.toLowerCase(),
+                        );
+                        close();
+                        break;
+
+                      case "impersonate-account": {
+                        const searchParams = new URLSearchParams(
+                          location.search,
+                        );
+                        searchParams.set("impersonate", accountAddress);
+                        location.replace(
+                          `${location.pathname}?${searchParams}`,
+                        );
+                        close();
+                        break;
+                      }
+
+                      case "open-etherscan":
+                        window.open(
+                          `https://etherscan.io/address/${accountAddress}`,
+                          "_blank",
+                        );
+                        break;
+
+                      case "open-mogu":
+                        window.open(
+                          `https://mmmogu.com/address/${accountAddress}`,
+                          "_blank",
+                        );
+                        break;
+
+                      case "open-agora":
+                        window.open(
+                          `https://nounsagora.com/delegate/${accountAddress}`,
+                          "_blank",
+                        );
+                        break;
+
+                      case "open-nounskarma":
+                        window.open(
+                          `https://nounskarma.xyz/player/${accountAddress}`,
+                          "_blank",
+                        );
+                        break;
+
+                      case "open-rainbow":
+                        window.open(
+                          `https://rainbow.me/${accountAddress}`,
+                          "_blank",
+                        );
+                        break;
+                    }
+                  }}
+                >
+                  {(item) => (
+                    <DropdownMenu.Section items={item.children}>
+                      {(item) => (
+                        <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                      )}
+                    </DropdownMenu.Section>
+                  )}
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </>
           )}
         </div>
       </div>
     </>
   );
 });
+
+const DelegateVotesTagGroup = ({ votes }) => {
+  const [forVotes, againstVotes, abstainVotes] = votes.reduce(
+    ([for_, against, abstain], vote) => {
+      switch (vote.support) {
+        case 0:
+          return [for_, against + 1, abstain];
+        case 1:
+          return [for_ + 1, against, abstain];
+        case 2:
+          return [for_, against, abstain + 1];
+        default:
+          return [for_, against, abstain];
+      }
+    },
+    [0, 0, 0],
+  );
+
+  return (
+    <VotesTagGroup
+      for={forVotes}
+      against={againstVotes}
+      abstain={abstainVotes}
+    />
+  );
+};
 
 export default BrowseAccountsScreen;
