@@ -25,7 +25,7 @@
     "@nouns/assets": "^0.5.0",
     "@nouns/contracts": "^0.3.0",
     "@nouns/sdk": "^0.4.0",
-    "@prophouse/sdk-react": "^1.0.31",
+    "@prophouse/sdk-react": "^1.0.33",
     "@radix-ui/react-toolbar": "^1.0.3",
     "@radix-ui/react-tooltip": "^1.0.5",
     "@sentry/nextjs": "^7.108.0",
