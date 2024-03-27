@@ -490,7 +490,7 @@ const Content = ({ titleProps, dismiss }) => {
               }}
               style={{ position: "absolute", inset: 0, opacity: 0 }}
             >
-              {[30, 60, 90].map((count) => (
+              {[7, 14, 30, 60, 90, 365].map((count) => (
                 <option key={count} value={count}>
                   {count} days
                 </option>
