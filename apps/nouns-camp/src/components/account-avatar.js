@@ -3,7 +3,8 @@ import { css } from "@emotion/react";
 import { useEnsName, useEnsAvatar } from "wagmi";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
-import { useDelegate } from "../store.js";
+import { useNounsRepresented } from "../store.js";
+import { useNounSeeds } from "../hooks/token-contract.js";
 
 const { reverse } = arrayUtils;
 
@@ -38,14 +39,21 @@ const NounsAccountAvatar = React.forwardRef(
     },
     ref,
   ) => {
-    const delegate = useDelegate(accountAddress);
-    const nounSeeds = delegate?.nounsRepresented.map((n) => n.seed);
+    const nouns = useNounsRepresented(accountAddress);
+
+    const isMissingSeeds = nouns != null && nouns.some((n) => n.seed == null);
 
     const { data: ensName } = useEnsName({ address: accountAddress });
     const { data: ensAvatarUrl } = useEnsAvatar({
       name: ensName,
       enabled: ensName != null,
     });
+
+    const fetchedNounSeeds = useNounSeeds(nouns?.map((n) => n.id) ?? [], {
+      enabled: !ensOnly && ensAvatarUrl == null && isMissingSeeds,
+    });
+
+    const nounSeeds = fetchedNounSeeds ?? nouns?.map((n) => n.seed);
 
     const enablePlaceholder = ensAvatarUrl == null;
 

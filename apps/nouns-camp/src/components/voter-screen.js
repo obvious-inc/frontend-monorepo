@@ -957,7 +957,8 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
   return (
     <Layout
       navigationStack={[
-        { to: `/campers/${rawAddressOrEnsName} `, label: displayName },
+        { to: "/campers", label: "Campers", desktopOnly: true },
+        { to: `/campers/${rawAddressOrEnsName}`, label: displayName },
       ]}
     >
       {voterAddress != null ? (

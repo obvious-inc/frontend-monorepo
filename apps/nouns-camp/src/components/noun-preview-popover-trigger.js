@@ -489,14 +489,16 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                   css({ fontSize: t.text.sizes.small, margin: "0.1rem 0" })
                 }
               >
-                <FormattedDateWithTooltip
-                  disableRelative
-                  disableTooltip
-                  month="short"
-                  day="numeric"
-                  year="numeric"
-                  value={nounTimestamp}
-                />
+                {nounTimestamp != null && (
+                  <FormattedDateWithTooltip
+                    disableRelative
+                    disableTooltip
+                    month="short"
+                    day="numeric"
+                    year="numeric"
+                    value={nounTimestamp}
+                  />
+                )}
                 {auction?.amount && (
                   <>
                     <InlineVerticalSeparator />

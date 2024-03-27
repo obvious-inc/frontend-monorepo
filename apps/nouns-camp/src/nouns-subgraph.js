@@ -137,16 +137,21 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
   }
 }`;
 
-const createDelegatesQuery = (optionalAccountIds) => `
+const createDelegatesQuery = ({
+  accountIds,
+  includeZeroVotingPower = false,
+} = {}) => `
 query {
-  delegates(first: 1000, where: ${
-    optionalAccountIds == null
-      ? "{nounsRepresented_: {}}"
-      : `{id_in: [${optionalAccountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
+  delegates(first: 1000${
+    accountIds != null
+      ? `, where: {id_in: [${accountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
+      : !includeZeroVotingPower
+        ? ", where: {nounsRepresented_: {}}"
+        : ""
   }) {
     id
     delegatedVotes
-    nounsRepresented {
+    nounsRepresented(first: 1000) {
       id
       seed {
         head
@@ -171,21 +176,8 @@ const createDelegateQuery = (id) => `
     delegate(id: "${id}") {
       id
       delegatedVotes
-      nounsRepresented {
+      nounsRepresented(first: 1000) {
         id
-        seed {
-          head
-          glasses
-          body
-          background
-          accessory
-        }
-        owner {
-          id
-          delegate {
-            id
-          }
-        }
       }
       votes (first: 1000, orderBy: blockNumber, orderDirection: desc) {
         ...VoteFields
@@ -1031,12 +1023,16 @@ const parseDelegate = (data) => {
   parsedData.nounsRepresented = arrayUtils.sortBy(
     (n) => parseInt(n.id),
     data.nounsRepresented
-      .map((n) => ({
-        ...n,
-        seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
-        ownerId: n.owner?.id,
-        delegateId: n.owner?.delegate?.id,
-      }))
+      .map((n) => {
+        const noun = { ...n };
+        if (n.seed != null)
+          noun.seed = objectUtils.mapValues((v) => parseInt(v), n.seed);
+        if (n.owner != null) {
+          noun.ownerId = n.owner?.id;
+          noun.delegateId = n.owner?.delegate?.id;
+        }
+        return noun;
+      })
       // Don’t include nouns delegated to other accounts
       .filter((n) => n.delegateId == null || n.delegateId === data.id),
   );
@@ -1167,7 +1163,7 @@ export const fetchProposalCandidate = async (chainId, rawId) => {
 export const fetchDelegates = (chainId, optionalAccountIds) =>
   subgraphFetch({
     chainId,
-    query: createDelegatesQuery(optionalAccountIds),
+    query: createDelegatesQuery({ accountIds: optionalAccountIds }),
   }).then((data) => {
     return data.delegates.map(parseDelegate);
   });

@@ -374,21 +374,35 @@ const createStore = ({ initialState }) =>
         ),
       fetchProposalCandidate,
       fetchProposalCandidates,
-      fetchDelegates: (chainId, optionalAccountIds) =>
+      fetchDelegates: (chainId, client, optionalAccountIds) =>
         NounsSubgraph.fetchDelegates(chainId, optionalAccountIds).then(
           (delegates) => {
-            const delegatesByIds = arrayUtils.indexBy(
+            const delegatesById = arrayUtils.indexBy(
               (d) => d.id.toLowerCase(),
               delegates,
+            );
+            const nounsById = arrayUtils.indexBy(
+              (n) => n.id,
+              delegates.flatMap((d) => d.nounsRepresented),
             );
 
             set((s) => ({
               delegatesById: objectUtils.merge(
                 mergeDelegates,
                 s.delegatesById,
-                delegatesByIds,
+                delegatesById,
+              ),
+              nounsById: objectUtils.merge(
+                (n1, n2) => ({ ...n1, ...n2 }),
+                s.nounsById,
+                nounsById,
               ),
             }));
+
+            reverseResolveEnsAddresses(
+              client,
+              delegates.map((d) => d.id),
+            );
 
             return delegates;
           },
@@ -980,8 +994,8 @@ export const useActions = () => {
       [fetchDelegate, chainId],
     ),
     fetchDelegates: React.useCallback(
-      (...args) => fetchDelegates(chainId, ...args),
-      [fetchDelegates, chainId],
+      (...args) => fetchDelegates(chainId, publicClient, ...args),
+      [fetchDelegates, chainId, publicClient],
     ),
     fetchAccount: React.useCallback(
       (...args) => fetchAccount(chainId, ...args),
@@ -1024,6 +1038,9 @@ export const useActions = () => {
 
 export const useDelegate = (id) =>
   useStore(React.useCallback((s) => s.delegatesById[id?.toLowerCase()], [id]));
+
+export const useDelegates = () =>
+  useStore((s) => Object.values(s.delegatesById));
 
 export const useDelegatesFetch = () => {
   const { fetchDelegates } = useActions();
@@ -1379,6 +1396,24 @@ export const useProposalCandidateVotingPower = (candidateId) => {
 
 export const useNoun = (id) =>
   useStore(React.useCallback((s) => s.nounsById[id], [id]));
+
+export const useNounsRepresented = (accountId) =>
+  useStore(
+    React.useCallback(
+      (s) => {
+        const delegate = s.delegatesById[accountId.toLowerCase()];
+        if (delegate == null) return null;
+        const nouns = [];
+        for (const { id } of delegate.nounsRepresented) {
+          const noun = s.nounsById[id];
+          if (noun == null) continue;
+          nouns.push(noun);
+        }
+        return nouns;
+      },
+      [accountId],
+    ),
+  );
 
 export const useAllNounsByAccount = (accountAddress) => {
   const delegatedNouns = useStore(

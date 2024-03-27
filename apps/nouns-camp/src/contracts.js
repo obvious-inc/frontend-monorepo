@@ -34,9 +34,9 @@ const addressByIdentifierByChainId = {
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
     descriptor: DAO_DESCRIPTOR_CONTRACT,
-    "fork-escrow": "0x44d97D22B3d37d837cE4b22773aAd9d1566055D9",
+    "fork-escrow": "0x44d97d22b3d37d837ce4b22773aad9d1566055d9",
     payer: DAO_PAYER_CONTRACT,
-    "executor-v1": "0x0BC3807Ec262cB779b38D65b38158acC3bfedE10",
+    "executor-v1": "0x0bc3807ec262cb779b38d65b38158acc3bfede10",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
     "prop-house-nouns-house": "0xa1b73d8cb149ab30ec43f83f577646ac8fe7e617",
@@ -115,7 +115,7 @@ const metaByIdentifier = {
     name: "Nouns DAO Candidates",
     description: "NounsDAODataProxy",
   },
-  executor: { name: "Nouns DAO Executor" },
+  executor: { name: "Nouns DAO Treasury" },
   token: {
     name: "Nouns Token",
   },
@@ -127,6 +127,7 @@ const metaByIdentifier = {
     name: "Nouns Art",
     description: "NounsDescriptorV2",
   },
+  "fork-escrow": { name: "Nouns DAO Fork Escrow" },
   "token-buyer": {
     name: "Nouns DAO Token Buyer",
   },

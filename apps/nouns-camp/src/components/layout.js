@@ -513,7 +513,7 @@ export const MainContentContainer = ({
       },
     })}
     style={{
-      "--width": narrow ? "72rem" : "132rem",
+      "--width": narrow ? "92rem" : "132rem",
     }}
     {...props}
   >
