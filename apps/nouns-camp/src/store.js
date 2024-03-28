@@ -424,7 +424,7 @@ const createStore = ({ initialState }) =>
           set((s) => ({
             delegatesById: {
               ...s.delegatesById,
-              [id.toLowerCase()]: delegate,
+              [id?.toLowerCase()]: delegate,
             },
             proposalsById: objectUtils.merge(
               mergeProposals,
@@ -434,11 +434,15 @@ const createStore = ({ initialState }) =>
           }));
         }),
       fetchAccount: (chainId, id) =>
-        NounsSubgraph.fetchAccount(chainId, id).then((account) => {
+        NounsSubgraph.fetchAccount(chainId, id).then(({ account, events }) => {
           const nounIds = arrayUtils.unique(account.nouns.map((n) => n.id));
+          const eventNounIds = arrayUtils.unique(events.map((e) => e.nounId));
+          const allNounIds = arrayUtils.unique([...nounIds, ...eventNounIds]);
 
           // fetch nouns async ...
-          fetchNounsByIds(chainId, nounIds);
+          fetchNounsByIds(chainId, allNounIds);
+
+          account.events = events;
 
           set((s) => ({
             accountsById: {

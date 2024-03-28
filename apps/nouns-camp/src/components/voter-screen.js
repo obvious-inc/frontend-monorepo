@@ -308,7 +308,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
       ? null
       : Math.round((voteCount / currentQuorum) * 1000) / 10;
 
-  const hasNouns = account?.nouns.length > 0;
+  const hasNouns = account?.nouns?.length > 0;
   const hasVotingPower = voteCount > 0;
   const isDelegating =
     hasNouns &&
