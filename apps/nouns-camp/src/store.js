@@ -1131,7 +1131,7 @@ export const useProposalCandidateFetch = (id, options) => {
 export const useProposalCandidate = (id) =>
   useStore(
     React.useCallback(
-      (s) => (id == null ? null : s.proposalCandidatesById[id.toLowerCase()]),
+      (s) => (id == null ? null : s.proposalCandidatesById[id]),
       [id],
     ),
   );
