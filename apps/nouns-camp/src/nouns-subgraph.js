@@ -822,7 +822,7 @@ export const subgraphFetch = async ({
 };
 
 const parseMarkdownDescription = (string) => {
-  const [firstLine, ...restLines] = string.split("\n");
+  const [firstLine, ...restLines] = string.trim().split("\n");
   const startIndex = [...firstLine].findIndex((c) => c !== "#");
   const hasTitle = startIndex > 0;
   const title = hasTitle ? firstLine.slice(startIndex).trim() : null;
