@@ -202,7 +202,7 @@ const createStore = ({ initialState }) =>
       NounsSubgraph.fetchProposalCandidates(chainId, ids).then((candidates) => {
         set((s) => {
           const fetchedCandidatesById = arrayUtils.indexBy(
-            (p) => p.id.toLowerCase(),
+            (p) => p.id,
             candidates,
           );
 
@@ -452,7 +452,7 @@ const createStore = ({ initialState }) =>
           accountAddress,
         ).then((candidates) => {
           const fetchedCandidatesById = arrayUtils.indexBy(
-            (p) => p.id.toLowerCase(),
+            (p) => p.id,
             candidates,
           );
           set((s) => ({
@@ -559,7 +559,7 @@ const createStore = ({ initialState }) =>
             );
 
             const fetchedCandidatesById = arrayUtils.indexBy(
-              (p) => p.id.toLowerCase(),
+              (p) => p.id,
               candidates,
             );
 
@@ -606,14 +606,14 @@ const createStore = ({ initialState }) =>
               fetchProposals(chainId, propIds);
 
               const createdCandidatesById = arrayUtils.indexBy(
-                (p) => p.id.toLowerCase(),
+                (p) => p.id,
                 candidates,
               );
 
               // fetch feedback for voter's candies (candidates tab)
               fetchProposalCandidatesFeedbackPosts(
                 chainId,
-                candidates.map((c) => c.id.toLowerCase()),
+                candidates.map((c) => c.id),
               );
 
               const feedbackCandidateIds = arrayUtils.unique(
@@ -621,7 +621,7 @@ const createStore = ({ initialState }) =>
               );
 
               const postsByCandidateId = arrayUtils.groupBy(
-                (p) => p.candidateId.toLowerCase(),
+                (p) => p.candidateId,
                 candidateFeedbackPosts,
               );
               const newCandidatesById = objectUtils.mapValues(
@@ -661,7 +661,7 @@ const createStore = ({ initialState }) =>
             id,
           ).then((candidates) => {
             const fetchedCandidatesById = arrayUtils.indexBy(
-              (c) => c.id.toLowerCase(),
+              (c) => c.id,
               candidates,
             );
 
@@ -714,7 +714,7 @@ const createStore = ({ initialState }) =>
           ]) => {
             set((s) => {
               const postsByCandidateId = arrayUtils.groupBy(
-                (p) => p.candidateId.toLowerCase(),
+                (p) => p.candidateId,
                 candidateFeedbackPosts,
               );
               const newCandidatesById = objectUtils.mapValues(
@@ -795,7 +795,7 @@ const createStore = ({ initialState }) =>
 
           set((s) => {
             const postsByCandidateId = arrayUtils.groupBy(
-              (p) => p.candidateId.toLowerCase(),
+              (p) => p.candidateId,
               candidateFeedbackPosts,
             );
             const newCandidatesById = objectUtils.mapValues(
