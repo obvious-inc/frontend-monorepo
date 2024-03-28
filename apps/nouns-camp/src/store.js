@@ -1407,6 +1407,7 @@ export const useNounsRepresented = (accountId) =>
   useStore(
     React.useCallback(
       (s) => {
+        if (accountId == null) return null;
         const delegate = s.delegatesById[accountId.toLowerCase()];
         if (delegate == null) return null;
         const nouns = [];
