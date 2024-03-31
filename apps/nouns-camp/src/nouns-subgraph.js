@@ -188,6 +188,19 @@ const createDelegateQuery = (id) => `
       delegatedVotes
       nounsRepresented(first: 1000) {
         id
+        seed {
+          head
+          glasses
+          body
+          background
+          accessory
+        }
+        owner {
+          id
+          delegate {
+            id
+          }
+        }
       }
       votes (first: 1000, orderBy: blockNumber, orderDirection: desc) {
         ...VoteFields
