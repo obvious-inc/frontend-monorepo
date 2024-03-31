@@ -46,6 +46,9 @@ const Content = ({ titleProps, dismiss }) => {
 
   const hasNouns = account?.nouns.length > 0;
   const nounsRepresented = delegate?.nounsRepresented ?? [];
+  const nounsDelegatedToAccount = nounsRepresented.filter(
+    (n) => n.ownerId.toLowerCase() !== accountAddress,
+  );
   const voteCount = nounsRepresented.length;
   const votePowerQuorumPercentage =
     currentQuorum == null
@@ -202,15 +205,13 @@ const Content = ({ titleProps, dismiss }) => {
               </dd>
             </>
           )}
-          {voteCount > 0 && (
+          {nounsDelegatedToAccount.length > 0 && (
             <>
               <dt>Nouns delegated to you</dt>
               <dd data-block>
                 <NounList
                   contextAccount={accountAddress}
-                  items={nounsRepresented.filter(
-                    (n) => n.ownerId.toLowerCase() !== accountAddress,
-                  )}
+                  items={nounsDelegatedToAccount}
                 />
               </dd>
             </>
