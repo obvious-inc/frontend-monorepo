@@ -465,6 +465,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
     setPendingFeedback("");
     setPendingSupport(null);
+    setQuotedFeedItemIds([]);
   };
 
   return (
