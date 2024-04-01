@@ -719,7 +719,8 @@ const ItemTitle = ({ item, context }) => {
           item.quotes.every((quote) => quote.support === item.support);
 
         if (isRepost) {
-          const isRevote = item.quotes.some((q) => q.type === "vote");
+          const isRevote =
+            item.type === "vote" && item.quotes.some((q) => q.type === "vote");
           return isRevote ? "revoted" : "reposted";
         }
 
