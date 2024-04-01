@@ -2,7 +2,7 @@ import { isAddress } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
 
 export const normalizeId = (id) => {
-  const parts = id.toLowerCase().split("-");
+  const parts = id.split("-");
   const proposerFirst = isAddress(
     parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`,
   );
@@ -13,7 +13,7 @@ export const normalizeId = (id) => {
 
   const slug = (proposerFirst ? parts.slice(1) : parts.slice(0, -1)).join("-");
 
-  return `${proposerId}-${slug}`;
+  return `${proposerId.toLowerCase()}-${slug}`;
 };
 
 export const extractSlugFromId = (candidateId) => {

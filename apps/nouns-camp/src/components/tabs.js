@@ -40,7 +40,8 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
               gridAutoColumns: "auto",
               gridGap: "2.4rem",
               justifyContent: "flex-start",
-              paddingBottom: "0.2rem",
+              padding: "0.3rem 0.8rem",
+              margin: "-0.3rem -0.8rem 0",
               overflowY: "hidden",
               overflowX: "auto",
               "::-webkit-scrollbar": {

@@ -1,7 +1,7 @@
 const REPOST_MARKED_QUOTE_MARK_REGEX_STRING = "\\+1";
 
 const buildMarkedQuoteRegexString = (markRegexString) =>
-  `(?:^|(?<=\\n *\\n))${markRegexString} ?\\n *\\n(?:> *[^\\s]+.*(?:\\n|$))(?:> *[^\\s]*.*(?:\\n|$))*`;
+  `(?:^|(?:\\n *\\n))${markRegexString} ?\\n *\\n(?:> *[^\\s]+.*(?:\\n|$))(?:> *[^\\s]*.*(?:\\n|$))*`;
 
 const extractMarkedQuotes = (mark, markdown) => {
   const matches = markdown.match(
@@ -10,6 +10,7 @@ const extractMarkedQuotes = (mark, markdown) => {
   if (matches == null) return [];
   return matches.map((m) =>
     m
+      .trim()
       .split("\n")
       .slice(2)
       .map((line) => {
@@ -30,7 +31,7 @@ const stripMarkedQuotes = (mark, markdown, indeciesToDrop) => {
 
   for (const [index, match] of matches.entries()) {
     if (indeciesToDrop != null && !indeciesToDrop.includes(index)) continue;
-    stippedMarkdown = stippedMarkdown.replace(match, "");
+    stippedMarkdown = stippedMarkdown.replace(match.trim(), "");
   }
 
   return stippedMarkdown;

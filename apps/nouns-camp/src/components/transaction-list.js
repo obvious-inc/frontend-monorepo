@@ -779,29 +779,37 @@ export const TransactionExplanation = ({ transaction: t }) => {
 
 export const FormattedEthWithConditionalTooltip = ({
   value,
+  currency = "eth",
   tokenSymbol = "ETH",
   portal = false,
   truncate = true,
   decimals = 3,
   truncationDots = true,
   localeFormatting = false,
+  tooltip,
 }) => {
-  const ethString = formatEther(value);
-  let [ethValue, ethDecimals] = ethString.split(".");
+  const ethString = (() => {
+    switch (currency) {
+      case "eth":
+        return formatEther(value);
+      case "usdc":
+        return formatUnits(value, 6);
+      default:
+        throw new Error();
+    }
+  })();
+  let [integerPart, fractionalPart] = ethString.split(".");
 
-  if (localeFormatting) ethValue = parseFloat(ethValue).toLocaleString();
+  if (localeFormatting) integerPart = parseFloat(integerPart).toLocaleString();
 
   const truncateDecimals =
-    truncate && ethDecimals != null && ethDecimals.length > decimals;
-
-  if (!truncateDecimals)
-    return !tokenSymbol ? ethString : `${ethString} ${tokenSymbol}`;
+    truncate && fractionalPart != null && fractionalPart.length > decimals;
 
   const truncatedEthString = [
-    ethValue,
+    integerPart,
     truncateDecimals
-      ? `${ethDecimals.slice(0, decimals)}${truncationDots ? "..." : ""}`
-      : ethDecimals,
+      ? `${fractionalPart.slice(0, decimals)}${truncationDots ? "..." : ""}`
+      : fractionalPart,
   ]
     .filter(Boolean)
     .join(".");
@@ -810,13 +818,19 @@ export const FormattedEthWithConditionalTooltip = ({
     ? truncatedEthString
     : `${truncatedEthString} ${tokenSymbol}`;
 
+  if (tooltip === false || !truncateDecimals) return formattedString;
+
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
         <span role="button">{formattedString}</span>
       </Tooltip.Trigger>
       <Tooltip.Content side="top" sideOffset={6} portal={portal}>
-        {ethString} {tokenSymbol}
+        {tooltip ?? (
+          <>
+            {ethString} {tokenSymbol}
+          </>
+        )}
       </Tooltip.Content>
     </Tooltip.Root>
   );

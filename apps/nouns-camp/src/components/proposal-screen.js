@@ -123,6 +123,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const mobileTabContainerRef = React.useRef();
   const proposalActionInputRef = React.useRef();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedTab =
+    searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
+
   const proposal = useProposal(proposalId);
   const feedItems = useFeedItems(proposalId);
 
@@ -461,6 +465,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
     setPendingFeedback("");
     setPendingSupport(null);
+    setQuotedFeedItemIds([]);
   };
 
   return (
@@ -558,7 +563,6 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 ) : null}
                 <Tabs.Root
                   aria-label="Proposal info"
-                  defaultSelectedKey="activity"
                   css={(t) =>
                     css({
                       position: "sticky",
@@ -568,6 +572,14 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       "[role=tab]": { fontSize: t.text.sizes.base },
                     })
                   }
+                  selectedKey={selectedTab}
+                  onSelectionChange={(key) => {
+                    setSearchParams((p) => {
+                      const newParams = new URLSearchParams(p);
+                      newParams.set("tab", key);
+                      return newParams;
+                    });
+                  }}
                 >
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "3.2rem 0 4rem" }}>
@@ -657,7 +669,6 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 <Tabs.Root
                   ref={mobileTabContainerRef}
                   aria-label="Proposal sections"
-                  defaultSelectedKey="description"
                   css={(t) =>
                     css({
                       position: "sticky",
@@ -668,7 +679,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       "[role=tab]": { fontSize: t.text.sizes.base },
                     })
                   }
-                  onSelectionChange={() => {
+                  selectedKey={selectedTab}
+                  onSelectionChange={(key) => {
                     const tabAnchorRect =
                       mobileTabAnchorRef.current.getBoundingClientRect();
                     const tabContainerRect =
@@ -677,6 +689,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                       scrollContainerRef.current.scrollTo({
                         top: mobileTabAnchorRef.current.offsetTop,
                       });
+
+                    setSearchParams((p) => {
+                      const newParams = new URLSearchParams(p);
+                      newParams.set("tab", key);
+                      return newParams;
+                    });
                   }}
                 >
                   <Tabs.Item key="description" title="Description">
@@ -1176,11 +1194,18 @@ export const ProposalActionForm = ({
                     size={size}
                   >
                     {(() => {
-                      if (mode !== "vote") return "Submit comment";
-                      if (hasQuote) return "Cast revote";
-                      return proposalVoteCount === 1
-                        ? "Cast vote"
-                        : `${proposalVoteCount} votes`;
+                      switch (mode) {
+                        case "vote":
+                          return hasQuote
+                            ? "Cast revote"
+                            : proposalVoteCount === 1
+                              ? "Cast vote"
+                              : `Cast ${proposalVoteCount ?? "..."} votes`;
+                        case "feedback":
+                          return hasQuote ? "Submit repost" : "Submit comment";
+                        default:
+                          throw new Error();
+                      }
                     })()}
                   </Button>
                 )}

@@ -2,6 +2,7 @@ import { parseAbi, isAddress } from "viem";
 import {
   usePublicClient,
   useReadContract,
+  useReadContracts,
   useWriteContract,
   useSimulateContract,
 } from "wagmi";
@@ -73,6 +74,32 @@ export const useNounSeed = (nounId, { enabled = true } = {}) => {
     head: data[3],
     glasses: data[4],
   };
+};
+
+export const useNounSeeds = (nounIds, { enabled = true } = {}) => {
+  const chainId = useChainId();
+
+  const { data } = useReadContracts({
+    contracts: nounIds.map((nounId) => ({
+      address: getContractAddress(chainId),
+      abi: parseAbi([
+        "function seeds(uint256) public view returns (uint48,uint48,uint48,uint48,uint48)",
+      ]),
+      functionName: "seeds",
+      args: [nounId],
+    })),
+    query: { enabled },
+  });
+
+  if (data == null || data.some((d) => d.result == null)) return null;
+
+  return data.map((d) => ({
+    background: d.result[0],
+    body: d.result[1],
+    accessory: d.result[2],
+    head: d.result[3],
+    glasses: d.result[4],
+  }));
 };
 
 export const useSetDelegate = (address) => {
