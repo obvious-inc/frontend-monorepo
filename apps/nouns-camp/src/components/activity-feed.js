@@ -417,7 +417,7 @@ const ItemTitle = ({ item, context }) => {
   const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
       const title =
-        proposal?.title == null
+        proposal?.title == null || proposal.title.length > 130
           ? `Proposal ${proposalId}`
           : `${short ? proposalId : `Proposal ${proposalId}`}: ${
               proposal.title
