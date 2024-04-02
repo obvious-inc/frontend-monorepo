@@ -14,7 +14,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-next-on-pages": "^1.11.0",
     "vercel": "^33.6.2",
-    "wrangler": "^3.41.0"
+    "wrangler": "^3.42.0"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
