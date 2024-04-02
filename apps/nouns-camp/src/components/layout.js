@@ -3,16 +3,16 @@ import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccountDisplayName } from "@shades/common/ethereum-react";
-import { ErrorBoundary } from "@shades/common/react";
-import { useMatchMedia } from "@shades/common/react";
+import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   Plus as PlusIcon,
   CaretDown as CaretDownIcon,
+  DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
 import { useAccount, useDelegate } from "../store.js";
-import { useSearchParamToggleState } from "../hooks/navigation.js";
+import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
@@ -102,6 +102,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const actions = actions_ ?? defaultActions;
 
   const pathname = usePathname();
+  const navigate = useNavigate();
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
@@ -135,6 +136,35 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const visibleActions = isDesktop
     ? actions
     : actions.filter((a) => !a.desktopOnly);
+
+  const handleDropDownAction = (key) => {
+    switch (key) {
+      case "open-account-dialog":
+        openAccountDialog();
+        break;
+      case "open-delegation-dialog":
+        openDelegationDialog();
+        break;
+      case "copy-account-address":
+        navigator.clipboard.writeText(connectedWalletAccountAddress);
+        break;
+      case "open-auction":
+        window.open("https://nouns.wtf", "_blank");
+        break;
+      case "navigate-to-accounts-listing":
+        navigate("/campers");
+        break;
+      case "open-settings-dialog":
+        openSettingsDialog();
+        break;
+      case "open-treasury-dialog":
+        toggleTreasuryDialog();
+        break;
+      case "disconnect-wallet":
+        disconnectWallet();
+        break;
+    }
+  };
 
   return (
     <>
@@ -292,7 +322,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       variant: "default",
                       isLoading: requestWalletAccess == null || isLoadingWallet,
                       disabled: requestWalletAccess == null || isLoadingWallet,
-                      style: { marginLeft: "0.9rem" },
+                      style: { marginLeft: "0.9rem", marginRight: "0.4rem" },
                     },
                     label: "Connect Wallet",
                   }
@@ -310,49 +340,136 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       },
                       label: "Switch to Mainnet",
                     }
-                  : {
-                      type: "dropdown",
-                      onSelect: () => {
-                        openAccountDialog();
+                  : null,
+              connectedWalletAccountAddress == null
+                ? {
+                    type: "dropdown",
+                    items: [
+                      {
+                        id: "dao",
+                        children: [
+                          {
+                            id: "open-auction",
+                            label: (
+                              <>
+                                <span
+                                  style={{ flex: 1, marginRight: "0.8rem" }}
+                                >
+                                  Auction
+                                </span>{" "}
+                                {"\u2197"}
+                              </>
+                            ),
+                          },
+                          {
+                            id: "navigate-to-accounts-listing",
+                            label: "Voters",
+                          },
+                          { id: "open-treasury-dialog", label: "Treasury" },
+                        ],
                       },
-                      // buttonProps: {
-                      //   component: "a",
-                      //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
-                      //   target: "_blank",
-                      //   rel: "noreferrer",
-                      // },
-                      buttonProps: {
-                        iconRight: (
-                          <CaretDownIcon
-                            style={{ width: "0.9rem", height: "auto" }}
-                          />
-                        ),
+                      {
+                        id: "settings",
+                        children: [
+                          { id: "open-settings-dialog", label: "Settings" },
+                        ],
                       },
-
-                      label: (
-                        <div
-                          css={css({
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.8rem",
-                          })}
-                        >
-                          {pathname === "/" && (
-                            <div
-                              css={css({
-                                "@media(max-width: 600px)": { display: "none" },
-                              })}
-                            >
-                              {connectedAccountDisplayName}
-                            </div>
-                          )}
-                          <AccountAvatar
-                            address={connectedWalletAccountAddress}
-                            size="2rem"
-                          />
-                        </div>
+                    ],
+                    buttonProps: {
+                      icon: (
+                        <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
                       ),
                     },
+                  }
+                : {
+                    type: "dropdown",
+                    items: [
+                      {
+                        id: "main",
+                        children: [
+                          {
+                            id: "open-account-dialog",
+                            label: "Account",
+                          },
+                          (hasNouns || hasVotingPower) && {
+                            id: "open-delegation-dialog",
+                            label: "Manage delegation",
+                          },
+                        ].filter(Boolean),
+                      },
+                      {
+                        id: "dao",
+                        children: [
+                          {
+                            id: "open-auction",
+                            label: (
+                              <>
+                                <span
+                                  style={{ flex: 1, marginRight: "0.8rem" }}
+                                >
+                                  Auction
+                                </span>{" "}
+                                {"\u2197"}
+                              </>
+                            ),
+                          },
+                          {
+                            id: "navigate-to-accounts-listing",
+                            label: "Voters",
+                          },
+                          { id: "open-treasury-dialog", label: "Treasury" },
+                        ],
+                      },
+                      {
+                        id: "settings",
+                        children: [
+                          {
+                            id: "open-settings-dialog",
+                            label: "Settings",
+                          },
+                        ],
+                      },
+                      {
+                        id: "disconnect",
+                        children: [
+                          {
+                            id: "disconnect-wallet",
+                            label: "Disconnect wallet",
+                          },
+                        ],
+                      },
+                    ],
+                    buttonProps: {
+                      iconRight: (
+                        <CaretDownIcon
+                          style={{ width: "0.9rem", height: "auto" }}
+                        />
+                      ),
+                    },
+                    label: (
+                      <div
+                        css={css({
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.8rem",
+                        })}
+                      >
+                        {pathname === "/" && (
+                          <div
+                            css={css({
+                              "@media(max-width: 600px)": { display: "none" },
+                            })}
+                          >
+                            {connectedAccountDisplayName}
+                          </div>
+                        )}
+                        <AccountAvatar
+                          address={connectedWalletAccountAddress}
+                          size="2rem"
+                        />
+                      </div>
+                    ),
+                  },
             ]
               .filter(Boolean)
               .map((a, i) =>
@@ -375,83 +492,8 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         minWidth: "min-content",
                         maxWidth: "calc(100vw - 2rem)",
                       })}
-                      items={[
-                        {
-                          id: "main",
-                          children: [
-                            {
-                              id: "open-account-dialog",
-                              label: "View account",
-                            },
-                            (hasNouns || hasVotingPower) && {
-                              id: "open-delegation-dialog",
-                              label: "Manage delegation",
-                            },
-                            {
-                              id: "copy-account-address",
-                              label: "Copy account address",
-                            },
-                          ].filter(Boolean),
-                        },
-                        {
-                          id: "dao",
-                          children: [
-                            { id: "open-treasury-dialog", label: "Treasury" },
-                          ],
-                        },
-                        {
-                          id: "settings",
-                          children: [
-                            { id: "open-settings-dialog", label: "Settings" },
-                          ],
-                        },
-                        {
-                          id: "disconnect",
-                          children: [
-                            {
-                              id: "disconnect-wallet",
-                              label: "Disconnect wallet",
-                            },
-                          ],
-                        },
-                      ].filter(Boolean)}
-                      onAction={(key) => {
-                        switch (key) {
-                          case "open-account-dialog":
-                            openAccountDialog();
-                            break;
-
-                          case "open-delegation-dialog":
-                            openDelegationDialog();
-                            break;
-
-                          case "copy-account-address":
-                            navigator.clipboard.writeText(
-                              connectedWalletAccountAddress,
-                            );
-                            break;
-
-                          case "open-settings-dialog":
-                            openSettingsDialog();
-                            break;
-
-                          case "open-treasury-dialog":
-                            toggleTreasuryDialog();
-                            break;
-
-                          case "request-wallet-access":
-                            requestWalletAccess();
-                            break;
-
-                          case "disconnect-wallet":
-                            disconnectWallet();
-                            break;
-
-                          case "update-app":
-                            location.reload();
-                            break;
-                        }
-                      }}
+                      items={a.items}
+                      onAction={handleDropDownAction}
                     >
                       {(item) => (
                         <DropdownMenu.Section items={item.children}>

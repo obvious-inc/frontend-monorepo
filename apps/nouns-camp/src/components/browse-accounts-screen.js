@@ -170,9 +170,6 @@ const BrowseAccountsScreen = () => {
                     margin: "-0.3rem -1.6rem 0",
                     // Top padding to offset the focus box shadow
                     padding: "0.3rem 1.6rem 0",
-                    // "@media (min-width: 600px)": {
-                    //   marginBottom: "2.8rem",
-                    // },
                   })
                 }
               >
