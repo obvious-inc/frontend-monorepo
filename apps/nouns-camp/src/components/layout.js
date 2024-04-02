@@ -152,7 +152,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         window.open("https://nouns.wtf", "_blank");
         break;
       case "navigate-to-accounts-listing":
-        navigate("/campers");
+        navigate("/voters");
         break;
       case "open-settings-dialog":
         openSettingsDialog();

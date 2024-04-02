@@ -264,7 +264,7 @@ const BrowseAccountsScreen = () => {
   return (
     <>
       <Layout
-        navigationStack={[{ to: "/campers", label: "Campers" }]}
+        navigationStack={[{ to: "/voters", label: "Voters" }]}
         actions={[
           {
             label: "New Proposal",
@@ -536,7 +536,7 @@ const AccountListItem = React.memo(
       <>
         <NextLink
           className="account-link"
-          href={`/campers/${ensName ?? accountAddress}`}
+          href={`/voters/${ensName ?? accountAddress}`}
         />
         <div className="container" ref={containerRef}>
           {isVisible ? (

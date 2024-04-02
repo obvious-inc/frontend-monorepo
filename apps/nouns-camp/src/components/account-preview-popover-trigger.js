@@ -123,7 +123,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
   const { open: openDelegationDialog } = useDialog("delegation");
 
-  const accountLink = `/campers/${ensName ?? accountAddress}`;
+  const accountLink = `/voters/${ensName ?? accountAddress}`;
 
   return (
     <div

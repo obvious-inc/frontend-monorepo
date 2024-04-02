@@ -317,7 +317,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
         <p>
           Delegating votes to{" "}
           <NextLink
-            href={`/campers/${ensName ?? account?.delegateId}`}
+            href={`/voters/${ensName ?? account?.delegateId}`}
             css={(t) =>
               css({
                 color: "inherit",
@@ -957,8 +957,8 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
   return (
     <Layout
       navigationStack={[
-        { to: "/campers", label: "Campers", desktopOnly: true },
-        { to: `/campers/${rawAddressOrEnsName}`, label: displayName },
+        { to: "/voters", label: "Voters", desktopOnly: true },
+        { to: `/voters/${rawAddressOrEnsName}`, label: displayName },
       ]}
     >
       {voterAddress != null ? (
