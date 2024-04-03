@@ -149,7 +149,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         navigator.clipboard.writeText(connectedWalletAccountAddress);
         break;
       case "open-auction":
-        window.open("https://nouns.wtf", "_blank");
+        window.open("https://lilnouns.wtf", "_blank");
         break;
       case "navigate-to-accounts-listing":
         navigate("/voters");
