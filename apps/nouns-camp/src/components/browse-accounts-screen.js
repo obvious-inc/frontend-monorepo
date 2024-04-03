@@ -8,6 +8,7 @@ import { useDebouncedCallback } from "use-debounce";
 import {
   ethereum as ethereumUtils,
   array as arrayUtils,
+  object as objectUtils,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import {
@@ -57,14 +58,13 @@ const searchEns = (nameByAddress, rawQuery) => {
     .map((r) => r.address);
 };
 
-const useRecentVotes = () => {
+const useRecentVotes = ({ days = 30 } = {}) => {
   const chainId = useChainId();
 
-  const [recentVotesByAccountAddress, setRecentVotesByAccountAddress] =
-    React.useState({});
+  const [votesByAccountAddress, setVotesByAccountAddress] = React.useState({});
 
   useFetch(async () => {
-    const thresholdMillis = Date.now() - 30 * ONE_DAY_MILLIS;
+    const thresholdMillis = Date.now() - days * ONE_DAY_MILLIS;
     const { votes } = await subgraphFetch({
       chainId,
       query: `{
@@ -76,6 +76,7 @@ const useRecentVotes = () => {
           }
         ) {
           supportDetailed
+          reason
           voter {
             id
           }
@@ -87,22 +88,31 @@ const useRecentVotes = () => {
       return { ...acc, [v.voter.id]: [...(acc[v.voter.id] ?? []), v] };
     }, {});
 
-    setRecentVotesByAccountAddress(votesByAccountAddress);
-  }, [chainId]);
+    setVotesByAccountAddress(votesByAccountAddress);
+  }, [chainId, days]);
 
-  return recentVotesByAccountAddress;
+  const vwrCountByAccountAddress = React.useMemo(() => {
+    return objectUtils.mapValues(
+      (votes) =>
+        votes.reduce((sum, v) => {
+          if (v.reason == null || v.reason.trim() === "") return sum;
+          return sum + 1;
+        }, 0),
+      votesByAccountAddress,
+    );
+  }, [votesByAccountAddress]);
+
+  return { votesByAccountAddress, vwrCountByAccountAddress };
 };
 
-const useRecentRevoteCount = () => {
+const useRecentRevoteCount = ({ days = 30 } = {}) => {
   const chainId = useChainId();
 
-  const [
-    recentRevoteCountByAccountAddress,
-    setRecentRevoteCountByAccountAddress,
-  ] = React.useState({});
+  const [revoteCountByAccountAddress, setRevoteCountByAccountAddress] =
+    React.useState({});
 
   useFetch(async () => {
-    const thresholdMillis = Date.now() - 30 * ONE_DAY_MILLIS;
+    const thresholdMillis = Date.now() - days * ONE_DAY_MILLIS;
     const { votes } = await subgraphFetch({
       chainId,
       query: `{
@@ -153,10 +163,10 @@ const useRecentRevoteCount = () => {
       return nextAcc;
     }, {});
 
-    setRecentRevoteCountByAccountAddress(revoteCountByAccountAddress);
-  }, [chainId]);
+    setRevoteCountByAccountAddress(revoteCountByAccountAddress);
+  }, [chainId, days]);
 
-  return recentRevoteCountByAccountAddress;
+  return revoteCountByAccountAddress;
 };
 
 const BrowseAccountsScreen = () => {
@@ -173,8 +183,11 @@ const BrowseAccountsScreen = () => {
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
-  const recentVotesByAccountAddress = useRecentVotes();
-  const recentRevoteCountByAccountAddress = useRecentRevoteCount();
+  const {
+    votesByAccountAddress: recentVotesByAccountAddress,
+    vwrCountByAccountAddress: recentVwrCountByAccountAddress,
+  } = useRecentVotes({ days: 30 });
+  const recentRevoteCountByAccountAddress = useRecentRevoteCount({ days: 30 });
 
   const matchingAddresses = React.useMemo(() => {
     if (deferredQuery.trim() === "") return null;
@@ -191,17 +204,54 @@ const BrowseAccountsScreen = () => {
         case "voting-power":
           return arrayUtils.sortBy(
             { value: (a) => a.nounsRepresented.length, order: sortOrder },
+            { value: (a) => a.votes?.length ?? 0, order: sortOrder },
             accounts,
           );
         case "votes-cast":
           return arrayUtils.sortBy(
             { value: (a) => a.votes?.length ?? 0, order: sortOrder },
+            { value: (a) => a.nounsRepresented.length, order: sortOrder },
+            accounts,
+          );
+        case "vwrs-cast":
+          return arrayUtils.sortBy(
+            {
+              value: (a) => {
+                if (a.votes == null) return 0;
+
+                const vwrCount = a.votes.reduce((sum, v) => {
+                  if (v.reason == null || v.reason.trim() === "") return sum;
+                  return sum + 1;
+                }, 0);
+
+                return vwrCount;
+              },
+              order: sortOrder,
+            },
+            {
+              value: (a) => a.votes?.length ?? 0,
+              order: sortOrder === "desc" ? "asc" : "desc",
+            },
+            { value: (a) => a.nounsRepresented.length, order: sortOrder },
             accounts,
           );
         case "recent-votes-cast":
           return arrayUtils.sortBy(
             {
               value: (a) => (recentVotesByAccountAddress[a.id] ?? []).length,
+              order: sortOrder,
+            },
+            {
+              value: (a) => recentRevoteCountByAccountAddress[a.id] ?? 0,
+              order: sortOrder,
+            },
+            { value: (a) => a.votes?.length ?? 0, order: sortOrder },
+            accounts,
+          );
+        case "recent-vwrs-cast":
+          return arrayUtils.sortBy(
+            {
+              value: (a) => recentVwrCountByAccountAddress[a.id] ?? 0,
               order: sortOrder,
             },
             accounts,
@@ -211,6 +261,15 @@ const BrowseAccountsScreen = () => {
             {
               value: (a) => recentRevoteCountByAccountAddress[a.id] ?? 0,
               order: sortOrder,
+            },
+            {
+              value: (a) => {
+                const recentVoteCount = (
+                  recentVotesByAccountAddress[a.id] ?? []
+                ).length;
+                return recentVoteCount === 0 ? Infinity : recentVoteCount;
+              },
+              order: sortOrder === "desc" ? "asc" : "desc",
             },
             accounts,
           );
@@ -232,6 +291,7 @@ const BrowseAccountsScreen = () => {
     treasuryAddress,
     forkEscrowAddress,
     recentVotesByAccountAddress,
+    recentVwrCountByAccountAddress,
     recentRevoteCountByAccountAddress,
   ]);
 
@@ -333,6 +393,11 @@ const BrowseAccountsScreen = () => {
                       shortLabel: "Recent votes",
                     },
                     {
+                      value: "recent-vwrs-cast",
+                      label: "Recent vwrs cast (last 30 days)",
+                      shortLabel: "Recent vwrs",
+                    },
+                    {
                       value: "recent-revotes",
                       label: "Most revoted (last 30 days)",
                       shortLabel: "Recent revotes",
@@ -341,6 +406,11 @@ const BrowseAccountsScreen = () => {
                       value: "votes-cast",
                       label: "Total votes cast",
                       shortLabel: "Votes cast",
+                    },
+                    {
+                      value: "vwrs-cast",
+                      label: "Total vwrs cast",
+                      shortLabel: "Vwrs cast",
                     },
                     {
                       value: "voting-power",
@@ -471,15 +541,15 @@ const BrowseAccountsScreen = () => {
                     <li key={account.id}>
                       <AccountListItem
                         address={account.id}
+                        sortStrategy={sortStrategy}
                         recentVotes={
-                          sortStrategy !== "recent-votes-cast"
-                            ? null
-                            : recentVotesByAccountAddress[account.id] ?? []
+                          recentVotesByAccountAddress[account.id] ?? []
+                        }
+                        recentVwrCount={
+                          recentVwrCountByAccountAddress[account.id] ?? 0
                         }
                         recentRevoteCount={
-                          sortStrategy !== "recent-revotes"
-                            ? null
-                            : recentRevoteCountByAccountAddress[account.id] ?? 0
+                          recentRevoteCountByAccountAddress[account.id] ?? 0
                         }
                       />
                     </li>
@@ -495,7 +565,13 @@ const BrowseAccountsScreen = () => {
 };
 
 const AccountListItem = React.memo(
-  ({ address: accountAddress, recentVotes, recentRevoteCount }) => {
+  ({
+    address: accountAddress,
+    sortStrategy,
+    recentVotes,
+    recentVwrCount,
+    recentRevoteCount,
+  }) => {
     const containerRef = React.useRef();
     const { address: connectedAccountAddress } = useWallet();
     const connectedAccount = useAccount(connectedAccountAddress);
@@ -505,11 +581,12 @@ const AccountListItem = React.memo(
     const enableDelegation = connectedAccount?.nouns.length > 0;
 
     const [isVisible, setVisible] = React.useState(false);
+    const [hasBeenVisible, setHasBeenVisible] = React.useState(false);
 
     const delegate = useDelegate(accountAddress);
     const { data: ensName } = useEnsName({
       address: accountAddress,
-      enabled: isVisible,
+      enabled: hasBeenVisible,
     });
     const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
     const displayName = ensName ?? truncatedAddress;
@@ -520,7 +597,10 @@ const AccountListItem = React.memo(
     React.useEffect(() => {
       const observer = new window.IntersectionObserver(
         ([entry]) => {
-          setVisible((v) => v || entry.isIntersecting);
+          React.startTransition(() => {
+            setVisible(entry.isIntersecting);
+            setHasBeenVisible((v) => v || entry.isIntersecting);
+          });
         },
         { root: null, threshold: 0 },
       );
@@ -530,7 +610,9 @@ const AccountListItem = React.memo(
       return () => {
         observer.disconnect();
       };
-    }, []);
+    });
+
+    const hasDisplayName = displayName !== truncatedAddress;
 
     return (
       <>
@@ -546,40 +628,66 @@ const AccountListItem = React.memo(
           )}
           <div className="content-container">
             <div>
-              <span className="display-name">{displayName}</span>
+              <span className="display-name">
+                {displayName} {votingPower != null && <>({votingPower})</>}
+              </span>
               <br />
               <span className="small dimmed">
-                {votingPower != null && (
-                  <>
-                    {displayName !== truncatedAddress && (
-                      <>
-                        {truncatedAddress} {"\u00B7"}{" "}
-                      </>
-                    )}
-                    {votingPower === 0
-                      ? "No voting power"
-                      : `${votingPower} voting power`}
-                    {recentVotes != null && recentVotes.length > 0 ? (
-                      <>
-                        , {recentVotes.length}{" "}
-                        {recentVotes.length === 1
-                          ? "recent vote"
-                          : "recent votes"}
-                      </>
-                    ) : delegate?.votes?.length > 0 ? (
-                      <>
-                        , {delegate.votes.length}{" "}
-                        {delegate.votes.length === 1 ? "vote" : "votes"}
-                      </>
-                    ) : null}
-                    {recentRevoteCount > 0 && (
-                      <>
-                        , {recentRevoteCount}{" "}
-                        {recentRevoteCount === 1 ? "revote" : "revotes"}
-                      </>
-                    )}
-                  </>
-                )}
+                {hasDisplayName && truncatedAddress}
+                {!isVisible && <>&nbsp;</>}
+                {isVisible &&
+                  [
+                    {
+                      key: "votes",
+                      element: (() => {
+                        if (sortStrategy.startsWith("recent"))
+                          return (
+                            <>
+                              {recentVotes.length} recent{" "}
+                              {recentVotes.length === 1 ? "vote" : "votes"} (
+                              {recentVwrCount}{" "}
+                              {recentVwrCount === 1 ? "vwr" : "vwrs"})
+                            </>
+                          );
+
+                        if (delegate?.votes == null) return null;
+
+                        const vwrCount = delegate.votes.reduce((sum, v) => {
+                          if (v.reason == null || v.reason.trim() === "")
+                            return sum;
+                          return sum + 1;
+                        }, 0);
+
+                        return (
+                          <>
+                            {delegate.votes.length}{" "}
+                            {delegate.votes.length === 1 ? "vote" : "votes"} (
+                            {vwrCount} {vwrCount === 1 ? "vwr" : "vwrs"})
+                          </>
+                        );
+                      })(),
+                    },
+                    {
+                      key: "revotes",
+                      element: sortStrategy.startsWith("recent") && (
+                        <>
+                          {recentRevoteCount}{" "}
+                          {recentRevoteCount === 1 ? "revote" : "revotes"}
+                        </>
+                      ),
+                    },
+                  ]
+                    .filter(({ element }) => Boolean(element))
+                    .map(({ key, element }, i) => (
+                      <React.Fragment key={key}>
+                        {i !== 0 ? (
+                          <>, </>
+                        ) : hasDisplayName ? (
+                          <> {"\u00B7"} </>
+                        ) : null}
+                        {element}
+                      </React.Fragment>
+                    ))}
               </span>
             </div>
             {isVisible && (
