@@ -10,7 +10,7 @@ import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
-import { useFetch } from "@shades/common/react";
+import { useFetch, useIsOnScreen } from "@shades/common/react";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import Input from "@shades/ui-web/input";
@@ -564,31 +564,6 @@ const BrowseAccountsScreen = () => {
   );
 };
 
-const useIsOnScreen = (ref) => {
-  const [isVisible, setVisible] = React.useState(false);
-  const [hasBeenVisible, setHasBeenVisible] = React.useState(false);
-
-  React.useEffect(() => {
-    const observer = new window.IntersectionObserver(
-      ([entry]) => {
-        React.startTransition(() => {
-          setVisible(entry.isIntersecting);
-          setHasBeenVisible((v) => v || entry.isIntersecting);
-        });
-      },
-      { root: null, threshold: 0 },
-    );
-
-    observer.observe(ref.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  });
-
-  return { isVisible, hasBeenVisible };
-};
-
 const AccountListItem = React.memo(
   ({
     address: accountAddress,
@@ -598,9 +573,17 @@ const AccountListItem = React.memo(
     recentRevoteCount,
   }) => {
     const containerRef = React.useRef();
+    const hasBeenOnScreenRef = React.useRef(false);
+
     const { address: connectedAccountAddress } = useWallet();
     const connectedAccount = useAccount(connectedAccountAddress);
-    const { isVisible, hasBeenVisible } = useIsOnScreen(containerRef);
+    const isOnScreen = useIsOnScreen(containerRef);
+
+    React.useEffect(() => {
+      if (isOnScreen) hasBeenOnScreenRef.current = true;
+    });
+
+    const hasBeenOnScreen = isOnScreen ?? hasBeenOnScreenRef.current;
 
     const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
     const enableImpersonation = !isMe && isDebugSession;
@@ -609,7 +592,7 @@ const AccountListItem = React.memo(
     const delegate = useDelegate(accountAddress);
     const { data: ensName } = useEnsName({
       address: accountAddress,
-      enabled: hasBeenVisible,
+      enabled: hasBeenOnScreen,
     });
     const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
     const displayName = ensName ?? truncatedAddress;
@@ -626,7 +609,7 @@ const AccountListItem = React.memo(
           href={`/voters/${ensName ?? accountAddress}`}
         />
         <div className="container" ref={containerRef}>
-          {isVisible ? (
+          {isOnScreen ? (
             <AccountAvatar size="3.6rem" address={accountAddress} />
           ) : (
             <div className="avatar-placeholder" />
@@ -698,7 +681,7 @@ const AccountListItem = React.memo(
                   ))}
               </span>
             </div>
-            {isVisible && (
+            {isOnScreen && (
               <>
                 <div className="votes-tag-group-container">
                   {sortStrategy.startsWith("recent") ? (

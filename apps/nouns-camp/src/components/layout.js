@@ -360,6 +360,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                                 {"\u2197"}
                               </>
                             ),
+                            textValue: "Auction",
                           },
                           {
                             id: "navigate-to-accounts-listing",
@@ -412,6 +413,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                                 {"\u2197"}
                               </>
                             ),
+                            textValue: "Auction",
                           },
                           {
                             id: "navigate-to-accounts-listing",
