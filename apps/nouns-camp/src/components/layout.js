@@ -3,18 +3,22 @@ import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccountDisplayName } from "@shades/common/ethereum-react";
-import { useMatchMedia } from "@shades/common/react";
+import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   Plus as PlusIcon,
   CaretDown as CaretDownIcon,
+  DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
 import { useAccount, useDelegate } from "../store.js";
+import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
+
+const TreasuryDialog = React.lazy(() => import("./treasury-dialog.js"));
 
 const Layout = ({
   scrollContainerRef,
@@ -98,12 +102,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const actions = actions_ ?? defaultActions;
 
   const pathname = usePathname();
+  const navigate = useNavigate();
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
   const { open: openAccountDialog } = useDialog("account");
   const { open: openDelegationDialog } = useDialog("delegation");
   const { open: openSettingsDialog } = useDialog("settings");
+  const [isTreasuryDialogOpen, toggleTreasuryDialog] =
+    useSearchParamToggleState("treasury", { replace: true, prefetch: "true" });
 
   const {
     address: connectedWalletAccountAddress,
@@ -130,188 +137,310 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     ? actions
     : actions.filter((a) => !a.desktopOnly);
 
+  const handleDropDownAction = (key) => {
+    switch (key) {
+      case "open-account-dialog":
+        openAccountDialog();
+        break;
+      case "open-delegation-dialog":
+        openDelegationDialog();
+        break;
+      case "copy-account-address":
+        navigator.clipboard.writeText(connectedWalletAccountAddress);
+        break;
+      case "open-auction":
+        window.open("https://nouns.wtf", "_blank");
+        break;
+      case "navigate-to-accounts-listing":
+        navigate("/voters");
+        break;
+      case "open-settings-dialog":
+        openSettingsDialog();
+        break;
+      case "open-treasury-dialog":
+        toggleTreasuryDialog();
+        break;
+      case "disconnect-wallet":
+        disconnectWallet();
+        break;
+    }
+  };
+
   return (
-    <div
-      css={(t) =>
-        css({
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          whiteSpace: "nowrap",
-          minHeight: t.navBarHeight, // "4.7rem",
-          "@media (max-width: 600px)": {
-            '[data-desktop-only="true"]': {
-              display: "none",
-            },
-          },
-        })
-      }
-    >
-      <div
-        css={css({
-          flex: 1,
-          minWidth: 0,
-          display: "flex",
-          alignItems: "center",
-          gap: "0.2rem",
-          overflow: "hidden",
-          padding: "1rem 1.6rem",
-          "@media (min-width: 600px)": {
-            padding: "1rem",
-          },
-        })}
-      >
-        {[
-          {
-            to: "/",
-            label: (
-              <>
-                <LogoSymbol
-                  css={css({
-                    display: "inline-block",
-                    width: "1.8rem",
-                    height: "auto",
-                    verticalAlign: "sub",
-                    transform: "translateY(0.1rem) scale(1.05)",
-                  })}
-                  style={{
-                    filter:
-                      isTestnet || isUnsupportedChain ? "invert(1)" : undefined,
-                  }}
-                />
-                {(pathname !== "/" || isTestnet || isUnsupportedChain) && (
-                  <span
-                    css={css({
-                      marginLeft: "0.6rem",
-                      "@media(max-width: 600px)": { display: "none" },
-                    })}
-                  >
-                    {isUnsupportedChain
-                      ? "Unsupported chain"
-                      : isTestnet
-                        ? chain?.name
-                        : "Camp"}
-                  </span>
-                )}
-              </>
-            ),
-          },
-          ...navigationStack,
-        ].map((item, index) => (
-          <React.Fragment key={item.to}>
-            {index > 0 && (
-              <span
-                data-index={index}
-                data-desktop-only={item.desktopOnly}
-                css={(t) =>
-                  css({
-                    color: t.colors.textMuted,
-                    fontSize: t.text.sizes.base,
-                    "@media(max-width: 600px)": {
-                      '&[data-index="1"]': { display: "none" },
-                    },
-                  })
-                }
-              >
-                {"/"}
-              </span>
-            )}
-            <NextLink
-              prefetch
-              href={item.to}
-              data-index={index}
-              data-disabled={pathname === item.to}
-              data-desktop-only={item.desktopOnly}
-              css={(t) =>
-                css({
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  fontSize: t.fontSizes.base,
-                  color: t.colors.textNormal,
-                  padding: "0.3rem 0.5rem",
-                  borderRadius: "0.2rem",
-                  textDecoration: "none",
-                  '&[data-index="0"]': { minWidth: "max-content" },
-                  '&[data-disabled="true"]': { pointerEvents: "none" },
-                  "@media(hover: hover)": {
-                    cursor: "pointer",
-                    ":hover": {
-                      background: t.colors.backgroundModifierHover,
-                    },
-                  },
-                })
-              }
-            >
-              {item.label}
-            </NextLink>
-          </React.Fragment>
-        ))}
-      </div>
+    <>
       <div
         css={(t) =>
           css({
-            fontSize: t.text.sizes.base,
-            padding: "0 1.6rem 0 0",
-            ul: {
-              display: "grid",
-              gridAutoFlow: "column",
-              gridGap: "0.3rem",
-              alignItems: "center",
-            },
-            li: { listStyle: "none" },
-            '[role="separator"]': {
-              width: "0.1rem",
-              background: t.colors.borderLight,
-              height: "1.6rem",
-            },
-            "@media (min-width: 600px)": {
-              padding: "0 1rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            whiteSpace: "nowrap",
+            minHeight: t.navBarHeight, // "4.7rem",
+            "@media (max-width: 600px)": {
+              '[data-desktop-only="true"]': {
+                display: "none",
+              },
             },
           })
         }
       >
-        <ul>
+        <div
+          css={css({
+            flex: 1,
+            minWidth: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: "0.2rem",
+            overflow: "hidden",
+            padding: "1rem 1.6rem",
+            "@media (min-width: 600px)": {
+              padding: "1rem",
+            },
+          })}
+        >
           {[
-            ...actions,
-            visibleActions.length > 0 && { type: "separator" },
-            connectedWalletAccountAddress == null
-              ? {
-                  onSelect: () => {
-                    requestWalletAccess();
-                  },
-                  buttonProps: {
-                    variant: "default",
-                    isLoading: requestWalletAccess == null || isLoadingWallet,
-                    disabled: requestWalletAccess == null || isLoadingWallet,
-                    style: { marginLeft: "0.9rem" },
-                  },
-                  label: "Connect Wallet",
+            {
+              to: "/",
+              label: (
+                <>
+                  <LogoSymbol
+                    css={css({
+                      display: "inline-block",
+                      width: "1.8rem",
+                      height: "auto",
+                      verticalAlign: "sub",
+                      transform: "translateY(0.1rem) scale(1.05)",
+                    })}
+                    style={{
+                      filter:
+                        isTestnet || isUnsupportedChain
+                          ? "invert(1)"
+                          : undefined,
+                    }}
+                  />
+                  {(pathname !== "/" || isTestnet || isUnsupportedChain) && (
+                    <span
+                      css={css({
+                        marginLeft: "0.6rem",
+                        "@media(max-width: 600px)": { display: "none" },
+                      })}
+                    >
+                      {isUnsupportedChain
+                        ? "Unsupported chain"
+                        : isTestnet
+                          ? chain?.name
+                          : "Camp"}
+                    </span>
+                  )}
+                </>
+              ),
+            },
+            ...navigationStack,
+          ].map((item, index) => (
+            <React.Fragment key={item.to}>
+              {index > 0 && (
+                <span
+                  data-index={index}
+                  data-desktop-only={item.desktopOnly}
+                  css={(t) =>
+                    css({
+                      color: t.colors.textMuted,
+                      fontSize: t.text.sizes.base,
+                      "@media(max-width: 600px)": {
+                        '&[data-index="1"]': { display: "none" },
+                      },
+                    })
+                  }
+                >
+                  {"/"}
+                </span>
+              )}
+              <NextLink
+                prefetch
+                href={item.to}
+                data-index={index}
+                data-disabled={pathname === item.to}
+                data-desktop-only={item.desktopOnly}
+                css={(t) =>
+                  css({
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: t.fontSizes.base,
+                    color: t.colors.textNormal,
+                    padding: "0.3rem 0.5rem",
+                    borderRadius: "0.2rem",
+                    textDecoration: "none",
+                    '&[data-index="0"]': { minWidth: "max-content" },
+                    '&[data-disabled="true"]': { pointerEvents: "none" },
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        background: t.colors.backgroundModifierHover,
+                      },
+                    },
+                  })
                 }
-              : isUnsupportedChain
+              >
+                {item.label}
+              </NextLink>
+            </React.Fragment>
+          ))}
+        </div>
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.base,
+              padding: "0 1.6rem 0 0",
+              ul: {
+                display: "grid",
+                gridAutoFlow: "column",
+                gridGap: "0.3rem",
+                alignItems: "center",
+              },
+              li: { listStyle: "none" },
+              '[role="separator"]': {
+                width: "0.1rem",
+                background: t.colors.borderLight,
+                height: "1.6rem",
+              },
+              "@media (min-width: 600px)": {
+                padding: "0 1rem",
+              },
+            })
+          }
+        >
+          <ul>
+            {[
+              ...actions,
+              visibleActions.length > 0 && { type: "separator" },
+              connectedWalletAccountAddress == null
                 ? {
                     onSelect: () => {
-                      switchWalletToMainnet();
+                      requestWalletAccess();
                     },
                     buttonProps: {
                       variant: "default",
-                      isLoading: isLoadingWallet,
-                      disabled:
-                        switchWalletToMainnet == null || isLoadingWallet,
-                      style: { marginLeft: "0.9rem" },
+                      isLoading: requestWalletAccess == null || isLoadingWallet,
+                      disabled: requestWalletAccess == null || isLoadingWallet,
+                      style: { marginLeft: "0.9rem", marginRight: "0.4rem" },
                     },
-                    label: "Switch to Mainnet",
+                    label: "Connect Wallet",
+                  }
+                : isUnsupportedChain
+                  ? {
+                      onSelect: () => {
+                        switchWalletToMainnet();
+                      },
+                      buttonProps: {
+                        variant: "default",
+                        isLoading: isLoadingWallet,
+                        disabled:
+                          switchWalletToMainnet == null || isLoadingWallet,
+                        style: { marginLeft: "0.9rem" },
+                      },
+                      label: "Switch to Mainnet",
+                    }
+                  : null,
+              connectedWalletAccountAddress == null
+                ? {
+                    type: "dropdown",
+                    items: [
+                      {
+                        id: "dao",
+                        children: [
+                          {
+                            id: "open-auction",
+                            label: (
+                              <>
+                                <span
+                                  style={{ flex: 1, marginRight: "0.8rem" }}
+                                >
+                                  Auction
+                                </span>{" "}
+                                {"\u2197"}
+                              </>
+                            ),
+                            textValue: "Auction",
+                          },
+                          {
+                            id: "navigate-to-accounts-listing",
+                            label: "Voters",
+                          },
+                          { id: "open-treasury-dialog", label: "Treasury" },
+                        ],
+                      },
+                      {
+                        id: "settings",
+                        children: [
+                          { id: "open-settings-dialog", label: "Settings" },
+                        ],
+                      },
+                    ],
+                    buttonProps: {
+                      icon: (
+                        <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
+                      ),
+                    },
                   }
                 : {
                     type: "dropdown",
-                    onSelect: () => {
-                      openAccountDialog();
-                    },
-                    // buttonProps: {
-                    //   component: "a",
-                    //   href: `https://etherscan.io/address/${connectedWalletAccountAddress}`,
-                    //   target: "_blank",
-                    //   rel: "noreferrer",
-                    // },
+                    items: [
+                      {
+                        id: "main",
+                        children: [
+                          {
+                            id: "open-account-dialog",
+                            label: "Account",
+                          },
+                          (hasNouns || hasVotingPower) && {
+                            id: "open-delegation-dialog",
+                            label: "Manage delegation",
+                          },
+                        ].filter(Boolean),
+                      },
+                      {
+                        id: "dao",
+                        children: [
+                          {
+                            id: "open-auction",
+                            label: (
+                              <>
+                                <span
+                                  style={{ flex: 1, marginRight: "0.8rem" }}
+                                >
+                                  Auction
+                                </span>{" "}
+                                {"\u2197"}
+                              </>
+                            ),
+                            textValue: "Auction",
+                          },
+                          {
+                            id: "navigate-to-accounts-listing",
+                            label: "Voters",
+                          },
+                          { id: "open-treasury-dialog", label: "Treasury" },
+                        ],
+                      },
+                      {
+                        id: "settings",
+                        children: [
+                          {
+                            id: "open-settings-dialog",
+                            label: "Settings",
+                          },
+                        ],
+                      },
+                      {
+                        id: "disconnect",
+                        children: [
+                          {
+                            id: "disconnect-wallet",
+                            label: "Disconnect wallet",
+                          },
+                        ],
+                      },
+                    ],
                     buttonProps: {
                       iconRight: (
                         <CaretDownIcon
@@ -319,7 +448,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         />
                       ),
                     },
-
                     label: (
                       <div
                         css={css({
@@ -344,123 +472,68 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       </div>
                     ),
                   },
-          ]
-            .filter(Boolean)
-            .map((a, i) =>
-              a.type === "separator" ? (
-                <li key={i} role="separator" aria-orientation="vertical" />
-              ) : a.type === "dropdown" ? (
-                <DropdownMenu.Root key={i} placement="bottom">
-                  <DropdownMenu.Trigger asChild>
+            ]
+              .filter(Boolean)
+              .map((a, i) =>
+                a.type === "separator" ? (
+                  <li key={i} role="separator" aria-orientation="vertical" />
+                ) : a.type === "dropdown" ? (
+                  <DropdownMenu.Root key={i} placement="bottom">
+                    <DropdownMenu.Trigger asChild>
+                      <Button
+                        variant={a.buttonVariant ?? "transparent"}
+                        size="small"
+                        {...a.buttonProps}
+                      >
+                        {a.label}
+                      </Button>
+                    </DropdownMenu.Trigger>
+                    <DropdownMenu.Content
+                      css={css({
+                        width: "min-content",
+                        minWidth: "min-content",
+                        maxWidth: "calc(100vw - 2rem)",
+                      })}
+                      items={a.items}
+                      onAction={handleDropDownAction}
+                    >
+                      {(item) => (
+                        <DropdownMenu.Section items={item.children}>
+                          {(item) => (
+                            <DropdownMenu.Item primary={item.primary}>
+                              {item.label}
+                            </DropdownMenu.Item>
+                          )}
+                        </DropdownMenu.Section>
+                      )}
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Root>
+                ) : (
+                  <li key={i} data-desktop-only={a.desktopOnly}>
                     <Button
                       variant={a.buttonVariant ?? "transparent"}
                       size="small"
+                      onClick={a.onSelect}
                       {...a.buttonProps}
                     >
                       {a.label}
                     </Button>
-                  </DropdownMenu.Trigger>
-                  <DropdownMenu.Content
-                    css={css({
-                      width: "min-content",
-                      minWidth: "min-content",
-                      maxWidth: "calc(100vw - 2rem)",
-                    })}
-                    items={[
-                      {
-                        id: "main",
-                        children: [
-                          {
-                            id: "open-account-dialog",
-                            label: "View account",
-                          },
-                          (hasNouns || hasVotingPower) && {
-                            id: "open-delegation-dialog",
-                            label: "Manage delegation",
-                          },
-                          {
-                            id: "copy-account-address",
-                            label: "Copy account address",
-                          },
-                        ].filter(Boolean),
-                      },
-                      {
-                        id: "settings",
-                        children: [
-                          { id: "open-settings-dialog", label: "Settings" },
-                        ],
-                      },
-                      {
-                        id: "disconnect",
-                        children: [
-                          {
-                            id: "disconnect-wallet",
-                            label: "Disconnect wallet",
-                          },
-                        ],
-                      },
-                    ].filter(Boolean)}
-                    onAction={(key) => {
-                      switch (key) {
-                        case "open-account-dialog":
-                          openAccountDialog();
-                          break;
-
-                        case "open-delegation-dialog":
-                          openDelegationDialog();
-                          break;
-
-                        case "copy-account-address":
-                          navigator.clipboard.writeText(
-                            connectedWalletAccountAddress,
-                          );
-                          break;
-
-                        case "open-settings-dialog":
-                          openSettingsDialog();
-                          break;
-
-                        case "request-wallet-access":
-                          requestWalletAccess();
-                          break;
-
-                        case "disconnect-wallet":
-                          disconnectWallet();
-                          break;
-
-                        case "update-app":
-                          location.reload();
-                          break;
-                      }
-                    }}
-                  >
-                    {(item) => (
-                      <DropdownMenu.Section items={item.children}>
-                        {(item) => (
-                          <DropdownMenu.Item primary={item.primary}>
-                            {item.label}
-                          </DropdownMenu.Item>
-                        )}
-                      </DropdownMenu.Section>
-                    )}
-                  </DropdownMenu.Content>
-                </DropdownMenu.Root>
-              ) : (
-                <li key={i} data-desktop-only={a.desktopOnly}>
-                  <Button
-                    variant={a.buttonVariant ?? "transparent"}
-                    size="small"
-                    onClick={a.onSelect}
-                    {...a.buttonProps}
-                  >
-                    {a.label}
-                  </Button>
-                </li>
-              ),
-            )}
-        </ul>
+                  </li>
+                ),
+              )}
+          </ul>
+        </div>
       </div>
-    </div>
+
+      <ErrorBoundary fallback={null}>
+        <React.Suspense fallback={null}>
+          <TreasuryDialog
+            isOpen={isTreasuryDialogOpen}
+            close={toggleTreasuryDialog}
+          />
+        </React.Suspense>
+      </ErrorBoundary>
+    </>
   );
 };
 
@@ -484,7 +557,7 @@ export const MainContentContainer = ({
       },
     })}
     style={{
-      "--width": narrow ? "72rem" : "132rem",
+      "--width": narrow ? "92rem" : "132rem",
     }}
     {...props}
   >

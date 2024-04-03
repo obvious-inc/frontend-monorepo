@@ -238,7 +238,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
       </span>
       <span>
         <NextLink
-          href={`/campers/${previousAccountAddress}`}
+          href={`/voters/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -364,7 +364,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <NextLink href={`/campers/${previousAccountAddress}`}>
+        <NextLink href={`/voters/${previousAccountAddress}`}>
           {transferredFromText}
         </NextLink>
       </span>{" "}
@@ -489,14 +489,16 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                   css({ fontSize: t.text.sizes.small, margin: "0.1rem 0" })
                 }
               >
-                <FormattedDateWithTooltip
-                  disableRelative
-                  disableTooltip
-                  month="short"
-                  day="numeric"
-                  year="numeric"
-                  value={nounTimestamp}
-                />
+                {nounTimestamp != null && (
+                  <FormattedDateWithTooltip
+                    disableRelative
+                    disableTooltip
+                    month="short"
+                    day="numeric"
+                    year="numeric"
+                    value={nounTimestamp}
+                  />
+                )}
                 {auction?.amount && (
                   <>
                     <InlineVerticalSeparator />

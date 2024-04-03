@@ -120,16 +120,32 @@ fragment CandidateContentSignatureFields on ProposalCandidateSignature {
   }
 }`;
 
-const createDelegatesQuery = (optionalAccountIds) => `
+const createDelegatesQuery = ({
+  includeVotes = false,
+  includeZeroVotingPower = false,
+} = {}) => `
 query {
-  delegates(first: 1000, where: ${
-    optionalAccountIds == null
-      ? "{nounsRepresented_: {}}"
-      : `{id_in: [${optionalAccountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
+  delegates(first: 1000${
+    // accountIds != null
+    //   ? `, where: {id_in: [${accountIds.map((id) => `"${id.toLowerCase()}"`)}]}`
+    !includeZeroVotingPower
+      ? ", where: {nounsRepresented_: {}}"
+      : ", where: {votes_: {}}"
   }) {
     id
     delegatedVotes
-    nounsRepresented {
+    ${
+      includeVotes
+        ? `
+      votes(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+        id
+        blockNumber
+        supportDetailed
+        reason
+      }`
+        : ""
+    }
+    nounsRepresented(first: 1000) {
       id
       seed {
         head
@@ -154,7 +170,7 @@ const createDelegateQuery = (id) => `
     delegate(id: "${id}") {
       id
       delegatedVotes
-      nounsRepresented {
+      nounsRepresented(first: 1000) {
         id
         seed {
           head
@@ -648,7 +664,7 @@ export const subgraphFetch = async ({
 };
 
 const parseMarkdownDescription = (string) => {
-  const [firstLine, ...restLines] = string.split("\n");
+  const [firstLine, ...restLines] = string.trim().split("\n");
   const startIndex = [...firstLine].findIndex((c) => c !== "#");
   const hasTitle = startIndex > 0;
   const title = hasTitle ? firstLine.slice(startIndex).trim() : null;
@@ -672,11 +688,12 @@ const parseFeedbackPost = (post) => ({
 const parseProposalVote = (v) => ({
   id: v.id,
   createdBlock: BigInt(v.blockNumber),
-  createdTimestamp: parseTimestamp(v.blockTimestamp),
+  createdTimestamp:
+    v.blockTimestamp == null ? undefined : parseTimestamp(v.blockTimestamp),
   reason: v.reason,
   support: v.supportDetailed,
-  votes: Number(v.votes),
-  voterId: v.voter.id,
+  votes: v.votes == null ? undefined : Number(v.votes),
+  voterId: v.voter?.id,
   proposalId: v.proposal?.id,
 });
 
@@ -859,12 +876,16 @@ const parseDelegate = (data) => {
   parsedData.nounsRepresented = arrayUtils.sortBy(
     (n) => parseInt(n.id),
     data.nounsRepresented
-      .map((n) => ({
-        ...n,
-        seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
-        ownerId: n.owner?.id,
-        delegateId: n.owner?.delegate?.id,
-      }))
+      .map((n) => {
+        const noun = { ...n };
+        if (n.seed != null)
+          noun.seed = objectUtils.mapValues((v) => parseInt(v), n.seed);
+        if (n.owner != null) {
+          noun.ownerId = n.owner?.id;
+          noun.delegateId = n.owner?.delegate?.id;
+        }
+        return noun;
+      })
       // Don’t include nouns delegated to other accounts
       .filter((n) => n.delegateId == null || n.delegateId === data.id),
   );
@@ -996,10 +1017,10 @@ export const fetchProposalCandidate = async (chainId, rawId) => {
   );
 };
 
-export const fetchDelegates = (chainId, optionalAccountIds) =>
+export const fetchDelegates = (chainId, options) =>
   subgraphFetch({
     chainId,
-    query: createDelegatesQuery(optionalAccountIds),
+    query: createDelegatesQuery(options),
   }).then((data) => {
     return data.delegates.map(parseDelegate);
   });

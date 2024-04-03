@@ -1495,6 +1495,69 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   }
 };
 
+export const VotesTagGroup = React.memo(
+  ({ for: for_, against, abstain, highlight }) => {
+    return (
+      <span
+        css={(t) =>
+          css({
+            display: "inline-flex",
+            gap: "0.1rem",
+            whiteSpace: "nowrap",
+            fontSize: t.text.sizes.micro,
+            lineHeight: 1.2,
+            color: t.colors.textDimmed,
+            borderRadius: "0.2rem",
+            "@media(min-width: 600px)": {
+              fontSize: t.text.sizes.tiny,
+            },
+            "& > *": {
+              display: "flex",
+              padding: "0.3rem 0.5rem",
+              background: t.colors.backgroundModifierNormal,
+              minWidth: "1.86rem",
+              justifyContent: "center",
+            },
+            "& > *:first-of-type": {
+              borderTopLeftRadius: "0.2rem",
+              borderBottomLeftRadius: "0.2rem",
+            },
+            "& > *:last-of-type": {
+              borderTopRightRadius: "0.2rem",
+              borderBottomRightRadius: "0.2rem",
+            },
+            '[data-highlight="true"]': {
+              color: t.colors.textNormal,
+              fontWeight: t.text.weights.smallTextEmphasis,
+              background: t.colors.backgroundModifierStrong,
+            },
+            "[data-arrow]": {
+              width: "0.9rem",
+              marginLeft: "0.2rem",
+              marginRight: "-0.1rem",
+            },
+            '[data-arrow="up"]': {
+              transform: "scaleY(-1)",
+            },
+          })
+        }
+      >
+        <span data-for={for_} data-highlight={highlight === "for"}>
+          {for_}
+          <ArrowDownSmallIcon data-arrow="up" />
+        </span>
+        <span data-abstain={abstain} data-highlight={highlight === "abstain"}>
+          {abstain}
+        </span>
+        <span data-against={against} data-highlight={highlight === "against"}>
+          {against}
+          <ArrowDownSmallIcon data-arrow="down" />
+        </span>
+      </span>
+    );
+  },
+);
+
 const ProposalVotesTag = React.memo(({ proposalId }) => {
   const { address: connectedWalletAccountAddress } = useWallet();
   const proposal = useProposal(proposalId, { watch: false });
@@ -1504,68 +1567,12 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
   );
 
   return (
-    <span
-      css={(t) =>
-        css({
-          display: "inline-flex",
-          gap: "0.1rem",
-          whiteSpace: "nowrap",
-          fontSize: t.text.sizes.micro,
-          lineHeight: 1.2,
-          color: t.colors.textDimmed,
-          borderRadius: "0.2rem",
-          "@media(min-width: 600px)": {
-            fontSize: t.text.sizes.tiny,
-          },
-          "& > *": {
-            display: "flex",
-            padding: "0.3rem 0.5rem",
-            background: t.colors.backgroundModifierNormal,
-            minWidth: "1.86rem",
-            justifyContent: "center",
-          },
-          "& > *:first-of-type": {
-            borderTopLeftRadius: "0.2rem",
-            borderBottomLeftRadius: "0.2rem",
-          },
-          "& > *:last-of-type": {
-            borderTopRightRadius: "0.2rem",
-            borderBottomRightRadius: "0.2rem",
-          },
-          '[data-voted="true"]': {
-            color: t.colors.textNormal,
-            fontWeight: t.text.weights.smallTextEmphasis,
-            background: t.colors.backgroundModifierStrong,
-          },
-          "[data-arrow]": {
-            width: "0.9rem",
-            marginLeft: "0.2rem",
-            marginRight: "-0.1rem",
-          },
-          '[data-arrow="up"]': {
-            transform: "scaleY(-1)",
-          },
-        })
-      }
-    >
-      <span data-for={proposal.forVotes} data-voted={vote?.support === 1}>
-        {proposal.forVotes}
-        <ArrowDownSmallIcon data-arrow="up" />
-      </span>
-      <span
-        data-abstain={proposal.abstainVotes}
-        data-voted={vote?.support === 2}
-      >
-        {proposal.abstainVotes}
-      </span>
-      <span
-        data-against={proposal.againstVotes}
-        data-voted={vote?.support === 0}
-      >
-        {proposal.againstVotes}
-        <ArrowDownSmallIcon data-arrow="down" />
-      </span>
-    </span>
+    <VotesTagGroup
+      for={proposal.forVotes}
+      against={proposal.againstVotes}
+      abstain={proposal.abstainVotes}
+      highlight={{ 0: "against", 1: "for", 2: "abstain" }[vote?.support]}
+    />
   );
 });
 

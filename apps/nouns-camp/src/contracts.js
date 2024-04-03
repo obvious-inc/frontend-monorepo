@@ -2,10 +2,6 @@ import { object as objectUtils } from "@shades/common/utils";
 import { mainnet, sepolia, goerli } from "./chains.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
-const USDC_TOKEN_CONTRACT_ADDRESS =
-  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
-const WETH_TOKEN_CONTRACT_ADDRESS =
-  "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 
 const DAO_LOGIC_PROXY_CONTRACT = "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039";
 const DAO_EXECUTOR_PROXY_CONTRACT =
@@ -21,9 +17,11 @@ const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
-    "weth-token": WETH_TOKEN_CONTRACT_ADDRESS,
-    "usdc-token": USDC_TOKEN_CONTRACT_ADDRESS,
-    "lido-steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "weth-token": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+    "wsteth-token": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+    "reth-token": "0xae78736cd615f374d3085123a210448e74fc6393",
+    "usdc-token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
     "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
     "prop-house": "0x000000002c93cad6f9cfd00c603aef62458d8a48",
     "prop-house-timed-round-implementation":
@@ -36,7 +34,9 @@ const addressByIdentifierByChainId = {
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
     descriptor: DAO_DESCRIPTOR_CONTRACT,
+    "fork-escrow": "0x44d97d22b3d37d837ce4b22773aad9d1566055d9",
     payer: DAO_PAYER_CONTRACT,
+    "executor-v1": "0x0bc3807ec262cb779b38d65b38158acc3bfede10",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
     "prop-house-nouns-house": "0xa1b73d8cb149ab30ec43f83f577646ac8fe7e617",
@@ -51,8 +51,9 @@ const addressByIdentifierByChainId = {
     executor: "0x07e5d6a1550ad5e597a9b0698a474aa080a2fb28",
     data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
     token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
-    "auction-house": "0x0000000000000000000000000000000000000000",
+    "auction-house": "0x488609b7113fcf3b761a05956300d605e8f6bcaf",
     descriptor: "0x0000000000000000000000000000000000000000",
+    "fork-escrow": "0xa15b495deb1b77f066b0c286fdb640c81ef356c4",
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
     "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
     "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
@@ -90,15 +91,15 @@ const metaByIdentifier = {
     token: "ETH",
   },
   "weth-token": {
-    name: "WETH Token",
-    token: "WETH",
+    name: "wETH Token",
+    token: "wETH",
   },
   "usdc-token": {
     name: "USDC Token",
     token: "USDC",
   },
-  "lido-steth-token": {
-    name: "Lido: stETH Token",
+  "steth-token": {
+    name: "stETH Token",
     token: "stETH",
   },
   "lido-withdrawal-queque": {
@@ -115,7 +116,7 @@ const metaByIdentifier = {
     name: "Nouns DAO Candidates",
     description: "NounsDAODataProxy",
   },
-  executor: { name: "Nouns DAO Executor" },
+  executor: { name: "Nouns DAO Treasury" },
   token: {
     name: "Nouns Token",
   },
@@ -127,6 +128,7 @@ const metaByIdentifier = {
     name: "Nouns Art",
     description: "NounsDescriptorV2",
   },
+  "fork-escrow": { name: "Nouns DAO Fork Escrow" },
   "token-buyer": {
     name: "Nouns DAO Token Buyer",
   },

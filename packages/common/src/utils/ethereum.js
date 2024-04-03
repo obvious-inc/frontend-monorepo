@@ -1,4 +1,7 @@
-export const truncateAddress = (address) => {
+import { getAddress as checksumEncodeAddress } from "viem";
+
+export const truncateAddress = (address_) => {
+  const address = checksumEncodeAddress(address_);
   return [address.slice(0, 6), address.slice(-4)].join("...");
 };
 

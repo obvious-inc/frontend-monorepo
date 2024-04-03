@@ -81,6 +81,7 @@ const buildVoteAndFeedbackPostFeedItems = ({ candidate }, proposal) => {
           authorAccount: post.voterId,
           body: text,
           type: post.type ?? "feedback-post",
+          support: post.support,
         },
       ];
     }, []);
