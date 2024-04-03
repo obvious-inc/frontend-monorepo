@@ -323,19 +323,7 @@ const BrowseAccountsScreen = () => {
 
   return (
     <>
-      <Layout
-        navigationStack={[{ to: "/voters", label: "Voters" }]}
-        actions={[
-          {
-            label: "New Proposal",
-            buttonProps: {
-              component: NextLink,
-              href: "/new",
-              icon: <PlusIcon style={{ width: "0.9rem" }} />,
-            },
-          },
-        ]}
-      >
+      <Layout navigationStack={[{ to: "/voters", label: "Voters" }]}>
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer narrow>
             <div
