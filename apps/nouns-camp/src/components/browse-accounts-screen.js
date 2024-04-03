@@ -387,7 +387,7 @@ const BrowseAccountsScreen = () => {
                     },
                     {
                       value: "recent-vwrs-cast",
-                      label: "Recent vwrs cast (last 30 days)",
+                      label: "Recent votes cast with reason (last 30 days)",
                       shortLabel: "Recent vwrs",
                     },
                     {
@@ -397,7 +397,7 @@ const BrowseAccountsScreen = () => {
                     },
                     {
                       value: "vwrs-cast",
-                      label: "Total vwrs cast",
+                      label: "Total votes cast with reason",
                       shortLabel: "Vwrs cast",
                     },
                     {
