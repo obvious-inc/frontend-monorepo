@@ -564,6 +564,31 @@ const BrowseAccountsScreen = () => {
   );
 };
 
+const useIsOnScreen = (ref) => {
+  const [isVisible, setVisible] = React.useState(false);
+  const [hasBeenVisible, setHasBeenVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const observer = new window.IntersectionObserver(
+      ([entry]) => {
+        React.startTransition(() => {
+          setVisible(entry.isIntersecting);
+          setHasBeenVisible((v) => v || entry.isIntersecting);
+        });
+      },
+      { root: null, threshold: 0 },
+    );
+
+    observer.observe(ref.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  });
+
+  return { isVisible, hasBeenVisible };
+};
+
 const AccountListItem = React.memo(
   ({
     address: accountAddress,
@@ -575,13 +600,11 @@ const AccountListItem = React.memo(
     const containerRef = React.useRef();
     const { address: connectedAccountAddress } = useWallet();
     const connectedAccount = useAccount(connectedAccountAddress);
+    const { isVisible, hasBeenVisible } = useIsOnScreen(containerRef);
 
     const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
     const enableImpersonation = !isMe && isDebugSession;
     const enableDelegation = connectedAccount?.nouns.length > 0;
-
-    const [isVisible, setVisible] = React.useState(false);
-    const [hasBeenVisible, setHasBeenVisible] = React.useState(false);
 
     const delegate = useDelegate(accountAddress);
     const { data: ensName } = useEnsName({
@@ -593,24 +616,6 @@ const AccountListItem = React.memo(
     const votingPower = delegate?.nounsRepresented.length;
 
     const { open: openDelegationDialog } = useDialog("delegation");
-
-    React.useEffect(() => {
-      const observer = new window.IntersectionObserver(
-        ([entry]) => {
-          React.startTransition(() => {
-            setVisible(entry.isIntersecting);
-            setHasBeenVisible((v) => v || entry.isIntersecting);
-          });
-        },
-        { root: null, threshold: 0 },
-      );
-
-      observer.observe(containerRef.current);
-
-      return () => {
-        observer.disconnect();
-      };
-    });
 
     const hasDisplayName = displayName !== truncatedAddress;
 
@@ -633,66 +638,64 @@ const AccountListItem = React.memo(
               </div>
               <span className="small dimmed">
                 {hasDisplayName && truncatedAddress}
-                {!isVisible && <>&nbsp;</>}
-                {isVisible &&
-                  [
-                    {
-                      key: "votes",
-                      element: (() => {
-                        if (sortStrategy.startsWith("recent"))
-                          return (
-                            <>
-                              {recentVotes.length} recent{" "}
-                              {recentVotes.length === 1 ? "vote" : "votes"}{" "}
-                              <span className="nowrap">
-                                ({recentVwrCount}{" "}
-                                {recentVwrCount === 1 ? "vwr" : "vwrs"})
-                              </span>
-                            </>
-                          );
-
-                        if (delegate?.votes == null) return null;
-
-                        const vwrCount = delegate.votes.reduce((sum, v) => {
-                          if (v.reason == null || v.reason.trim() === "")
-                            return sum;
-                          return sum + 1;
-                        }, 0);
-
+                {[
+                  {
+                    key: "votes",
+                    element: (() => {
+                      if (sortStrategy.startsWith("recent"))
                         return (
                           <>
+                            {recentVotes.length} recent{" "}
+                            {recentVotes.length === 1 ? "vote" : "votes"}{" "}
                             <span className="nowrap">
-                              {delegate.votes.length}{" "}
-                              {delegate.votes.length === 1 ? "vote" : "votes"}
-                            </span>{" "}
-                            <span className="nowrap">
-                              ({vwrCount} {vwrCount === 1 ? "vwr" : "vwrs"})
+                              ({recentVwrCount}{" "}
+                              {recentVwrCount === 1 ? "vwr" : "vwrs"})
                             </span>
                           </>
                         );
-                      })(),
-                    },
-                    {
-                      key: "revotes",
-                      element: sortStrategy.startsWith("recent") && (
-                        <span className="nowrap">
-                          {recentRevoteCount}{" "}
-                          {recentRevoteCount === 1 ? "revote" : "revotes"}
-                        </span>
-                      ),
-                    },
-                  ]
-                    .filter(({ element }) => Boolean(element))
-                    .map(({ key, element }, i) => (
-                      <React.Fragment key={key}>
-                        {i !== 0 ? (
-                          <>, </>
-                        ) : hasDisplayName ? (
-                          <> {"\u00B7"} </>
-                        ) : null}
-                        {element}
-                      </React.Fragment>
-                    ))}
+
+                      if (delegate?.votes == null) return null;
+
+                      const vwrCount = delegate.votes.reduce((sum, v) => {
+                        if (v.reason == null || v.reason.trim() === "")
+                          return sum;
+                        return sum + 1;
+                      }, 0);
+
+                      return (
+                        <>
+                          <span className="nowrap">
+                            {delegate.votes.length}{" "}
+                            {delegate.votes.length === 1 ? "vote" : "votes"}
+                          </span>{" "}
+                          <span className="nowrap">
+                            ({vwrCount} {vwrCount === 1 ? "vwr" : "vwrs"})
+                          </span>
+                        </>
+                      );
+                    })(),
+                  },
+                  {
+                    key: "revotes",
+                    element: sortStrategy.startsWith("recent") && (
+                      <span className="nowrap">
+                        {recentRevoteCount}{" "}
+                        {recentRevoteCount === 1 ? "revote" : "revotes"}
+                      </span>
+                    ),
+                  },
+                ]
+                  .filter(({ element }) => Boolean(element))
+                  .map(({ key, element }, i) => (
+                    <React.Fragment key={key}>
+                      {i !== 0 ? (
+                        <>, </>
+                      ) : hasDisplayName ? (
+                        <> {"\u00B7"} </>
+                      ) : null}
+                      {element}
+                    </React.Fragment>
+                  ))}
               </span>
             </div>
             {isVisible && (
