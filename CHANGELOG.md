@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - Migrate updates from upstream (#219)
 
+### Revert
+
+- Bump the next group with 2 updates (#216)
+
 ## [1.0.0-alpha.34] - 2024-03-11
 
 ### Bug Fixes
