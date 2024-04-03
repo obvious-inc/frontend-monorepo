@@ -216,7 +216,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                 <NextLink
                   href={
                     context !== "proposal"
-                      ? `/proposals/${item.proposalId}#${quote.id}`
+                      ? `/proposals/${item.proposalId}?tab=activity#${quote.id}`
                       : `#${quote.id}`
                   }
                   style={{ display: "block", position: "absolute", inset: 0 }}
@@ -226,6 +226,35 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                   accountAddress={quote.authorAccount}
                   style={{ position: "relative" }}
                 />
+                {(() => {
+                  if (item.quotes.every((q) => q.support === item.support))
+                    return null;
+
+                  return (
+                    <span
+                      css={(t) =>
+                        css({
+                          fontWeight: t.text.weights.emphasis,
+                          "[data-for]": { color: t.colors.textPositive },
+                          "[data-against]": { color: t.colors.textNegative },
+                          "[data-abstain]": { color: t.colors.textDimmed },
+                        })
+                      }
+                    >
+                      {" "}
+                      {(() => {
+                        switch (quote.support) {
+                          case 0:
+                            return <Signal negative>(against)</Signal>;
+                          case 1:
+                            return <Signal positive>(for)</Signal>;
+                          case 2:
+                            return <Signal>(abstained)</Signal>;
+                        }
+                      })()}
+                    </span>
+                  );
+                })()}
                 :{" "}
                 <MarkdownRichText
                   text={quote.body}
@@ -388,7 +417,7 @@ const ItemTitle = ({ item, context }) => {
   const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
       const title =
-        proposal?.title == null
+        proposal?.title == null || proposal.title.length > 130
           ? `Proposal ${proposalId}`
           : `${short ? proposalId : `Proposal ${proposalId}`}: ${
               proposal.title
@@ -685,9 +714,24 @@ const ItemTitle = ({ item, context }) => {
     case "vote":
     case "feedback-post": {
       const signalWord = (() => {
-        if (item.type === "feedback-post") return "signaled";
-        const isRevote = item.quotes?.some((quote) => quote.type === "vote");
-        return isRevote ? "revoted" : "voted";
+        const isRepost =
+          item.quotes?.length > 0 &&
+          item.quotes.every((quote) => quote.support === item.support);
+
+        if (isRepost) {
+          const isRevote =
+            item.type === "vote" && item.quotes.some((q) => q.type === "vote");
+          return isRevote ? "revoted" : "reposted";
+        }
+
+        switch (item.type) {
+          case "vote":
+            return "voted";
+          case "feedback-post":
+            return "signaled";
+          default:
+            throw new Error();
+        }
       })();
       return (
         <span>
