@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0-alpha.35",
+  "version": "1.0.0-alpha.36",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "predev": "pnpm run build",
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "prettier": "^3.2.5",
-    "turbo": "^1.13.0"
+    "turbo": "^1.13.2"
   },
   "engines": {
     "node": ">=18.0.0",
