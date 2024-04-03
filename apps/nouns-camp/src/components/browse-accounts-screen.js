@@ -175,7 +175,7 @@ const BrowseAccountsScreen = () => {
   const { address: treasuryAddress } = useContract("executor");
   const { address: forkEscrowAddress } = useContract("fork-escrow");
 
-  const [sortStrategy, setSortStrategy] = React.useState("recent-votes-cast");
+  const [sortStrategy, setSortStrategy] = React.useState("recent-revotes");
   const [sortOrder, setSortOrder] = React.useState("desc");
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
@@ -376,6 +376,11 @@ const BrowseAccountsScreen = () => {
                   value={sortStrategy}
                   options={[
                     {
+                      value: "recent-revotes",
+                      label: "Most revoted (last 30 days)",
+                      shortLabel: "Recent revotes",
+                    },
+                    {
                       value: "recent-votes-cast",
                       label: "Recent votes cast (last 30 days)",
                       shortLabel: "Recent votes",
@@ -384,11 +389,6 @@ const BrowseAccountsScreen = () => {
                       value: "recent-vwrs-cast",
                       label: "Recent vwrs cast (last 30 days)",
                       shortLabel: "Recent vwrs",
-                    },
-                    {
-                      value: "recent-revotes",
-                      label: "Most revoted (last 30 days)",
-                      shortLabel: "Recent revotes",
                     },
                     {
                       value: "votes-cast",
