@@ -11,10 +11,7 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
-import {
-  Plus as PlusIcon,
-  DotsHorizontal as DotsHorizontalIcon,
-} from "@shades/ui-web/icons";
+import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
@@ -364,11 +361,14 @@ const BrowseAccountsScreen = () => {
                 />
               </div>
               <div
-                style={{
+                css={css({
                   display: "flex",
                   gap: "1.6rem",
-                  margin: "2.4rem 0 1.6rem",
-                }}
+                  margin: "2rem 0 1.6rem",
+                  "@media(min-width: 600px": {
+                    margin: "2.4rem 0 1.6rem",
+                  },
+                })}
               >
                 <Select
                   size="small"
@@ -500,7 +500,7 @@ const BrowseAccountsScreen = () => {
                           flex: 1,
                           minWidth: 0,
                           display: "grid",
-                          gridTemplateColumns: "1fr auto auto",
+                          gridTemplateColumns: "minmax(0,1fr) auto auto",
                           alignItems: "center",
                           gap: "1.2rem",
                         },
@@ -509,10 +509,22 @@ const BrowseAccountsScreen = () => {
                         },
                         ".display-name": {
                           fontWeight: t.text.weights.emphasis,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                         },
                         ".avatar-placeholder": {
                           width: "3.6rem",
                           height: "3.6rem",
+                        },
+                        ".nowrap": { whiteSpace: "nowrap" },
+                        "@media(max-width: 600px)": {
+                          ".content-container": {
+                            gridTemplateColumns: "minmax(0,1fr) auto",
+                          },
+                          ".votes-tag-group-container": {
+                            display: "none",
+                          },
                         },
                       },
                       // Hover enhancement
@@ -616,10 +628,9 @@ const AccountListItem = React.memo(
           )}
           <div className="content-container">
             <div>
-              <span className="display-name">
+              <div className="display-name">
                 {displayName} {votingPower != null && <>({votingPower})</>}
-              </span>
-              <br />
+              </div>
               <span className="small dimmed">
                 {hasDisplayName && truncatedAddress}
                 {!isVisible && <>&nbsp;</>}
@@ -632,9 +643,11 @@ const AccountListItem = React.memo(
                           return (
                             <>
                               {recentVotes.length} recent{" "}
-                              {recentVotes.length === 1 ? "vote" : "votes"} (
-                              {recentVwrCount}{" "}
-                              {recentVwrCount === 1 ? "vwr" : "vwrs"})
+                              {recentVotes.length === 1 ? "vote" : "votes"}{" "}
+                              <span className="nowrap">
+                                ({recentVwrCount}{" "}
+                                {recentVwrCount === 1 ? "vwr" : "vwrs"})
+                              </span>
                             </>
                           );
 
@@ -648,9 +661,13 @@ const AccountListItem = React.memo(
 
                         return (
                           <>
-                            {delegate.votes.length}{" "}
-                            {delegate.votes.length === 1 ? "vote" : "votes"} (
-                            {vwrCount} {vwrCount === 1 ? "vwr" : "vwrs"})
+                            <span className="nowrap">
+                              {delegate.votes.length}{" "}
+                              {delegate.votes.length === 1 ? "vote" : "votes"}
+                            </span>{" "}
+                            <span className="nowrap">
+                              ({vwrCount} {vwrCount === 1 ? "vwr" : "vwrs"})
+                            </span>
                           </>
                         );
                       })(),
@@ -658,10 +675,10 @@ const AccountListItem = React.memo(
                     {
                       key: "revotes",
                       element: sortStrategy.startsWith("recent") && (
-                        <>
+                        <span className="nowrap">
                           {recentRevoteCount}{" "}
                           {recentRevoteCount === 1 ? "revote" : "revotes"}
-                        </>
+                        </span>
                       ),
                     },
                   ]
@@ -680,15 +697,17 @@ const AccountListItem = React.memo(
             </div>
             {isVisible && (
               <>
-                {recentVotes != null ? (
-                  <DelegateVotesTagGroup votes={recentVotes} />
-                ) : delegate?.votes == null ? (
-                  <div />
-                ) : delegate.votes.length > 0 ? (
-                  <DelegateVotesTagGroup votes={delegate?.votes} />
-                ) : (
-                  <div className="small dimmed">No votes</div>
-                )}
+                <div className="votes-tag-group-container">
+                  {sortStrategy.startsWith("recent") ? (
+                    <DelegateVotesTagGroup votes={recentVotes} />
+                  ) : delegate?.votes == null ? (
+                    <div />
+                  ) : delegate.votes.length > 0 ? (
+                    <DelegateVotesTagGroup votes={delegate?.votes} />
+                  ) : (
+                    <div className="small dimmed">No votes</div>
+                  )}
+                </div>
                 <DropdownMenu.Root
                   placement="bottom end"
                   offset={18}
