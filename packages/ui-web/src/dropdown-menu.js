@@ -33,12 +33,13 @@ export const Root = ({
   const props = {
     isOpen,
     onOpenChange: (open) => {
-      if (open || !isTouchDevice(open)) {
+      if (open || !isTouchDevice()) {
         setOpen(open);
         return;
       }
 
-      const touchendHandler = () => {
+      const touchendHandler = (e) => {
+        e.stopPropagation();
         clearTimeout(id);
         setOpen(open);
       };
@@ -46,7 +47,10 @@ export const Root = ({
         document.removeEventListener("touchend", touchendHandler);
         setOpen(open);
       }, 1000);
-      document.addEventListener("touchend", touchendHandler, { once: true });
+      document.addEventListener("touchend", touchendHandler, {
+        once: true,
+        capture: true,
+      });
     },
     ...props_,
   };
