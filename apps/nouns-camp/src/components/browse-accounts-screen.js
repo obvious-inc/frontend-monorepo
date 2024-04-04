@@ -576,13 +576,13 @@ const BrowseAccountsScreen = () => {
                         address={account.id}
                         sortStrategy={sortStrategy}
                         recentVotes={
-                          recentVotesByAccountAddress[account.id] ?? []
+                          recentVotesByAccountAddress?.[account.id] ?? []
                         }
                         recentVwrCount={
-                          recentVwrCountByAccountAddress[account.id] ?? 0
+                          recentVwrCountByAccountAddress?.[account.id] ?? 0
                         }
                         recentRevoteCount={
-                          recentRevoteCountByAccountAddress[account.id] ?? 0
+                          recentRevoteCountByAccountAddress?.[account.id] ?? 0
                         }
                       />
                     </li>
