@@ -36,10 +36,25 @@ const Select = React.forwardRef(
       fullWidth = true,
       multiline = true,
       buttonProps,
-      ...props
+      ...props_
     },
     forwardedRef,
   ) => {
+    const [isOpen, setOpen] = React.useState(false);
+
+    // Workaround for https://github.com/adobe/react-spectrum/issues/1513
+    const props = {
+      isOpen,
+      onOpenChange: (open) => {
+        if (open) {
+          setOpen(true);
+          return;
+        }
+        setTimeout(() => setOpen(open), 0);
+      },
+      ...props_,
+    };
+
     const selectProps = {
       ...props,
       selectedKey: value,

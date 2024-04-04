@@ -24,8 +24,23 @@ export const Root = ({
   offset = 5,
   crossOffset,
   targetRef,
-  ...props
+  ...props_
 }) => {
+  const [isOpen, setOpen] = React.useState(false);
+
+  // Workaround for https://github.com/adobe/react-spectrum/issues/1513
+  const props = {
+    isOpen,
+    onOpenChange: (open) => {
+      if (open) {
+        setOpen(true);
+        return;
+      }
+      setTimeout(() => setOpen(open), 0);
+    },
+    ...props_,
+  };
+
   const state = useMenuTriggerState(props);
   const ref = React.useRef(null);
   const { menuTriggerProps, menuProps } = useMenuTrigger({}, state, ref);
