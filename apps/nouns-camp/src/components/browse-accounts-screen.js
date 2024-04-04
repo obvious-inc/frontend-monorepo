@@ -58,7 +58,8 @@ const searchEns = (nameByAddress, rawQuery) => {
 const useRecentVotes = ({ days = 30 } = {}) => {
   const chainId = useChainId();
 
-  const [votesByAccountAddress, setVotesByAccountAddress] = React.useState({});
+  const [votesByAccountAddress, setVotesByAccountAddress] =
+    React.useState(null);
 
   useFetch(async () => {
     const thresholdMillis = Date.now() - days * ONE_DAY_MILLIS;
@@ -89,6 +90,7 @@ const useRecentVotes = ({ days = 30 } = {}) => {
   }, [chainId, days]);
 
   const vwrCountByAccountAddress = React.useMemo(() => {
+    if (votesByAccountAddress == null) return null;
     return objectUtils.mapValues(
       (votes) =>
         votes.reduce((sum, v) => {
@@ -106,7 +108,7 @@ const useRecentRevoteCount = ({ days = 30 } = {}) => {
   const chainId = useChainId();
 
   const [revoteCountByAccountAddress, setRevoteCountByAccountAddress] =
-    React.useState({});
+    React.useState(null);
 
   useFetch(async () => {
     const thresholdMillis = Date.now() - days * ONE_DAY_MILLIS;
@@ -180,6 +182,9 @@ const BrowseAccountsScreen = () => {
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
+  const deferredSortStrategy = React.useDeferredValue(sortStrategy);
+  const deferredSortOrder = React.useDeferredValue(sortOrder);
+
   const {
     votesByAccountAddress: recentVotesByAccountAddress,
     vwrCountByAccountAddress: recentVwrCountByAccountAddress,
@@ -197,17 +202,20 @@ const BrowseAccountsScreen = () => {
     );
 
     const sort = (accounts) => {
-      switch (sortStrategy) {
+      const order = deferredSortOrder;
+      const invertedOrder = order === "desc" ? "asc" : "desc";
+
+      switch (deferredSortStrategy) {
         case "voting-power":
           return arrayUtils.sortBy(
-            { value: (a) => a.nounsRepresented.length, order: sortOrder },
-            { value: (a) => a.votes?.length ?? 0, order: sortOrder },
+            { value: (a) => a.nounsRepresented.length, order },
+            { value: (a) => a.votes?.length ?? 0, order },
             accounts,
           );
         case "votes-cast":
           return arrayUtils.sortBy(
-            { value: (a) => a.votes?.length ?? 0, order: sortOrder },
-            { value: (a) => a.nounsRepresented.length, order: sortOrder },
+            { value: (a) => a.votes?.length ?? 0, order },
+            { value: (a) => a.nounsRepresented.length, order },
             accounts,
           );
         case "vwrs-cast":
@@ -223,33 +231,33 @@ const BrowseAccountsScreen = () => {
 
                 return vwrCount;
               },
-              order: sortOrder,
+              order,
             },
             {
               value: (a) => a.votes?.length ?? 0,
-              order: sortOrder === "desc" ? "asc" : "desc",
+              order: invertedOrder,
             },
-            { value: (a) => a.nounsRepresented.length, order: sortOrder },
+            { value: (a) => a.nounsRepresented.length, order },
             accounts,
           );
         case "recent-votes-cast":
           return arrayUtils.sortBy(
             {
               value: (a) => (recentVotesByAccountAddress[a.id] ?? []).length,
-              order: sortOrder,
+              order,
             },
             {
-              value: (a) => recentRevoteCountByAccountAddress[a.id] ?? 0,
-              order: sortOrder,
+              value: (a) => recentRevoteCountByAccountAddress?.[a.id] ?? 0,
+              order,
             },
-            { value: (a) => a.votes?.length ?? 0, order: sortOrder },
+            { value: (a) => a.votes?.length ?? 0, order },
             accounts,
           );
         case "recent-vwrs-cast":
           return arrayUtils.sortBy(
             {
               value: (a) => recentVwrCountByAccountAddress[a.id] ?? 0,
-              order: sortOrder,
+              order,
             },
             accounts,
           );
@@ -257,33 +265,51 @@ const BrowseAccountsScreen = () => {
           return arrayUtils.sortBy(
             {
               value: (a) => recentRevoteCountByAccountAddress[a.id] ?? 0,
-              order: sortOrder,
+              order,
             },
             {
               value: (a) => {
                 const recentVoteCount = (
-                  recentVotesByAccountAddress[a.id] ?? []
+                  recentVotesByAccountAddress?.[a.id] ?? []
                 ).length;
                 return recentVoteCount === 0 ? Infinity : recentVoteCount;
               },
-              order: sortOrder === "desc" ? "asc" : "desc",
+              order: invertedOrder,
             },
             accounts,
           );
         default:
-          throw new Error(`Invalid sort strategy: ${sortStrategy}`);
+          throw new Error(`Invalid sort strategy: ${deferredSortStrategy}`);
       }
     };
 
+    if (
+      deferredSortStrategy === "recent-votes-cast" &&
+      recentVotesByAccountAddress == null
+    )
+      return []; // Loading
+    if (
+      deferredSortStrategy === "recent-vwrs-cast" &&
+      recentVwrCountByAccountAddress == null
+    )
+      return []; // Loading
+    if (
+      deferredSortStrategy === "recent-revotes" &&
+      recentRevoteCountByAccountAddress == null
+    )
+      return []; // Loading
+
     if (matchingAddresses == null) return sort(accountsExcludingContracts);
+
     const filteredAccounts = accountsExcludingContracts.filter((a) =>
       matchingAddresses.includes(a.id),
     );
+
     return sort(filteredAccounts);
   }, [
     matchingAddresses,
-    sortStrategy,
-    sortOrder,
+    deferredSortStrategy,
+    deferredSortOrder,
     accounts,
     treasuryAddress,
     forkEscrowAddress,
@@ -407,6 +433,7 @@ const BrowseAccountsScreen = () => {
                   ]}
                   onChange={(value) => {
                     setSortStrategy(value);
+                    setSortOrder("desc");
                   }}
                   fullWidth={false}
                   width="max-content"
@@ -475,13 +502,19 @@ const BrowseAccountsScreen = () => {
               </div>
               <div>
                 <ul
+                  data-loading={sortStrategy !== deferredSortStrategy}
                   css={(t) => {
                     const hoverColor = t.colors.backgroundModifierNormal;
                     return css({
                       listStyle: "none",
                       lineHeight: 1.25,
+                      transition: "filter 0.1s ease-out, opacity 0.1s ease-out",
                       ".dimmed": { color: t.colors.textDimmed },
                       ".small": { fontSize: t.text.sizes.small },
+                      '&[data-loading="true"]': {
+                        opacity: 0.5,
+                        filter: "saturate(0)",
+                      },
                       "& > li": {
                         position: "relative",
                         ".account-link": {
