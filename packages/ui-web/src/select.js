@@ -53,7 +53,7 @@ const Select = React.forwardRef(
         }
 
         const touchendHandler = (e) => {
-          e.stopPropagation();
+          e.preventDefault();
           clearTimeout(id);
           setOpen(open);
         };

@@ -39,7 +39,7 @@ export const Root = ({
       }
 
       const touchendHandler = (e) => {
-        e.stopPropagation();
+        e.preventDefault();
         clearTimeout(id);
         setOpen(open);
       };
