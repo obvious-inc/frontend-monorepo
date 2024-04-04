@@ -14,6 +14,7 @@ import {
   useMenuTriggerState,
   useTreeState,
 } from "react-stately";
+import { isTouchDevice } from "@shades/common/utils";
 import * as Popover from "./popover.js";
 
 const Context = React.createContext();
@@ -32,11 +33,20 @@ export const Root = ({
   const props = {
     isOpen,
     onOpenChange: (open) => {
-      if (open) {
-        setOpen(true);
+      if (open || !isTouchDevice(open)) {
+        setOpen(open);
         return;
       }
-      setTimeout(() => setOpen(open), 0);
+
+      const touchendHandler = () => {
+        clearTimeout(id);
+        setOpen(open);
+      };
+      const id = setTimeout(() => {
+        document.removeEventListener("touchend", touchendHandler);
+        setOpen(open);
+      }, 1000);
+      document.addEventListener("touchend", touchendHandler, { once: true });
     },
     ...props_,
   };

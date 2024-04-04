@@ -2,6 +2,7 @@ import { css } from "@emotion/react";
 import React from "react";
 import { Item, useSelectState } from "react-stately";
 import { HiddenSelect, useSelect, useListBox, useOption } from "react-aria";
+import { isTouchDevice } from "@shades/common/utils";
 import Button from "./button.js";
 import * as Popover from "./popover.js";
 import {
@@ -46,11 +47,20 @@ const Select = React.forwardRef(
     const props = {
       isOpen,
       onOpenChange: (open) => {
-        if (open) {
-          setOpen(true);
+        if (open || !isTouchDevice(open)) {
+          setOpen(open);
           return;
         }
-        setTimeout(() => setOpen(open), 0);
+
+        const touchendHandler = () => {
+          clearTimeout(id);
+          setOpen(open);
+        };
+        const id = setTimeout(() => {
+          document.removeEventListener("touchend", touchendHandler);
+          setOpen(open);
+        }, 1000);
+        document.addEventListener("touchend", touchendHandler, { once: true });
       },
       ...props_,
     };
