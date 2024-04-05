@@ -32,9 +32,10 @@ export const config = createConfig({
     [sepolia.id]: http(
       `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
     ),
-    [goerli.id]: http(
-      `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-    ),
+    // Rainbow doesn’t seem to allow goerli anymore
+    // [goerli.id]: http(
+    //   `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+    // ),
   },
   batch: {
     multicall: {
