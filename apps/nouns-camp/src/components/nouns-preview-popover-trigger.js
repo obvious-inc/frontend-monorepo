@@ -20,7 +20,7 @@ const NounsPreviewPopoverTrigger = React.forwardRef(
       children,
       ...props
     },
-    triggerRef
+    triggerRef,
   ) => {
     if (nounIds.length === 1)
       return (
@@ -108,7 +108,7 @@ const NounsPreviewPopoverTrigger = React.forwardRef(
         </Popover.Content>
       </Popover.Root>
     );
-  }
+  },
 );
 
 const NounPreview = React.forwardRef(({ nounId }, ref) => {

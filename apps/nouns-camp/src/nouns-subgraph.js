@@ -380,7 +380,7 @@ query {
   }
 
   proposalVersions(where: {proposal_in: [${proposalIds.map(
-    (id) => `"${id}"`
+    (id) => `"${id}"`,
   )}]}) {
     createdAt
     createdBlock
@@ -391,7 +391,7 @@ query {
   }
 
   proposalCandidateVersions(where: {proposal_in: [${candidateIds.map((id) =>
-    JSON.stringify(id)
+    JSON.stringify(id),
   )}]}) {
     id
     createdBlock
@@ -403,7 +403,7 @@ query {
   }
 
   candidateFeedbacks(where: {candidate_in: [${candidateIds.map((id) =>
-    JSON.stringify(id)
+    JSON.stringify(id),
   )}]}, first: 1000) {
     ...CandidateFeedbackFields
   }
@@ -509,7 +509,7 @@ query {
 
 const createProposalCandidateSignaturesByAccountQuery = (
   id,
-  { skip = 0, first = 1000 } = {}
+  { skip = 0, first = 1000 } = {},
 ) => `
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
@@ -521,7 +521,7 @@ query {
 const createProposalCandidateVersionByContentIdsQuery = (contentIds) => `
 query {
   proposalCandidateVersions(where: {content_in: [${contentIds.map(
-    (id) => `"${id}"`
+    (id) => `"${id}"`,
   )}]}) {
     id
     createdBlock
@@ -540,7 +540,7 @@ const createProposalCandidateByLatestVersionIdsQuery = (versionIds) => `
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposalCandidates(where: {latestVersion_in: [${versionIds.map(
-    (id) => `"${id}"`
+    (id) => `"${id}"`,
   )}]}) {
     id
     slug
@@ -681,7 +681,7 @@ query {
 
 const createProposalsVersionsQuery = (proposalIds) => `{
   proposalVersions(where: {proposal_in: [${proposalIds.map(
-    (id) => `"${id}"`
+    (id) => `"${id}"`,
   )}]}) {
     createdAt
     createdBlock
@@ -724,7 +724,7 @@ const createProposalCandidatesQuery = (candidateIds) => `
 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
 query {
   proposalCandidates(where: {id_in: [${candidateIds.map((id) =>
-    JSON.stringify(id)
+    JSON.stringify(id),
   )}]}) {
     id
     slug
@@ -775,12 +775,12 @@ query {
     }
   }
   transferEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
-    (id) => `"${id}"`
+    (id) => `"${id}"`,
   )}]}) {
     ...TransferEventFields
   }
   delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {noun_in: [${ids.map(
-    (id) => `"${id}"`
+    (id) => `"${id}"`,
   )}]}) {
     ...DelegationEventFields
   }
@@ -792,12 +792,12 @@ query {
 }`;
 
 const createProposalCandidateFeedbackPostsByCandidatesQuery = (
-  candidateIds
+  candidateIds,
 ) => `
 ${CANDIDATE_FEEDBACK_FIELDS}
 query {
   candidateFeedbacks(where: {candidate_in: [${candidateIds.map((id) =>
-    JSON.stringify(id)
+    JSON.stringify(id),
   )}]}, first: 1000) {
     ...CandidateFeedbackFields
   }
@@ -1020,7 +1020,7 @@ const parseCandidateVersion = (v, { chainId }) => {
         createdBlock: BigInt(s.createdBlock),
         createdTimestamp: parseTimestamp(s.createdTimestamp),
         expirationTimestamp: parseTimestamp(s.expirationTimestamp),
-      })
+      }),
     );
 
   if (v.content?.targets != null)
@@ -1074,7 +1074,7 @@ export const parseCandidate = (data, { chainId }) => {
 
   if (data.versions != null)
     parsedData.versions = data.versions.map((v) =>
-      parseCandidateVersion(v, { chainId })
+      parseCandidateVersion(v, { chainId }),
     );
 
   return parsedData;
@@ -1099,7 +1099,7 @@ const parseDelegate = (data) => {
         return noun;
       })
       // Don’t include nouns delegated to other accounts
-      .filter((n) => n.delegateId == null || n.delegateId === data.id)
+      .filter((n) => n.delegateId == null || n.delegateId === data.id),
   );
 
   if (data.votes != null) parsedData.votes = data.votes.map(parseProposalVote);
@@ -1120,7 +1120,7 @@ const parseAccount = (data) => {
       seed: objectUtils.mapValues((v) => parseInt(v), n.seed),
       ownerId: n.owner?.id,
       delegateId: n.owner?.delegate?.id,
-    }))
+    })),
   );
 
   parsedData.delegateId = data.delegate?.id;
@@ -1203,7 +1203,7 @@ export const fetchProposalCandidates = async (chainId, candidateIds) => {
 
 export const fetchProposalCandidatesFeedbackPosts = async (
   chainId,
-  candidateIds
+  candidateIds,
 ) =>
   subgraphFetch({
     chainId,
@@ -1220,7 +1220,7 @@ export const fetchProposal = (chainId, id) =>
     const candidateId = data.proposalCandidateVersions[0]?.proposal.id;
     return parseProposal(
       { ...data.proposal, versions: data.proposalVersions, candidateId },
-      { chainId }
+      { chainId },
     );
   });
 
@@ -1246,7 +1246,7 @@ export const fetchProposalCandidate = async (chainId, rawId) => {
       return data.candidateFeedbacks;
     }),
   ]).then(([candidate, feedbackPosts]) =>
-    parseCandidate({ ...candidate, feedbackPosts }, { chainId })
+    parseCandidate({ ...candidate, feedbackPosts }, { chainId }),
   );
 };
 
@@ -1284,7 +1284,7 @@ export const fetchProposalCandidatesByAccount = (chainId, accountAddress) =>
     query: createProposalCandidatesByAccountQuery(accountAddress),
   }).then((data) => {
     const candidates = data.proposalCandidates.map((c) =>
-      parseCandidate(c, { chainId })
+      parseCandidate(c, { chainId }),
     );
     return candidates;
   });
@@ -1293,13 +1293,13 @@ export const fetchBrowseScreenData = (chainId, options) =>
   subgraphFetch({ chainId, query: createBrowseScreenQuery(options) }).then(
     (data) => {
       const proposals = data.proposals.map((p) =>
-        parseProposal(p, { chainId })
+        parseProposal(p, { chainId }),
       );
       const candidates = data.proposalCandidates.map((c) =>
-        parseCandidate(c, { chainId })
+        parseCandidate(c, { chainId }),
       );
       return { proposals, candidates };
-    }
+    },
   );
 
 export const fetchBrowseScreenSecondaryData = (chainId, options) =>
@@ -1310,7 +1310,7 @@ export const fetchBrowseScreenSecondaryData = (chainId, options) =>
     const proposals = data.proposals.map((p) => parseProposal(p, { chainId }));
     const proposalVersions = data.proposalVersions.map(parseProposalVersion);
     const candidateVersions = data.proposalCandidateVersions.map((v) =>
-      parseCandidateVersion(v, { chainId })
+      parseCandidateVersion(v, { chainId }),
     );
     const candidateFeedbacks = data.candidateFeedbacks.map(parseFeedbackPost);
     return {
@@ -1324,19 +1324,19 @@ export const fetchBrowseScreenSecondaryData = (chainId, options) =>
 export const fetchProposalCandidatesSponsoredByAccount = (
   chainId,
   id,
-  options
+  options,
 ) =>
   subgraphFetch({
     chainId,
     query: createProposalCandidateSignaturesByAccountQuery(
       id.toLowerCase(),
-      options
+      options,
     ),
   })
     .then((data) => {
       // Fetch signatures, then content IDs, and finally the candidate versions
       return arrayUtils.unique(
-        data.proposalCandidateSignatures.map((s) => s.content.id)
+        data.proposalCandidateSignatures.map((s) => s.content.id),
       );
     })
     .then(async (contentIds) => {
@@ -1351,7 +1351,7 @@ export const fetchProposalCandidatesSponsoredByAccount = (
         query: createProposalCandidateByLatestVersionIdsQuery(versionIds),
       }).then((data) => {
         const candidates = data.proposalCandidates.map((c) =>
-          parseCandidate(c, { chainId })
+          parseCandidate(c, { chainId }),
         );
         return candidates;
       });
@@ -1364,7 +1364,7 @@ export const fetchVoterScreenData = (chainId, id, options) =>
   }).then((data) => {
     const proposals = data.proposals.map((p) => parseProposal(p, { chainId }));
     const candidates = data.proposalCandidates.map((c) =>
-      parseCandidate(c, { chainId })
+      parseCandidate(c, { chainId }),
     );
     const votes = data.votes.map(parseProposalVote);
     const proposalFeedbackPosts = data.proposalFeedbacks.map(parseFeedbackPost);
@@ -1408,7 +1408,7 @@ export const fetchNounsActivity = (chainId, { startBlock, endBlock }) =>
 export const fetchVoterActivity = (
   chainId,
   voterAddress,
-  { startBlock, endBlock }
+  { startBlock, endBlock },
 ) =>
   subgraphFetch({
     chainId,
@@ -1466,7 +1466,7 @@ export const fetchNounsByIds = (chainId, ids) =>
     const sortedEvents = arrayUtils.sortBy(
       { value: (e) => e.blockTimestamp, order: "desc" },
       { value: (e) => getEventScore(e), order: "desc" },
-      [...transferEvents, ...delegationEvents]
+      [...transferEvents, ...delegationEvents],
     );
 
     return { nouns, events: sortedEvents, auctions };

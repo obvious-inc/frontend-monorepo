@@ -354,7 +354,7 @@ const ItemBody = React.memo(
         if (containerRef.current == null) return;
         setExceedsTruncationThreshold(
           containerRef.current.scrollHeight >
-            BODY_TRUNCATION_HEIGHT_THRESHOLD + 100
+            BODY_TRUNCATION_HEIGHT_THRESHOLD + 100,
         );
       });
 
@@ -409,7 +409,7 @@ const ItemBody = React.memo(
         )}
       </div>
     );
-  }
+  },
 );
 
 const ItemTitle = ({ item, context }) => {
@@ -441,7 +441,7 @@ const ItemTitle = ({ item, context }) => {
         <NextLink
           prefetch
           href={`/candidates/${encodeURIComponent(
-            makeCandidateUrlId(candidateId)
+            makeCandidateUrlId(candidateId),
           )}`}
         >
           {children ?? title}

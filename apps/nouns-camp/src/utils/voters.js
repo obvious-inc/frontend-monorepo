@@ -23,7 +23,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     [
       ...account.events.filter((e) => e.type === "transfer"),
       ...account.events.filter((e) => e.type === "delegate"),
-    ]
+    ],
   );
 
   const auctionBoughtEventItems =
@@ -66,7 +66,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     uniqueEvents
       ?.filter(
         (e) =>
-          e.type === "transfer" && !fromAuctionHouse(e) && !toAuctionHouse(e)
+          e.type === "transfer" && !fromAuctionHouse(e) && !toAuctionHouse(e),
       )
       .map((e) => ({
         type: "noun-transferred",
@@ -87,7 +87,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
       ...delegatedEventItems,
       ...transferredEventItems,
       ...auctionBoughtEventItems,
-    ]
+    ],
   );
 
   const allEventItems = Object.values(groupedAllEventItems).map((group) => {
@@ -107,7 +107,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
 
 export const buildFeed = (
   delegate,
-  { proposals, candidates, account, chainId }
+  { proposals, candidates, account, chainId },
 ) => {
   if (delegate == null) return [];
 
@@ -116,7 +116,7 @@ export const buildFeed = (
       ?.map((p) => buildProposalFeed(p, {}))
       .flat()
       .filter(
-        (p) => p.authorAccount?.toLowerCase() === delegate?.id.toLowerCase()
+        (p) => p.authorAccount?.toLowerCase() === delegate?.id.toLowerCase(),
       ) ?? [];
 
   const candidateFeedItems =
@@ -124,7 +124,7 @@ export const buildFeed = (
       ?.map((c) => buildCandidateFeed(c))
       .flat()
       .filter(
-        (i) => i.authorAccount?.toLowerCase() === delegate?.id.toLowerCase()
+        (i) => i.authorAccount?.toLowerCase() === delegate?.id.toLowerCase(),
       ) ?? [];
 
   const eventItems =

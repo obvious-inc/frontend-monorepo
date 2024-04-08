@@ -94,7 +94,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
 
     return arrayUtils.sortBy(
       { value: (i) => i.blockNumber, order: "desc" },
-      buildFeedItems()
+      buildFeedItems(),
     );
   }, [delegate, proposals, candidates, account, chainId, filter]);
 };
@@ -112,7 +112,7 @@ const getDelegateVotes = (delegate) => {
         totalVotes: acc.totalVotes + 1,
       };
     },
-    { for: 0, against: 0, abstain: 0, withReason: 0, totalVotes: 0 }
+    { for: 0, against: 0, abstain: 0, withReason: 0, totalVotes: 0 },
   );
 };
 
@@ -138,7 +138,7 @@ const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
             startBlock: latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY),
             endBlock: latestBlockNumber,
           }),
-    [latestBlockNumber, fetchVoterActivity]
+    [latestBlockNumber, fetchVoterActivity],
   );
 
   if (visibleItems.length === 0)
@@ -178,7 +178,7 @@ const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 const FeedSidebar = React.memo(({ voterAddress }) => {
   const [filter, setFilter] = useCachedState(
     "voter-screen:activity-filter",
-    "all"
+    "all",
   );
 
   return (
@@ -241,7 +241,7 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
 const FeedTabContent = React.memo(({ voterAddress }) => {
   const [filter, setFilter] = useCachedState(
     "voter-screen:activity-filter",
-    "all"
+    "all",
   );
 
   return (
@@ -453,7 +453,7 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
                 (
                 {formatPercentage(
                   delegateVotes.withReason,
-                  delegateVotes.totalVotes
+                  delegateVotes.totalVotes,
                 )}{" "}
                 with reason)
               </span>
@@ -475,7 +475,7 @@ const VoterHeader = ({ accountAddress }) => {
 
   const displayName = useAccountDisplayName(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(
-    checksumEncodeAddress(accountAddress)
+    checksumEncodeAddress(accountAddress),
   );
 
   const allVoterNouns = useAllNounsByAccount(accountAddress);
@@ -608,7 +608,7 @@ const VoterHeader = ({ accountAddress }) => {
                   switch (key) {
                     case "copy-account-address":
                       navigator.clipboard.writeText(
-                        accountAddress.toLowerCase()
+                        accountAddress.toLowerCase(),
                       );
                       close();
                       break;
@@ -624,35 +624,35 @@ const VoterHeader = ({ accountAddress }) => {
                     case "open-etherscan":
                       window.open(
                         `https://etherscan.io/address/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-mogu":
                       window.open(
                         `https://mmmogu.com/address/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-agora":
                       window.open(
                         `https://nounsagora.com/delegate/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-nounskarma":
                       window.open(
                         `https://nounskarma.xyz/player/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
 
                     case "open-rainbow":
                       window.open(
                         `https://rainbow.me/${accountAddress}`,
-                        "_blank"
+                        "_blank",
                       );
                       break;
                   }
@@ -744,7 +744,7 @@ const VoterMainSection = ({ voterAddress }) => {
   const sponsoredProposals = useAccountSponsoredProposals(voterAddress);
 
   const [hasFetchedData, setHasFetchedData] = React.useState(
-    () => proposals.length > 0
+    () => proposals.length > 0,
   );
 
   const { fetchVoterScreenData } = useActions();
@@ -755,7 +755,7 @@ const VoterMainSection = ({ voterAddress }) => {
         setHasFetchedData(true);
         fetchVoterScreenData(voterAddress, { skip: 40, first: 1000 });
       }),
-    [fetchVoterScreenData, voterAddress]
+    [fetchVoterScreenData, voterAddress],
   );
 
   const proposalsTabTitle =
@@ -846,7 +846,7 @@ const VoterMainSection = ({ voterAddress }) => {
                               value: (p) => Number(p.id),
                               order: "desc",
                             },
-                            proposals
+                            proposals,
                           )
                           .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
@@ -886,7 +886,7 @@ const VoterMainSection = ({ voterAddress }) => {
                               value: (p) => p.lastUpdatedTimestamp,
                               order: "desc",
                             },
-                            candidates
+                            candidates,
                           )
                           .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
@@ -928,7 +928,7 @@ const VoterMainSection = ({ voterAddress }) => {
                               value: (p) => p.lastUpdatedTimestamp,
                               order: "desc",
                             },
-                            sponsoredProposals
+                            sponsoredProposals,
                           )
                           .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
                       },
