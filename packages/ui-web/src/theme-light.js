@@ -18,6 +18,7 @@ const backgroundDarkest = "hsl(60deg 11% 88%)";
 const backgroundModifierLight = "hsl(60deg 12% 30% / 3%)";
 const backgroundModifierNormal = "hsl(60deg 12% 30% / 7%)";
 const backgroundModifierStrong = "hsl(60deg 12% 30% / 12%)";
+const backgroundModifierContrast = "hsl(60deg 12% 30% / 36%)";
 const backgroundModifierSelected = createPrimary({
   lightness: 0.7,
   saturation: 0.85,
@@ -31,6 +32,7 @@ export default {
   colorScheme: "light",
   colors: {
     ...dark.colors,
+    secondary: "#d89900",
     pink: "#c347dd",
     backgroundPrimary: backgroundNormal,
     backgroundSecondary: backgroundDark,
@@ -39,12 +41,13 @@ export default {
     dialogBackground: backgroundNormal,
     popoverBackground: backgroundNormal,
     backgroundTooltip: backgroundNormal,
-    inputBackground: backgroundDarker,
+    inputBackground: backgroundDarker, // deprecated
     inputPlaceholder: textMutedAlpha,
     messageBackgroundModifierHighlight: "hsl(210deg 67% 70% / 15%)",
     backgroundModifierLight,
     backgroundModifierNormal,
     backgroundModifierStrong,
+    backgroundModifierContrast,
     backgroundModifierSelected,
     backgroundModifierHover: backgroundModifierNormal, // deprecated
     primaryTransparent,

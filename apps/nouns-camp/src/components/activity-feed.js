@@ -189,7 +189,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
         </div>
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-        {item.quotes?.length > 0 && (
+        {item.reposts?.length > 0 && (
           <ul
             css={(t) =>
               css({
@@ -211,23 +211,23 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
             }
             style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
           >
-            {item.quotes.map((quote) => (
-              <li key={quote.id}>
+            {item.reposts.map((post) => (
+              <li key={post.id}>
                 <NextLink
                   href={
                     context !== "proposal"
-                      ? `/proposals/${item.proposalId}?tab=activity#${quote.id}`
-                      : `#${quote.id}`
+                      ? `/proposals/${item.proposalId}?tab=activity#${post.id}`
+                      : `#${post.id}`
                   }
                   style={{ display: "block", position: "absolute", inset: 0 }}
                 />
                 <AccountPreviewPopoverTrigger
                   showAvatar
-                  accountAddress={quote.authorAccount}
+                  accountAddress={post.authorAccount}
                   style={{ position: "relative" }}
                 />
                 {(() => {
-                  if (item.quotes.every((q) => q.support === item.support))
+                  if (item.reposts.every((p) => p.support === item.support))
                     return null;
 
                   return (
@@ -243,7 +243,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                     >
                       {" "}
                       {(() => {
-                        switch (quote.support) {
+                        switch (post.support) {
                           case 0:
                             return <Signal negative>(against)</Signal>;
                           case 1:
@@ -257,7 +257,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                 })()}
                 :{" "}
                 <MarkdownRichText
-                  text={quote.body}
+                  text={post.body}
                   displayImages={false}
                   inline
                   css={css({
@@ -715,12 +715,12 @@ const ItemTitle = ({ item, context }) => {
     case "feedback-post": {
       const signalWord = (() => {
         const isRepost =
-          item.quotes?.length > 0 &&
-          item.quotes.every((quote) => quote.support === item.support);
+          item.reposts?.length > 0 &&
+          item.reposts.every((post) => post.support === item.support);
 
         if (isRepost) {
           const isRevote =
-            item.type === "vote" && item.quotes.some((q) => q.type === "vote");
+            item.type === "vote" && item.reposts.some((q) => q.type === "vote");
           return isRevote ? "revoted" : "reposted";
         }
 

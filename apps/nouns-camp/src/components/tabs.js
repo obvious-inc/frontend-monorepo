@@ -24,6 +24,7 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
         css={(t) =>
           css({
             position: "relative",
+            fontSize: t.text.sizes.tab,
             ":after": {
               content: '""',
               display: "block",
@@ -34,7 +35,7 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
               width: "100%",
               background: t.colors.borderLight,
             },
-            "[data-content]": {
+            ".inner-container": {
               display: "grid",
               gridAutoFlow: "column",
               gridAutoColumns: "auto",
@@ -50,7 +51,6 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
             },
             '[role="tab"]': {
               padding: "0.5rem",
-              fontSize: t.text.sizes.tab,
               color: t.colors.textDimmed,
               outline: "none",
               margin: "0 -0.5rem",
@@ -86,7 +86,7 @@ export const Root = React.forwardRef(({ className, ...props }, externalRef) => {
         }
         className={className}
       >
-        <div data-content>
+        <div className="inner-container">
           {[...state.collection].map((item) => (
             <Tab
               key={item.key}

@@ -1,7 +1,7 @@
 import { array as arrayUtils } from "@shades/common/utils";
 import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildPropdateFeed } from "./propdates.js";
-import { extractRepostQuotes, stripRepostQuotes } from "./markdown.js";
+import { getReposts, stripReposts } from "./markdown.js";
 
 export const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
@@ -54,76 +54,68 @@ export const isVotableState = (state) =>
 export const isActiveState = (state) =>
   ["pending", "updatable", "active", "objection-period"].includes(state);
 
-const buildVoteAndFeedbackPostFeedItems = ({ candidate }, proposal) => {
-  const ascendingQuoteSources = arrayUtils.sortBy("createdBlock", [
-    ...(proposal.votes ?? []).map((v) => ({ ...v, type: "vote" })),
-    ...(proposal.feedbackPosts ?? []),
-    ...(candidate?.feedbackPosts ?? []),
+export const extractReposts = (targetPostBody, ascendingPosts) => {
+  if (targetPostBody == null || targetPostBody.trim() === "")
+    return [[], targetPostBody];
+
+  const repostBodies = getReposts(targetPostBody);
+  const repostIndeciesToDrop = [];
+  const reposts = repostBodies.reduce((reposts, repostBody, i) => {
+    const post = ascendingPosts.find(
+      (post) =>
+        post.reason != null && post.reason.trim().includes(repostBody.trim()),
+    );
+    if (post == null) return reposts;
+    repostIndeciesToDrop.push(i);
+    if (post.type == null) throw new Error('"type" is required');
+    return [...reposts, post];
+  }, []);
+  const strippedReason = stripReposts(targetPostBody, repostIndeciesToDrop);
+  return [reposts, strippedReason];
+};
+
+const buildVoteAndFeedbackPostFeedItems = ({
+  proposalId,
+  votes: votes_,
+  feedbackPosts: feedbackPosts_,
+}) => {
+  // Add a "type" since there’s no way to distinguis votes from feedback posts
+  const votes = (votes_ ?? []).map((v) => ({ ...v, type: "vote" }));
+  const feedbackPosts = (feedbackPosts_ ?? []).map((p) => ({
+    ...p,
+    type: "feedback-post",
+  }));
+  const ascendingPosts = arrayUtils.sortBy("createdBlock", [
+    ...votes,
+    ...feedbackPosts,
   ]);
 
-  const extractQuotes = (p) => {
-    if (p.reason == null || p.reason.trim() === "") return [];
-    const markedQuoteBodies = extractRepostQuotes(p.reason);
-    const quoteIndeciesToDrop = [];
-    const quotes = markedQuoteBodies.reduce((quotes, text, i) => {
-      const post = ascendingQuoteSources.find(
-        (post) =>
-          post.reason != null &&
-          post.id !== p.id &&
-          post.reason.includes(text.trim()),
-      );
-      if (post == null) return quotes;
-      quoteIndeciesToDrop.push(i);
-      return [
-        ...quotes,
-        {
-          id: `${proposal.id}-${post.id}`,
-          authorAccount: post.voterId,
-          body: text,
-          type: post.type ?? "feedback-post",
-          support: post.support,
-        },
-      ];
-    }, []);
-    const strippedReason = stripRepostQuotes(p.reason, quoteIndeciesToDrop);
-    return [quotes, strippedReason];
-  };
-
-  const votePosts = (proposal.votes ?? []).map((p) => {
-    const [quotes, strippedReason] = extractQuotes(p);
+  return ascendingPosts.map((p) => {
+    const postIndex = ascendingPosts.indexOf(p);
+    const [reposts, strippedReason] = extractReposts(
+      p.reason,
+      ascendingPosts.slice(0, postIndex),
+    );
     return {
-      type: "vote",
-      id: `${proposal.id}-${p.id}`,
+      type: p.type,
+      id: p.id,
       support: p.support,
       authorAccount: p.voterId,
       blockNumber: p.createdBlock,
       timestamp: p.createdTimestamp,
       voteCount: p.votes,
-      proposalId: proposal.id,
+      proposalId,
       isPending: p.isPending,
       body: strippedReason,
-      quotes,
+      reposts: reposts.map((post) => ({
+        id: post.id,
+        authorAccount: post.voterId,
+        body: post.reason,
+        type: post.type,
+        support: post.support,
+      })),
     };
   });
-
-  const feedbackPostItems = (proposal.feedbackPosts ?? []).map((p) => {
-    const [quotes, strippedReason] = extractQuotes(p);
-    return {
-      type: "feedback-post",
-      id: `${proposal.id}-${p.id}`,
-      support: p.support,
-      authorAccount: p.voterId,
-      timestamp: p.createdTimestamp,
-      blockNumber: p.createdBlock,
-      voteCount: p.votes,
-      proposalId: proposal.id,
-      isPending: p.isPending,
-      body: strippedReason,
-      quotes,
-    };
-  });
-
-  return [...feedbackPostItems, ...votePosts];
 };
 
 export const buildFeed = (
@@ -134,10 +126,14 @@ export const buildFeed = (
 
   const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
 
-  const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems(
-    { candidate },
-    proposal,
-  );
+  const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
+    proposalId: proposal.id,
+    votes: proposal.votes,
+    feedbackPosts: [
+      ...(candidate?.feedbackPosts ?? []),
+      ...(proposal?.feedbackPosts ?? []),
+    ],
+  });
 
   const propdateItems =
     !includePropdates || proposal.propdates == null

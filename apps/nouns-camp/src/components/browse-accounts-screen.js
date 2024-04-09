@@ -24,7 +24,7 @@ import {
   useEnsCache,
 } from "../store.js";
 import { subgraphFetch } from "../nouns-subgraph.js";
-import { extractRepostQuotes } from "../utils/markdown.js";
+import { getReposts } from "../utils/markdown.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -135,8 +135,9 @@ const useRecentRevoteCount = ({ days = 30 } = {}) => {
     });
 
     const revoteCountByAccountAddress = votes.reduce((acc, v, i) => {
-      if (v.reason == null || v.reason.trim() === "") return acc;
-      const repostQuoteBodies = extractRepostQuotes(v.reason);
+      if (v.votes === 0 || v.reason == null || v.reason.trim() === "")
+        return acc;
+      const repostQuoteBodies = getReposts(v.reason);
       if (repostQuoteBodies.length === 0) return acc;
 
       const previousProposalVotes = votes
@@ -145,7 +146,9 @@ const useRecentRevoteCount = ({ days = 30 } = {}) => {
       const revoteTargetVotes = previousProposalVotes.filter((targetVote) => {
         if (
           targetVote.reason == null ||
-          !repostQuoteBodies.includes(targetVote.reason)
+          repostQuoteBodies.every(
+            (quoteBody) => !targetVote.reason.includes(quoteBody),
+          )
         )
           return false;
 
@@ -269,8 +272,22 @@ const BrowseAccountsScreen = () => {
             },
             {
               value: (a) => {
+                const recentVwrCount =
+                  recentVwrCountByAccountAddress?.[a.id] ?? 0;
+                if (recentVwrCount === 0) return Infinity;
                 const recentVoteCount = (
-                  recentVotesByAccountAddress?.[a.id] ?? []
+                  recentVotesByAccountAddress[a.id] ?? []
+                ).length;
+
+                // Non-vwrs are worth less than vws
+                return recentVwrCount + (recentVoteCount - recentVwrCount) * 2;
+              },
+              order: invertedOrder,
+            },
+            {
+              value: (a) => {
+                const recentVoteCount = (
+                  recentVotesByAccountAddress[a.id] ?? []
                 ).length;
                 return recentVoteCount === 0 ? Infinity : recentVoteCount;
               },

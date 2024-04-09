@@ -16,7 +16,6 @@ import Link from "@shades/ui-web/link";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
 import { Checkmark as CheckmarkIcon } from "@shades/ui-web/icons";
-import * as Tooltip from "@shades/ui-web/tooltip";
 import { diffParagraphs } from "../utils/diff.js";
 import { stringify as stringifyTransaction } from "../utils/transactions.js";
 import {
@@ -56,9 +55,8 @@ import {
   ProposalHeader,
   ProposalBody,
   ProposalActionForm,
-  VotingBar,
-  VoteDistributionToolTipContent,
 } from "./proposal-screen.js";
+import VotingBar from "./voting-bar.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import AccountAvatar from "./account-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -183,7 +181,7 @@ const ProposalCandidateScreenContent = ({
   const signals = getSignals({ candidate, proposerDelegate });
 
   const feedbackVoteCountExcludingAbstained =
-    signals.votes.for + signals.votes.against;
+    signals.forVotes + signals.againstVotes;
 
   const handleFormSubmit = async () => {
     // A contract simulation  takes a second to to do its thing after every
@@ -320,25 +318,9 @@ const ProposalCandidateScreenContent = ({
                   </div>
 
                   {feedbackVoteCountExcludingAbstained > 0 && (
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
-                        <div style={{ marginBottom: "4rem" }}>
-                          <CandidateSignalsStatusBar
-                            candidateId={candidateId}
-                          />
-                        </div>
-                      </Tooltip.Trigger>
-                      <Tooltip.Content
-                        side="top"
-                        sideOffset={-10}
-                        css={css({ padding: 0 })}
-                      >
-                        <VoteDistributionToolTipContent
-                          votes={signals.votes}
-                          delegates={signals.delegates}
-                        />
-                      </Tooltip.Content>
-                    </Tooltip.Root>
+                    <div style={{ marginBottom: "4rem" }}>
+                      <CandidateSignalsStatusBar candidateId={candidateId} />
+                    </div>
                   )}
                 </>
               )}
@@ -1384,21 +1366,10 @@ const CandidateSignalsStatusBar = React.memo(({ candidateId }) => {
           })
         }
       >
-        <div data-for>For {signals.votes.for}</div>
-        <div data-against>Against {signals.votes.against}</div>
+        <div data-for>For {signals.forVotes}</div>
+        <div data-against>Against {signals.againstVotes}</div>
       </div>
-      <VotingBar
-        forVotes={signals.votes.for}
-        againstVotes={signals.votes.against}
-        abstainVotes={signals.votes.abstain}
-      />
-      <VotingBar
-        forVotes={signals.delegates.for}
-        againstVotes={signals.delegates.against}
-        abstainVotes={signals.delegates.abstain}
-        height="0.3rem"
-        css={css({ filter: "brightness(0.9)" })}
-      />
+      <VotingBar votes={signals.votes} />
       <div
         css={(t) =>
           css({
