@@ -1037,6 +1037,17 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
         { to: "/voters", label: "Voters", desktopOnly: true },
         { to: `/voters/${rawAddressOrEnsName}`, label: displayName },
       ]}
+      actions={[
+        {
+          label: "Propose",
+          buttonProps: {
+            component: NextLink,
+            href: "/new",
+            prefetch: true,
+          },
+          desktopOnly: true,
+        },
+      ]}
     >
       {voterAddress != null ? (
         <VoterMainSection voterAddress={voterAddress} />

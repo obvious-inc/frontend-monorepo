@@ -554,11 +554,19 @@ const BrowseScreen = () => {
         scrollContainerRef={scrollContainerRef}
         actions={[
           {
-            label: "New Proposal",
+            label: "Voters",
+            buttonProps: {
+              component: NextLink,
+              href: "/voters",
+              prefetch: true,
+            },
+          },
+          {
+            label: "Propose",
             buttonProps: {
               component: NextLink,
               href: "/new",
-              icon: <PlusIcon style={{ width: "0.9rem" }} />,
+              prefetch: true,
             },
           },
         ]}
