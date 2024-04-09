@@ -40,7 +40,10 @@ import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import VotingBar from "./voting-bar.js";
-import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import NounAvatar from "./noun-avatar.js";
+import NounPreviewPopoverTrigger, {
+  DelegationStatusDot,
+} from "./noun-preview-popover-trigger.js";
 import useChainId from "../hooks/chain-id.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
@@ -744,7 +747,39 @@ const VoterHeader = ({ accountAddress }) => {
               key={n.id}
               nounId={n.id}
               contextAccount={accountAddress}
-            />
+            >
+              <button
+                css={(t) =>
+                  css({
+                    outline: "none",
+                    "[data-id]": {
+                      fontWeight: t.text.weights.smallHeader,
+                    },
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        "[data-id]": { textDecoration: "underline" },
+                      },
+                    },
+                  })
+                }
+              >
+                <div css={css({ position: "relative", zIndex: 1 })}>
+                  <NounAvatar id={n.id} size="4rem" />
+                  <DelegationStatusDot
+                    nounId={n.id}
+                    contextAccount={accountAddress}
+                    cssProps={{
+                      top: "3rem",
+                      left: "3rem",
+                      height: "1.2rem",
+                      width: "1.2rem",
+                    }}
+                  />
+                </div>
+                <div data-id>{n.id}</div>
+              </button>
+            </NounPreviewPopoverTrigger>
           ))}
         </div>
       )}

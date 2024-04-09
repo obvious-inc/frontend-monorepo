@@ -1405,9 +1405,7 @@ const RequestedAmounts = ({ amounts }) => (
             return tokens.length === 1 ? (
               <NounPreviewPopoverTrigger
                 nounId={tokens[0]}
-                popoverPlacement="top"
                 showAvatar={false}
-                inline
               />
             ) : (
               <>{tokens.length} nouns</>

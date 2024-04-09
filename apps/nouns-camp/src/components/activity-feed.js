@@ -792,44 +792,32 @@ const ItemTitle = ({ item, context }) => {
       return <TransferItem item={item} />;
 
     case "noun-delegated":
-    case "noun-undelegated": {
-      const delegateValue =
-        item.type === "noun-delegated" ? (
-          <>
-            to{" "}
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
               accountAddress={item.toAccount}
             />
-          </>
-        ) : (
-          <>
-            from{" "}
+          </span>
+        </>
+      );
+
+    case "noun-undelegated": {
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            stopped delegating{" "}
+            <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
               accountAddress={item.fromAccount}
             />
-          </>
-        );
-
-      return (
-        <span>
-          {accountName}{" "}
-          {item.type === "noun-delegated" ? (
-            <Signal positive>delegated</Signal>
-          ) : (
-            <Signal negative>undelegated</Signal>
-          )}{" "}
-          <NounsPreviewPopoverTrigger
-            inline
-            nounIds={item.nouns}
-            popoverPlacement="top"
-            css={(t) => css({ color: t.colors.textDimmed })}
-          />{" "}
-          <span css={(t) => css({ color: t.colors.textDimmed })}>
-            {delegateValue}
           </span>
-        </span>
+        </>
       );
     }
 
@@ -853,15 +841,10 @@ const TransferItem = ({ item }) => {
   switch (item.type) {
     case "noun-auction-bought":
       return (
-        <span>
+        <>
           {accountName}{" "}
           <span css={(t) => css({ color: t.colors.textDimmed })}>
-            bought{" "}
-            <NounPreviewPopoverTrigger
-              inline
-              nounId={item.nounId}
-              popoverPlacement="top"
-            />
+            bought <NounPreviewPopoverTrigger nounId={item.nounId} />
             {nounAuctionAmount && (
               <>
                 {" "}
@@ -889,13 +872,13 @@ const TransferItem = ({ item }) => {
               </button>
             </AccountPreviewPopoverTrigger>
           </span>
-        </span>
+        </>
       );
 
     case "noun-transferred":
       if (forkId != null) {
         return (
-          <span>
+          <>
             {accountName}{" "}
             <span css={(t) => css({ color: t.colors.textDimmed })}>
               joined fork{" "}
@@ -906,61 +889,45 @@ const TransferItem = ({ item }) => {
               >
                 #{forkId}
               </a>{" "}
-              with{" "}
-              <NounsPreviewPopoverTrigger
-                inline
-                nounIds={item.nouns}
-                popoverPlacement="top"
-              />
+              with <NounsPreviewPopoverTrigger nounIds={item.nouns} />
             </span>
-          </span>
+          </>
         );
       }
       if (saleAmount && saleAmount > 0) {
         if (item.accountRef.toLowerCase() === item.toAccount.toLowerCase()) {
           return (
-            <span>
+            <>
               <AccountPreviewPopoverTrigger
                 showAvatar
                 accountAddress={item.accountRef}
               />{" "}
               <span css={(t) => css({ color: t.colors.textDimmed })}>
-                bought{" "}
-                <NounsPreviewPopoverTrigger
-                  inline
-                  nounIds={item.nouns}
-                  popoverPlacement="top"
-                />{" "}
-                for <FormattedEthWithConditionalTooltip value={saleAmount} />{" "}
-                from{" "}
+                bought <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+                <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
                 <AccountPreviewPopoverTrigger
                   showAvatar
                   accountAddress={item.fromAccount}
                 />{" "}
               </span>
-            </span>
+            </>
           );
         } else {
           return (
-            <span>
+            <>
               <AccountPreviewPopoverTrigger
                 showAvatar
                 accountAddress={item.accountRef}
               />{" "}
               <span css={(t) => css({ color: t.colors.textDimmed })}>
-                sold{" "}
-                <NounsPreviewPopoverTrigger
-                  inline
-                  nounIds={item.nouns}
-                  popoverPlacement="top"
-                />{" "}
-                for <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
+                sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+                <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
                 <AccountPreviewPopoverTrigger
                   showAvatar
                   accountAddress={item.toAccount}
                 />{" "}
               </span>
-            </span>
+            </>
           );
         }
       }
@@ -969,13 +936,7 @@ const TransferItem = ({ item }) => {
         <span>
           {accountName}{" "}
           <span css={(t) => css({ color: t.colors.textDimmed })}>
-            transferred{" "}
-            <NounsPreviewPopoverTrigger
-              inline
-              nounIds={item.nouns}
-              popoverPlacement="top"
-            />{" "}
-            to{" "}
+            transferred <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
               accountAddress={item.toAccount}
