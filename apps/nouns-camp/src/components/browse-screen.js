@@ -126,6 +126,9 @@ const groupConfigByKey = {
     title: "Stale",
     description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
+  "candidates:canceled": {
+    title: "Canceled",
+  },
 };
 
 let hasFetchedBrowseDataOnce = false;
@@ -147,7 +150,7 @@ const BrowseScreen = () => {
 
   const proposals = useProposals({ state: true });
   const candidates = useProposalCandidates({
-    includeCanceled: false,
+    includeCanceled: true,
     includePromoted: false,
     includeProposalUpdates: false,
   });
@@ -343,6 +346,8 @@ const BrowseScreen = () => {
           (p) => p.createdTimestamp > candidateActiveThreshold,
         ));
 
+    const isCanceled = c.canceledTimestamp != null;
+
     if (!isActive) return "candidates:inactive";
 
     if (candidateSortStrategy === "popularity") return "candidates:popular";
@@ -375,6 +380,8 @@ const BrowseScreen = () => {
       return "candidates:sponsored";
 
     if (c.createdTimestamp >= candidateNewThreshold) return "candidates:new";
+
+    if (isCanceled) return "candidates:canceled";
 
     return "candidates:recently-active";
   };
@@ -456,7 +463,8 @@ const BrowseScreen = () => {
         case "candidates:popular":
         case "candidates:authored-proposal-update":
         case "candidates:inactive":
-        case "proposals:sponsored-proposal-update-awaiting-signature": {
+        case "proposals:sponsored-proposal-update-awaiting-signature":
+        case "candidates:canceled": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
@@ -846,6 +854,7 @@ const BrowseScreen = () => {
                             "candidates:new",
                             "candidates:recently-active",
                             "candidates:popular",
+                            "candidates:canceled",
                             "candidates:inactive",
                           ]
                             .map(
