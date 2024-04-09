@@ -519,7 +519,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       {(item) => (
                         <DropdownMenu.Section items={item.children}>
                           {(item) => (
-                            <DropdownMenu.Item primary={item.primary}>
+                            <DropdownMenu.Item
+                              primary={item.primary}
+                              textValue={item.textValue}
+                            >
                               {item.label}
                             </DropdownMenu.Item>
                           )}
