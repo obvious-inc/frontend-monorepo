@@ -182,7 +182,6 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 key={n.id}
                 nounId={n.id}
                 contextAccount={accountAddress}
-                popoverPlacement="top"
               >
                 <button
                   css={css({

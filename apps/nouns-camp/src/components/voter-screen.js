@@ -40,7 +40,11 @@ import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
 import VotingBar from "./voting-bar.js";
-import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import NounAvatar from "./noun-avatar.js";
+import NounPreviewPopoverTrigger, {
+  DelegationStatusDot,
+} from "./noun-preview-popover-trigger.js";
+import useChainId from "../hooks/chain-id.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -54,22 +58,40 @@ const isDebugSession =
   new URLSearchParams(location.search).get("debug") != null;
 
 const useFeedItems = (accountAddress, { filter } = {}) => {
+  const chainId = useChainId();
+  const delegate = useDelegate(accountAddress);
+
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     includeCanceled: true,
     includePromoted: true,
     includeProposalUpdates: true,
   });
+  const account = useAccount(accountAddress);
 
   return React.useMemo(() => {
+    const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
+    const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
+    const buildNounRepresentationItems = () =>
+      buildVoterFeed(delegate, { account, chainId });
+
     const buildFeedItems = () => {
       switch (filter) {
         case "proposals":
-          return buildVoterFeed(accountAddress, { proposals });
+          return [...buildProposalItems()];
         case "candidates":
-          return buildVoterFeed(accountAddress, { candidates });
+          return [...buildCandidateItems()];
+        case "representation":
+          return [...buildNounRepresentationItems()];
         default:
-          return buildVoterFeed(accountAddress, { proposals, candidates });
+          return [
+            ...buildVoterFeed(delegate, {
+              proposals,
+              candidates,
+              account,
+              chainId,
+            }),
+          ];
       }
     };
 
@@ -77,7 +99,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems(),
     );
-  }, [accountAddress, proposals, candidates, filter]);
+  }, [delegate, proposals, candidates, account, chainId, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -180,6 +202,7 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
               { value: "all", label: "Everything" },
               { value: "proposals", label: "Proposal activity only" },
               { value: "candidates", label: "Candidate activity only" },
+              { value: "representation", label: "Delegation activity only" },
             ]}
             onChange={(value) => {
               setFilter(value);
@@ -191,6 +214,7 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
                 all: "Everything",
                 proposals: "Proposal activity",
                 candidates: "Candidate activity",
+                representation: "Delegation activity",
               }[value];
               return (
                 <>
@@ -235,6 +259,7 @@ const FeedTabContent = React.memo(({ voterAddress }) => {
               { value: "all", label: "Everything" },
               { value: "proposals", label: "Proposal activity only" },
               { value: "candidates", label: "Candidate activity only" },
+              { value: "representation", label: "Delegation activity only" },
             ]}
             onChange={(value) => {
               setFilter(value);
@@ -246,6 +271,7 @@ const FeedTabContent = React.memo(({ voterAddress }) => {
                 all: "Everything",
                 proposals: "Proposal activity",
                 candidates: "Candidate activity",
+                representation: "Delegation activity",
               }[value];
               return (
                 <>
@@ -285,7 +311,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
       ? null
       : Math.round((voteCount / currentQuorum) * 1000) / 10;
 
-  const hasNouns = account?.nouns.length > 0;
+  const hasNouns = account?.nouns?.length > 0;
   const hasVotingPower = voteCount > 0;
   const isDelegating =
     hasNouns &&
@@ -721,7 +747,39 @@ const VoterHeader = ({ accountAddress }) => {
               key={n.id}
               nounId={n.id}
               contextAccount={accountAddress}
-            />
+            >
+              <button
+                css={(t) =>
+                  css({
+                    outline: "none",
+                    "[data-id]": {
+                      fontWeight: t.text.weights.smallHeader,
+                    },
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        "[data-id]": { textDecoration: "underline" },
+                      },
+                    },
+                  })
+                }
+              >
+                <div css={css({ position: "relative", zIndex: 1 })}>
+                  <NounAvatar id={n.id} size="4rem" />
+                  <DelegationStatusDot
+                    nounId={n.id}
+                    contextAccount={accountAddress}
+                    cssProps={{
+                      top: "3rem",
+                      left: "3rem",
+                      height: "1.2rem",
+                      width: "1.2rem",
+                    }}
+                  />
+                </div>
+                <div data-id>{n.id}</div>
+              </button>
+            </NounPreviewPopoverTrigger>
           ))}
         </div>
       )}

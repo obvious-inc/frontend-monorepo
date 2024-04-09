@@ -691,9 +691,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
         <>
           Transfer{" "}
           <NounPreviewPopoverTrigger
-            inline
             nounId={t.nounId}
-            popoverPlacement="top"
             css={(t) => css({ color: t.colors.textDimmed })}
           />{" "}
           to{" "}
@@ -715,9 +713,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
                 {!isFirst && <>, </>}
                 {!isFirst && isLast && <>and </>}
                 <NounPreviewPopoverTrigger
-                  inline
                   nounId={nounId}
-                  popoverPlacement="top"
                   css={(t) => css({ color: t.colors.textDimmed })}
                 />
               </React.Fragment>

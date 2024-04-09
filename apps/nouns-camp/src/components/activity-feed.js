@@ -11,11 +11,15 @@ import {
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import { useWallet } from "../hooks/wallet.js";
-import { useProposal, useProposalCandidate } from "../store.js";
+import { useNoun, useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 import MarkdownRichText from "./markdown-rich-text.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
+import { useSaleInfo } from "../hooks/sales.js";
+import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
@@ -783,8 +787,163 @@ const ItemTitle = ({ item, context }) => {
         </span>
       );
 
+    case "noun-auction-bought":
+    case "noun-transferred":
+      return <TransferItem item={item} />;
+
+    case "noun-delegated":
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.toAccount}
+            />
+          </span>
+        </>
+      );
+
+    case "noun-undelegated": {
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            stopped delegating{" "}
+            <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.fromAccount}
+            />
+          </span>
+        </>
+      );
+    }
+
     default:
       throw new Error(`Unknown event type "${item.type}"`);
+  }
+};
+
+const TransferItem = ({ item }) => {
+  const { amount: saleAmount, forkId } = useSaleInfo({
+    transactionHash: item?.transactionHash,
+    sourceAddress: item.toAccount,
+  });
+
+  const noun = useNoun(item.nounId);
+  const nounAuctionAmount = noun ? parseInt(noun.auction?.amount) : null;
+  const accountName = (
+    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+  );
+
+  switch (item.type) {
+    case "noun-auction-bought":
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            bought <NounPreviewPopoverTrigger nounId={item.nounId} />
+            {nounAuctionAmount && (
+              <>
+                {" "}
+                for{" "}
+                <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
+              </>
+            )}{" "}
+            from the{" "}
+            <AccountPreviewPopoverTrigger accountAddress={item.fromAccount}>
+              <button
+                css={(t) =>
+                  css({
+                    fontWeight: t.text.weights.smallHeader,
+                    outline: "none",
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        textDecoration: "underline",
+                      },
+                    },
+                  })
+                }
+              >
+                Auction house
+              </button>
+            </AccountPreviewPopoverTrigger>
+          </span>
+        </>
+      );
+
+    case "noun-transferred":
+      if (forkId != null) {
+        return (
+          <>
+            {accountName}{" "}
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              joined fork{" "}
+              <a
+                href={`https://nouns.wtf/fork/${forkId}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                #{forkId}
+              </a>{" "}
+              with <NounsPreviewPopoverTrigger nounIds={item.nouns} />
+            </span>
+          </>
+        );
+      }
+      if (saleAmount && saleAmount > 0) {
+        if (item.accountRef.toLowerCase() === item.toAccount.toLowerCase()) {
+          return (
+            <>
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.accountRef}
+              />{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                bought <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+                <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.fromAccount}
+                />{" "}
+              </span>
+            </>
+          );
+        } else {
+          return (
+            <>
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.accountRef}
+              />{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+                <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />{" "}
+              </span>
+            </>
+          );
+        }
+      }
+
+      return (
+        <span>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            transferred <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.toAccount}
+            />
+          </span>
+        </span>
+      );
   }
 };
 
