@@ -39,7 +39,7 @@ import * as Tabs from "./tabs.js";
 import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { SectionedList } from "./browse-screen.js";
-import { VotingBar } from "./proposal-screen.js";
+import VotingBar from "./voting-bar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
@@ -380,63 +380,82 @@ const VoterStatsBar = React.memo(({ voterAddress }) => {
         css={(t) =>
           css({
             display: "flex",
+            gap: "0.8rem",
             justifyContent: "space-between",
             fontSize: t.text.sizes.small,
-            fontWeight: t.text.weights.emphasis,
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
+            "[data-support]": {
+              fontWeight: t.text.weights.emphasis,
+            },
+            "[data-support=for]": {
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textPositive,
+            },
+            "[data-support=against]": {
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textNegative,
+            },
+            "[data-support=abstain]": {
+              color:
+                t.colorScheme === "dark"
+                  ? t.colors.textDimmed
+                  : t.colors.textMuted,
+            },
           })
         }
       >
-        <div data-for>For {delegateVotes?.for ?? 0}</div>
-        <div data-against>Against {delegateVotes?.against ?? 0}</div>
+        <div data-support="for">For {delegateVotes?.for ?? 0}</div>
+        <div>
+          {delegateVotes?.abstain > 0 && (
+            <>
+              <span data-support="abstain">
+                Abstain {delegateVotes?.abstain}
+              </span>{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                {"\u00B7"}
+              </span>{" "}
+            </>
+          )}
+          <span data-support="against">
+            Against {delegateVotes?.against ?? 0}
+          </span>
+        </div>
       </div>
       <VotingBar
-        forVotes={delegateVotes?.for ?? 0}
-        againstVotes={delegateVotes?.against ?? 0}
-        abstainVotes={delegateVotes?.abstain ?? 0}
+        votes={[
+          { support: 0, votes: delegateVotes?.against ?? 0 },
+          { support: 1, votes: delegateVotes?.for ?? 0 },
+          { support: 2, votes: delegateVotes?.abstain ?? 0 },
+        ]}
       />
       <div
         css={(t) =>
           css({
             fontSize: t.text.sizes.small,
-            display: "flex",
-            justifyContent: "space-between",
-            gap: "1.6rem",
-            "[data-for], [data-against]": {
-              fontWeight: t.text.weights.emphasis,
-            },
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
+            textAlign: "right",
           })
         }
       >
-        <div css={css({ whiteSpace: "nowrap" })}>
-          {delegateVotes?.abstain != null && (
-            <>Abstain {delegateVotes?.abstain}</>
-          )}
-        </div>
-        <div css={css({ textAlign: "right" })}>
-          {delegateVotes?.totalVotes != null && (
-            <>
-              <span>
-                Voted on {delegateVotes.totalVotes}{" "}
-                {delegateVotes.totalVotes === 1 ? "proposal" : "proposals"}{" "}
-              </span>
-              <br
-                css={css({ "@media(min-width: 380px)": { display: "none" } })}
-              />
-              <span>
-                (
-                {formatPercentage(
-                  delegateVotes.withReason,
-                  delegateVotes.totalVotes,
-                )}{" "}
-                with reason)
-              </span>
-            </>
-          )}
-        </div>
+        {delegateVotes?.totalVotes == null ? (
+          <>&nbsp;</> // To prevent layout shift
+        ) : (
+          <>
+            <span>
+              Voted on {delegateVotes.totalVotes}{" "}
+              {delegateVotes.totalVotes === 1 ? "proposal" : "proposals"}{" "}
+            </span>
+            <br
+              css={css({ "@media(min-width: 380px)": { display: "none" } })}
+            />
+            <span>
+              (
+              {formatPercentage(
+                delegateVotes.withReason,
+                delegateVotes.totalVotes,
+              )}{" "}
+              with reason)
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

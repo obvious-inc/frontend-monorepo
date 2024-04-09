@@ -108,10 +108,12 @@ const VotingBar = ({
               <div
                 key={i}
                 data-vote="for"
-                data-contains-quorum={quorumVoteIndex === i || undefined}
+                data-contains-quorum={
+                  (quorumVotes > 0 && quorumVoteIndex === i) || undefined
+                }
                 style={{ flex: v.votes }}
               >
-                {quorumVoteIndex === i && (
+                {quorumVotes > 0 && quorumVoteIndex === i && (
                   <Tooltip.Root key="quorum">
                     <Tooltip.Trigger asChild>
                       <div
