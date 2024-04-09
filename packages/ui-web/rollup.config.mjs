@@ -105,6 +105,10 @@ const entrypoints = [
     ],
   },
   {
+    file: "switch.js",
+    dependencies: ["react", ...emotionDeps, "react-aria-components"],
+  },
+  {
     file: "popover.js",
     dependencies: [
       "react",

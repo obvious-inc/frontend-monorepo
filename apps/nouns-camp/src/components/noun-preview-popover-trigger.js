@@ -238,7 +238,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
       </span>
       <span>
         <NextLink
-          href={`/campers/${previousAccountAddress}`}
+          href={`/voters/${previousAccountAddress}`}
           css={(t) =>
             css({
               color: "inherit",
@@ -364,7 +364,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       </span>{" "}
       from{" "}
       <span>
-        <NextLink href={`/campers/${previousAccountAddress}`}>
+        <NextLink href={`/voters/${previousAccountAddress}`}>
           {transferredFromText}
         </NextLink>
       </span>{" "}

@@ -14,6 +14,7 @@ import {
   useMenuTriggerState,
   useTreeState,
 } from "react-stately";
+import { isTouchDevice } from "@shades/common/utils";
 import * as Popover from "./popover.js";
 
 const Context = React.createContext();
@@ -24,8 +25,36 @@ export const Root = ({
   offset = 5,
   crossOffset,
   targetRef,
-  ...props
+  ...props_
 }) => {
+  const [isOpen, setOpen] = React.useState(false);
+
+  // Workaround for https://github.com/adobe/react-spectrum/issues/1513
+  const props = {
+    isOpen,
+    onOpenChange: (open) => {
+      if (open || !isTouchDevice()) {
+        setOpen(open);
+        return;
+      }
+
+      const touchendHandler = (e) => {
+        e.preventDefault();
+        clearTimeout(id);
+        setOpen(open);
+      };
+      const id = setTimeout(() => {
+        document.removeEventListener("touchend", touchendHandler);
+        setOpen(open);
+      }, 1000);
+      document.addEventListener("touchend", touchendHandler, {
+        once: true,
+        capture: true,
+      });
+    },
+    ...props_,
+  };
+
   const state = useMenuTriggerState(props);
   const ref = React.useRef(null);
   const { menuTriggerProps, menuProps } = useMenuTrigger({}, state, ref);

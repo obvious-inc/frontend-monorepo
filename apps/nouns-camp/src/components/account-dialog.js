@@ -243,7 +243,7 @@ const Content = ({ titleProps, dismiss }) => {
         <Button
           onClick={() => {
             dismiss();
-            navigate(`/campers/${ensName ?? accountAddress}`);
+            navigate(`/voters/${ensName ?? accountAddress}`);
           }}
         >
           Account page

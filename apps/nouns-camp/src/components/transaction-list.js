@@ -22,9 +22,9 @@ const LazyPropHouseRoundDescriptionList = React.lazy(
 );
 
 const decimalsByCurrency = {
-  ETH: 18,
-  WETH: 18,
-  USDC: 6,
+  eth: 18,
+  weth: 18,
+  usdc: 6,
 };
 
 const createEtherscanAddressUrl = (address) =>
@@ -617,7 +617,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
     case "stream": {
       const formattedUnits = formatUnits(
         t.tokenAmount,
-        decimalsByCurrency[t.token],
+        decimalsByCurrency[t.token.toLowerCase()],
       );
       // TODO: handle unknown token contract
       return (

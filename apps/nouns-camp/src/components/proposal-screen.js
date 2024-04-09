@@ -20,13 +20,11 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
-import * as Tooltip from "@shades/ui-web/tooltip";
 import Spinner from "@shades/ui-web/spinner";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
   buildFeed as buildProposalFeed,
-  isVotableState as isVotableProposalState,
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
@@ -60,6 +58,7 @@ import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
+import VotingBar from "./voting-bar.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import TransactionList, {
@@ -67,9 +66,11 @@ import TransactionList, {
 } from "./transaction-list.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
-
 const ProposalEditDialog = React.lazy(
   () => import("./proposal-edit-dialog.js"),
+);
+const ProposalVotesDialog = React.lazy(
+  () => import("./proposal-votes-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -97,20 +98,11 @@ const useFeedItems = (proposalId) => {
   );
 };
 
-const getDelegateVotes = (proposal) => {
-  if (proposal.votes == null) return null;
-  return proposal.votes
-    .filter((v) => v.votes > 0)
-    .reduce(
-      (acc, v) => {
-        const voteGroup = { 0: "against", 1: "for", 2: "abstain" }[v.support];
-        return { ...acc, [voteGroup]: acc[voteGroup] + 1 };
-      },
-      { for: 0, against: 0, abstain: 0 },
-    );
-};
-
-const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
+const ProposalMainSection = ({
+  proposalId,
+  scrollContainerRef,
+  toggleVotesDialog,
+}) => {
   const { data: latestBlockNumber } = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const {
@@ -187,7 +179,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     [feedItems, quotedFeedItemIds],
   );
 
-  const reasonWithMarkedQuotes = React.useMemo(() => {
+  const reasonWithReposts = React.useMemo(() => {
     const markedQuotes = quotedFeedItems.map((item) => {
       const quotedBody = item.body
         .trim()
@@ -201,11 +193,11 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
-    reason: reasonWithMarkedQuotes,
+    reason: reasonWithReposts,
   });
   const castProposalVote = useCastProposalVote(proposalId, {
     support: pendingSupport,
-    reason: reasonWithMarkedQuotes,
+    reason: reasonWithReposts,
     enabled: isVotingOngoing,
   });
   const queueProposal = useQueueProposal(proposalId, {
@@ -527,27 +519,22 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 )}
 
                 {hasVotingStarted ? (
-                  <Tooltip.Root>
-                    <Tooltip.Trigger asChild>
-                      <div style={{ marginBottom: "4rem" }}>
-                        <ProposalVoteStatusBar proposalId={proposalId} />
-                      </div>
-                    </Tooltip.Trigger>
-                    <Tooltip.Content
-                      side="top"
-                      sideOffset={-10}
-                      css={css({ padding: 0 })}
-                    >
-                      <VoteDistributionToolTipContent
-                        votes={{
-                          for: Number(proposal.forVotes),
-                          against: Number(proposal.againstVotes),
-                          abstain: Number(proposal.abstainVotes),
-                        }}
-                        delegates={getDelegateVotes(proposal)}
-                      />
-                    </Tooltip.Content>
-                  </Tooltip.Root>
+                  <button
+                    onClick={() => toggleVotesDialog()}
+                    css={css({
+                      display: "block",
+                      width: "100%",
+                      marginBottom: "4rem",
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                        ":hover .vote-overview-toggle": {
+                          textDecoration: "underline",
+                        },
+                      },
+                    })}
+                  >
+                    <ProposalVoteStatusBar proposalId={proposalId} />
+                  </button>
                 ) : proposal.state != null ? (
                   <Callout
                     icon={renderProposalStateIcon()}
@@ -574,11 +561,14 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                   }
                   selectedKey={selectedTab}
                   onSelectionChange={(key) => {
-                    setSearchParams((p) => {
-                      const newParams = new URLSearchParams(p);
-                      newParams.set("tab", key);
-                      return newParams;
-                    });
+                    setSearchParams(
+                      (p) => {
+                        const newParams = new URLSearchParams(p);
+                        newParams.set("tab", key);
+                        return newParams;
+                      },
+                      { replace: true },
+                    );
                   }}
                 >
                   <Tabs.Item key="activity" title="Activity">
@@ -660,9 +650,17 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
             ) : (
               <>
                 {hasVotingStarted && (
-                  <div style={{ margin: "0 0 2rem" }}>
+                  <button
+                    onClick={() => toggleVotesDialog()}
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      marginBottom: "2rem",
+                      cursor: "pointer",
+                    }}
+                  >
                     <ProposalVoteStatusBar proposalId={proposalId} />
-                  </div>
+                  </button>
                 )}
 
                 <div ref={mobileTabAnchorRef} />
@@ -690,11 +688,14 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         top: mobileTabAnchorRef.current.offsetTop,
                       });
 
-                    setSearchParams((p) => {
-                      const newParams = new URLSearchParams(p);
-                      newParams.set("tab", key);
-                      return newParams;
-                    });
+                    setSearchParams(
+                      (p) => {
+                        const newParams = new URLSearchParams(p);
+                        newParams.set("tab", key);
+                        return newParams;
+                      },
+                      { replace: true },
+                    );
                   }}
                 >
                   <Tabs.Item key="description" title="Description">
@@ -1431,6 +1432,10 @@ const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
 
   const proposal = useProposal(proposalId);
+  const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
+    "votes",
+    { replace: true, prefetch: "true" },
+  );
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
@@ -1562,11 +1567,21 @@ const ProposalScreen = ({ proposalId }) => {
         ) : (
           <ProposalMainSection
             proposalId={proposalId}
+            toggleVotesDialog={toggleVotesDialog}
             scrollContainerRef={scrollContainerRef}
           />
         )}
       </Layout>
 
+      <ErrorBoundary fallback={null}>
+        <React.Suspense fallback={null}>
+          <ProposalVotesDialog
+            proposalId={proposalId}
+            isOpen={isVotesDialogOpen}
+            close={toggleVotesDialog}
+          />
+        </React.Suspense>
+      </ErrorBoundary>
       {isEditDialogOpen && proposal != null && (
         <ErrorBoundary
           onError={() => {
@@ -1583,68 +1598,6 @@ const ProposalScreen = ({ proposalId }) => {
         </ErrorBoundary>
       )}
     </>
-  );
-};
-
-export const VotingBar = ({
-  forVotes,
-  againstVotes,
-  abstainVotes,
-  height = "1.2rem",
-  pinCount = 60,
-  ...props
-}) => {
-  const totalVoteCount = forVotes + againstVotes + abstainVotes;
-  const forFraction = forVotes / totalVoteCount;
-  const againstFraction = againstVotes / totalVoteCount;
-  return (
-    <div
-      css={(t) =>
-        css({
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "stretch",
-          gap: "0.2rem",
-          "--for-color": t.colors.textPositive,
-          "--against-color": t.colors.textNegative,
-          "--undetermined-color": t.colors.borderLight,
-          "[data-vote]": { width: "0.3rem", borderRadius: "0.1rem" },
-          '[data-vote="for"]': { background: "var(--for-color)" },
-          '[data-vote="against"]': { background: "var(--against-color)" },
-          '[data-vote="undetermined"]': {
-            background: "var(--undetermined-color)",
-          },
-        })
-      }
-      style={{ height }}
-      {...props}
-    >
-      {Array.from({ length: pinCount }).map((_, i) => {
-        const pinLeftEndFraction = i / pinCount;
-        const pinRightEndFraction = (i + 1) / pinCount;
-
-        const isFor = pinRightEndFraction <= forFraction;
-        const isAgainst = pinLeftEndFraction >= 1 - againstFraction;
-        const isUndetermined = !isFor && !isAgainst;
-
-        const isFirst = i === 0;
-        const isLast = i + 1 === pinCount;
-
-        const getSignal = () => {
-          if (isFor || (forFraction > 0 && isUndetermined && isFirst))
-            return "for";
-
-          if (isAgainst || (againstFraction > 0 && isUndetermined && isLast))
-            return "against";
-
-          return "undetermined";
-        };
-
-        const signal = getSignal();
-
-        return <div data-vote={signal} key={`${i} -${signal} `} />;
-      })}
-    </div>
   );
 };
 
@@ -1731,7 +1684,7 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
         />
         <div>
           <h1>
-            {voteCount} {voteCount === 1 ? "Noun" : "Nouns"}
+            {voteCount} {voteCount === 1 ? "noun" : "nouns"}
           </h1>
           <div data-vote-grid>
             <span>{formatPercentage(votes.for, voteCount)}</span>
@@ -1764,7 +1717,7 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
           />
           <div>
             <h1>
-              {delegateCount} {delegateCount === 1 ? "Wallet" : "Wallets"}
+              {delegateCount} {delegateCount === 1 ? "account" : "accounts"}
             </h1>
             <div data-vote-grid>
               <span>{formatPercentage(delegates.for, delegateCount)}</span>
@@ -1792,10 +1745,8 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
 
 const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId);
-  const isVotingOngoing = isVotableProposalState(proposal.state);
 
   const quorumVotes = useDynamicQuorum(proposalId);
-  const delegateVotes = getDelegateVotes(proposal);
 
   const { forVotes, againstVotes, abstainVotes } = proposal;
 
@@ -1805,34 +1756,55 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
         display: "flex",
         flexDirection: "column",
         gap: "0.5rem",
+        transition: "0.2s opacity ease-out",
       })}
+      style={{ opacity: quorumVotes == null ? 0 : 1 }}
     >
       <div
         css={(t) =>
           css({
             display: "flex",
+            gap: "0.8rem",
             justifyContent: "space-between",
             fontSize: t.text.sizes.small,
-            fontWeight: t.text.weights.emphasis,
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
+            // fontWeight: t.text.weights.emphasis,
+            "[data-support]": {
+              fontWeight: t.text.weights.emphasis,
+            },
+            "[data-support=for]": {
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textPositive,
+            },
+            "[data-support=against]": {
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textNegative,
+            },
+            "[data-support=abstain]": {
+              color:
+                t.colorScheme === "dark"
+                  ? t.colors.textDimmed
+                  : t.colors.textMuted,
+            },
           })
         }
       >
-        <div data-for>For {forVotes}</div>
-        <div data-against>Against {againstVotes}</div>
+        <div data-support="for">For {forVotes}</div>
+        <div>
+          {abstainVotes > 0 && (
+            <>
+              <span data-support="abstain">Abstain {abstainVotes}</span>{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                {"\u00B7"}
+              </span>{" "}
+            </>
+          )}
+          <span data-support="against">Against {againstVotes}</span>
+        </div>
       </div>
       <VotingBar
-        forVotes={forVotes}
-        againstVotes={againstVotes}
-        abstainVotes={abstainVotes}
-      />
-      <VotingBar
-        forVotes={delegateVotes?.for ?? 0}
-        againstVotes={delegateVotes?.against ?? 0}
-        abstainVotes={delegateVotes?.abstain ?? 0}
-        height="0.3rem"
-        css={css({ filter: "brightness(0.9)" })}
+        height="1rem"
+        votes={proposal.votes}
+        quorumVotes={quorumVotes}
       />
       <div
         css={(t) =>
@@ -1841,28 +1813,13 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
             display: "flex",
             justifyContent: "space-between",
             gap: "0.5rem",
-            "[data-for], [data-against]": {
-              fontWeight: t.text.weights.emphasis,
-            },
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
           })
         }
       >
         <div>
           {quorumVotes == null ? <>&nbsp;</> : <>Quorum {quorumVotes}</>}
         </div>
-        {isVotingOngoing && (
-          <div>
-            {againstVotes <= forVotes && quorumVotes > forVotes && (
-              <>
-                {quorumVotes - forVotes} <span data-for>For</span>{" "}
-                {quorumVotes - forVotes === 1 ? "vote" : "votes"} left to meet
-                quorum
-              </>
-            )}
-          </div>
-        )}
+        <div className="vote-overview-toggle">Vote overview {"\u2197"}</div>
       </div>
     </div>
   );

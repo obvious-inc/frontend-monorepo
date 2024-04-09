@@ -41,16 +41,17 @@ const NounsAccountAvatar = React.forwardRef(
   ) => {
     const nouns = useNounsRepresented(accountAddress);
 
-    const isMissingSeeds = nouns != null && nouns.some((n) => n.seed == null);
-
     const { data: ensName } = useEnsName({ address: accountAddress });
     const { data: ensAvatarUrl } = useEnsAvatar({
       name: ensName,
       enabled: ensName != null,
     });
 
+    // const isMissingSeeds = nouns != null && nouns.some((n) => n.seed == null);
+
     const fetchedNounSeeds = useNounSeeds(nouns?.map((n) => n.id) ?? [], {
-      enabled: !ensOnly && ensAvatarUrl == null && isMissingSeeds,
+      enabled: false,
+      // enabled: !ensOnly && ensAvatarUrl == null && isMissingSeeds,
     });
 
     const nounSeeds = fetchedNounSeeds ?? nouns?.map((n) => n.seed);
