@@ -1000,7 +1000,7 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
   const candidate = useProposalCandidate(candidateId);
 
   const [expirationDate, setExpirationDate] = React.useState(
-    () => new Date(new Date().getTime() + ONE_DAY_IN_MILLIS),
+    () => new Date(new Date().getTime() + ONE_DAY_IN_MILLIS * 7),
   );
   const [reason, setReason] = React.useState("");
 
