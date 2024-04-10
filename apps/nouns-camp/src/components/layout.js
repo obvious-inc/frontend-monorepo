@@ -227,26 +227,20 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     }}
                   />
                   {(pathname !== "/" || isTestnet || isUnsupportedChain) && (
-                    <span css={css({ marginLeft: "0.6rem" })}>
-                      <span
-                        css={css({
-                          "@media(min-width: 600px)": { display: "none" },
-                        })}
-                      >
-                        ...
-                      </span>
-                      <span
-                        css={css({
-                          display: "none",
-                          "@media(min-width: 600px)": { display: "inline" },
-                        })}
-                      >
-                        {isUnsupportedChain
-                          ? "Unsupported chain"
-                          : isTestnet
-                            ? chain?.name
-                            : "Camp"}
-                      </span>
+                    <span
+                      css={css({
+                        display: "none",
+                        "@media(min-width: 600px)": {
+                          display: "inline",
+                          marginLeft: "0.6rem",
+                        },
+                      })}
+                    >
+                      {isUnsupportedChain
+                        ? "Unsupported chain"
+                        : isTestnet
+                          ? chain?.name
+                          : "Camp"}
                     </span>
                   )}
                 </>

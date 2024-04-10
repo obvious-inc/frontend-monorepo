@@ -1,3 +1,4 @@
+import getDateYear from "date-fns/getYear";
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
@@ -183,6 +184,11 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                       relativeDayThreshold={7}
                       month="short"
                       day="numeric"
+                      year={
+                        getDateYear(item.timestamp) !== getDateYear(new Date())
+                          ? "numeric"
+                          : undefined
+                      }
                       value={item.timestamp}
                     />
                   </span>
