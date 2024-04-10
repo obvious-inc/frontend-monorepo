@@ -94,7 +94,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     const lastEvent = group[group.length - 1];
     return {
       ...lastEvent,
-      id: `${lastEvent.blockNumber}-${lastEvent.transactionHash}-${lastEvent.type}`,
+      id: `${lastEvent.blockNumber}-${lastEvent.transactionHash}-${lastEvent.type}-${lastEvent.fromAccount}-${lastEvent.toAccount}`,
       blockNumber: lastEvent.blockNumber,
       timestamp: lastEvent.timestamp,
       transactionHash: lastEvent.transactionHash,
