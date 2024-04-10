@@ -129,10 +129,7 @@ export const buildFeed = (
   const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
     proposalId: proposal.id,
     votes: proposal.votes,
-    feedbackPosts: [
-      ...(candidate?.feedbackPosts ?? []),
-      ...(proposal?.feedbackPosts ?? []),
-    ],
+    feedbackPosts: proposal?.feedbackPosts ?? [],
   });
 
   const propdateItems =
