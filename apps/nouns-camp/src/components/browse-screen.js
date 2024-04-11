@@ -880,28 +880,26 @@ const BrowseScreen = () => {
                             />
                           )}
 
-                        <SectionedList
-                          css={css({
-                            marginTop: allInactiveCandidatesShown
-                              ? "1.6rem"
-                              : "inherit",
-                            "@media(min-width: 600px)": {
-                              marginTop: allInactiveCandidatesShown
-                                ? "2.8rem"
-                                : "inherit",
-                            },
-                          })}
-                          showPlaceholder={!hasFetchedOnce}
-                          sections={["candidates:canceled"]
-                            .map(
-                              (sectionName) =>
-                                sectionsByName[sectionName] ?? {},
-                            )
-                            .filter(
-                              ({ items }) =>
-                                items != null && items.length !== 0,
-                            )}
-                        />
+                        {allInactiveCandidatesShown && (
+                          <SectionedList
+                            css={css({
+                              marginTop: "1.6rem",
+                              "@media(min-width: 600px)": {
+                                marginTop: "2.8rem",
+                              },
+                            })}
+                            showPlaceholder={!hasFetchedOnce}
+                            sections={["candidates:canceled"]
+                              .map(
+                                (sectionName) =>
+                                  sectionsByName[sectionName] ?? {},
+                              )
+                              .filter(
+                                ({ items }) =>
+                                  items != null && items.length !== 0,
+                              )}
+                          />
+                        )}
                       </div>
                     </Tabs.Item>
                     <Tabs.Item key="drafts" title="My drafts">
