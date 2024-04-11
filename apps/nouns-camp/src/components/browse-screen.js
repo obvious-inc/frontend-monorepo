@@ -348,6 +348,7 @@ const BrowseScreen = () => {
 
     const isCanceled = c.canceledTimestamp != null;
 
+    if (isCanceled) return "candidates:canceled";
     if (!isActive) return "candidates:inactive";
 
     if (candidateSortStrategy === "popularity") return "candidates:popular";
@@ -380,8 +381,6 @@ const BrowseScreen = () => {
       return "candidates:sponsored";
 
     if (c.createdTimestamp >= candidateNewThreshold) return "candidates:new";
-
-    if (isCanceled) return "candidates:canceled";
 
     return "candidates:recently-active";
   };
@@ -550,6 +549,12 @@ const BrowseScreen = () => {
       { replace: true },
     );
   });
+
+  const allInactiveCandidatesShown =
+    page == null ||
+    (sectionsByName["candidates:inactive"] != null &&
+      BROWSE_LIST_PAGE_ITEM_COUNT * page >
+        sectionsByName["candidates:inactive"].count);
 
   return (
     <>
@@ -854,7 +859,6 @@ const BrowseScreen = () => {
                             "candidates:new",
                             "candidates:recently-active",
                             "candidates:popular",
-                            "candidates:canceled",
                             "candidates:inactive",
                           ]
                             .map(
@@ -875,6 +879,29 @@ const BrowseScreen = () => {
                               showAll={() => setPage(null)}
                             />
                           )}
+
+                        <SectionedList
+                          css={css({
+                            marginTop: allInactiveCandidatesShown
+                              ? "1.6rem"
+                              : "inherit",
+                            "@media(min-width: 600px)": {
+                              marginTop: allInactiveCandidatesShown
+                                ? "2.8rem"
+                                : "inherit",
+                            },
+                          })}
+                          showPlaceholder={!hasFetchedOnce}
+                          sections={["candidates:canceled"]
+                            .map(
+                              (sectionName) =>
+                                sectionsByName[sectionName] ?? {},
+                            )
+                            .filter(
+                              ({ items }) =>
+                                items != null && items.length !== 0,
+                            )}
+                        />
                       </div>
                     </Tabs.Item>
                     <Tabs.Item key="drafts" title="My drafts">
