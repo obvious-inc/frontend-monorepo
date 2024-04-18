@@ -119,7 +119,7 @@ const useRecentRevoteCount = ({ days = 30 } = {}) => {
           orderBy: blockNumber,
           first: 1000,
           where: {
-            blockTimestamp_gt: "${Math.floor(thresholdMillis / 1000)}"
+            # blockTimestamp_gt: "${Math.floor(thresholdMillis / 1000)}"
           }
         ) {
           reason
