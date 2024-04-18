@@ -132,9 +132,6 @@ fragment DelegationEventFields on DelegationEvent {
   previousDelegate {
     id
   }
-  delegator {
-    id
-  }
   blockNumber
   blockTimestamp
 }`;
@@ -274,7 +271,7 @@ const createAccountQuery = (id) => `
     transferEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}) {
       ...TransferEventFields
     }
-    delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}) {
+    delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}]}) {
       ...DelegationEventFields
     }
   }
@@ -365,7 +362,7 @@ query {
   transferEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}) {
     ...TransferEventFields
   }
-  delegationEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}) {
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}]}) {
     ...DelegationEventFields
   }
 }`;
@@ -674,7 +671,7 @@ query {
   {
     ...TransferEventFields
   }
-  delegationEvents(orderBy: blockNumber, orderDirection: desc, first: 1000, where: {and: [{blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}]})
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, first: 1000, where: {and: [{blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}]}]})
   {
     ...DelegationEventFields
   }
