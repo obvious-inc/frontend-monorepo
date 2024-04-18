@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.38] - 2024-04-18
+
+### Bug Fixes
+
+- Solve some minor issues and update dependencies
+
 ## [1.0.0-alpha.37] - 2024-04-03
 
 ### Features
 
 - Migrate updates from upstream (#241)
+
+### Bug Fixes
+
+- Update open auction url on layout component
 
 ## [1.0.0-alpha.35] - 2024-03-22
 
