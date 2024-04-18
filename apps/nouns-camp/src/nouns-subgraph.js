@@ -132,9 +132,6 @@ fragment DelegationEventFields on DelegationEvent {
   previousDelegate {
     id
   }
-  delegator {
-    id
-  }
   blockNumber
   blockTimestamp
 }`;
@@ -274,7 +271,7 @@ const createAccountQuery = (id) => `
     transferEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}) {
       ...TransferEventFields
     }
-    delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}) {
+    delegationEvents(orderBy: blockNumber, orderDirection: desc, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}]}) {
       ...DelegationEventFields
     }
   }
@@ -365,7 +362,7 @@ query {
   transferEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newHolder: "${id}"}, {previousHolder: "${id}"}]}) {
     ...TransferEventFields
   }
-  delegationEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}) {
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, skip: ${skip}, first: ${first}, where: {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}]}) {
     ...DelegationEventFields
   }
 }`;
@@ -674,7 +671,7 @@ query {
   {
     ...TransferEventFields
   }
-  delegationEvents(orderBy: blockNumber, orderDirection: desc, first: 1000, where: {and: [{blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}, {delegator: "${id}"}]}]})
+  delegationEvents(orderBy: blockNumber, orderDirection: desc, first: 1000, where: {and: [{blockNumber_gte: ${startBlock}, blockNumber_lte: ${endBlock}}, {or: [{newDelegate: "${id}"}, {previousDelegate: "${id}"}]}]})
   {
     ...DelegationEventFields
   }
@@ -996,7 +993,7 @@ export const fetchProposalsVersions = async (chainId, proposalIds) =>
     chainId,
     query: createProposalsVersionsQuery(proposalIds),
   }).then((data) => {
-    if (data.proposalVersions == null)
+    if (data?.proposalVersions == null)
       return [] /*Promise.reject(new Error("not-found"))*/;
     return data.proposalVersions.map(parseProposalVersion);
   });
@@ -1038,14 +1035,14 @@ export const fetchProposalCandidatesFeedbackPosts = async (
     chainId,
     query: createProposalCandidateFeedbackPostsByCandidatesQuery(candidateIds),
   }).then((data) => {
-    if (data.candidateFeedbacks == null)
+    if (data?.candidateFeedbacks == null)
       return [] /*Promise.reject(new Error("not-found"))*/;
     return data.candidateFeedbacks.map(parseFeedbackPost);
   });
 
 export const fetchProposal = (chainId, id) =>
   subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
-    if (data.proposal == null) return Promise.reject(new Error("not-found"));
+    if (data?.proposal == null) return Promise.reject(new Error("not-found"));
     const candidateId = data.proposal.id /*data.proposalCandidateVersions[0]?.proposal.id*/;
     return parseProposal(
       { ...data.proposal, versions: data.proposalVersions, candidateId },

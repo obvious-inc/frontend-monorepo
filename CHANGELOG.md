@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.40] - 2024-04-18
+
+### Bug Fixes
+
+- Solve query issues for delegate and transfer events
+- Solve query issues for votes on accounts screen
+- Solve null check on undefined properties
+
 ## [1.0.0-alpha.39] - 2024-04-18
 
 ### Features
