@@ -193,7 +193,9 @@ const ContentInner = React.forwardRef(
           {dismissButtonElement}
           {isDialog ? (
             <Dialog {...dialogProps}>
-              {React.cloneElement(children, { close: state.close })}
+              {typeof children === "function"
+                ? children({ close: state.close })
+                : React.cloneElement(children, { close: state.close })}
             </Dialog>
           ) : (
             children

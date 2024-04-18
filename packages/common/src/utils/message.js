@@ -290,13 +290,45 @@ export const stringifyBlocks = (
   );
 };
 
+const escapableCharacters = [
+  "\\",
+  "*",
+  "_",
+  "`",
+  "(",
+  ")",
+  "[",
+  "]",
+  "{",
+  "}",
+  "<",
+  ">",
+  "#",
+  "+",
+  "-",
+  ".",
+  "|",
+  "!",
+];
+
+const escapeMarkdown = (string) => {
+  let escaped = string;
+
+  for (const char of escapableCharacters) {
+    const regexp = new RegExp(`\\${char}`, "g");
+    escaped = escaped.replace(regexp, `\\${char}`);
+  }
+
+  return escaped;
+};
+
 export const toMarkdown = (blockElements) => {
   const renderTextNode = (l) => {
-    let text = l.text;
+    let text = escapeMarkdown(l.text);
 
-    if (l.bold) text = `** ${text}** `;
-    if (l.italic) text = `* ${text}* `;
-    if (l.strikethrough) text = `~~${text} ~~`;
+    if (l.bold) text = `**${text}**`;
+    if (l.italic) text = `*${text}*`;
+    if (l.strikethrough) text = `~~${text}~~`;
     return text;
   };
 
@@ -308,13 +340,13 @@ export const toMarkdown = (blockElements) => {
         return renderInlineChildren();
 
       case "heading-1":
-        return `# ${renderInlineChildren()} `;
+        return `# ${renderInlineChildren()}`;
       case "heading-2":
-        return `## ${renderInlineChildren()} `;
+        return `## ${renderInlineChildren()}`;
       case "heading-3":
-        return `### ${renderInlineChildren()} `;
+        return `### ${renderInlineChildren()}`;
       case "heading-4":
-        return `#### ${renderInlineChildren()} `;
+        return `#### ${renderInlineChildren()}`;
 
       case "quote":
       case "callout":
@@ -324,10 +356,10 @@ export const toMarkdown = (blockElements) => {
             .map(renderBlockElement)
             .join("\n\n")
             .split("\n")
-            .map((line) => `> ${line} `)
+            .map((line) => `> ${line}`)
             .join("\n");
 
-        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")} `;
+        return `> ${renderInlineChildren().trim().split("\n").join("\n> ")}`;
 
       case "bulleted-list":
       case "numbered-list": {
@@ -350,7 +382,7 @@ export const toMarkdown = (blockElements) => {
             .filter((s) => s.trim() !== "")
             .join(skipBlockSpace ? "\n" : "\n\n")} `
             .split("\n")
-            .join(`\n${indentSpace} `);
+            .join(`\n${indentSpace}`);
         });
 
         return children.join("\n");
@@ -368,9 +400,9 @@ export const toMarkdown = (blockElements) => {
 
         try {
           new URL(el.caption);
-          return `[![${alt}](${el.url} "${el.caption}")](${el.caption})`;
+          return `[![${alt}](${el.url} ${JSON.stringify(el.caption)})](${el.caption})`;
         } catch (e) {
-          return `![${alt}](${el.url} "${el.caption}")`;
+          return `![${alt}](${el.url} ${JSON.stringify(el.caption)})`;
         }
       }
 

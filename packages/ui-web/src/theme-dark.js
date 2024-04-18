@@ -29,6 +29,7 @@ const backgroundLightest = "hsl(0 0% 23%)";
 const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
 const backgroundModifierNormal = "hsl(0 0% 100% / 5.5%)";
 const backgroundModifierStrong = "hsl(0 0% 100% / 8%)";
+const backgroundModifierContrast = "hsl(0 0% 100% / 26%)";
 const backgroundModifierSelected = createPrimary({
   lightness: 0.4,
   opacity: 0.15,
@@ -122,6 +123,7 @@ export default {
   colors: {
     pink: "#e588f8",
     primary,
+    secondary: "#d89900",
     primaryModifierHover: primaryTintDarker,
     primaryTransparent,
     primaryTransparentSoft,
@@ -142,6 +144,7 @@ export default {
     textDanger,
     link: primaryTintLighter,
     linkModifierHover: createPrimary({ saturation: 1, lightness: 0.65 }),
+    borderNormal: "hsl(0 0% 100% / 20%)",
     borderLight: "hsl(0 0% 100% / 16%)",
     borderLighter: "hsl(0 0% 100% / 10%)",
     borderDanger: "rgb(110, 54, 48)",
@@ -154,11 +157,12 @@ export default {
     backgroundTooltip: backgroundLighter,
     buttonHover: backgroundLighter,
     toolbarBackground: backgroundLight,
-    inputBackground: backgroundLight,
-    inputPlaceholder: "hsl(0 0% 100% / 40%)",
+    inputBackground: backgroundLight, // deprecated
+    inputPlaceholder: "hsl(0 0% 100% / 30%)",
     backgroundModifierLight,
     backgroundModifierNormal,
     backgroundModifierStrong,
+    backgroundModifierContrast,
     backgroundModifierSelected,
     backgroundModifierHover: backgroundModifierNormal, // deprecated
     backgroundYellow: "rgb(202, 152, 73)",

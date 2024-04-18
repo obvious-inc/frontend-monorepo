@@ -7,7 +7,6 @@ import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
-  Plus as PlusIcon,
   CaretDown as CaretDownIcon,
   DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
@@ -88,11 +87,20 @@ const Layout = ({
 
 const defaultActions = [
   {
-    label: "New Proposal",
+    label: "Voters",
+    buttonProps: {
+      component: NextLink,
+      href: "/voters",
+      prefetch: true,
+    },
+    desktopOnly: true,
+  },
+  {
+    label: "Propose",
     buttonProps: {
       component: NextLink,
       href: "/new",
-      icon: <PlusIcon style={{ width: "0.9rem" }} />,
+      prefetch: true,
     },
     desktopOnly: true,
   },
@@ -176,7 +184,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             justifyContent: "flex-start",
             whiteSpace: "nowrap",
             minHeight: t.navBarHeight, // "4.7rem",
-            "@media (max-width: 600px)": {
+            "@media (max-width: 599px)": {
               '[data-desktop-only="true"]': {
                 display: "none",
               },
@@ -221,8 +229,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   {(pathname !== "/" || isTestnet || isUnsupportedChain) && (
                     <span
                       css={css({
-                        marginLeft: "0.6rem",
-                        "@media(max-width: 600px)": { display: "none" },
+                        display: "none",
+                        "@media(min-width: 600px)": {
+                          display: "inline",
+                          marginLeft: "0.6rem",
+                        },
                       })}
                     >
                       {isUnsupportedChain
@@ -246,9 +257,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     css({
                       color: t.colors.textMuted,
                       fontSize: t.text.sizes.base,
-                      "@media(max-width: 600px)": {
-                        '&[data-index="1"]': { display: "none" },
-                      },
                     })
                   }
                 >
@@ -302,6 +310,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 width: "0.1rem",
                 background: t.colors.borderLight,
                 height: "1.6rem",
+                margin: "0 0.4rem",
               },
               "@media (min-width: 600px)": {
                 padding: "0 1rem",
@@ -324,7 +333,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       disabled: requestWalletAccess == null || isLoadingWallet,
                       style: { marginLeft: "0.9rem", marginRight: "0.4rem" },
                     },
-                    label: "Connect Wallet",
+                    label: (
+                      <>
+                        Connect<span data-desktop-only> Wallet</span>
+                      </>
+                    ),
                   }
                 : isUnsupportedChain
                   ? {
@@ -500,7 +513,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       {(item) => (
                         <DropdownMenu.Section items={item.children}>
                           {(item) => (
-                            <DropdownMenu.Item primary={item.primary}>
+                            <DropdownMenu.Item
+                              primary={item.primary}
+                              textValue={item.textValue}
+                            >
                               {item.label}
                             </DropdownMenu.Item>
                           )}

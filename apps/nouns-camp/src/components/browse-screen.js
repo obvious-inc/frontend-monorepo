@@ -72,10 +72,15 @@ const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
 
 const getCandidateScore = (candidate) => {
-  const signals = getCandidateSignals({ candidate });
-  if (signals.delegates.for === 0 && signals.delegates.abstain === 0)
-    return null;
-  return signals.delegates.for - signals.delegates.against;
+  const { votes } = getCandidateSignals({ candidate });
+  const {
+    0: againstVotes = [],
+    1: forVotes = [],
+    2: abstainVotes = [],
+  } = arrayUtils.groupBy((v) => v.support, votes);
+
+  if (forVotes.length === 0 && abstainVotes.length === 0) return null;
+  return forVotes.length - againstVotes.length;
 };
 
 const searchEns = (nameByAddress, rawQuery) => {
@@ -550,11 +555,19 @@ const BrowseScreen = () => {
         scrollContainerRef={scrollContainerRef}
         actions={[
           {
-            label: "New Proposal",
+            label: "Voters",
+            buttonProps: {
+              component: NextLink,
+              href: "/voters",
+              prefetch: true,
+            },
+          },
+          {
+            label: "Propose",
             buttonProps: {
               component: NextLink,
               href: "/new",
-              icon: <PlusIcon style={{ width: "0.9rem" }} />,
+              prefetch: true,
             },
           },
         ]}
@@ -1588,7 +1601,11 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
 
-  const signals = getCandidateSignals({ candidate });
+  const { votes } = getCandidateSignals({ candidate });
+  const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
+    (v) => v.support,
+    votes,
+  );
   // const commentCount =
   //   signals.delegates.for +
   //   signals.delegates.against +
@@ -1708,7 +1725,10 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
                     transform: "translateY(-50%)",
                   })}
                 >
-                  <ScoreStack {...signals.delegates} />
+                  <ScoreStack
+                    for={forVotes.length}
+                    against={againstVotes.length}
+                  />
                 </div>
               )}
             </div>
