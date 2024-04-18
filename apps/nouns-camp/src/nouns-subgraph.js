@@ -993,7 +993,7 @@ export const fetchProposalsVersions = async (chainId, proposalIds) =>
     chainId,
     query: createProposalsVersionsQuery(proposalIds),
   }).then((data) => {
-    if (data.proposalVersions == null)
+    if (data?.proposalVersions == null)
       return [] /*Promise.reject(new Error("not-found"))*/;
     return data.proposalVersions.map(parseProposalVersion);
   });
@@ -1035,14 +1035,14 @@ export const fetchProposalCandidatesFeedbackPosts = async (
     chainId,
     query: createProposalCandidateFeedbackPostsByCandidatesQuery(candidateIds),
   }).then((data) => {
-    if (data.candidateFeedbacks == null)
+    if (data?.candidateFeedbacks == null)
       return [] /*Promise.reject(new Error("not-found"))*/;
     return data.candidateFeedbacks.map(parseFeedbackPost);
   });
 
 export const fetchProposal = (chainId, id) =>
   subgraphFetch({ chainId, query: createProposalQuery(id) }).then((data) => {
-    if (data.proposal == null) return Promise.reject(new Error("not-found"));
+    if (data?.proposal == null) return Promise.reject(new Error("not-found"));
     const candidateId = data.proposal.id /*data.proposalCandidateVersions[0]?.proposal.id*/;
     return parseProposal(
       { ...data.proposal, versions: data.proposalVersions, candidateId },
