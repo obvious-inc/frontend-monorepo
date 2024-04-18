@@ -1,3 +1,4 @@
+import getDateYear from "date-fns/getYear";
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
@@ -11,11 +12,15 @@ import {
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import { useWallet } from "../hooks/wallet.js";
-import { useProposal, useProposalCandidate } from "../store.js";
+import { useNoun, useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 import MarkdownRichText from "./markdown-rich-text.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
+import { useSaleInfo } from "../hooks/sales.js";
+import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
@@ -179,6 +184,11 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                       relativeDayThreshold={7}
                       month="short"
                       day="numeric"
+                      year={
+                        getDateYear(item.timestamp) !== getDateYear(new Date())
+                          ? "numeric"
+                          : undefined
+                      }
                       value={item.timestamp}
                     />
                   </span>
@@ -189,7 +199,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
         </div>
       </div>
       <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-        {item.quotes?.length > 0 && (
+        {item.reposts?.length > 0 && (
           <ul
             css={(t) =>
               css({
@@ -211,23 +221,23 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
             }
             style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
           >
-            {item.quotes.map((quote) => (
-              <li key={quote.id}>
+            {item.reposts.map((post) => (
+              <li key={post.id}>
                 <NextLink
                   href={
                     context !== "proposal"
-                      ? `/proposals/${item.proposalId}?tab=activity#${quote.id}`
-                      : `#${quote.id}`
+                      ? `/proposals/${item.proposalId}?tab=activity#${post.id}`
+                      : `#${post.id}`
                   }
                   style={{ display: "block", position: "absolute", inset: 0 }}
                 />
                 <AccountPreviewPopoverTrigger
                   showAvatar
-                  accountAddress={quote.authorAccount}
+                  accountAddress={post.authorAccount}
                   style={{ position: "relative" }}
                 />
                 {(() => {
-                  if (item.quotes.every((q) => q.support === item.support))
+                  if (item.reposts.every((p) => p.support === item.support))
                     return null;
 
                   return (
@@ -243,7 +253,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                     >
                       {" "}
                       {(() => {
-                        switch (quote.support) {
+                        switch (post.support) {
                           case 0:
                             return <Signal negative>(against)</Signal>;
                           case 1:
@@ -257,7 +267,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                 })()}
                 :{" "}
                 <MarkdownRichText
-                  text={quote.body}
+                  text={post.body}
                   displayImages={false}
                   inline
                   css={css({
@@ -715,12 +725,12 @@ const ItemTitle = ({ item, context }) => {
     case "feedback-post": {
       const signalWord = (() => {
         const isRepost =
-          item.quotes?.length > 0 &&
-          item.quotes.every((quote) => quote.support === item.support);
+          item.reposts?.length > 0 &&
+          item.reposts.every((post) => post.support === item.support);
 
         if (isRepost) {
           const isRevote =
-            item.type === "vote" && item.quotes.some((q) => q.type === "vote");
+            item.type === "vote" && item.reposts.some((q) => q.type === "vote");
           return isRevote ? "revoted" : "reposted";
         }
 
@@ -783,8 +793,163 @@ const ItemTitle = ({ item, context }) => {
         </span>
       );
 
+    case "noun-auction-bought":
+    case "noun-transferred":
+      return <TransferItem item={item} />;
+
+    case "noun-delegated":
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.toAccount}
+            />
+          </span>
+        </>
+      );
+
+    case "noun-undelegated": {
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            stopped delegating{" "}
+            <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.fromAccount}
+            />
+          </span>
+        </>
+      );
+    }
+
     default:
       throw new Error(`Unknown event type "${item.type}"`);
+  }
+};
+
+const TransferItem = ({ item }) => {
+  const { amount: saleAmount, forkId } = useSaleInfo({
+    transactionHash: item?.transactionHash,
+    sourceAddress: item.toAccount,
+  });
+
+  const noun = useNoun(item.nounId);
+  const nounAuctionAmount = noun ? parseInt(noun.auction?.amount) : null;
+  const accountName = (
+    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+  );
+
+  switch (item.type) {
+    case "noun-auction-bought":
+      return (
+        <>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            bought <NounPreviewPopoverTrigger nounId={item.nounId} />
+            {nounAuctionAmount && (
+              <>
+                {" "}
+                for{" "}
+                <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
+              </>
+            )}{" "}
+            from the{" "}
+            <AccountPreviewPopoverTrigger accountAddress={item.fromAccount}>
+              <button
+                css={(t) =>
+                  css({
+                    fontWeight: t.text.weights.smallHeader,
+                    outline: "none",
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        textDecoration: "underline",
+                      },
+                    },
+                  })
+                }
+              >
+                Auction house
+              </button>
+            </AccountPreviewPopoverTrigger>
+          </span>
+        </>
+      );
+
+    case "noun-transferred":
+      if (forkId != null) {
+        return (
+          <>
+            {accountName}{" "}
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              joined fork{" "}
+              <a
+                href={`https://nouns.wtf/fork/${forkId}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                #{forkId}
+              </a>{" "}
+              with <NounsPreviewPopoverTrigger nounIds={item.nouns} />
+            </span>
+          </>
+        );
+      }
+      if (saleAmount && saleAmount > 0) {
+        if (item.accountRef.toLowerCase() === item.toAccount.toLowerCase()) {
+          return (
+            <>
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.accountRef}
+              />{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                bought <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+                <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.fromAccount}
+                />{" "}
+              </span>
+            </>
+          );
+        } else {
+          return (
+            <>
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.accountRef}
+              />{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+                <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />{" "}
+              </span>
+            </>
+          );
+        }
+      }
+
+      return (
+        <span>
+          {accountName}{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            transferred <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.toAccount}
+            />
+          </span>
+        </span>
+      );
   }
 };
 

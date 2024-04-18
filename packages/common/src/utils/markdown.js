@@ -131,7 +131,8 @@ const parseToken = (token, context = {}) => {
           type: "image",
           url: token.href,
           alt: token.text,
-          caption: token.title,
+          caption:
+            token.title == null ? undefined : decodeHtmlEntities(token.title),
           interactive: false,
         };
 

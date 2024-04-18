@@ -63,7 +63,7 @@ const buildFeedbackPostItems = (candidate) => {
   const posts = candidate.feedbackPosts ?? [];
   return posts.map((p) => ({
     type: "feedback-post",
-    id: `${candidate.id}-${p.id}`,
+    id: p.id,
     authorAccount: p.voterId,
     body: p.reason == null || p.reason.trim() === "" ? null : p.reason,
     support: p.support,
@@ -149,66 +149,72 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
     activeProposerIds: [], // We can ignore active proposers here
   });
 
-  const proposerDelegateNounIds =
-    proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
-
-  const sponsorNounIds = signatures.flatMap((s) =>
-    s.signer.nounsRepresented.map((n) => n.id),
-  );
-
-  const sponsoringNounIds = arrayUtils.unique([
-    ...sponsorNounIds,
-    ...proposerDelegateNounIds,
-  ]);
-  const sponsorIds = arrayUtils.unique(
-    [
-      ...signatures.map((s) => s.signer.id),
-      proposerDelegateNounIds.length === 0 ? null : proposerDelegate.id,
-    ].filter(Boolean),
-  );
-
   // Sort first to make sure we pick the most recent feedback from per voter
   const sortedFeedbackPosts = arrayUtils.sortBy(
     { value: (c) => c.createdTimestamp, order: "desc" },
     candidate.feedbackPosts ?? [],
   );
 
-  const supportByNounId = sortedFeedbackPosts.reduce(
-    (supportByNounId, post) => {
-      const nounIds = post.voter.nounsRepresented?.map((n) => n.id) ?? [];
-      const newSupportByNounId = {};
+  const votesByAccountAddress = sortedFeedbackPosts.reduce(
+    (votesByAccountAddress, post) => {
+      if (votesByAccountAddress[post.voter.id] != null)
+        return votesByAccountAddress;
 
-      for (const nounId of nounIds) {
-        if (supportByNounId[nounId] != null) continue;
-        newSupportByNounId[nounId] = post.support;
-      }
-
-      return { ...supportByNounId, ...newSupportByNounId };
+      return {
+        ...votesByAccountAddress,
+        [post.voter.id]: {
+          voterId: post.voter.id,
+          support: post.support,
+          votes: post.voter.nounsRepresented?.length ?? 0,
+        },
+      };
     },
     // Assume that the sponsors will vote for
-    sponsoringNounIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {}),
-  );
-
-  const supportByDelegateId = sortedFeedbackPosts.reduce(
-    (supportByDelegateId, post) => {
-      if (supportByDelegateId[post.voterId] != null) return supportByDelegateId;
-      return { ...supportByDelegateId, [post.voterId]: post.support };
-    },
-    // Assume that sponsors will vote for
-    sponsorIds.reduce((acc, id) => ({ ...acc, [id]: 1 }), {}),
-  );
-
-  const countSignals = (supportList) =>
-    supportList.reduce(
-      (acc, support) => {
-        const signalGroup = { 0: "against", 1: "for", 2: "abstain" }[support];
-        return { ...acc, [signalGroup]: acc[signalGroup] + 1 };
+    signatures.reduce(
+      (acc, s) => {
+        return {
+          ...acc,
+          [s.signer.id]: {
+            voterId: s.signer.id,
+            support: 1,
+            votes: s.nounsRepresented?.length ?? 0,
+          },
+        };
       },
-      { for: 0, against: 0, abstain: 0 },
-    );
+      proposerDelegate == null
+        ? {}
+        : {
+            [proposerDelegate.id]: {
+              votedId: proposerDelegate.id,
+              support: 1,
+              votes: proposerDelegate.nounsRepresented?.length ?? 0,
+            },
+          },
+    ),
+  );
+
+  const votes = Object.values(votesByAccountAddress).reduce((acc, v) => {
+    if (v.votes === 0) return acc;
+    acc.push(v);
+    return acc;
+  }, []);
+
+  const {
+    0: againstVotes = 0,
+    1: forVotes = 0,
+    2: abstainVotes = 0,
+  } = votes.reduce(
+    (acc, v) => ({
+      ...acc,
+      [v.support]: (acc[v.support] ?? 0) + v.votes,
+    }),
+    {},
+  );
 
   return {
-    votes: countSignals(Object.values(supportByNounId)),
-    delegates: countSignals(Object.values(supportByDelegateId)),
+    votes,
+    forVotes,
+    againstVotes,
+    abstainVotes,
   };
 };

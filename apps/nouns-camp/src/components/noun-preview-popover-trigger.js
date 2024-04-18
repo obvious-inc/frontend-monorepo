@@ -16,7 +16,7 @@ import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
 
-const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
+export const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
   const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
   const delegated =
@@ -56,8 +56,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
       nounId,
       contextAccount,
       showAvatar = true,
-      inline = false,
-      popoverPlacement = "bottom",
+      popoverPlacement = "top",
       children,
       ...props
     },
@@ -66,80 +65,40 @@ const NounPreviewPopoverTrigger = React.forwardRef(
     const renderTrigger = () => {
       if (children != null) return children;
 
-      if (inline)
-        return (
-          <button
-            ref={triggerRef}
-            css={css({
-              outline: "none",
-              "@media(hover: hover)": {
-                cursor: "pointer",
-                ":hover": {
-                  "[data-noun-id]": { textDecoration: "underline" },
-                },
-              },
-            })}
-          >
-            {showAvatar && (
-              <NounAvatar
-                id={nounId}
-                size="1.2em"
-                signatureFallback={false}
-                css={css({
-                  display: "inline-block",
-                  marginRight: "0.3em",
-                  verticalAlign: "sub",
-                })}
-              />
-            )}
-            <InlineButton
-              data-noun-id
-              component="div"
-              variant="link"
-              css={css({ userSelect: "text" })}
-              {...props}
-            >
-              Noun {nounId}
-            </InlineButton>
-          </button>
-        );
-
       return (
         <button
           ref={triggerRef}
-          css={(t) =>
-            css({
-              outline: "none",
-              "[data-id]": {
-                fontWeight: t.text.weights.smallHeader,
+          css={css({
+            outline: "none",
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover": {
+                "[data-noun-id]": { textDecoration: "underline" },
               },
-              "@media(hover: hover)": {
-                cursor: "pointer",
-                ":hover": {
-                  "[data-id]": { textDecoration: "underline" },
-                },
-              },
-            })
-          }
+            },
+          })}
         >
           {showAvatar && (
-            <div css={css({ position: "relative", zIndex: 1 })}>
-              <NounAvatar id={nounId} size="4rem" />
-              {contextAccount != null && (
-                <DelegationStatusDot
-                  nounId={nounId}
-                  contextAccount={contextAccount}
-                  cssProps={{
-                    top: "3rem",
-                    left: "3rem",
-                    height: "1.2rem",
-                    width: "1.2rem",
-                  }}
-                />
-              )}
-            </div>
+            <NounAvatar
+              id={nounId}
+              size="1.2em"
+              signatureFallback={false}
+              css={css({
+                display: "inline-block",
+                marginRight: "0.3em",
+                verticalAlign: "sub",
+              })}
+            />
           )}
-          <div data-id>{nounId}</div>
+          <InlineButton
+            data-noun-id
+            component="div"
+            variant="link"
+            css={css({ userSelect: "text" })}
+            {...props}
+          >
+            Noun {nounId}
+          </InlineButton>
         </button>
       );
     };
@@ -289,7 +248,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   const chainId = useChainId();
   const noun = useNoun(event.nounId);
   const transactionHash = event.id.split("_")[0];
-  const saleAmount = useSaleInfo({
+  const { amount: saleAmount } = useSaleInfo({
     transactionHash,
     sourceAddress: contextAccount,
   });

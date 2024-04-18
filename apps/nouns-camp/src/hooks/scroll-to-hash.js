@@ -1,6 +1,6 @@
 import React from "react";
 
-const useScrollToHash = () => {
+const useScrollToHash = (options) => {
   const didScrollRef = React.useRef(false);
 
   React.useEffect(() => {
@@ -8,7 +8,7 @@ const useScrollToHash = () => {
     const el = document.getElementById(location.hash.slice(1));
     if (el == null) return;
     didScrollRef.current = true;
-    el.scrollIntoView();
+    el.scrollIntoView(options);
   });
 };
 

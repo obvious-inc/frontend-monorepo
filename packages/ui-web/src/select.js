@@ -2,6 +2,7 @@ import { css } from "@emotion/react";
 import React from "react";
 import { Item, useSelectState } from "react-stately";
 import { HiddenSelect, useSelect, useListBox, useOption } from "react-aria";
+import { isTouchDevice } from "@shades/common/utils";
 import Button from "./button.js";
 import * as Popover from "./popover.js";
 import {
@@ -36,16 +37,48 @@ const Select = React.forwardRef(
       fullWidth = true,
       multiline = true,
       buttonProps,
-      ...props
+      ...props_
     },
     forwardedRef,
   ) => {
+    const [isOpen, setOpen] = React.useState(false);
+
+    // Workaround for https://github.com/adobe/react-spectrum/issues/1513
+    const props = {
+      isOpen,
+      onOpenChange: (open) => {
+        if (open || !isTouchDevice()) {
+          setOpen(open);
+          return;
+        }
+
+        const touchendHandler = (e) => {
+          e.preventDefault();
+          clearTimeout(id);
+          setOpen(open);
+        };
+        const id = setTimeout(() => {
+          document.removeEventListener("touchend", touchendHandler);
+          setOpen(open);
+        }, 1000);
+        document.addEventListener("touchend", touchendHandler, {
+          once: true,
+          capture: true,
+        });
+      },
+      ...props_,
+    };
+
     const selectProps = {
       ...props,
       selectedKey: value,
       disabledKeys: options.filter((o) => o.disabled).map((o) => o.value),
       onSelectionChange: (key) => onChange(key),
-      items: options.map((o) => ({ ...o, key: o.value })),
+      items: options.map((o) => ({
+        ...o,
+        label: o.label ?? o.value,
+        key: o.value,
+      })),
       children: (o) => <Item textValue={o.textValue ?? o.label} />,
       isDisabled: props.disabled,
     };

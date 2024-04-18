@@ -24,6 +24,7 @@
     "./link": "./dist/link.js",
     "./input": "./dist/input.js",
     "./select": "./dist/select.js",
+    "./switch": "./dist/switch.js",
     "./popover": "./dist/popover.js",
     "./dropdown-menu": "./dist/dropdown-menu.js",
     "./tooltip": "./dist/tooltip.js",
