@@ -41,7 +41,7 @@
     "diff": "^5.2.0",
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",
-    "marked": "^12.0.1",
+    "marked": "^12.0.2",
     "next": "^14.2.2",
     "react": "18.2.0",
     "react-aria": "^3.32.1",
