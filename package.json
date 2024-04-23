@@ -1,7 +1,8 @@
 {
-  "version": "1.0.0-alpha.41",
+  "version": "1.0.0-alpha.42",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
+    "preinstall": "npx -y only-allow pnpm",
     "predev": "pnpm run build",
     "dev": "pnpm -r run --if-present dev",
     "prestart": "pnpm run build",
@@ -25,7 +26,6 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.7.5"
-  },
-  "packageManager": "pnpm@8.15.1"
+    "pnpm": ">=9.0.0"
+  }
 }
