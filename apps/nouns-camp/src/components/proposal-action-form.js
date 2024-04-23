@@ -326,7 +326,7 @@ const ProposalActionForm = ({
                   value: m,
                   label: {
                     vote: "Cast vote",
-                    "onchain-comment": "Comment on-chain",
+                    "onchain-comment": "Comment onchain",
                     "farcaster-comment": "Comment with Farcaster",
                   }[m],
                 }))}
@@ -335,7 +335,7 @@ const ProposalActionForm = ({
                     case "vote":
                       return "Cast vote";
                     case "onchain-comment":
-                      return "On-chain comment";
+                      return "Onchain comment";
                     case "farcaster-comment":
                       return "Farcaster comment";
                     default:
