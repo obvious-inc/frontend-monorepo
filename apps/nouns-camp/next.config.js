@@ -14,8 +14,8 @@ const withSentry = (config) =>
     {
       // Suppresses source map uploading logs during build
       silent: true,
-      org: "camp",
-      project: "camp-main",
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
     },
     {
       // Upload a larger set of source maps for prettier stack traces (increases build time)
@@ -87,12 +87,12 @@ module.exports = withSentry(
     },
     experimental: {
       cpus: 4,
-    turbo: {
-      // Ignoring modules is not a thing yet
-      resolveAlias: Object.fromEntries(
-        ignoredModules.map((n) => [n, "@shades/common"]),
-      ),
+      turbo: {
+        // Ignoring modules is not a thing yet
+        resolveAlias: Object.fromEntries(
+          ignoredModules.map((n) => [n, "@shades/common"]),
+        ),
+      },
     },
-  },
-}),
+  }),
 );
