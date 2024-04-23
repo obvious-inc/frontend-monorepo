@@ -2,6 +2,7 @@
   "version": "1.0.0-alpha.41",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
+    "preinstall": "npx -y only-allow pnpm",
     "predev": "pnpm run build",
     "dev": "pnpm -r run --if-present dev",
     "prestart": "pnpm run build",
