@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.42] - 2024-04-23
+
+### Miscellaneous Tasks
+
+- Add `preinstall` to prevent devs from using other package managers
+- Change pnpm version from ^8 to ^9 on engines
+- Move Sentry settings from Next.js to environmental variables
+
 ## [1.0.0-alpha.41] - 2024-04-23
 
 ### Bug Fixes
