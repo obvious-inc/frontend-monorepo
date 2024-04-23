@@ -40,19 +40,23 @@ export const useAccountsWithVerifiedEthAddress = (
   return accounts;
 };
 
-export const useProposalCasts = (proposalId) => {
+export const useProposalCasts = (proposalId, fetchOptions) => {
   const chainId = useChainId();
   const [casts, setCasts] = React.useState([]);
 
-  useFetch(async () => {
-    const searchParams = new URLSearchParams({
-      chain: chainId,
-      proposal: proposalId,
-    });
-    const res = await fetch(`/api/farcaster-casts?${searchParams}`);
-    const { casts } = await res.json();
-    setCasts(casts);
-  }, [chainId, proposalId]);
+  useFetch(
+    async () => {
+      const searchParams = new URLSearchParams({
+        chain: chainId,
+        proposal: proposalId,
+      });
+      const res = await fetch(`/api/farcaster-casts?${searchParams}`);
+      const { casts } = await res.json();
+      setCasts(casts);
+    },
+    fetchOptions,
+    [chainId, proposalId],
+  );
 
   return casts;
 };

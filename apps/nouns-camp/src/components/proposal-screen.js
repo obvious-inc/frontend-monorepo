@@ -102,7 +102,7 @@ const useFeedItems = (proposalId) => {
   const startTimestamp = startBlock?.timestamp;
   const endTimestamp = endBlock?.timestamp;
 
-  const casts_ = useProposalCasts(proposalId);
+  const casts_ = useProposalCasts(proposalId, { fetchInterval: 5000 });
   const casts = isFarcasterEnabled ? casts_ : null;
 
   return React.useMemo(
