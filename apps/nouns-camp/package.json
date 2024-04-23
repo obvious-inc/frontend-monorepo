@@ -31,7 +31,7 @@
     "@sentry/nextjs": "^7.111.0",
     "@serwist/next": "^8.4.4",
     "@serwist/precaching": "^8.4.4",
-    "@serwist/sw": "^8.4.4",
+    "@serwist/sw": "^9.0.1",
     "@shades/common": "workspace:0.0.0",
     "@shades/ui-web": "workspace:0.0.0",
     "@vercel/analytics": "^1.2.2",
