@@ -5,7 +5,11 @@ import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Button from "@shades/ui-web/button";
-import { Retweet as RepostIcon } from "@shades/ui-web/icons";
+import Avatar from "@shades/ui-web/avatar";
+import {
+  Retweet as RepostIcon,
+  FarcasterGate as FarcasterGateIcon,
+} from "@shades/ui-web/icons";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -28,7 +32,7 @@ const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
   <ul
     css={(t) =>
       css({
-        lineHeight: 1.4285714286, // 20px line height given font size if 14px
+        lineHeight: "calc(20/14)", // 20px line height given font size if 14px
         fontSize: t.text.sizes.base,
         '[role="listitem"]': {
           scrollMargin: "calc(3.2rem + 1.6rem) 0",
@@ -121,7 +125,32 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
     >
       <div data-header>
         <div>
-          {item.type === "event" || item.authorAccount == null ? (
+          {item.type === "farcaster-cast" ? (
+            <div style={{ position: "relative" }}>
+              <Avatar url={item.authorAvatarUrl} size="2rem" data-avatar />
+              <span
+                css={(t) =>
+                  css({
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    display: "flex",
+                    width: "1rem",
+                    height: "1rem",
+                    borderRadius: "50%",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#855DCD", // Farcaster purple
+                    transform: "translateY(-35%) translateX(35%)",
+                    boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+                    svg: { width: "0.6rem", height: "auto", color: "white" },
+                  })
+                }
+              >
+                <FarcasterGateIcon />
+              </span>
+            </div>
+          ) : item.type === "event" || item.authorAccount == null ? (
             <div data-timeline-symbol />
           ) : (
             <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
@@ -153,13 +182,13 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                   // WebkitBoxOrient: "vertical",
                   // WebkitLineClamp: 2,
                   // overflow: "hidden",
-                  color: t.colors.textDimmed,
+                  color: t.colors.textNormal,
                 })
               }
             >
-              <span css={(t) => css({ color: t.colors.textNormal })}>
-                <ItemTitle item={item} context={context} />
-              </span>
+              {/* <span css={(t) => css({ color: t.colors.textNormal })}> */}
+              <ItemTitle item={item} context={context} />
+              {/* </span> */}
             </div>
             <div>
               {item.isPending ? (
@@ -779,6 +808,16 @@ const ItemTitle = ({ item, context }) => {
         </span>
       );
     }
+
+    case "farcaster-cast":
+      return (
+        <>
+          <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
+            {item.authorDisplayName}
+          </span>{" "}
+          commented
+        </>
+      );
 
     case "candidate-signature-added":
       return (

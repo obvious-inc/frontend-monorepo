@@ -120,11 +120,28 @@ const buildVoteAndFeedbackPostFeedItems = ({
 
 export const buildFeed = (
   proposal,
-  { latestBlockNumber, candidate, includePropdates = true },
+  {
+    latestBlockNumber,
+    startTimestamp,
+    endTimestamp,
+    candidate,
+    casts,
+    includePropdates = true,
+  },
 ) => {
   if (proposal == null) return [];
 
   const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
+
+  const castItems =
+    casts?.map((c) => ({
+      type: "farcaster-cast",
+      id: c.hash,
+      authorAvatarUrl: c.author.pfp_url,
+      authorDisplayName: c.author.display_name,
+      body: c.text,
+      timestamp: new Date(c.timestamp),
+    })) ?? [];
 
   const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
     proposalId: proposal.id,
@@ -156,6 +173,7 @@ export const buildFeed = (
     ...voteAndFeedbackPostItems,
     ...propdateItems,
     ...updateEventItems,
+    ...castItems,
   ];
 
   if (proposal.createdTimestamp != null)
@@ -209,6 +227,8 @@ export const buildFeed = (
       eventType: "proposal-started",
       id: `${proposal.id}-started`,
       blockNumber: proposal.startBlock,
+      timestamp:
+        startTimestamp == null ? null : new Date(Number(startTimestamp) * 1000),
       proposalId: proposal.id,
     });
   }
@@ -238,14 +258,13 @@ export const buildFeed = (
       eventType: "proposal-ended",
       id: `${proposal.id}-ended`,
       blockNumber: actualEndBlock,
+      timestamp:
+        endTimestamp == null ? null : new Date(Number(endTimestamp) * 1000),
       proposalId: proposal.id,
     });
   }
 
-  return arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
-    items,
-  );
+  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);
 };
 
 export const getStateLabel = (state) => {

@@ -51,11 +51,8 @@ import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import NounCountNoggles from "./noun-count-noggles.js";
-import {
-  ProposalHeader,
-  ProposalBody,
-  ProposalActionForm,
-} from "./proposal-screen.js";
+import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
+import ProposalActionForm from "./proposal-action-form.js";
 import VotingBar from "./voting-bar.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import AccountAvatar from "./account-avatar.js";
