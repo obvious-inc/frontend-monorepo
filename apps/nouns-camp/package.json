@@ -48,7 +48,7 @@
     "react-aria-components": "1.1.1",
     "react-dom": "18.2.0",
     "react-stately": "^3.28.0",
-    "slate": "^0.102.0",
+    "slate": "^0.103.0",
     "slate-history": "^0.100.0",
     "slate-react": "^0.102.0",
     "tinykeys": "^2.1.0",
