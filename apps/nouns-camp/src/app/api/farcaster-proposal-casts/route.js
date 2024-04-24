@@ -94,7 +94,8 @@ const fetchProposalCasts = async (chainId, proposalId) => {
       if (!accounts.some((a) => a.fid === c.author.fid))
         accounts.push({
           fid: c.author.fid,
-          username: c.author.username,
+          username:
+            c.author.username === `!${c.author.fid}` ? null : c.author.username,
           displayName: c.author.display_name,
           pfpUrl: c.author.pfp_url,
         });

@@ -31,7 +31,7 @@ const fetchAccountsWithVerifiedAddress = async (address) => {
     .sortBy({ value: (u) => u.follower_count, order: "desc" }, neynarUsers)
     .map((user) => ({
       fid: user.fid,
-      username: user.username,
+      username: user.username === `!${user.fid}` ? null : user.username,
       displayName: user["display_name"],
       pfpUrl: user["pfp_url"],
     }));
