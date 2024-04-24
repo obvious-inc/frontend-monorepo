@@ -137,8 +137,8 @@ export const buildFeed = (
     casts?.map((c) => ({
       type: "farcaster-cast",
       id: c.hash,
-      authorAvatarUrl: c.author.pfp_url,
-      authorDisplayName: c.author.display_name,
+      authorAvatarUrl: c.authorAccount.pfpUrl,
+      authorDisplayName: c.authorAccount.displayName,
       body: c.text,
       timestamp: new Date(c.timestamp),
     })) ?? [];

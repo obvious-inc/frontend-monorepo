@@ -7,7 +7,10 @@ import {
   makeCastAdd,
 } from "@farcaster/core";
 import { subgraphFetch } from "../../../nouns-subgraph.js";
-import { buildProposalCastSignatureMessage } from "../../../utils/farcaster.js";
+import {
+  parseEpochTimestamp,
+  buildProposalCastSignatureMessage,
+} from "../../../utils/farcaster.js";
 import { createUri as createTransactionReceiptUri } from "../../../utils/erc-2400.js";
 
 const { FARCASTER_HUB_HTTP_ENDPOINT, NEYNAR_API_KEY } = process.env;
@@ -79,7 +82,17 @@ const fetchProposalCasts = async (chainId, proposalId) => {
   // TODO: Recursively fetch all casts
   // TODO: Include replies
 
-  return casts;
+  return casts.map((c) => ({
+    hash: c.hash,
+    text: c.text,
+    timestamp: c.timestamp,
+    authorAccount: {
+      fid: c.author.fid,
+      username: c.author.username,
+      displayName: c.author.display_name,
+      pfpUrl: c.author.pfp_url,
+    },
+  }));
 };
 
 export async function GET(request) {
@@ -112,13 +125,14 @@ const submitCast = async (body, data, signer) => {
         },
       );
 
+      const body = await response.json();
+
       if (!response.ok) {
-        const body = await response.json();
         console.error(body);
         throw new Error();
       }
 
-      return message;
+      return body;
     },
     (error) => Promise.reject(error),
   );
@@ -181,15 +195,26 @@ export async function POST(request) {
     return jsonResponse(401, { error: "no-account-key-for-eth-address" });
 
   try {
-    await submitCast(
-      {
-        text,
-        parentUrl: await createCanonicalProposalUrl(chainId, proposalId),
-      },
-      { fid: Number(fid), network: FarcasterNetwork.MAINNET },
-      new NobleEd25519Signer(hexToBytes(privateAccountKey)),
-    );
-    return new Response(null, { status: 201 });
+    // const castMessage = await submitCast(
+    //   {
+    //     text,
+    //     parentUrl: await createCanonicalProposalUrl(chainId, proposalId),
+    //   },
+    //   { fid: Number(fid), network: FarcasterNetwork.MAINNET },
+    //   new NobleEd25519Signer(hexToBytes(privateAccountKey)),
+    // );
+    // return new Response(
+    //   {
+    //     hash: castMessage.hash,
+    //     fid: castMessage.data.fid,
+    //     timestamp: parseEpochTimestamp(
+    //       castMessage.data.timestamp,
+    //     ).toISOString(),
+    //     text: castMessage.data.castAddBody.text,
+    //   },
+    //   { status: 201 },
+    // );
+    return jsonResponse(200, {});
   } catch (e) {
     return jsonResponse(500, { error: "submit-failed" });
   }

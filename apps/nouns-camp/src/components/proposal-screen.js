@@ -2,7 +2,7 @@
 
 import React from "react";
 import { formatUnits } from "viem";
-import { useBlockNumber, useBlock, useSignMessage } from "wagmi";
+import { useBlockNumber, useBlock } from "wagmi";
 import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
@@ -34,7 +34,6 @@ import {
   useSearchParams,
   useSearchParamToggleState,
 } from "../hooks/navigation.js";
-import useChainId from "../hooks/chain-id.js";
 import {
   useCancelProposal,
   useCastProposalVote,
@@ -47,7 +46,7 @@ import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-t
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import { useProposalCasts } from "../hooks/farcaster.js";
+import { useProposalCasts, useSubmitProposalCast } from "../hooks/farcaster.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -102,7 +101,7 @@ const useFeedItems = (proposalId) => {
   const startTimestamp = startBlock?.timestamp;
   const endTimestamp = endBlock?.timestamp;
 
-  const casts_ = useProposalCasts(proposalId, { fetchInterval: 5000 });
+  const casts_ = useProposalCasts(proposalId);
   const casts = isFarcasterEnabled ? casts_ : null;
 
   return React.useMemo(
@@ -130,9 +129,7 @@ const ProposalMainSection = ({
   scrollContainerRef,
   toggleVotesDialog,
 }) => {
-  const chainId = useChainId();
   const { data: latestBlockNumber } = useBlockNumber();
-  const { signMessageAsync: signMessage } = useSignMessage();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const {
     address: connectedWalletAccountAddress,
@@ -190,6 +187,7 @@ const ProposalMainSection = ({
       ? ["vote", "onchain-comment"]
       : ["onchain-comment"];
 
+  const submitProposalCast = useSubmitProposalCast(proposalId);
   const isFarcasterEnabled = useFeatureFlag("farcaster");
 
   if (isFarcasterEnabled) possibleFormActions.push("farcaster-comment");
@@ -494,30 +492,7 @@ const ProposalMainSection = ({
         break;
 
       case "farcaster-comment":
-        {
-          const timestamp = new Date().toISOString();
-          const signature = await signMessage({
-            message: buildProposalCastSignatureMessage({
-              text: pendingFeedback,
-              proposalId,
-              chainId,
-              timestamp,
-            }),
-          });
-          await fetch("/api/farcaster-casts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chainId,
-              proposalId,
-              text: pendingFeedback,
-              fid: data.fid,
-              timestamp,
-              ethAddress: connectedWalletAccountAddress,
-              ethSignature: signature,
-            }),
-          });
-        }
+        await submitProposalCast({ fid: data.fid, text: pendingFeedback });
         break;
 
       default:
