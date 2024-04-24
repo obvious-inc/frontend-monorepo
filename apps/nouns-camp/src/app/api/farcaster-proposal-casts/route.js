@@ -82,17 +82,27 @@ const fetchProposalCasts = async (chainId, proposalId) => {
   // TODO: Recursively fetch all casts
   // TODO: Include replies
 
-  return casts.map((c) => ({
-    hash: c.hash,
-    text: c.text,
-    timestamp: c.timestamp,
-    authorAccount: {
-      fid: c.author.fid,
-      username: c.author.username,
-      displayName: c.author.display_name,
-      pfpUrl: c.author.pfp_url,
+  return casts.reduce(
+    ({ casts, accounts }, c) => {
+      casts.push({
+        hash: c.hash,
+        fid: c.author.fid,
+        text: c.text,
+        timestamp: c.timestamp,
+      });
+
+      if (!accounts.some((a) => a.fid === c.author.fid))
+        accounts.push({
+          fid: c.author.fid,
+          username: c.author.username,
+          displayName: c.author.display_name,
+          pfpUrl: c.author.pfp_url,
+        });
+
+      return { casts, accounts };
     },
-  }));
+    { casts: [], accounts: [] },
+  );
 };
 
 export async function GET(request) {
@@ -104,9 +114,9 @@ export async function GET(request) {
   if (proposalId == null)
     return jsonResponse(400, { error: "proposal-required" });
 
-  const casts = await fetchProposalCasts(chainId, proposalId);
+  const { casts, accounts } = await fetchProposalCasts(chainId, proposalId);
 
-  return jsonResponse(200, { casts });
+  return jsonResponse(200, { casts, accounts });
 }
 
 const submitCast = async (body, data, signer) => {
@@ -195,26 +205,20 @@ export async function POST(request) {
     return jsonResponse(401, { error: "no-account-key-for-eth-address" });
 
   try {
-    // const castMessage = await submitCast(
-    //   {
-    //     text,
-    //     parentUrl: await createCanonicalProposalUrl(chainId, proposalId),
-    //   },
-    //   { fid: Number(fid), network: FarcasterNetwork.MAINNET },
-    //   new NobleEd25519Signer(hexToBytes(privateAccountKey)),
-    // );
-    // return new Response(
-    //   {
-    //     hash: castMessage.hash,
-    //     fid: castMessage.data.fid,
-    //     timestamp: parseEpochTimestamp(
-    //       castMessage.data.timestamp,
-    //     ).toISOString(),
-    //     text: castMessage.data.castAddBody.text,
-    //   },
-    //   { status: 201 },
-    // );
-    return jsonResponse(200, {});
+    const castMessage = await submitCast(
+      {
+        text,
+        parentUrl: await createCanonicalProposalUrl(chainId, proposalId),
+      },
+      { fid: Number(fid), network: FarcasterNetwork.MAINNET },
+      new NobleEd25519Signer(hexToBytes(privateAccountKey)),
+    );
+    return jsonResponse(201, {
+      hash: castMessage.hash,
+      fid: castMessage.data.fid,
+      timestamp: parseEpochTimestamp(castMessage.data.timestamp).toISOString(),
+      text: castMessage.data.castAddBody.text,
+    });
   } catch (e) {
     return jsonResponse(500, { error: "submit-failed" });
   }

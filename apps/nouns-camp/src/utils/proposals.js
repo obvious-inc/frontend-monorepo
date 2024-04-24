@@ -134,14 +134,25 @@ export const buildFeed = (
   const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
 
   const castItems =
-    casts?.map((c) => ({
-      type: "farcaster-cast",
-      id: c.hash,
-      authorAvatarUrl: c.authorAccount.pfpUrl,
-      authorDisplayName: c.authorAccount.displayName,
-      body: c.text,
-      timestamp: new Date(c.timestamp),
-    })) ?? [];
+    casts?.map((c) => {
+      let displayName =
+        c.account?.displayName ?? c.account?.username ?? `FID ${c.fid}`;
+
+      if (
+        c.account?.username != null &&
+        c.account.username !== c.account.displayName
+      )
+        displayName += ` (@${c.account.username})`;
+
+      return {
+        type: "farcaster-cast",
+        id: c.hash,
+        authorAvatarUrl: c.account?.pfpUrl,
+        authorDisplayName: displayName,
+        body: c.text,
+        timestamp: new Date(c.timestamp),
+      };
+    }) ?? [];
 
   const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
     proposalId: proposal.id,

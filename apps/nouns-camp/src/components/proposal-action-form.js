@@ -204,8 +204,7 @@ const ProposalActionForm = ({
                           String(a.fid) === String(selectedFarcasterAccountFid),
                       );
 
-                      const { displayName, username, pfpUrl } =
-                        selectedAccount.userData;
+                      const { displayName, username, pfpUrl } = selectedAccount;
 
                       return (
                         <>
@@ -224,7 +223,7 @@ const ProposalActionForm = ({
                           <em>
                             {displayName ??
                               username ??
-                              `fid ${selectedAccount.fid}`}
+                              `FID ${selectedAccount.fid}`}
                           </em>
                           {username != null && username !== displayName && (
                             <> (@{username})</>
@@ -239,7 +238,7 @@ const ProposalActionForm = ({
                         <NativeSelect
                           value={String(selectedFarcasterAccountFid)}
                           options={farcasterAccounts.map((a, i, as) => {
-                            const { displayName, username } = a.userData;
+                            const { displayName, username } = a;
 
                             let label =
                               displayName ?? username ?? `FID ${a.fid}`;
@@ -249,8 +248,7 @@ const ProposalActionForm = ({
 
                             const hasDuplicateDisplayName = as.some(
                               (a, y) =>
-                                i !== y &&
-                                a.userData.displayName === displayName,
+                                i !== y && a.displayName === displayName,
                             );
 
                             if (hasDuplicateDisplayName)
@@ -269,8 +267,7 @@ const ProposalActionForm = ({
                             const account = farcasterAccounts.find(
                               (a) => String(a.fid) === o.value,
                             );
-                            const { displayName, username, pfpUrl } =
-                              account.userData;
+                            const { displayName, username, pfpUrl } = account;
                             return (
                               <>
                                 {pfpUrl != null && (
@@ -523,6 +520,7 @@ const ProposalActionForm = ({
                   return (
                     <>
                       <SupportSelect
+                        mode={mode}
                         size={size}
                         value={support}
                         onChange={(value) => {

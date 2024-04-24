@@ -2,7 +2,10 @@
 
 import React from "react";
 import { useSignMessage } from "wagmi";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  object as objectUtils,
+} from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import { buildProposalCastSignatureMessage } from "../utils/farcaster.js";
 import { useWallet } from "./wallet.js";
@@ -52,7 +55,11 @@ export const useAccountsWithVerifiedEthAddress = (
 
       setState((s) => ({
         ...s,
-        accountsByFid: { ...s.accountsByFid, ...accountsByFid },
+        accountsByFid: objectUtils.merge(
+          (a1, a2) => ({ ...a1, ...a2 }),
+          s.accountsByFid,
+          accountsByFid,
+        ),
         fidsByEthAddress: {
           ...s.fidsByEthAddress,
           [ethAddress]: Object.keys(accountsByFid),
@@ -70,7 +77,7 @@ export const useProposalCasts = (proposalId, fetchOptions) => {
   const chainId = useChainId();
 
   const {
-    state: { castsByHash, castHashesByProposalId },
+    state: { accountsByFid, castsByHash, castHashesByProposalId },
     setState,
   } = React.useContext(Context);
 
@@ -81,10 +88,16 @@ export const useProposalCasts = (proposalId, fetchOptions) => {
         proposal: proposalId,
       });
       const res = await fetch(`/api/farcaster-proposal-casts?${searchParams}`);
-      const { casts } = await res.json();
+      const { casts, accounts } = await res.json();
+      const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
       const castsByHash = arrayUtils.indexBy((c) => c.hash, casts);
       setState((s) => ({
         ...s,
+        accountsByFid: objectUtils.merge(
+          (a1, a2) => ({ ...a1, ...a2 }),
+          s.accountsByFid,
+          accountsByFid,
+        ),
         castsByHash: { ...s.castsByHash, ...castsByHash },
         castHashesByProposalId: {
           ...s.castHashesByProposalId,
@@ -100,7 +113,11 @@ export const useProposalCasts = (proposalId, fetchOptions) => {
 
   if (castHashes == null) return [];
 
-  return castHashes.map((hash) => castsByHash[hash]);
+  return castHashes.map((hash) => {
+    const cast = castsByHash[hash];
+    const account = accountsByFid[cast.fid];
+    return { ...cast, account };
+  });
 };
 
 export const useSubmitProposalCast = (proposalId) => {

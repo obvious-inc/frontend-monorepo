@@ -23,7 +23,6 @@ import {
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
 } from "../utils/proposals.js";
-import { buildProposalCastSignatureMessage } from "../utils/farcaster.js";
 import {
   useProposal,
   useProposalFetch,

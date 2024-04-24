@@ -105,7 +105,7 @@ const Content = ({ titleProps, dismiss }) => {
               signer) that can write messages on your behalf.
             </p>
             <p>
-              Issuing account keys does not put you at risk of loosing access to
+              Issuing account keys does not put you at risk of losing access to
               your account, although it does authorize a set of actions, like
               adding casts and likes.
             </p>
