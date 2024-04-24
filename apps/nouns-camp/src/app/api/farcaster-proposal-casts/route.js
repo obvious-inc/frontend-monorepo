@@ -31,10 +31,10 @@ const createCanonicalProposalUrl = async (chainId, proposalId) => {
   return createTransactionReceiptUri(chainId, proposal.createdTransactionHash);
 };
 
-const jsonResponse = (statusCode, body) =>
+const jsonResponse = (statusCode, body, headers) =>
   new Response(JSON.stringify(body), {
     status: statusCode,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
   });
 
 const fetchVerificiation = async (fid, address) => {
@@ -117,7 +117,13 @@ export async function GET(request) {
 
   const { casts, accounts } = await fetchProposalCasts(chainId, proposalId);
 
-  return jsonResponse(200, { casts, accounts });
+  return jsonResponse(
+    200,
+    { casts, accounts },
+    {
+      "Cache-Control": "max-age=10, stale-while-revalidate=20",
+    },
+  );
 }
 
 const submitCast = async (body, data, signer) => {
