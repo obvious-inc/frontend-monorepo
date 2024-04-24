@@ -1,4 +1,4 @@
-import { parseAbi, isAddress } from "viem";
+import { isAddress } from "viem";
 import {
   usePublicClient,
   useReadContract,
@@ -17,9 +17,14 @@ export const useCurrentVotes = (accountAddress) => {
 
   const { data, isSuccess } = useReadContract({
     address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function getCurrentVotes(address account) external view returns (uint96)",
-    ]),
+    abi: [
+      {
+        inputs: [{ type: "address" }],
+        name: "getCurrentVotes",
+        outputs: [{ type: "uint96" }],
+        type: "function",
+      },
+    ],
     functionName: "getCurrentVotes",
     args: [accountAddress],
     query: {
@@ -37,9 +42,14 @@ export const usePriorVotes = ({ account, blockNumber, enabled = true }) => {
 
   const { data } = useReadContract({
     address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function getPriorVotes(address account, uint256 block) public view returns (uint256)",
-    ]),
+    abi: [
+      {
+        inputs: [{ type: "address" }, { type: "uint256" }],
+        name: "getPriorVotes",
+        outputs: [{ type: "uint96" }],
+        type: "function",
+      },
+    ],
     functionName: "getPriorVotes",
     args: [account, blockNumber],
     query: {
@@ -55,9 +65,20 @@ export const useNounSeed = (nounId, { enabled = true } = {}) => {
 
   const { data } = useReadContract({
     address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function seeds(uint256) public view returns (uint48,uint48,uint48,uint48,uint48)",
-    ]),
+    abi: [
+      {
+        inputs: [{ type: "uint256" }],
+        name: "seeds",
+        outputs: [
+          { name: "background", type: "uint48" },
+          { name: "body", type: "uint48" },
+          { name: "accessory", type: "uint48" },
+          { name: "head", type: "uint48" },
+          { name: "glasses", type: "uint48" },
+        ],
+        type: "function",
+      },
+    ],
     functionName: "seeds",
     args: [nounId],
     query: {
@@ -82,9 +103,20 @@ export const useNounSeeds = (nounIds, { enabled = true } = {}) => {
   const { data } = useReadContracts({
     contracts: nounIds.map((nounId) => ({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function seeds(uint256) public view returns (uint48,uint48,uint48,uint48,uint48)",
-      ]),
+      abi: [
+        {
+          inputs: [{ type: "uint256" }],
+          name: "seeds",
+          outputs: [
+            { name: "background", type: "uint48" },
+            { name: "body", type: "uint48" },
+            { name: "accessory", type: "uint48" },
+            { name: "head", type: "uint48" },
+            { name: "glasses", type: "uint48" },
+          ],
+          type: "function",
+        },
+      ],
       functionName: "seeds",
       args: [nounId],
     })),
