@@ -188,7 +188,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
           abi: [
             {
               inputs: [
-                { name: "msgSender", type: "address" },
+                { indexed: true, name: "msgSender", type: "address" },
                 { name: "targets", type: "address[]" },
                 { name: "values", type: "uint256[]" },
                 { name: "signatures", type: "string[]" },
