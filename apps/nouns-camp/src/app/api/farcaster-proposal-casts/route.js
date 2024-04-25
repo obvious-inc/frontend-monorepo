@@ -6,6 +6,7 @@ import {
   NobleEd25519Signer,
   makeCastAdd,
 } from "@farcaster/core";
+import { array as arrayUtils } from "@shades/common/utils";
 import { subgraphFetch } from "../../../nouns-subgraph.js";
 import {
   parseEpochTimestamp,
@@ -76,34 +77,59 @@ const fetchProposalCasts = async (chainId, proposalId) => {
       },
     },
   );
-
-  const { casts } = await response.json();
+  const { casts: rawCasts } = await response.json();
 
   // TODO: Recursively fetch all casts
-  // TODO: Include replies
+  // TODO: Somehow include replies (and reactions/replies to relevant onchain stuff we display)
 
-  return casts.reduce(
-    ({ casts, accounts }, c) => {
-      casts.push({
-        hash: c.hash,
-        fid: c.author.fid,
-        text: c.text,
-        timestamp: c.timestamp,
-      });
-
-      if (!accounts.some((a) => a.fid === c.author.fid))
-        accounts.push({
-          fid: c.author.fid,
-          username:
-            c.author.username === `!${c.author.fid}` ? null : c.author.username,
-          displayName: c.author.display_name,
-          pfpUrl: c.author.pfp_url,
-        });
-
-      return { casts, accounts };
-    },
-    { casts: [], accounts: [] },
+  const verifiedAddresses = arrayUtils.unique(
+    rawCasts.flatMap((c) => c.author.verifications.map((a) => a.toLowerCase())),
   );
+
+  const { delegates } = await subgraphFetch({
+    chainId,
+    query: `
+      query {
+        delegates(where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }) {
+          id
+        }
+      }`,
+  });
+
+  const casts = [];
+  const accounts = [];
+
+  for (const c of rawCasts) {
+    casts.push({
+      hash: c.hash,
+      fid: c.author.fid,
+      text: c.text,
+      timestamp: c.timestamp,
+    });
+
+    // Continue if the account has already been added
+    if (accounts.some((a) => a.fid === c.author.fid)) continue;
+
+    const account = {
+      fid: c.author.fid,
+      // Don’t include "!fid" usernames
+      username:
+        c.author.username === `!${c.author.fid}` ? null : c.author.username,
+      displayName: c.author.display_name,
+      pfpUrl: c.author.pfp_url,
+    };
+
+    const verifiedAddresses = c.author.verifications.map((a) =>
+      a.toLowerCase(),
+    );
+
+    const delegate = delegates.find((d) => verifiedAddresses.includes(d.id));
+    if (delegate != null) account.nounerAddress = delegate.id;
+
+    accounts.push(account);
+  }
+
+  return { casts, accounts };
 };
 
 export async function GET(request) {

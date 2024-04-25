@@ -147,6 +147,7 @@ export const buildFeed = (
       return {
         type: "farcaster-cast",
         id: c.hash,
+        authorAccount: c.account?.nounerAddress,
         authorAvatarUrl: c.account?.pfpUrl,
         authorDisplayName: displayName,
         body: c.text,

@@ -127,7 +127,21 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
         <div>
           {item.type === "farcaster-cast" ? (
             <div style={{ position: "relative" }}>
-              <Avatar url={item.authorAvatarUrl} size="2rem" data-avatar />
+              {item.authorAccount == null ? (
+                <Avatar url={item.authorAvatarUrl} size="2rem" />
+              ) : (
+                <AccountPreviewPopoverTrigger
+                  accountAddress={item.authorAccount}
+                >
+                  <button data-avatar-button>
+                    <AccountAvatar
+                      address={item.authorAccount}
+                      fallbackImageUrl={item.authorAvatarUrl}
+                      size="2rem"
+                    />
+                  </button>
+                </AccountPreviewPopoverTrigger>
+              )}
               <span
                 css={(t) =>
                   css({
@@ -155,11 +169,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
           ) : (
             <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
               <button data-avatar-button>
-                <AccountAvatar
-                  data-avatar
-                  address={item.authorAccount}
-                  size="2rem"
-                />
+                <AccountAvatar address={item.authorAccount} size="2rem" />
               </button>
             </AccountPreviewPopoverTrigger>
           )}
@@ -488,7 +498,10 @@ const ItemTitle = ({ item, context }) => {
   };
 
   const accountName = (
-    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+    <AccountPreviewPopoverTrigger
+      accountAddress={item.authorAccount}
+      fallbackDisplayName={item.authorDisplayName}
+    />
   );
 
   switch (item.type) {
@@ -809,15 +822,19 @@ const ItemTitle = ({ item, context }) => {
       );
     }
 
-    case "farcaster-cast":
-      return (
-        <>
-          <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
-            {item.authorDisplayName}
-          </span>{" "}
-          commented
-        </>
-      );
+    case "farcaster-cast": {
+      if (item.authorAccount == null)
+        return (
+          <>
+            <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
+              {item.authorDisplayName}
+            </span>{" "}
+            commented
+          </>
+        );
+
+      return <>{accountName} commented</>;
+    }
 
     case "candidate-signature-added":
       return (
