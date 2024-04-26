@@ -341,8 +341,13 @@ const createRenderer = ({
       case "callout": {
         const isLast = i === els.length - 1;
         const Component = blockComponentsByElementType[el.type];
+
+        const props = {};
+        if (el.type === "numbered-list" && el.start != null)
+          props.start = el.start;
+
         return (
-          <Component key={i}>
+          <Component key={i} {...props}>
             {children()}
             {inline && " "}
             {isLast && suffix}
