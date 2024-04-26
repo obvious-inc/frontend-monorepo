@@ -4,18 +4,17 @@ import { useAccount, useBlockNumber, usePublicClient } from "wagmi";
 import { decodeCalldata, formatSolidityValue } from "../utils.js";
 import useAddress from "../hooks/address.jsx";
 import {
-  useNounsTokenRead,
-  useNounsDaoV3Write,
-  useNounsDaoV3Read,
+  useNounsDaoV4Write,
+  useNounsDaoV4Read,
+  useNounsDaoV4Reads,
 } from "../hooks/contracts.js";
+import { useNounTokens, useDelegationTokens } from "../hooks/tokens.js";
 import AccountDisplayName from "./account-display-name.jsx";
 import EtherscanLink from "./etherscan-link.jsx";
 import SelectWithArrows from "./select-with-arrows.jsx";
 
 const useProposalIds = ({ order } = {}) => {
-  const { data: count } = useNounsDaoV3Read("proposalCount", {
-    watch: true,
-  });
+  const { data: count } = useNounsDaoV4Read("proposalCount", { watch: true });
   if (count == null) return null;
 
   const ids = Array.from({ length: Number(count) }).map(
@@ -25,13 +24,53 @@ const useProposalIds = ({ order } = {}) => {
   return order === "desc" ? ids.reverse() : ids;
 };
 
+// const useCheckpointableDelegatedNouns = (address) => {
+//   const nounsTokenAddress = useAddress("nouns-token");
+//   const publicClient = usePublicClient();
+
+//   const [dataByAddress, setDataByAddress] = React.useState({});
+
+//   React.useEffect(() => {
+//     (async () => {
+//       const events = await publicClient.getLogs({
+//         address: nounsTokenAddress,
+//         event: {
+//           name: "DelegateChanged",
+//           type: "event",
+//           inputs: [
+//             { name: "delegator", type: "address", indexed: true },
+//             { name: "fromDelegate", type: "address", indexed: true },
+//             { name: "toDelegate", type: "address", indexed: true },
+//           ],
+//         },
+//         args: {
+//           delegator: address,
+//           // fromDelegate: address,
+//           // toDelegate: address,
+//         },
+//         // fromBlock: proposal.startBlock - 100000n,
+//         // toBlock: proposal.startBlock,
+//       });
+
+//       console.log(events);
+
+//       setDataByAddress((s) => ({
+//         ...s,
+//         [address]: {
+//           //
+//         },
+//       }));
+//     })();
+//   }, [publicClient, nounsTokenAddress, address]);
+// };
+
 const useProposal = (id, { content = true } = {}) => {
+  const nounsDaoProxyAddress = useAddress("nouns-dao-v4");
   const publicClient = usePublicClient();
-  const daoAddress = useAddress("nouns-dao");
 
   const [dataById, setDataById] = React.useState({});
 
-  const { data: proposal } = useNounsDaoV3Read("proposalsV3", {
+  const { data: proposal } = useNounsDaoV4Read("proposalsV3", {
     args: [id],
     enabled: id != null,
   });
@@ -41,7 +80,7 @@ const useProposal = (id, { content = true } = {}) => {
 
     (async () => {
       const events = await publicClient.getLogs({
-        address: daoAddress,
+        address: nounsDaoProxyAddress,
         event: {
           name: "ProposalCreated",
           type: "event",
@@ -61,7 +100,10 @@ const useProposal = (id, { content = true } = {}) => {
         toBlock: proposal.startBlock,
       });
 
-      const event = events.find((e) => Number(e.args.id) === Number(id));
+      const event = events.find((e) => {
+        // if (e.args == null) console.log(e);
+        return e.args != null && Number(e.args.id) === Number(id);
+      });
 
       if (event == null) return;
 
@@ -78,16 +120,38 @@ const useProposal = (id, { content = true } = {}) => {
         },
       }));
     })();
-  }, [publicClient, daoAddress, id, content, proposal]);
+  }, [publicClient, nounsDaoProxyAddress, id, content, proposal]);
 
   if (proposal == null) return null;
 
   return { ...proposal, ...dataById[id] };
 };
 
-const NounsDaoV3 = () => {
+const useControlledTokenIds = (address) => {
+  const nounTokens = useNounTokens(address, { includeDelegate: true });
+  const delegationTokens = useDelegationTokens(address);
+
+  if (nounTokens == null || delegationTokens == null) return null;
+
+  const controlledTokenIds = delegationTokens.map((t) => t.id);
+
+  for (const t of nounTokens) {
+    if (controlledTokenIds.includes(t.id)) continue; // Happens when delegating to oneself
+    if (t.delegate != null) continue;
+    controlledTokenIds.push(t.id);
+  }
+
+  return controlledTokenIds;
+};
+
+const NounsDaoV4 = () => {
   const { address: connectedAccount } = useAccount();
+
+  const daoV4ContractAddress = useAddress("nouns-dao");
+
   const proposalIds = useProposalIds({ order: "desc" });
+
+  if (daoV4ContractAddress == null) return null;
 
   return (
     <>
@@ -118,7 +182,7 @@ const NounsDaoV3 = () => {
 };
 
 const useProposalState = (id) => {
-  const { data: stateNumber } = useNounsDaoV3Read("state", {
+  const { data: stateNumber } = useNounsDaoV4Read("state", {
     watch: true,
     args: [id],
     enabled: id != null,
@@ -148,11 +212,18 @@ const Proposals = ({ proposalIds }) => {
   const proposal = useProposal(proposalId);
   const proposalState = useProposalState(proposalId);
 
-  const { data: voteReceipt } = useNounsDaoV3Read("getReceipt", {
-    args: [proposalId, connectedAccount],
+  const controlledTokenIds = useControlledTokenIds(connectedAccount);
+
+  // TODO: How to we know how you voter given we don’t know your token delegation at that time
+  const { data: voteReceiptResponses } = useNounsDaoV4Reads("votingReceipt", {
+    args: controlledTokenIds?.map((id) => [proposalId, id]),
     enabled: connectedAccount != null,
     watch: true,
   });
+
+  const hasVotesLeftToCast =
+    voteReceiptResponses != null &&
+    voteReceiptResponses.some((r) => !r.data[0]);
 
   const endBlock =
     proposal == null
@@ -252,30 +323,52 @@ const Proposals = ({ proposalIds }) => {
                       {Number(proposal.forVotes)} for,{" "}
                       {Number(proposal.abstainVotes)} abstain,{" "}
                       {Number(proposal.againstVotes)} against
-                      {voteReceipt != null && (
+                      {/* {voteReceiptResponses != null && (
                         <p style={{ margin: "0.8rem 0 0" }}>
                           {(() => {
-                            if (!voteReceipt.hasVoted)
+                            const hasVoted = voteReceiptResponses.some(
+                              (r) => r.data[0],
+                            );
+
+                            if (!hasVoted)
                               return "You did not vote for this proposal";
 
-                            const voteWord = (() => {
-                              switch (voteReceipt.support) {
-                                case 0:
-                                  return "AGAINST";
-                                case 1:
-                                  return "FOR";
-                                case 2:
-                                  return "ABSTAIN";
-                                default:
-                                  throw new Error();
-                              }
-                            })();
-                            const voteCount = Number(voteReceipt.votes);
+                            const votesBySupport = voteReceiptResponses.reduce(
+                              (acc, r) => {
+                                if (!r.data[0]) return acc; // didn’t vote
+                                const support = r.data[1];
+                                const count = acc[support] ?? 0;
+                                return { ...acc, [support]: count + 1 };
+                              },
+                              {},
+                            );
 
-                            return `You voted ${voteWord} (${voteCount} ${voteCount === 1 ? "vote" : "votes"})`;
+                            return (
+                              <>
+                                {" "}
+                                You voted{" "}
+                                {Object.entries(votesBySupport).map(
+                                  ([support, voteCount], i) => {
+                                    const voteWord = {
+                                      0: "AGAINST",
+                                      1: "FOR",
+                                      2: "ABSTAIN",
+                                    }[support];
+
+                                    return (
+                                      <React.Fragment key={support}>
+                                        {i > 0 && <> ,</>}
+                                        {voteWord} ({voteCount}{" "}
+                                        {voteCount === 1 ? "vote" : "votes"})
+                                      </React.Fragment>
+                                    );
+                                  },
+                                )}
+                              </>
+                            );
                           })()}
                         </p>
-                      )}
+                      )} */}
                     </>
                   ) : (
                     "-"
@@ -384,7 +477,7 @@ const Proposals = ({ proposalIds }) => {
           {connectedAccount != null &&
             votingStarted &&
             !votingEnded &&
-            !voteReceipt?.hasVoted && (
+            hasVotesLeftToCast && (
               <div style={{ paddingLeft: "1.6rem" }}>
                 <details open style={{ marginTop: "3.2rem" }}>
                   <summary>Vote</summary>
@@ -399,20 +492,26 @@ const Proposals = ({ proposalIds }) => {
 };
 
 const VoteForm = ({ proposalId }) => {
+  const [commaSeparatedTokenIds, setTokenIds] = React.useState("");
   const [reason, setReason] = React.useState("");
   const [support, setSupport] = React.useState(null);
 
-  const { call: castVote, status: castVoteCallStatus } = useNounsDaoV3Write(
+  const tokenIds = commaSeparatedTokenIds
+    .split(",")
+    .map((s) => Number(s.trim()));
+
+  const { call: castVote, status: castVoteCallStatus } = useNounsDaoV4Write(
     "castRefundableVote",
     {
-      args: [proposalId, support],
-      enabled: support != null,
+      args: [tokenIds, proposalId, Number(support)],
+      enabled: tokenIds.length > 0 && support != null,
     },
   );
+  console.log({ args: [tokenIds, proposalId, Number(support)] });
   const { call: castVoteWithReason, status: castVoteWithReasonCallStatus } =
-    useNounsDaoV3Write("castRefundableVoteWithReason", {
-      args: [proposalId, support, reason],
-      enabled: support != null,
+    useNounsDaoV4Write("castRefundableVoteWithReason", {
+      args: [tokenIds, proposalId, Number(support), reason],
+      enabled: tokenIds.length > 0 && support != null,
     });
 
   const voteCall = reason.trim() === "" ? castVote : castVoteWithReason;
@@ -428,7 +527,18 @@ const VoteForm = ({ proposalId }) => {
           voteCall();
         }}
       >
-        <label htmlFor="reason">Reason (optional)</label>
+        <label htmlFor="tokens">Token IDs (comma separated)</label>
+        <input
+          id="tokens"
+          placeholder="1,2,3..."
+          value={commaSeparatedTokenIds}
+          onChange={(e) => setTokenIds(e.target.value)}
+          style={{ width: "100%" }}
+          disabled={isPending}
+        />
+        <label htmlFor="reason" style={{ marginTop: "1.6rem" }}>
+          Reason (optional)
+        </label>
         <textarea
           id="reason"
           placeholder="..."
@@ -462,13 +572,17 @@ const VoteForm = ({ proposalId }) => {
             </option>
           ))}
         </select>
-        <button
-          type="submit"
-          disabled={voteCall == null || isPending}
-          style={{ marginTop: "1.6rem" }}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            marginTop: "1.6rem",
+          }}
         >
-          Cast vote{reason.trim() !== "" && <> with reason</>}
-        </button>
+          <button type="submit" disabled={voteCall == null || isPending}>
+            Cast vote{reason.trim() !== "" && <> with reason</>}
+          </button>
+        </div>
       </form>
     </>
   );
@@ -476,9 +590,8 @@ const VoteForm = ({ proposalId }) => {
 
 const useActiveProposalId = () => {
   const { address: accountAddress } = useAccount();
-  const { data: latestProposalId } = useNounsDaoV3Read("latestProposalIds", {
+  const { data: latestProposalId } = useNounsDaoV4Read("latestProposalIds", {
     args: [accountAddress],
-    enabled: accountAddress != null,
   });
   const state = useProposalState(latestProposalId);
 
@@ -497,15 +610,21 @@ const useActiveProposalId = () => {
 const Propose = () => {
   const { address: connectedAccount } = useAccount();
 
+  const [commaSeparatedTokenIds, setTokenIds] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [actions, setActions] = React.useState([
     { target: "", signature: "", calldata: "", value: "" },
   ]);
 
-  const { call: propose, status: proposeCallStatus } = useNounsDaoV3Write(
+  const tokenIds = commaSeparatedTokenIds
+    .split(",")
+    .map((s) => Number(s.trim()));
+
+  const { call: propose, status: proposeCallStatus } = useNounsDaoV4Write(
     "propose",
     {
       args: [
+        tokenIds,
         ...actions.reduce(
           ([targets, values, signatures, calldatas], a) => [
             [...targets, a.target],
@@ -521,11 +640,9 @@ const Propose = () => {
     },
   );
 
-  const { data: proposalThreshold } = useNounsDaoV3Read("proposalThreshold");
-  const { data: votingPower } = useNounsTokenRead("getCurrentVotes", {
-    args: [connectedAccount],
-    enabled: connectedAccount != null,
-  });
+  const { data: proposalThreshold } = useNounsDaoV4Read("proposalThreshold");
+  const controlledTokenIds = useControlledTokenIds(connectedAccount);
+  const votingPower = controlledTokenIds?.length;
   const activeProposalId = useActiveProposalId();
   const canPropose =
     activeProposalId == null &&
@@ -560,9 +677,20 @@ const Propose = () => {
           e.preventDefault();
           await propose();
           setDescription("");
+          setTokenIds("");
           setActions([{ target: "", signature: "", calldata: "", value: "" }]);
         }}
       >
+        <label htmlFor="tokens">Token IDs (comma separated)</label>
+        <input
+          id="tokens"
+          value={commaSeparatedTokenIds}
+          rows={5}
+          placeholder="1,2,3..."
+          onChange={(e) => setTokenIds(e.target.value)}
+          style={{ width: "100%", marginBottom: "3.2rem" }}
+        />
+
         <label htmlFor="description">Description (markdown)</label>
         <textarea
           id="description"
@@ -628,7 +756,6 @@ const Propose = () => {
                       ),
                     )
                   }
-                  autoComplete="off"
                   style={{ width: "100%" }}
                 />
               </React.Fragment>
@@ -675,18 +802,15 @@ const Propose = () => {
 
 const ConnectedAccountSection = () => {
   const { address: connectedAccount } = useAccount();
-
-  const { data: votingPower } = useNounsTokenRead("getCurrentVotes", {
-    args: [connectedAccount],
-    enabled: connectedAccount != null,
-  });
-  const { data: proposalThreshold } = useNounsDaoV3Read("proposalThreshold");
+  const { data: proposalThreshold } = useNounsDaoV4Read("proposalThreshold");
+  const controlledTokenIds = useControlledTokenIds(connectedAccount);
+  const votingPower = controlledTokenIds?.length;
 
   return (
     <>
       <dl>
         <dt>Voting power</dt>
-        <dd>{votingPower == null ? "..." : Number(votingPower)}</dd>
+        <dd>{votingPower ?? "..."}</dd>
         <dt>Proposal threshold</dt>
         <dd>{proposalThreshold == null ? "..." : Number(proposalThreshold)}</dd>
       </dl>
@@ -694,4 +818,4 @@ const ConnectedAccountSection = () => {
   );
 };
 
-export default NounsDaoV3;
+export default NounsDaoV4;

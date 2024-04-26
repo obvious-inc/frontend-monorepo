@@ -1,23 +1,38 @@
 import React from "react";
-import { useAccount, useConnect, useDisconnect, useConnectors } from "wagmi";
-import { useAddress } from "./addresses.js";
+import { mainnet, sepolia } from "wagmi/chains";
+import {
+  useAccount,
+  useChainId,
+  useConnect,
+  useDisconnect,
+  useConnectors,
+} from "wagmi";
+import {
+  MAINNET_NOUNS_TOKEN_ADDRESS,
+  SEPOLIA_NOUNS_TOKEN_ADDRESS,
+} from "./constants.js";
+import useContractAddress, {
+  Provider as ContractAddressProvider,
+} from "./hooks/address.jsx";
 import AccountDisplayName from "./components/account-display-name.jsx";
 import EtherscanLink from "./components/etherscan-link.jsx";
 
-const NounsDAOV3 = React.lazy(() => import("./components/nouns-dao-v3.jsx"));
-const NounsGovernor = React.lazy(
-  () => import("./components/nouns-governor.jsx"),
-);
+const NounsDaoV3 = React.lazy(() => import("./components/nouns-dao-v3.jsx"));
+const NounsDaoV4 = React.lazy(() => import("./components/nouns-dao-v4.jsx"));
 const AuctionHouse = React.lazy(() => import("./components/auction-house.jsx"));
-const Delegation = React.lazy(() => import("./components/nouns-token.jsx"));
+const NounsToken = React.lazy(() => import("./components/nouns-token.jsx"));
+const DelegationToken = React.lazy(
+  () => import("./components/delegation-token.jsx"),
+);
 
 const App = () => {
   const [contractIdentifier, setContractIdentifier] = React.useState(
     "nouns-auction-house",
   );
-  const [params, setParams] = React.useState({});
 
-  const contractAddress = useAddress(contractIdentifier);
+  const selectedContractAddress = useContractAddress(contractIdentifier);
+  const delegationTokenAddress = useContractAddress("nouns-delegation-token");
+  const isV4 = delegationTokenAddress != null;
 
   return (
     <>
@@ -35,53 +50,53 @@ const App = () => {
           {[
             { value: "nouns-auction-house", label: "Auction House" },
             { value: "nouns-token", label: "Nouns Token" },
-            { value: "nouns-dao", label: "Nouns DAO V3" },
-            {
-              value: "nouns-governor",
-              label: "Nouns Governor",
-              disabled: true,
-            },
-            {
-              value: "delegation-token",
-              label: "Delegation token",
-              disabled: true,
-            },
-          ].map((o) => (
-            <option key={o.value} value={o.value} disabled={o.disabled}>
-              {o.label}
-            </option>
-          ))}
+            { value: "nouns-dao", label: "DAO" },
+            isV4
+              ? {
+                  value: "nouns-delegation-token",
+                  label: "Delegation token",
+                }
+              : null,
+          ]
+            .filter(Boolean)
+            .map((o) => (
+              <option key={o.value} value={o.value} disabled={o.disabled}>
+                {o.label}
+              </option>
+            ))}
         </select>
-        <p data-small data-compact>
-          <EtherscanLink
-            address={contractAddress}
-            data-dimmed
-            style={{ textDecoration: "none" }}
-          >
-            {contractAddress}
-          </EtherscanLink>
-        </p>
+        {selectedContractAddress != null && (
+          <>
+            <p data-small data-compact>
+              <EtherscanLink
+                address={selectedContractAddress}
+                data-dimmed
+                style={{ textDecoration: "none" }}
+              >
+                {selectedContractAddress}
+              </EtherscanLink>
+            </p>
 
-        <React.Suspense fallback={null}>
-          <div style={{ padding: "3.2rem 0 0" }}>
-            {(() => {
-              switch (contractIdentifier) {
-                case "nouns-dao":
-                  return <NounsDAOV3 params={params} setParams={setParams} />;
-                case "nouns-governor":
-                  return (
-                    <NounsGovernor params={params} setParams={setParams} />
-                  );
-                case "nouns-auction-house":
-                  return <AuctionHouse params={params} setParams={setParams} />;
-                case "nouns-token":
-                  return <Delegation params={params} setParams={setParams} />;
-                default:
-                  throw new Error();
-              }
-            })()}
-          </div>
-        </React.Suspense>
+            <React.Suspense fallback={null}>
+              <div style={{ padding: "3.2rem 0 0" }}>
+                {(() => {
+                  switch (contractIdentifier) {
+                    case "nouns-dao":
+                      return isV4 ? <NounsDaoV4 /> : <NounsDaoV3 />;
+                    case "nouns-auction-house":
+                      return <AuctionHouse />;
+                    case "nouns-token":
+                      return <NounsToken />;
+                    case "nouns-delegation-token":
+                      return <DelegationToken />;
+                    default:
+                      throw new Error();
+                  }
+                })()}
+              </div>
+            </React.Suspense>
+          </>
+        )}
       </main>
     </>
   );
@@ -208,4 +223,23 @@ const useConnectorsWithReadyState = () => {
   );
 };
 
-export default App;
+export default function Root() {
+  const chainId = useChainId();
+
+  const nounsAddress = (() => {
+    const v4 = new URLSearchParams(location.search).get("v4") != null;
+    if (v4 && chainId == sepolia.id)
+      return "0x9Add7D94E4076156A015758816243B38a9330A90";
+
+    return {
+      [mainnet.id]: MAINNET_NOUNS_TOKEN_ADDRESS,
+      [sepolia.id]: SEPOLIA_NOUNS_TOKEN_ADDRESS,
+    }[chainId];
+  })();
+
+  return (
+    <ContractAddressProvider nounsAddress={nounsAddress}>
+      <App />
+    </ContractAddressProvider>
+  );
+}

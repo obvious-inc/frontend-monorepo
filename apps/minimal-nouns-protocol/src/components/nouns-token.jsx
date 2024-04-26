@@ -39,7 +39,9 @@ const NounsToken = () => {
 };
 
 const useOwnedNouns = (address) => {
-  const { data: balance } = useNounsTokenRead("balanceOf", { args: [address] });
+  const { data: balance } = useNounsTokenRead("balanceOf", {
+    args: [address],
+  });
 
   const { data } = useNounsTokenReads("tokenOfOwnerByIndex", {
     args:

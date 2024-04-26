@@ -1,104 +1,35 @@
 import { isAddress } from "viem";
 import React from "react";
 import { useAccount, useEnsName, useEnsAddress } from "wagmi";
+import { ZERO_ADDRESS } from "../constants.js";
+import useAddress from "../hooks/address.jsx";
 import {
-  useNounsTokenRead,
-  useNounsTokenReads,
   useDelegationTokenRead,
-  useDelegationTokenReads,
   useDelegationTokenWrite,
-  useNounsGovernorReads,
 } from "../hooks/contracts.js";
+import { useNounTokens, useDelegationTokens } from "../hooks/tokens.js";
 import AccountDisplayName from "./account-display-name.jsx";
 
-const ZERO_ADDRESS = "0x".padEnd(42, "0");
-
-const useOwnedTokens = () => {
+const DelegationToken = () => {
   const { address: connectedAccountAddress } = useAccount();
-
-  const { data: tokenBalance } = useNounsTokenRead("balanceOf", {
-    args: [connectedAccountAddress],
-  });
-
-  const { data } = useNounsTokenReads("tokenOfOwnerByIndex", {
-    args:
-      tokenBalance == null
-        ? []
-        : Array.from({ length: Number(tokenBalance) }).map((_, index) => [
-            connectedAccountAddress,
-            index,
-          ]),
-    enabled: tokenBalance != null,
-  });
-
-  const { data: delegates } = useNounsGovernorReads("delegateOf", {
-    args: data == null ? [] : data.map((d) => [Number(d.data)]),
-    enabled: data?.length > 0,
-  });
-
-  if (tokenBalance != null && Number(tokenBalance) === 0) return [];
-
-  return data?.map((d, index) => {
-    const delegate = delegates?.[index]?.data;
-    return { id: Number(d.data), delegate };
-  });
-};
-
-const useDelegatedTokens = () => {
-  const { address: connectedAccountAddress } = useAccount();
-
-  const { data: tokenBalance } = useDelegationTokenRead("balanceOf", {
-    args: [connectedAccountAddress],
-  });
-
-  const tokenIndecies =
-    tokenBalance == null
-      ? []
-      : Array.from({ length: Number(tokenBalance) }).map((_, index) => index);
-
-  const { data: tokenIds } = useDelegationTokenReads("tokenOfOwnerByIndex", {
-    args: tokenIndecies.map((index) => [connectedAccountAddress, index]),
-    enabled: tokenBalance != null,
-  });
-
-  const { data: owners } = useNounsTokenReads("ownerOf", {
-    args: tokenIds?.map((d) => [Number(d.data)]) ?? [],
-    enabled: tokenIds?.length > 0,
-  });
-
-  if (tokenBalance != null && Number(tokenBalance) === 0) return [];
-
-  return tokenIds?.map((d, index) => {
-    const owner = owners?.[index]?.data;
-    return { id: Number(d.data), owner };
-  });
-};
-
-const NounsGovernor = () => {
-  const { address: connectedAccountAddress } = useAccount();
+  const delegationTokenContractAddress = useAddress("nouns-delegation-token");
 
   const { data: adminAddress } = useDelegationTokenRead("delegationAdmins", {
     args: [connectedAccountAddress],
   });
 
-  const ownedNounTokens = useOwnedTokens();
-  const delegatedNounTokens = useDelegatedTokens();
+  const ownedNounTokens = useNounTokens(connectedAccountAddress, {
+    includeDelegate: true,
+  });
+  const delegationTokens = useDelegationTokens(connectedAccountAddress, {
+    includeNounOwner: true,
+  });
 
-  const votingPower = (() => {
-    if (ownedNounTokens == null || delegatedNounTokens == null) return null;
-    const ownedVotingPower = ownedNounTokens.reduce((acc, { delegate }) => {
-      if (delegate != null && delegate !== connectedAccountAddress) return acc;
-      return acc + 1;
-    }, 0);
-
-    return ownedVotingPower + delegatedNounTokens.length;
-  })();
+  if (delegationTokenContractAddress == null) return null;
 
   return (
     <>
       <dl>
-        <dt>Current voting power</dt>
-        <dd>{votingPower == null ? "..." : votingPower}</dd>
         <dt>Delegation admin</dt>
         <dd>
           {adminAddress == null
@@ -113,49 +44,54 @@ const NounsGovernor = () => {
             ? "..."
             : ownedNounTokens.length === 0
               ? "None"
-              : ownedNounTokens.map((t, i) => {
-                  const isDelegated =
-                    t.delegate != null &&
-                    t.delegate !== connectedAccountAddress;
-                  return (
-                    <React.Fragment key={t.id}>
-                      {i !== 0 && <br />}
-                      Noun {t.id}
-                      {isDelegated && (
-                        <>
-                          {" "}
-                          (delegated to{" "}
-                          <AccountDisplayName address={t.delegate} />)
-                        </>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-        </dd>
-        <dt>Incoming Delegations</dt>
-        <dd>
-          {delegatedNounTokens == null
-            ? "..."
-            : delegatedNounTokens.length === 0
-              ? "None"
-              : delegatedNounTokens.map((t, i) => (
+              : ownedNounTokens.map((t, i) => (
                   <React.Fragment key={t.id}>
                     {i !== 0 && <br />}
                     Noun {t.id}
-                    {t.owner != null && (
+                    {t.delegate != null && (
                       <>
                         {" "}
-                        (delegated from <AccountDisplayName address={t.owner} />
+                        (delegated to{" "}
+                        {t.delegate !== connectedAccountAddress ? (
+                          <AccountDisplayName address={t.delegate} />
+                        ) : (
+                          <>yourself</>
+                        )}
                         )
                       </>
                     )}
                   </React.Fragment>
                 ))}
         </dd>
+        <dt>Incoming Delegations</dt>
+        <dd>
+          {delegationTokens == null
+            ? "..."
+            : delegationTokens.length === 0
+              ? "None"
+              : delegationTokens
+                  .filter(
+                    // Don’t show nouns delegated from yourself
+                    (dt) => !ownedNounTokens.some((nt) => nt.id === dt.id),
+                  )
+                  .map((t, i) => (
+                    <React.Fragment key={t.id}>
+                      {i !== 0 && <br />}
+                      Noun {t.id}
+                      {t.owner != null && (
+                        <>
+                          {" "}
+                          (delegated from{" "}
+                          <AccountDisplayName address={t.owner} />)
+                        </>
+                      )}
+                    </React.Fragment>
+                  ))}
+        </dd>
       </dl>
 
-      <details style={{ marginTop: "3.2rem" }}>
-        <summary>Delegation</summary>
+      <details open style={{ marginTop: "3.2rem" }}>
+        <summary>Delegate</summary>
         {(() => {
           if (ownedNounTokens == null) return null;
           if (ownedNounTokens.length === 0) return null;
@@ -183,9 +119,7 @@ const MintDelegationTokenForm = ({ tokens }) => {
   });
 
   const targetToken = tokens.find((t) => t.id === Number(targetTokenId));
-  const targetTokenIsDelegated =
-    targetToken?.delegate != null &&
-    targetToken.delegate !== connectedAccountAddress;
+  const targetTokenIsDelegated = targetToken?.delegate != null;
 
   const targetAccountAddress = targetAccountEnsAddress ?? targetAccountQuery;
 
@@ -247,6 +181,7 @@ const MintDelegationTokenForm = ({ tokens }) => {
         value={targetAccountQuery}
         onChange={(e) => setTargetAccountQuery(e.target.value)}
         placeholder="0x..."
+        autoComplete="off"
         style={{ width: "100%", marginTop: "0.8rem" }}
       />
       <p data-small data-dimmed data-compact>
@@ -286,4 +221,4 @@ const MintDelegationTokenForm = ({ tokens }) => {
   );
 };
 
-export default NounsGovernor;
+export default DelegationToken;

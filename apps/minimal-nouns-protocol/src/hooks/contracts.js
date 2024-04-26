@@ -10,31 +10,32 @@ import auctionHouseAbi from "../auction-house-abi.js";
 import nounsTokenAbi from "../nouns-token-abi.js";
 import descriptorAbi from "../descriptor-v2-abi.js";
 import nounsDaoV3Abi from "../nouns-dao-v3-abi.js";
-import nounsGovernorAbi from "../nouns-governor-abi.js";
+import nounsDaoV4Abi from "../nouns-dao-v4-abi.js";
 import delegationTokenAbi from "../delegation-token-abi.js";
-import { useAddress } from "../addresses.js";
+import useAddress from "./address.jsx";
 
-const abiByIdentifier = {
+const abis = {
   "nouns-token": nounsTokenAbi,
   "nouns-descriptor": descriptorAbi,
   "nouns-auction-house": auctionHouseAbi,
-  "nouns-dao": nounsDaoV3Abi,
-  "nouns-governor": nounsGovernorAbi,
+  "nouns-dao:v3": nounsDaoV3Abi,
+  "nouns-dao:v4": nounsDaoV4Abi,
   "nouns-delegation-token": delegationTokenAbi,
 };
 
 const createContractReader =
-  (contractIdentifier) =>
+  (versionedContractIdentifier) =>
   (functionName, { args = [], watch = false, enabled = true } = {}) => {
+    const [contractIdentifier] = versionedContractIdentifier.split(":");
     const address = useAddress(contractIdentifier);
     const { data: blockNumber } = useBlockNumber({ watch });
 
     const { data, status, error, refetch } = useReadContract({
       address,
-      abi: abiByIdentifier[contractIdentifier],
+      abi: abis[versionedContractIdentifier],
       functionName,
       args,
-      query: { enabled },
+      query: { enabled: enabled && address != null },
     });
 
     if (error) console.log(contractIdentifier, functionName, error);
@@ -48,22 +49,23 @@ const createContractReader =
   };
 
 const createContractBatchReader =
-  (contractIdentifier) =>
+  (versionedContractIdentifier) =>
   (functionName, { args = [], watch = false, enabled = true } = {}) => {
+    const [contractIdentifier] = versionedContractIdentifier.split(":");
     const address = useAddress(contractIdentifier);
     const { data: blockNumber } = useBlockNumber({ watch });
 
     const { data, refetch, status, error } = useReadContracts({
       contracts: args?.map((a) => ({
         address,
-        abi: abiByIdentifier[contractIdentifier],
+        abi: abis[versionedContractIdentifier],
         functionName,
         args: a,
       })),
-      query: { enabled },
+      query: { enabled: enabled && address != null },
     });
 
-    if (error) console.log(contractIdentifier, functionName, error);
+    if (error) console.log(versionedContractIdentifier, functionName, error);
 
     React.useEffect(() => {
       if (!enabled || !watch) return;
@@ -78,11 +80,12 @@ const createContractBatchReader =
   };
 
 const createContractWriter =
-  (contractIdentifier) =>
+  (versionedContractIdentifier) =>
   (functionName, { enabled = true, watch = false, ...options } = {}) => {
-    const { data: blockNumber } = useBlockNumber({ watch, query: { enabled } });
-
+    const [contractIdentifier] = versionedContractIdentifier.split(":");
     const address = useAddress(contractIdentifier);
+
+    const { data: blockNumber } = useBlockNumber({ watch, query: { enabled } });
 
     const {
       data,
@@ -90,10 +93,10 @@ const createContractWriter =
       refetch,
     } = useSimulateContract({
       address,
-      abi: abiByIdentifier[contractIdentifier],
+      abi: abis[versionedContractIdentifier],
       functionName,
       ...options,
-      query: { enabled },
+      query: { enabled: enabled && address != null },
     });
 
     const { writeContractAsync, status, error: callError } = useWriteContract();
@@ -105,7 +108,7 @@ const createContractWriter =
 
     const error = callError ?? simulationError;
 
-    if (error) console.log(contractIdentifier, functionName, error);
+    if (error) console.log(contractIdentifier, functionName, error, options);
 
     if (data?.request == null) return { status, error };
 
@@ -128,9 +131,9 @@ export const useAuctionHouseReads = createContractBatchReader(
   "nouns-auction-house",
 );
 
-export const useNounsDaoWrite = createContractWriter("nouns-dao");
-export const useNounsDaoRead = createContractReader("nouns-dao");
-export const useNounsDaoReads = createContractBatchReader("nouns-dao");
+export const useNounsDaoV3Write = createContractWriter("nouns-dao:v3");
+export const useNounsDaoV3Read = createContractReader("nouns-dao:v3");
+export const useNounsDaoV3Reads = createContractBatchReader("nouns-dao:v3");
 
 export const useDelegationTokenWrite = createContractWriter(
   "nouns-delegation-token",
@@ -142,7 +145,6 @@ export const useDelegationTokenReads = createContractBatchReader(
   "nouns-delegation-token",
 );
 
-export const useNounsGovernorWrite = createContractWriter("nouns-governor");
-export const useNounsGovernorRead = createContractReader("nouns-governor");
-export const useNounsGovernorReads =
-  createContractBatchReader("nouns-governor");
+export const useNounsDaoV4Write = createContractWriter("nouns-dao:v4");
+export const useNounsDaoV4Read = createContractReader("nouns-dao:v4");
+export const useNounsDaoV4Reads = createContractBatchReader("nouns-dao:v4");
