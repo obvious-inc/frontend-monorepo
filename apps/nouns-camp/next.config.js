@@ -86,7 +86,6 @@ module.exports = withSentry(
       return config;
     },
     experimental: {
-      cpus: 4,
       turbo: {
         // Ignoring modules is not a thing yet
         resolveAlias: Object.fromEntries(
@@ -94,6 +93,5 @@ module.exports = withSentry(
         ),
       },
     },
-    maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // Increase cache size to 10 MB
   }),
 );
