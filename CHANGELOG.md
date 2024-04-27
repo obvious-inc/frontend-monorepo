@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.45] - 2024-04-27
+
+### Refactor
+
+- Comment unavailable query fields on proposals page
+- Solve wallet hook issue with config
+- Comment unavailable query fields on subgraph
+
+### Miscellaneous Tasks
+
+- Cleanup useless settings from Next configs
+
 ## [1.0.0-alpha.44] - 2024-04-27
 
 ### Features

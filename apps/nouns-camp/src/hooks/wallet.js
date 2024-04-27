@@ -12,6 +12,7 @@ import { array as arrayUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import { useConfig } from "../config-provider.js";
 import useChainId, { useConnectedChainId, defaultChainId } from "./chain-id.js";
 
 const impersonationAddress =
@@ -196,7 +197,7 @@ export const useWallet = () => {
     useSwitchChain();
   const chainId = useChainId();
   const connectedChainId = useConnectedChainId();
-  const { canaryAccounts, betaAccounts } = { canaryAccounts: [], betaAccounts:[] } /*useConfig()*/;
+  const { canaryAccounts, betaAccounts } = { canaryAccounts: [], betaAccounts:[] } || useConfig();
 
   const isUnsupportedChain =
     connectedChainId != null && chainId !== connectedChainId;
