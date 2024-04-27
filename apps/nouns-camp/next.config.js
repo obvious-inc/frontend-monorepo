@@ -94,5 +94,6 @@ module.exports = withSentry(
         ),
       },
     },
+    maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // Increase cache size to 10 MB
   }),
 );

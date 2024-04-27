@@ -239,7 +239,9 @@ const Content = ({ targetAddress, titleProps, dismiss }) => {
                   setPendingClear(false);
                 }
               }}
-              disabled={hasPendingClear || hasPendingUpdate}
+              disabled={
+                hasPendingClear || hasPendingUpdate || clearDelegate == null
+              }
               isLoading={hasPendingClear}
             >
               Clear delegation
@@ -249,7 +251,12 @@ const Content = ({ targetAddress, titleProps, dismiss }) => {
             form="delegate-form"
             type="submit"
             variant="primary"
-            disabled={!hasChanges || hasPendingUpdate || hasPendingClear}
+            disabled={
+              !hasChanges ||
+              hasPendingUpdate ||
+              hasPendingClear ||
+              setDelegate == null
+            }
             isLoading={hasPendingUpdate}
           >
             {isDelegating

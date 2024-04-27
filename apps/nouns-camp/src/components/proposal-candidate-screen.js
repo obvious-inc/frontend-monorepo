@@ -341,7 +341,7 @@ const ProposalCandidateScreenContent = ({
                 <Tabs.Item key="activity" title="Activity">
                   <div style={{ padding: "3.2rem 0 4rem" }}>
                     <ProposalActionForm
-                      mode="feedback"
+                      mode="onchain-comment"
                       reason={pendingFeedback}
                       setReason={setPendingFeedback}
                       support={pendingSupport}
@@ -576,7 +576,7 @@ const ProposalCandidateScreenContent = ({
                         <>
                           <ProposalActionForm
                             size="small"
-                            mode="feedback"
+                            mode="onchain-comment"
                             reason={pendingFeedback}
                             setReason={setPendingFeedback}
                             support={pendingSupport}
@@ -614,7 +614,7 @@ const ProposalCandidateScreenContent = ({
                     <div style={{ marginBottom: "3.2rem" }}>
                       <ProposalActionForm
                         size="small"
-                        mode="feedback"
+                        mode="onchain-comment"
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}

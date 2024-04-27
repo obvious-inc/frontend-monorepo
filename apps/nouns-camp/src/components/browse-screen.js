@@ -1462,7 +1462,14 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
           </>
         );
 
-      if (days <= 1) return <>Starts in {Math.round(minutes / 60)} hours</>;
+      if (days <= 1) {
+        const roundedHours = Math.round(minutes / 60);
+        return (
+          <>
+            Starts in {roundedHours} {roundedHours === 1 ? "hour" : "hours"}
+          </>
+        );
+      }
 
       return <>Starts in {Math.round(hours / 24)} days</>;
     }
