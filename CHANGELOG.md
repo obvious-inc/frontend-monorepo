@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.44] - 2024-04-27
+
+### Features
+
+- Migrate updates from upstream (#286)
+
+## [1.0.0-alpha.43] - 2024-04-26
+
+### Miscellaneous Tasks
+
+- Add node version 21.x to the build workflow matrix
+- Migrate camp ESLint config from old format to the latest
+- Migrate root ESLint config from old format to the latest
+
 ## [1.0.0-alpha.42] - 2024-04-23
 
 ### Miscellaneous Tasks
