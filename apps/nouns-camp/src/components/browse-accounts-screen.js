@@ -246,7 +246,7 @@ const BrowseAccountsScreen = () => {
         case "recent-votes-cast":
           return arrayUtils.sortBy(
             {
-              value: (a) => (recentVotesByAccountAddress[a.id] ?? []).length,
+              value: (a) => (recentVotesByAccountAddress?.[a.id] ?? []).length,
               order,
             },
             {
@@ -259,7 +259,7 @@ const BrowseAccountsScreen = () => {
         case "recent-vwrs-cast":
           return arrayUtils.sortBy(
             {
-              value: (a) => recentVwrCountByAccountAddress[a.id] ?? 0,
+              value: (a) => recentVwrCountByAccountAddress?.[a.id] ?? 0,
               order,
             },
             accounts,
@@ -267,7 +267,7 @@ const BrowseAccountsScreen = () => {
         case "recent-revotes":
           return arrayUtils.sortBy(
             {
-              value: (a) => recentRevoteCountByAccountAddress[a.id] ?? 0,
+              value: (a) => recentRevoteCountByAccountAddress?.[a.id] ?? 0,
               order,
             },
             {
@@ -276,7 +276,7 @@ const BrowseAccountsScreen = () => {
                   recentVwrCountByAccountAddress?.[a.id] ?? 0;
                 if (recentVwrCount === 0) return Infinity;
                 const recentVoteCount = (
-                  recentVotesByAccountAddress[a.id] ?? []
+                  recentVotesByAccountAddress?.[a.id] ?? []
                 ).length;
 
                 // Non-vwrs are worth less than vws
@@ -287,7 +287,7 @@ const BrowseAccountsScreen = () => {
             {
               value: (a) => {
                 const recentVoteCount = (
-                  recentVotesByAccountAddress[a.id] ?? []
+                  recentVotesByAccountAddress?.[a.id] ?? []
                 ).length;
                 return recentVoteCount === 0 ? Infinity : recentVoteCount;
               },

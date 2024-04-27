@@ -1,5 +1,5 @@
 import prettier from "eslint-config-prettier";
-import next from "eslint-plugin-next";
+import next from "eslint-config-next";
 import nextOnPages from "eslint-plugin-next-on-pages";
 
 export default {

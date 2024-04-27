@@ -174,10 +174,10 @@ const ProposalMainSection = ({
   });
   const [quotedFeedItemIds, setQuotedFeedItemIds] = React.useState([]);
 
-  const quotedFeedItems = React.useMemo(
-    () => quotedFeedItemIds.map((id) => feedItems.find((i) => i.id === id)),
-    [feedItems, quotedFeedItemIds],
-  );
+  const quotedFeedItems = React.useMemo(() => {
+    if (currentFormAction === "farcaster-comment") return [];
+    return quotedFeedItemIds.map((id) => feedItems.find((i) => i.id === id));
+  }, [currentFormAction, feedItems, quotedFeedItemIds]);
 
   const reasonWithReposts = React.useMemo(() => {
     const markedQuotes = quotedFeedItems.map((item) => {
@@ -594,7 +594,11 @@ const ProposalMainSection = ({
                         <ActivityFeed
                           context="proposal"
                           items={feedItems}
-                          onQuote={onQuote}
+                          onQuote={
+                            currentFormAction === "farcaster-comment"
+                              ? null
+                              : onQuote
+                          }
                         />
                       </React.Suspense>
                     )}
@@ -773,7 +777,11 @@ const ProposalMainSection = ({
                             <ActivityFeed
                               context="proposal"
                               items={feedItems}
-                              onQuote={onQuote}
+                              onQuote={
+                                currentFormAction === "farcaster-comment"
+                                  ? null
+                                  : onQuote
+                              }
                             />
                           </div>
                         </React.Suspense>
