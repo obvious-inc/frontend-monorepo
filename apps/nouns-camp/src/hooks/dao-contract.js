@@ -126,7 +126,14 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
         inputs: [
           { type: "uint256" },
           { type: "uint256" },
-          [{ type: "uint16" }, { type: "uint16" }, { type: "uint32" }],
+          {
+            components: [
+              { type: "uint16" },
+              { type: "uint16" },
+              { type: "uint32" },
+            ],
+            type: "tuple",
+          },
         ],
         name: "dynamicQuorumVotes",
         outputs: [{ type: "uint256" }],
@@ -407,11 +414,15 @@ export const useCreateProposalWithSignatures = () => {
       abi: [
         {
           inputs: [
-            [
-              { name: "sig", type: "bytes" },
-              { name: "signer", type: "address" },
-              { name: "expirationTimestamp", type: "uint256" },
-            ],
+            {
+              components: [
+                { name: "sig", type: "bytes" },
+                { name: "signer", type: "address" },
+                { name: "expirationTimestamp", type: "uint256" },
+              ],
+              name: "proposerSignatures",
+              type: "tuple[]",
+            },
             { name: "targets", type: "address[]" },
             { name: "values", type: "uint256[]" },
             { name: "signatures", type: "string[]" },
@@ -499,11 +510,15 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
         {
           inputs: [
             { name: "proposalId", type: "uint256" },
-            [
-              { name: "sig", type: "bytes" },
-              { name: "signer", type: "address" },
-              { name: "expirationTimestamp", type: "uint256" },
-            ],
+            {
+              components: [
+                { name: "sig", type: "bytes" },
+                { name: "signer", type: "address" },
+                { name: "expirationTimestamp", type: "uint256" },
+              ],
+              name: "proposerSignatures",
+              type: "tuple[]",
+            },
             { name: "targets", type: "address[]" },
             { name: "values", type: "uint256[]" },
             { name: "signatures", type: "string[]" },
