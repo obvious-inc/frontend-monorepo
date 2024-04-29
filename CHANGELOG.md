@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.46] - 2024-04-29
+
+### Features
+
+- Migrate updates from upstream (#292)
+
+### Revert
+
+- Migrate camp ESLint config from old format to the latest
+- Migrate root ESLint config from old format to the latest
+- Bump eslint from 9.0.0 to 9.1.1 in the eslint group (#278)`
+- Bump eslint from 8.57.0 to 9.0.0 in the eslint group (#247)
+- Solve wallet hook issue with config
+
 ## [1.0.0-alpha.45] - 2024-04-27
 
 ### Refactor
