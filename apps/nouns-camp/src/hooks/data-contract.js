@@ -1,5 +1,4 @@
 import {
-  parseAbi,
   stringToBytes,
   keccak256,
   encodePacked,
@@ -40,9 +39,19 @@ export const useSendProposalCandidateFeedback = (
   const { data: simulationResult, isSuccess: simulationSuccessful } =
     useSimulateContract({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function sendCandidateFeedback(address proposer, string memory slug, uint8 support, string memory reason) external",
-      ]),
+      abi: [
+        {
+          inputs: [
+            { name: "proposer", type: "address" },
+            { name: "slug", type: "string" },
+            { name: "support", type: "uint8" },
+            { name: "reason", type: "string" },
+          ],
+          name: "sendCandidateFeedback",
+          outputs: [],
+          type: "function",
+        },
+      ],
       functionName: "sendCandidateFeedback",
       args: [proposerId, slug, support, reason],
       query: {
@@ -85,9 +94,14 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
   const { data: simulationResult, isSuccess: simulationSuccessful } =
     useSimulateContract({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function sendFeedback(uint256 proposalId, uint8 support, string memory reason) external",
-      ]),
+      abi: [
+        {
+          inputs: [{ type: "uint256" }, { type: "uint8" }, { type: "string" }],
+          name: "sendFeedback",
+          outputs: [],
+          type: "function",
+        },
+      ],
       functionName: "sendFeedback",
       args: [parseInt(proposalId), support, reason],
       query: {
@@ -132,9 +146,22 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
 
     return writeContract({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function createProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate) external payable",
-      ]),
+      abi: [
+        {
+          inputs: [
+            { name: "targets", type: "address[]" },
+            { name: "values", type: "uint256[]" },
+            { name: "signatures", type: "string[]" },
+            { name: "calldatas", type: "bytes[]" },
+            { name: "description", type: "string" },
+            { name: "slug", type: "string" },
+            { name: "proposalIdToUpdate", type: "uint256" },
+          ],
+          name: "createProposalCandidate",
+          outputs: [],
+          type: "function",
+        },
+      ],
       functionName: "createProposalCandidate",
       value: votingPower > 0 ? 0 : createCost,
       args: [
@@ -158,9 +185,23 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
       .then((receipt) => {
         const eventLog = receipt.logs[0];
         const decodedEvent = decodeEventLog({
-          abi: parseAbi([
-            "event ProposalCandidateCreated(address indexed msgSender, address[] targets, uint256[] values, string[] signatures, bytes[] calldatas, string description, string slug, uint256 proposalIdToUpdate, bytes32 encodedProposalHash)",
-          ]),
+          abi: [
+            {
+              inputs: [
+                { indexed: true, name: "msgSender", type: "address" },
+                { name: "targets", type: "address[]" },
+                { name: "values", type: "uint256[]" },
+                { name: "signatures", type: "string[]" },
+                { name: "calldatas", type: "bytes[]" },
+                { name: "description", type: "string" },
+                { name: "slug", type: "string" },
+                { name: "proposalIdToUpdate", type: "uint256" },
+                { name: "encodedProposalHash", type: "bytes32" },
+              ],
+              name: "ProposalCandidateCreated",
+              type: "event",
+            },
+          ],
           data: eventLog.data,
           topics: eventLog.topics,
         });
@@ -174,9 +215,14 @@ export const useProposalCandidateCreateCost = ({ enabled = true } = {}) => {
 
   const { data } = useReadContract({
     address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function createCandidateCost() public view returns (uint256)",
-    ]),
+    abi: [
+      {
+        inputs: [],
+        name: "createCandidateCost",
+        outputs: [{ type: "uint256" }],
+        type: "function",
+      },
+    ],
     functionName: "createCandidateCost",
     query: {
       enabled,
@@ -191,9 +237,14 @@ export const useProposalCandidateUpdateCost = ({ enabled = true } = {}) => {
 
   const { data } = useReadContract({
     address: getContractAddress(chainId),
-    abi: parseAbi([
-      "function updateCandidateCost() public view returns (uint256)",
-    ]),
+    abi: [
+      {
+        inputs: [],
+        name: "updateCandidateCost",
+        outputs: [{ type: "uint256" }],
+        type: "function",
+      },
+    ],
     functionName: "updateCandidateCost",
     query: {
       enabled,
@@ -227,9 +278,23 @@ export const useUpdateProposalCandidate = (slug, { enabled = true } = {}) => {
     );
     return writeContract({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function updateProposalCandidate(address[] memory targets, uint256[] memory values, string[] memory signatures, bytes[] memory calldatas, string memory description, string memory slug, uint256 proposalIdToUpdate, string memory reason) external payable",
-      ]),
+      abi: [
+        {
+          inputs: [
+            { name: "targets", type: "address[]" },
+            { name: "values", type: "uint256[]" },
+            { name: "signatures", type: "string[]" },
+            { name: "calldatas", type: "bytes[]" },
+            { name: "description", type: "string" },
+            { name: "slug", type: "string" },
+            { name: "proposalIdToUpdate", type: "uint256" },
+            { name: "reason", type: "string" },
+          ],
+          name: "updateProposalCandidate",
+          outputs: [],
+          type: "function",
+        },
+      ],
       functionName: "updateProposalCandidate",
       value: updateCost,
       args: [
@@ -263,9 +328,14 @@ export const useCancelProposalCandidate = (slug, { enabled = true } = {}) => {
   const { data: simulationResult, isSuccess: simulationSuccessful } =
     useSimulateContract({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function cancelProposalCandidate(string memory slug) external",
-      ]),
+      abi: [
+        {
+          inputs: [{ type: "string" }],
+          name: "cancelProposalCandidate",
+          outputs: [],
+          type: "function",
+        },
+      ],
       functionName: "cancelProposalCandidate",
       args: [slug],
       query: {
@@ -340,9 +410,22 @@ export const useAddSignatureToProposalCandidate = (
   return ({ signature, expirationTimestamp, reason }) =>
     writeContract({
       address: getContractAddress(chainId),
-      abi: parseAbi([
-        "function addSignature(bytes memory sig, uint256 expirationTimestamp, address proposer, string memory slug, uint256 proposalIdToUpdate, bytes memory encodedProp, string memory reason) external",
-      ]),
+      abi: [
+        {
+          inputs: [
+            { name: "sig", type: "bytes" },
+            { name: "expirationTimestamp", type: "uint256" },
+            { name: "proposer", type: "address" },
+            { name: "slug", type: "string" },
+            { name: "proposalIdToUpdate", type: "uint256" },
+            { name: "encodedProp", type: "bytes" },
+            { name: "reason", type: "string" },
+          ],
+          name: "addSignature",
+          outputs: [],
+          type: "function",
+        },
+      ],
       functionName: "addSignature",
       args: [
         signature,

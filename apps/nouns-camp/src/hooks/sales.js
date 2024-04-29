@@ -1,13 +1,21 @@
 import React from "react";
-import { decodeEventLog, parseAbi } from "viem";
+import { decodeEventLog } from "viem";
 import { usePublicClient } from "wagmi";
 
 const fetchAmountFromTransferEvents = ({ event, buyerAddress }) => {
   try {
     const decodedEvent = decodeEventLog({
-      abi: parseAbi([
-        "event Transfer(address indexed src, address indexed dst, uint256 amount)",
-      ]),
+      abi: [
+        {
+          inputs: [
+            { indexed: true, name: "src", type: "address" },
+            { indexed: true, name: "dst", type: "address" },
+            { name: "amount", type: "uint256" },
+          ],
+          name: "Transfer",
+          type: "event",
+        },
+      ],
       topics: event.topics,
       data: event.data,
     });
@@ -24,9 +32,19 @@ const fetchAmountFromTransferEvents = ({ event, buyerAddress }) => {
 const fetchForkIdFromEvent = ({ event }) => {
   try {
     const decodedEvent = decodeEventLog({
-      abi: parseAbi([
-        "event JoinFork(uint32 indexed forkId, address indexed owner, uint256[] tokenIds, uint256[] proposals, string reason)",
-      ]),
+      abi: [
+        {
+          inputs: [
+            { indexed: true, name: "forkId", type: "uint32" },
+            { indexed: true, name: "owner", type: "address" },
+            { name: "tokenIds", type: "uint256[]" },
+            { name: "proposalIds", type: "uint256[]" },
+            { name: "reason", type: "string" },
+          ],
+          name: "JoinFork",
+          type: "event",
+        },
+      ],
       topics: event.topics,
       data: event.data,
     });
