@@ -13,6 +13,7 @@ import {
   buildProposalCastSignatureMessage,
 } from "../../../utils/farcaster.js";
 import { createUri as createTransactionReceiptUri } from "../../../utils/erc-2400.js";
+import { parseNeynarUsers } from "../utils.js";
 
 const { FARCASTER_HUB_HTTP_ENDPOINT, NEYNAR_API_KEY } = process.env;
 
@@ -82,52 +83,20 @@ const fetchProposalCasts = async (chainId, proposalId) => {
   // TODO: Recursively fetch all casts
   // TODO: Somehow include replies (and reactions/replies to relevant onchain stuff we display)
 
-  const verifiedAddresses = arrayUtils.unique(
-    rawCasts.flatMap((c) => c.author.verifications.map((a) => a.toLowerCase())),
+  const casts = rawCasts.map((c) => ({
+    hash: c.hash,
+    fid: c.author.fid,
+    text: c.text,
+    timestamp: c.timestamp,
+  }));
+
+  const accounts = await parseNeynarUsers(
+    { chainId },
+    arrayUtils.unique(
+      (u1, u2) => u1.fid === u2.fid,
+      rawCasts.map((c) => c.author),
+    ),
   );
-
-  const { delegates } = await subgraphFetch({
-    chainId,
-    query: `
-      query {
-        delegates(where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }) {
-          id
-        }
-      }`,
-  });
-
-  const casts = [];
-  const accounts = [];
-
-  for (const c of rawCasts) {
-    casts.push({
-      hash: c.hash,
-      fid: c.author.fid,
-      text: c.text,
-      timestamp: c.timestamp,
-    });
-
-    // Continue if the account has already been added
-    if (accounts.some((a) => a.fid === c.author.fid)) continue;
-
-    const account = {
-      fid: c.author.fid,
-      // Don’t include "!fid" usernames
-      username:
-        c.author.username === `!${c.author.fid}` ? null : c.author.username,
-      displayName: c.author.display_name,
-      pfpUrl: c.author.pfp_url,
-    };
-
-    const verifiedAddresses = c.author.verifications.map((a) =>
-      a.toLowerCase(),
-    );
-
-    const delegate = delegates.find((d) => verifiedAddresses.includes(d.id));
-    if (delegate != null) account.nounerAddress = delegate.id;
-
-    accounts.push(account);
-  }
 
   return { casts, accounts };
 };

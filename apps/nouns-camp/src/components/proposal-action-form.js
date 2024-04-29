@@ -105,22 +105,41 @@ const ProposalActionForm = ({
         mode === "vote" ? "vote" : "give feedback"
       }.`;
 
-    if (mode === "farcaster-comment" && farcasterAccounts?.length === 0)
-      return (
-        <>
-          <p>
-            To cast from Camp you need to verify your address (
-            {connectedWalletAccountAddress.slice(0, 6)}...
-            {connectedWalletAccountAddress.slice(-4)}) with the Farcaster
-            account you wish to use.
-          </p>
-          <p>You can verify addresses in the Warpcast app.</p>
-        </>
+    if (mode === "farcaster-comment") {
+      const selectedAccount = farcasterAccounts?.find(
+        (a) => String(a.fid) === String(selectedFarcasterAccountFid),
       );
 
-    if (mode === "farcaster-comment" && getByteLength(reason) > 320) {
-      const length = getByteLength(reason);
-      return <>Casts are limited to 320 bytes (currently at {length})</>;
+      if (
+        farcasterAccounts?.length === 0 ||
+        (selectedAccount != null && !selectedAccount.hasAccountKey)
+      )
+        return (
+          <>
+            <p>
+              To cast from Camp you need to verify your address (
+              {connectedWalletAccountAddress.slice(0, 6)}...
+              {connectedWalletAccountAddress.slice(-4)}) with the Farcaster
+              account you wish to use.
+            </p>
+            <p>You can verify addresses in the Warpcast app.</p>
+          </>
+        );
+
+      if (getByteLength(reason) > 320) {
+        const length = getByteLength(reason);
+        return <>Casts are limited to 320 bytes (currently at {length})</>;
+      }
+
+      if (selectedAccount != null && selectedAccount.nounerAddress == null) {
+        return (
+          <>
+            Camp defaults to only show casts from accounts with past or present
+            voting power. Users that hasn’t opted out of this filter will not
+            see this cast.
+          </>
+        );
+      }
     }
 
     if (mode !== "vote") {

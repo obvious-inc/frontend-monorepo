@@ -128,7 +128,7 @@ const Content = ({ titleProps, dismiss }) => {
                   <p>You can now cast from Camp with FID {keyData.fid}.</p>
                 );
 
-              const { displayName, username, pfpUrl } = account.userData;
+              const { displayName, username, pfpUrl } = account;
               return (
                 <p>
                   You can now cast from Camp as{" "}

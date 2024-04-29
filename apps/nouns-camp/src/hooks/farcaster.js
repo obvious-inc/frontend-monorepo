@@ -33,6 +33,8 @@ export const useAccountsWithVerifiedEthAddress = (
   ethAddress_,
   { enabled = true, fetchInterval } = {},
 ) => {
+  const chainId = useChainId();
+
   const {
     state: { accountsByFid, fidsByEthAddress },
     setState,
@@ -47,7 +49,7 @@ export const useAccountsWithVerifiedEthAddress = (
   useFetch(
     async () => {
       const res = await fetch(
-        `/api/farcaster-accounts?eth-address=${ethAddress}`,
+        `/api/farcaster-accounts?eth-address=${ethAddress}&chain=${chainId}`,
       );
       if (!res.ok) return;
       const { accounts } = await res.json();
@@ -67,7 +69,7 @@ export const useAccountsWithVerifiedEthAddress = (
       }));
     },
     { enabled: enabled && ethAddress != null, fetchInterval },
-    [ethAddress],
+    [chainId, ethAddress],
   );
 
   return accounts;

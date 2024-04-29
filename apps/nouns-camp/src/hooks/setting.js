@@ -15,6 +15,12 @@ const items = [
     default: "normal",
   },
   {
+    key: "farcaster-cast-filter",
+    type: "enum",
+    values: ["nouners", "none", "disabled"],
+    default: "nouners",
+  },
+  {
     key: "xmas-effects-opt-out",
     type: "bool",
     default: false,

@@ -41,6 +41,7 @@ import {
   useExecuteProposal,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
+import useSetting from "../hooks/setting.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -77,7 +78,7 @@ const supportToString = (n) => {
 };
 
 const useFeedItems = (proposalId) => {
-  const isFarcasterEnabled = useFeatureFlag("farcaster");
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
   const proposal = useProposal(proposalId);
   const candidate = useProposalCandidate(proposal?.candidateId);
 
@@ -101,7 +102,18 @@ const useFeedItems = (proposalId) => {
   const endTimestamp = endBlock?.timestamp;
 
   const casts_ = useProposalCasts(proposalId);
-  const casts = isFarcasterEnabled ? casts_ : null;
+
+  const casts = (() => {
+    switch (farcasterFilter) {
+      case "none":
+        return casts_;
+      case "nouners":
+        return casts_.filter((c) => c.account.nounerAddress != null);
+      case "disabled":
+      default:
+        return null;
+    }
+  })();
 
   return React.useMemo(
     () =>
@@ -615,7 +627,7 @@ const ProposalMainSection = ({
                   }}
                 >
                   <Tabs.Item key="activity" title="Activity">
-                    <div style={{ padding: "3.2rem 0 4rem" }}>
+                    <div style={{ padding: "3.2rem 0 3.2rem" }}>
                       <ProposalActionForm
                         inputRef={proposalActionInputRef}
                         proposalId={proposalId}
