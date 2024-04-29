@@ -180,18 +180,33 @@ const Content = ({ titleProps, dismiss }) => {
                 }
               />
             </div>
-            <p
-              css={css({
-                margin: "1.6rem 0",
-                "@media (min-width: 600px)": {
-                  margin: "2rem 0 2.8rem",
-                },
-              })}
+            <div
+              css={(t) =>
+                css({
+                  margin: "1.6rem 0",
+                  "p + p": { marginTop: "1em" },
+                  '[data-size="small"]': {
+                    fontSize: t.text.sizes.small,
+                  },
+                  '[data-variant="warning"]': {
+                    color: t.colors.textHighlight,
+                  },
+                  "@media (min-width: 600px)": {
+                    margin: "2rem 0 2.8rem",
+                  },
+                })
+              }
             >
-              Scan the QR code to view the key request in Warpcast, or press the
-              button below if you have the Warpcast mobile app installed on your
-              device.
-            </p>
+              <p>
+                Scan the QR code to view the key request in Warpcast, or press
+                the button below if you have the Warpcast mobile app installed
+                on your device.
+              </p>
+              <p data-size="small" data-variant="warning">
+                Issuing account keys requires an onchain transaction. Warpcast
+                will ask you to pay a small fee to cover gas costs.
+              </p>
+            </div>
             <div style={{ display: "flex", justifyContent: "flex-end" }}>
               <Button
                 variant="primary"
