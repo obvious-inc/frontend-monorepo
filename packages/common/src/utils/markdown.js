@@ -97,6 +97,7 @@ const parseToken = (token, context = {}) => {
     case "list":
       return {
         type: token.ordered ? "numbered-list" : "bulleted-list",
+        start: token.start,
         children: parseChildren(token, parseToken, {
           ...context,
           list: true,
