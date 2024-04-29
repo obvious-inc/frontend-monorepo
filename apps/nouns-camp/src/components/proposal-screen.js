@@ -59,7 +59,6 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 import ProposalActionForm from "./proposal-action-form.js";
-import useFeatureFlag from "../hooks/feature-flag.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -195,13 +194,10 @@ const ProposalMainSection = ({
 
   const possibleFormActions =
     !hasCastVote && isVotingOngoing
-      ? ["vote", "onchain-comment"]
-      : ["onchain-comment"];
+      ? ["vote", "onchain-comment", "farcaster-comment"]
+      : ["onchain-comment", "farcaster-comment"];
 
   const submitProposalCast = useSubmitProposalCast(proposalId);
-  const isFarcasterEnabled = useFeatureFlag("farcaster");
-
-  if (isFarcasterEnabled) possibleFormActions.push("farcaster-comment");
 
   const defaultFormAction = possibleFormActions[0];
 
@@ -627,7 +623,7 @@ const ProposalMainSection = ({
                   }}
                 >
                   <Tabs.Item key="activity" title="Activity">
-                    <div style={{ padding: "3.2rem 0 3.2rem" }}>
+                    <div style={{ padding: "3.2rem 0 4rem" }}>
                       <ProposalActionForm
                         inputRef={proposalActionInputRef}
                         proposalId={proposalId}
