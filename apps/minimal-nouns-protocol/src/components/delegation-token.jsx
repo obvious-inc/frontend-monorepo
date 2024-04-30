@@ -1,4 +1,4 @@
-import { isAddress } from "viem";
+import { isAddress, getAddress } from "viem";
 import React from "react";
 import { useAccount, useEnsName, useEnsAddress } from "wagmi";
 import { ZERO_ADDRESS } from "../constants.js";
@@ -9,6 +9,12 @@ import {
 } from "../hooks/contracts.js";
 import { useNounTokens, useDelegationTokens } from "../hooks/tokens.js";
 import AccountDisplayName from "./account-display-name.jsx";
+import MultiSelect from "./multi-select.jsx";
+
+const truncateAddress = (address) => {
+  const checksumAddress = getAddress(address);
+  return [checksumAddress.slice(0, 6), checksumAddress.slice(-4)].join("...");
+};
 
 const DelegationToken = () => {
   const { address: connectedAccountAddress } = useAccount();
@@ -16,6 +22,8 @@ const DelegationToken = () => {
 
   const { data: adminAddress } = useDelegationTokenRead("delegationAdmins", {
     args: [connectedAccountAddress],
+    watch: true,
+    enabled: connectedAccountAddress != null,
   });
 
   const ownedNounTokens = useNounTokens(connectedAccountAddress, {
@@ -27,16 +35,27 @@ const DelegationToken = () => {
 
   if (delegationTokenContractAddress == null) return null;
 
+  if (connectedAccountAddress == null)
+    return (
+      <p data-small data-warning data-box>
+        Connect account to manage delegation
+      </p>
+    );
+
+  if (ownedNounTokens == null || delegationTokens == null) return "...";
+
   return (
     <>
       <dl>
         <dt>Delegation admin</dt>
         <dd>
-          {adminAddress == null
-            ? "..."
-            : adminAddress === ZERO_ADDRESS
-              ? "Not set"
-              : adminAddress}
+          {adminAddress == null ? (
+            "..."
+          ) : adminAddress === ZERO_ADDRESS ? (
+            "Not set"
+          ) : (
+            <AccountDisplayName address={adminAddress} />
+          )}
         </dd>
         <dt>Owned Nouns</dt>
         <dd>
@@ -93,23 +112,35 @@ const DelegationToken = () => {
       <details open style={{ marginTop: "3.2rem" }}>
         <summary>Delegate</summary>
         {(() => {
-          if (ownedNounTokens == null) return null;
-          if (ownedNounTokens.length === 0) return null;
+          if (ownedNounTokens == null || delegationTokens == null) return null;
+          // if (ownedNounTokens.length === 0) return null;
           return (
             <div style={{ marginBottom: "3.2rem" }}>
-              <MintDelegationTokenForm tokens={ownedNounTokens} />
+              <MintDelegationTokenForm
+                ownedNounTokens={ownedNounTokens}
+                delegationTokens={delegationTokens}
+              />
             </div>
           );
         })()}
+      </details>
+
+      <details style={{ marginTop: "3.2rem" }}>
+        <summary>Set admin</summary>
+        <div style={{ marginBottom: "3.2rem" }}>
+          <SetAdminForm />
+        </div>
       </details>
     </>
   );
 };
 
-const MintDelegationTokenForm = ({ tokens }) => {
-  const { address: connectedAccountAddress } = useAccount();
+const MintDelegationTokenForm = ({ ownedNounTokens, delegationTokens }) => {
+  const { address: connectedAccount } = useAccount();
+
   const [targetAccountQuery, setTargetAccountQuery] = React.useState("");
-  const [targetTokenId, setTargetTokenId] = React.useState(tokens[0]?.id);
+  const [targetTokenIds, setTargetTokenIds] = React.useState([]);
+
   const { data: targetAccountEnsName } = useEnsName({
     address: targetAccountQuery,
     enabled: isAddress(targetAccountQuery),
@@ -118,28 +149,78 @@ const MintDelegationTokenForm = ({ tokens }) => {
     name: targetAccountQuery,
   });
 
-  const targetToken = tokens.find((t) => t.id === Number(targetTokenId));
-  const targetTokenIsDelegated = targetToken?.delegate != null;
-
   const targetAccountAddress = targetAccountEnsAddress ?? targetAccountQuery;
 
-  const { call: mintToken } = useDelegationTokenWrite("mint", {
-    args: [targetAccountAddress, targetTokenId],
-    enabled: !targetTokenIsDelegated && isAddress(targetAccountAddress),
+  const { call: mint } = useDelegationTokenWrite("mint", {
+    args: [targetAccountAddress, targetTokenIds[0]],
+    enabled:
+      targetTokenIds.length === 1 &&
+      // Only enable if the token isn’t already minted
+      !ownedNounTokens.some(
+        (t) => t.id === targetTokenIds[0] && t.delegate != null,
+      ) &&
+      isAddress(targetAccountAddress),
     watch: true,
   });
-  const { call: burnToken } = useDelegationTokenWrite("burn", {
-    args: [targetTokenId],
-    enabled: targetTokenIsDelegated,
+  const { call: mintBatch } = useDelegationTokenWrite("mintBatch", {
+    args: [targetAccountAddress, targetTokenIds],
+    enabled:
+      targetTokenIds.length > 1 &&
+      // Only allow batch minting when no selected token is delegated
+      targetTokenIds.every((id) => {
+        const delegationToken = delegationTokens.find((t) => t.id === id);
+        return delegationToken == null;
+      }) &&
+      isAddress(targetAccountAddress),
     watch: true,
   });
-  const { call: transferToken } = useDelegationTokenWrite("safeTransferFrom", {
-    args: [connectedAccountAddress, targetAccountAddress, targetTokenId],
-    enabled: targetTokenIsDelegated && isAddress(targetAccountAddress),
+  const { call: burn } = useDelegationTokenWrite("burn", {
+    args: [targetTokenIds[0]],
+    enabled:
+      targetTokenIds.length === 1 &&
+      // Only enable if the token exists
+      ownedNounTokens.some(
+        (t) => t.delegate != null && t.id === targetTokenIds[0],
+      ),
     watch: true,
   });
+  const { call: safeTransferFrom } = useDelegationTokenWrite(
+    "safeTransferFrom",
+    {
+      args: [connectedAccount, targetAccountAddress, targetTokenIds[0]],
+      enabled:
+        targetTokenIds.length === 1 &&
+        // Only enable if the token exists
+        (ownedNounTokens.some(
+          (t) => t.id === targetTokenIds[0] && t.delegate != null,
+        ) ||
+          delegationTokens.some((t) => t.id === targetTokenIds[0])) &&
+        isAddress(targetAccountAddress),
+      watch: true,
+    },
+  );
 
-  const submitCall = targetTokenIsDelegated ? transferToken : mintToken;
+  const primaryAction =
+    targetTokenIds.length > 1
+      ? "mint-batch"
+      : ownedNounTokens.some(
+            (t) => t.id === targetTokenIds[0] && t.delegate == null,
+          )
+        ? "mint-single"
+        : "transfer";
+
+  const submitCall = (() => {
+    switch (primaryAction) {
+      case "mint-batch":
+        return mintBatch;
+      case "mint-single":
+        return mint;
+      case "transfer":
+        return safeTransferFrom;
+      default:
+        throw new Error();
+    }
+  })();
 
   return (
     <form
@@ -147,34 +228,34 @@ const MintDelegationTokenForm = ({ tokens }) => {
         e.preventDefault();
         await submitCall();
         setTargetAccountQuery("");
+        setTargetTokenIds([]);
       }}
     >
-      <label htmlFor="target-token">Token to delegate</label>
-      <select
-        id="target-token"
-        value={targetTokenId ?? ""}
-        onChange={(e) => {
-          setTargetTokenId(e.target.value);
+      <label htmlFor="target-tokens">Tokens to delegate</label>
+      <MultiSelect
+        id="target-tokens"
+        selectedValues={targetTokenIds}
+        onSelect={(values) => {
+          setTargetTokenIds(values.map((v) => Number(v)));
         }}
-        style={{ width: "100%", marginTop: "0.8rem" }}
-      >
-        <option disabled value="">
-          Select token
-        </option>
-        {tokens.map((t) => (
-          <option key={t.id} value={t.id}>
-            Noun {t.id}
-            {t.delegate != null && t.delegate !== connectedAccountAddress && (
-              <>
-                {" "}
-                (delegated to <AccountDisplayName address={t.delegate} />)
-              </>
-            )}
-          </option>
-        ))}
-      </select>
+        options={[
+          ...ownedNounTokens.filter(
+            // Exclude owned tokens with a matching delegation token
+            (nt) => !delegationTokens.some((dt) => dt.id === nt.id),
+          ),
+          ...delegationTokens,
+        ].map((t) => {
+          let label = `Noun ${t.id}`;
+          if (t.delegate != null)
+            label += ` (delegated to ${t.delegate === connectedAccount ? "yourself" : truncateAddress(t.delegate)})`;
+          if (t.owner != null)
+            label += ` (delegated from ${truncateAddress(t.owner)})`;
+          return { value: t.id, label };
+        })}
+        style={{ width: "100%", height: "auto", marginTop: "0.8rem" }}
+      />
       <label htmlFor="delegate-account" style={{ marginTop: "1.6rem" }}>
-        {targetTokenIsDelegated ? "New delegate account" : "Target account"}
+        Target account
       </label>
       <input
         id="delegate-account"
@@ -199,22 +280,103 @@ const MintDelegationTokenForm = ({ tokens }) => {
           marginTop: "1.6rem",
         }}
       >
-        {targetTokenIsDelegated && (
-          <button
-            type="button"
-            onClick={() => {
-              burnToken();
-            }}
-            disabled={burnToken == null}
-          >
-            Burn delegation token
-          </button>
-        )}
+        {targetTokenIds.length === 1 &&
+          ownedNounTokens.some(
+            (t) => t.id === targetTokenIds[0] && t.delegate != null,
+          ) && (
+            <button
+              type="button"
+              onClick={() => {
+                burn();
+              }}
+              disabled={burn == null}
+            >
+              Burn delegation token
+            </button>
+          )}
         <button type="submit" disabled={submitCall == null}>
           {(() => {
-            if (targetTokenIsDelegated) return "Transfer delegation token";
-            return "Mint delegation token";
+            switch (primaryAction) {
+              case "mint-batch":
+                return "Batch mint delegation tokens";
+              case "mint-single":
+                return "Mint delegation token";
+              case "transfer":
+                return "Transfer delegation token";
+              default:
+                throw new Error();
+            }
           })()}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+const SetAdminForm = () => {
+  const { address: connectedAccount } = useAccount();
+  const [targetAccountQuery, setTargetAccountQuery] = React.useState("");
+
+  const { data: targetAccountEnsName } = useEnsName({
+    address: targetAccountQuery,
+    enabled: isAddress(targetAccountQuery),
+  });
+  const { data: targetAccountEnsAddress } = useEnsAddress({
+    name: targetAccountQuery,
+  });
+
+  const targetAccountAddress = targetAccountEnsAddress ?? targetAccountQuery;
+
+  const { data: adminAccount } = useDelegationTokenRead("delegationAdmins", {
+    args: [connectedAccount],
+    enabled: connectedAccount != null,
+    watch: true,
+  });
+  const { call: setDelegationAdmin } = useDelegationTokenWrite(
+    "setDelegationAdmin",
+    {
+      args: [targetAccountAddress],
+      enabled: isAddress(targetAccountAddress),
+      watch: true,
+    },
+  );
+
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        await setDelegationAdmin();
+        setTargetAccountQuery("");
+      }}
+    >
+      <label htmlFor="admin-account">
+        {adminAccount == null ? "New admin account" : "Target account"}
+      </label>
+      <input
+        id="admin-account"
+        value={targetAccountQuery}
+        onChange={(e) => setTargetAccountQuery(e.target.value)}
+        placeholder="0x..."
+        autoComplete="off"
+        style={{ width: "100%", marginTop: "0.8rem" }}
+      />
+      <p data-small data-dimmed data-compact>
+        {(() => {
+          if (targetAccountEnsName != null)
+            return <>Primary ENS name: {targetAccountEnsName}</>;
+          if (targetAccountEnsAddress != null)
+            return <>Resolved address: {targetAccountEnsAddress}</>;
+        })()}
+      </p>
+      <div
+        style={{
+          display: "flex",
+          gap: "0.8rem",
+          marginTop: "1.6rem",
+        }}
+      >
+        <button type="submit" disabled={setDelegationAdmin == null}>
+          Set delegation admin
         </button>
       </div>
     </form>

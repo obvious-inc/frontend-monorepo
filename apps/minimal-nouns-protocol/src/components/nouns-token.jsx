@@ -11,22 +11,24 @@ import AccountDisplayName from "./account-display-name.jsx";
 import NounImage from "./noun-image.jsx";
 import EtherscanLink from "./etherscan-link.jsx";
 
-const NounsToken = () => {
+const NounsToken = ({ v4 = false }) => {
   const { address: connectedAccount } = useAccount();
   return (
     <>
       {connectedAccount != null && (
         <div style={{ marginBottom: "4.8rem" }}>
-          <ConnectedAccountSection />
+          <ConnectedAccountSection v4={v4} />
         </div>
       )}
 
-      <details style={{ marginBottom: "1.6rem" }}>
-        <summary>Delegate votes</summary>
-        <div style={{ marginBottom: "4.8rem" }}>
-          <DelegateSection />
-        </div>
-      </details>
+      {!v4 && (
+        <details style={{ marginBottom: "1.6rem" }}>
+          <summary>Delegate votes</summary>
+          <div style={{ marginBottom: "4.8rem" }}>
+            <DelegateSection />
+          </div>
+        </details>
+      )}
 
       <details open>
         <summary>Browse tokens</summary>
@@ -73,7 +75,7 @@ const useDelegate = (address) => {
   return delegateAddress;
 };
 
-const ConnectedAccountSection = () => {
+const ConnectedAccountSection = ({ v4 = false }) => {
   const { address: connectedAccount } = useAccount();
 
   const nounIds = useOwnedNouns(connectedAccount);
@@ -86,8 +88,12 @@ const ConnectedAccountSection = () => {
   return (
     <>
       <dl>
-        <dt>Voting power</dt>
-        <dd>{votingPower == null ? "..." : Number(votingPower)}</dd>
+        {!v4 && (
+          <>
+            <dt>Voting power</dt>
+            <dd>{votingPower == null ? "..." : Number(votingPower)}</dd>
+          </>
+        )}
         <dt>Owned Nouns</dt>
         <dd>
           {nounIds.length === 0
@@ -96,22 +102,28 @@ const ConnectedAccountSection = () => {
               ? `Noun ${nounIds[0]}`
               : nounIds.join(", ")}
         </dd>
-        <dt>Delegate</dt>
-        <dd>
-          {delegateAccount == null ? (
-            "Not set"
-          ) : (
-            <EtherscanLink address={delegateAccount}>
-              <AccountDisplayName address={delegateAccount} />
-            </EtherscanLink>
-          )}
-        </dd>
+        {!v4 && (
+          <>
+            <dt>Delegate</dt>
+            <dd>
+              {delegateAccount == null ? (
+                "Not set"
+              ) : (
+                <EtherscanLink address={delegateAccount}>
+                  <AccountDisplayName address={delegateAccount} />
+                </EtherscanLink>
+              )}
+            </dd>
+          </>
+        )}
       </dl>
     </>
   );
 };
 
 const DelegateSection = () => {
+  const { address: connectedAccount } = useAccount();
+
   const [delegateQuery, setDelegateQuery] = React.useState("");
 
   const { data: delegateEnsName } = useEnsName({
@@ -129,6 +141,13 @@ const DelegateSection = () => {
       enabled: isAddress(delegateAddress),
     },
   );
+
+  if (connectedAccount == null)
+    return (
+      <p data-small data-warning data-box>
+        Connect account to delegate
+      </p>
+    );
 
   return (
     <>

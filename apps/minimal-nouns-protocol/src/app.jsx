@@ -86,7 +86,7 @@ const App = () => {
                     case "nouns-auction-house":
                       return <AuctionHouse />;
                     case "nouns-token":
-                      return <NounsToken />;
+                      return <NounsToken v4={isV4} />;
                     case "nouns-delegation-token":
                       return <DelegationToken />;
                     default:

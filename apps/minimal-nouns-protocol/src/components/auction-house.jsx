@@ -1,5 +1,6 @@
 import { formatEther, parseEther } from "viem";
 import React from "react";
+import { useAccount } from "wagmi";
 import {
   useAuctionHouseRead,
   useAuctionHouseWrite,
@@ -39,6 +40,7 @@ const useAuction = () => {
 };
 
 const Auction = () => {
+  const { address: connectedAccount } = useAccount();
   const auction = useAuction();
 
   const [bidAmount, setBidAmount] = React.useState("");
@@ -165,10 +167,23 @@ const Auction = () => {
               settleCurrentAndCreateNewAuctionCallStatus === "pending"
             }
           >
-            Settle and create new auction
+            {connectedAccount == null
+              ? "Connect account to settle"
+              : "Settle and create new auction"}
           </button>
         ) : (
           <>
+            {connectedAccount == null && (
+              <p
+                data-small
+                data-warning
+                data-box
+                style={{ marginBottom: "3.2rem" }}
+              >
+                Connect account to place a bid
+              </p>
+            )}
+
             <label htmlFor="amount" style={{ marginBottom: "0.8rem" }}>
               Bid amount
             </label>
@@ -183,6 +198,7 @@ const Auction = () => {
                 id="amount"
                 value={bidAmount}
                 onChange={(e) => setBidAmount(e.target.value)}
+                disabled={connectedAccount == null}
                 placeholder={(() => {
                   const minBidValue = getMinBidValue();
                   if (minBidValue == null) return "...";

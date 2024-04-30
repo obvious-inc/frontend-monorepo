@@ -381,17 +381,14 @@ const Proposals = ({ proposalIds }) => {
             ))}
           </dl>
 
-          {connectedAccount != null &&
-            votingStarted &&
-            !votingEnded &&
-            !voteReceipt?.hasVoted && (
-              <div style={{ paddingLeft: "1.6rem" }}>
-                <details open style={{ marginTop: "3.2rem" }}>
-                  <summary>Vote</summary>
-                  <VoteForm proposalId={proposalId} />
-                </details>
-              </div>
-            )}
+          {votingStarted && !votingEnded && !voteReceipt?.hasVoted && (
+            <div style={{ paddingLeft: "1.6rem" }}>
+              <details open style={{ marginTop: "3.2rem" }}>
+                <summary>Vote</summary>
+                <VoteForm proposalId={proposalId} />
+              </details>
+            </div>
+          )}
         </>
       )}
     </>
@@ -399,6 +396,8 @@ const Proposals = ({ proposalIds }) => {
 };
 
 const VoteForm = ({ proposalId }) => {
+  const { address: connectedAccount } = useAccount();
+
   const [reason, setReason] = React.useState("");
   const [support, setSupport] = React.useState(null);
 
@@ -419,6 +418,13 @@ const VoteForm = ({ proposalId }) => {
   const isPending =
     castVoteCallStatus === "pending" ||
     castVoteWithReasonCallStatus === "pending";
+
+  if (connectedAccount == null)
+    return (
+      <p data-small data-warning data-box>
+        Connect account to vote
+      </p>
+    );
 
   return (
     <>
@@ -537,7 +543,7 @@ const Propose = () => {
 
   if (connectedAccount == null)
     return (
-      <p data-small data-dimmed>
+      <p data-small data-warning data-box>
         Connect account to propose
       </p>
     );

@@ -12,6 +12,7 @@ import { useNounTokens, useDelegationTokens } from "../hooks/tokens.js";
 import AccountDisplayName from "./account-display-name.jsx";
 import EtherscanLink from "./etherscan-link.jsx";
 import SelectWithArrows from "./select-with-arrows.jsx";
+import MultiSelect from "./multi-select.jsx";
 
 const useProposalIds = ({ order } = {}) => {
   const { data: count } = useNounsDaoV4Read("proposalCount", { watch: true });
@@ -492,26 +493,24 @@ const Proposals = ({ proposalIds }) => {
 };
 
 const VoteForm = ({ proposalId }) => {
-  const [commaSeparatedTokenIds, setTokenIds] = React.useState("");
+  const [selectedTokenIds, setTokenIds] = React.useState([]);
   const [reason, setReason] = React.useState("");
   const [support, setSupport] = React.useState(null);
 
-  const tokenIds = commaSeparatedTokenIds
-    .split(",")
-    .map((s) => Number(s.trim()));
+  const { address: connectedAccount } = useAccount();
+  const controlledTokenIds = useControlledTokenIds(connectedAccount);
 
   const { call: castVote, status: castVoteCallStatus } = useNounsDaoV4Write(
     "castRefundableVote",
     {
-      args: [tokenIds, proposalId, Number(support)],
-      enabled: tokenIds.length > 0 && support != null,
+      args: [selectedTokenIds, proposalId, Number(support)],
+      enabled: selectedTokenIds.length > 0 && support != null,
     },
   );
-  console.log({ args: [tokenIds, proposalId, Number(support)] });
   const { call: castVoteWithReason, status: castVoteWithReasonCallStatus } =
     useNounsDaoV4Write("castRefundableVoteWithReason", {
-      args: [tokenIds, proposalId, Number(support), reason],
-      enabled: tokenIds.length > 0 && support != null,
+      args: [selectedTokenIds, proposalId, Number(support), reason],
+      enabled: selectedTokenIds.length > 0 && support != null,
     });
 
   const voteCall = reason.trim() === "" ? castVote : castVoteWithReason;
@@ -527,14 +526,23 @@ const VoteForm = ({ proposalId }) => {
           voteCall();
         }}
       >
-        <label htmlFor="tokens">Token IDs (comma separated)</label>
-        <input
+        <label htmlFor="tokens">Token IDs</label>
+        <MultiSelect
           id="tokens"
-          placeholder="1,2,3..."
-          value={commaSeparatedTokenIds}
-          onChange={(e) => setTokenIds(e.target.value)}
-          style={{ width: "100%" }}
-          disabled={isPending}
+          selectedValues={selectedTokenIds}
+          options={
+            controlledTokenIds == null
+              ? []
+              : controlledTokenIds.map((id) => ({
+                  value: id,
+                  label: `Noun ${id}`,
+                }))
+          }
+          onSelect={(ids) => {
+            setTokenIds(ids);
+          }}
+          disabled={controlledTokenIds == null || isPending}
+          style={{ width: "100%", height: "auto" }}
         />
         <label htmlFor="reason" style={{ marginTop: "1.6rem" }}>
           Reason (optional)
@@ -588,43 +596,20 @@ const VoteForm = ({ proposalId }) => {
   );
 };
 
-const useActiveProposalId = () => {
-  const { address: accountAddress } = useAccount();
-  const { data: latestProposalId } = useNounsDaoV4Read("latestProposalIds", {
-    args: [accountAddress],
-  });
-  const state = useProposalState(latestProposalId);
-
-  if (latestProposalId === undefined || state === undefined) return undefined;
-
-  const isActive = [
-    "updatable",
-    "pending",
-    "active",
-    "objection-period",
-  ].includes(state);
-
-  return isActive ? latestProposalId : null;
-};
-
 const Propose = () => {
   const { address: connectedAccount } = useAccount();
 
-  const [commaSeparatedTokenIds, setTokenIds] = React.useState("");
+  const [selectedTokenIds, setTokenIds] = React.useState([]);
   const [description, setDescription] = React.useState("");
   const [actions, setActions] = React.useState([
     { target: "", signature: "", calldata: "", value: "" },
   ]);
 
-  const tokenIds = commaSeparatedTokenIds
-    .split(",")
-    .map((s) => Number(s.trim()));
-
   const { call: propose, status: proposeCallStatus } = useNounsDaoV4Write(
     "propose",
     {
       args: [
-        tokenIds,
+        selectedTokenIds,
         ...actions.reduce(
           ([targets, values, signatures, calldatas], a) => [
             [...targets, a.target],
@@ -643,9 +628,7 @@ const Propose = () => {
   const { data: proposalThreshold } = useNounsDaoV4Read("proposalThreshold");
   const controlledTokenIds = useControlledTokenIds(connectedAccount);
   const votingPower = controlledTokenIds?.length;
-  const activeProposalId = useActiveProposalId();
   const canPropose =
-    activeProposalId == null &&
     votingPower != null &&
     proposalThreshold != null &&
     votingPower > proposalThreshold;
@@ -654,19 +637,14 @@ const Propose = () => {
 
   if (connectedAccount == null)
     return (
-      <p data-small data-dimmed>
+      <p data-small data-warning data-box>
         Connect account to propose
       </p>
     );
 
   return (
     <>
-      {activeProposalId != null ? (
-        <p data-small data-warning data-box style={{ marginBottom: "3.2rem" }}>
-          You may not propose until voting for Prop {Number(activeProposalId)}{" "}
-          ends
-        </p>
-      ) : votingPower <= proposalThreshold ? (
+      {votingPower <= proposalThreshold ? (
         <p data-small data-warning data-box style={{ marginBottom: "3.2rem" }}>
           You do not have enough voting power to propose
         </p>
@@ -681,14 +659,23 @@ const Propose = () => {
           setActions([{ target: "", signature: "", calldata: "", value: "" }]);
         }}
       >
-        <label htmlFor="tokens">Token IDs (comma separated)</label>
-        <input
+        <label htmlFor="tokens">Token IDs</label>
+        <MultiSelect
           id="tokens"
-          value={commaSeparatedTokenIds}
-          rows={5}
-          placeholder="1,2,3..."
-          onChange={(e) => setTokenIds(e.target.value)}
-          style={{ width: "100%", marginBottom: "3.2rem" }}
+          selectedValues={selectedTokenIds}
+          options={
+            controlledTokenIds == null
+              ? []
+              : controlledTokenIds.map((id) => ({
+                  value: id,
+                  label: `Noun ${id}`,
+                }))
+          }
+          onSelect={(ids) => {
+            setTokenIds(ids);
+          }}
+          disabled={controlledTokenIds == null}
+          style={{ width: "100%", height: "auto", marginBottom: "3.2rem" }}
         />
 
         <label htmlFor="description">Description (markdown)</label>
@@ -756,6 +743,7 @@ const Propose = () => {
                       ),
                     )
                   }
+                  autoCorrect="off"
                   style={{ width: "100%" }}
                 />
               </React.Fragment>
