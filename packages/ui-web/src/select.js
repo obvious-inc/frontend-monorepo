@@ -35,7 +35,7 @@ const Select = React.forwardRef(
       align = "left",
       width,
       fullWidth = true,
-      multiline = true,
+      multiline = false,
       buttonProps,
       ...props_
     },

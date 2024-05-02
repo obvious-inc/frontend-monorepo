@@ -32,6 +32,7 @@ import { useDialog } from "../hooks/global-dialogs.js";
 import useContract from "../hooks/contract.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import AccountAvatar from "./account-avatar.js";
+import DateRangePicker, { toLocalDate } from "./date-range-picker.js";
 import { VotesTagGroup } from "./browse-screen.js";
 
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
@@ -55,39 +56,50 @@ const searchEns = (nameByAddress, rawQuery) => {
     .map((r) => r.address);
 };
 
-const useRecentVotes = ({ days = 30 } = {}) => {
+const useRecentVotes = ({ start, end } = {}) => {
   const chainId = useChainId();
 
   const [votesByAccountAddress, setVotesByAccountAddress] =
     React.useState(null);
 
   useFetch(async () => {
-    const thresholdMillis = Date.now() - days * ONE_DAY_MILLIS;
-    const { votes } = await subgraphFetch({
-      chainId,
-      query: `{
-        votes (
-          orderBy: blockNumber,
-          first: 1000,
-          where: {
-            blockTimestamp_gt: "${Math.floor(thresholdMillis / 1000)}"
+    const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
+      const { votes } = await subgraphFetch({
+        chainId,
+        query: `{
+          votes (
+            orderBy: blockNumber,
+            first: ${pageSize},
+            skip: ${(page - 1) * pageSize}
+            where: {
+              blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}",
+              blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
+            }
+          ) {
+            supportDetailed
+            reason
+            voter {
+              id
+            }
           }
-        ) {
-          supportDetailed
-          reason
-          voter {
-            id
-          }
-        }
-      }`,
-    });
+        }`,
+      });
+
+      if (votes.length < pageSize) return votes;
+
+      const remainingVotes = await fetchVotes({ page: page + 1, pageSize });
+
+      return [...votes, ...remainingVotes];
+    };
+
+    const votes = await fetchVotes();
 
     const votesByAccountAddress = votes.reduce((acc, v) => {
       return { ...acc, [v.voter.id]: [...(acc[v.voter.id] ?? []), v] };
     }, {});
 
     setVotesByAccountAddress(votesByAccountAddress);
-  }, [chainId, days]);
+  }, [chainId, start, end]);
 
   const vwrCountByAccountAddress = React.useMemo(() => {
     if (votesByAccountAddress == null) return null;
@@ -104,35 +116,47 @@ const useRecentVotes = ({ days = 30 } = {}) => {
   return { votesByAccountAddress, vwrCountByAccountAddress };
 };
 
-const useRecentRevoteCount = ({ days = 30 } = {}) => {
+const useRecentRevoteCount = ({ start, end } = {}) => {
   const chainId = useChainId();
 
   const [revoteCountByAccountAddress, setRevoteCountByAccountAddress] =
     React.useState(null);
 
   useFetch(async () => {
-    const thresholdMillis = Date.now() - days * ONE_DAY_MILLIS;
-    const { votes } = await subgraphFetch({
-      chainId,
-      query: `{
-        votes (
-          orderBy: blockNumber,
-          first: 1000,
-          where: {
-            blockTimestamp_gt: "${Math.floor(thresholdMillis / 1000)}"
+    const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
+      const { votes } = await subgraphFetch({
+        chainId,
+        query: `{
+          votes (
+            orderBy: blockNumber,
+            first: ${pageSize},
+            skip: ${(page - 1) * pageSize}
+            where: {
+              reason_not: "",
+              blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}",
+              blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
+            }
+          ) {
+            reason
+            supportDetailed
+            voter {
+              id
+            }
+            proposal {
+              id
+            }
           }
-        ) {
-          reason
-          supportDetailed
-          voter {
-            id
-          }
-          proposal {
-            id
-          }
-        }
-      }`,
-    });
+        }`,
+      });
+
+      if (votes.length < pageSize) return votes;
+
+      const remainingVotes = await fetchVotes({ page: page + 1, pageSize });
+
+      return [...votes, ...remainingVotes];
+    };
+
+    const votes = await fetchVotes();
 
     const revoteCountByAccountAddress = votes.reduce((acc, v, i) => {
       if (v.votes === 0 || v.reason == null || v.reason.trim() === "")
@@ -166,7 +190,7 @@ const useRecentRevoteCount = ({ days = 30 } = {}) => {
     }, {});
 
     setRevoteCountByAccountAddress(revoteCountByAccountAddress);
-  }, [chainId, days]);
+  }, [chainId, start, end]);
 
   return revoteCountByAccountAddress;
 };
@@ -180,19 +204,34 @@ const BrowseAccountsScreen = () => {
   const { address: treasuryAddress } = useContract("executor");
   const { address: forkEscrowAddress } = useContract("fork-escrow");
 
-  const [sortStrategy, setSortStrategy] = React.useState("recent-revotes");
+  const [sortStrategy, setSortStrategy] = React.useState("timeframe-revotes");
   const [sortOrder, setSortOrder] = React.useState("desc");
+  const [localDateRange, setLocalDateRange] = React.useState(() => {
+    const now = new Date();
+    return {
+      start: toLocalDate(new Date(now.getTime() - 30 * ONE_DAY_MILLIS)),
+      end: toLocalDate(now),
+    };
+  });
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
   const deferredSortStrategy = React.useDeferredValue(sortStrategy);
   const deferredSortOrder = React.useDeferredValue(sortOrder);
 
+  const dateRange = React.useMemo(
+    () => ({
+      start: localDateRange.start.toDate(),
+      end: localDateRange.end.toDate(),
+    }),
+    [localDateRange],
+  );
+
   const {
     votesByAccountAddress: recentVotesByAccountAddress,
     vwrCountByAccountAddress: recentVwrCountByAccountAddress,
-  } = useRecentVotes({ days: 30 });
-  const recentRevoteCountByAccountAddress = useRecentRevoteCount({ days: 30 });
+  } = useRecentVotes(dateRange);
+  const recentRevoteCountByAccountAddress = useRecentRevoteCount(dateRange);
 
   const matchingAddresses = React.useMemo(() => {
     if (deferredQuery.trim() === "") return null;
@@ -243,7 +282,7 @@ const BrowseAccountsScreen = () => {
             { value: (a) => a.nounsRepresented.length, order },
             accounts,
           );
-        case "recent-votes-cast":
+        case "timeframe-votes-cast":
           return arrayUtils.sortBy(
             {
               value: (a) => (recentVotesByAccountAddress?.[a.id] ?? []).length,
@@ -256,7 +295,7 @@ const BrowseAccountsScreen = () => {
             { value: (a) => a.votes?.length ?? 0, order },
             accounts,
           );
-        case "recent-vwrs-cast":
+        case "timeframe-vwrs-cast":
           return arrayUtils.sortBy(
             {
               value: (a) => recentVwrCountByAccountAddress?.[a.id] ?? 0,
@@ -264,7 +303,7 @@ const BrowseAccountsScreen = () => {
             },
             accounts,
           );
-        case "recent-revotes":
+        case "timeframe-revotes":
           return arrayUtils.sortBy(
             {
               value: (a) => recentRevoteCountByAccountAddress?.[a.id] ?? 0,
@@ -301,17 +340,17 @@ const BrowseAccountsScreen = () => {
     };
 
     if (
-      deferredSortStrategy === "recent-votes-cast" &&
+      deferredSortStrategy === "timeframe-votes-cast" &&
       recentVotesByAccountAddress == null
     )
       return []; // Loading
     if (
-      deferredSortStrategy === "recent-vwrs-cast" &&
+      deferredSortStrategy === "timeframe-vwrs-cast" &&
       recentVwrCountByAccountAddress == null
     )
       return []; // Loading
     if (
-      deferredSortStrategy === "recent-revotes" &&
+      deferredSortStrategy === "timeframe-revotes" &&
       recentRevoteCountByAccountAddress == null
     )
       return []; // Loading
@@ -418,7 +457,8 @@ const BrowseAccountsScreen = () => {
               <div
                 css={css({
                   display: "flex",
-                  gap: "1.6rem",
+                  flexWrap: "wrap",
+                  gap: "1rem",
                   margin: "2rem 0 1.6rem",
                   "@media(min-width: 600px": {
                     margin: "2.4rem 0 1.6rem",
@@ -431,17 +471,17 @@ const BrowseAccountsScreen = () => {
                   value={sortStrategy}
                   options={[
                     {
-                      value: "recent-revotes",
+                      value: "timeframe-revotes",
                       label: "Most revoted (last 30 days)",
                       shortLabel: "Recent revotes",
                     },
                     {
-                      value: "recent-votes-cast",
+                      value: "timeframe-votes-cast",
                       label: "Recent votes cast (last 30 days)",
                       shortLabel: "Recent votes",
                     },
                     {
-                      value: "recent-vwrs-cast",
+                      value: "timeframe-vwrs-cast",
                       label: "Recent votes cast with reason (last 30 days)",
                       shortLabel: "Recent vwrs",
                     },
@@ -463,6 +503,13 @@ const BrowseAccountsScreen = () => {
                   onChange={(value) => {
                     setSortStrategy(value);
                     setSortOrder("desc");
+                    const now = new Date();
+                    setLocalDateRange({
+                      start: toLocalDate(
+                        new Date(now.getTime() - 30 * ONE_DAY_MILLIS),
+                      ),
+                      end: toLocalDate(now),
+                    });
                   }}
                   fullWidth={false}
                   width="max-content"
@@ -528,6 +575,16 @@ const BrowseAccountsScreen = () => {
                     </>
                   )}
                 />
+
+                {sortStrategy.startsWith("timeframe-") && (
+                  <DateRangePicker
+                    inlineLabel="Timeframe"
+                    granularity="day"
+                    size="small"
+                    value={localDateRange}
+                    onChange={setLocalDateRange}
+                  />
+                )}
               </div>
               <div>
                 <ul
