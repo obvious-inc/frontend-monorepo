@@ -104,6 +104,7 @@ const stylesBySize = (theme, { multiline, align, icon }) => {
       ].join(" "),
       [heightProp]: heightBySize.small,
       width: icon ? heightBySize.small : undefined,
+      lineHeight: 1.2,
     },
     medium: {
       fontSize: theme.text.sizes.button,
@@ -127,7 +128,7 @@ const stylesBySize = (theme, { multiline, align, icon }) => {
 
 const iconLayoutPropsBySize = {
   tiny: { size: "2rem", gutter: "0.2rem" },
-  small: { size: "2.8rem", gutter: "0.6rem" },
+  small: { size: "2.8rem", gutter: "0.4rem" },
   medium: { size: "3rem", gutter: "0.8rem" },
   large: { size: "3.2rem", gutter: "1rem" },
 };

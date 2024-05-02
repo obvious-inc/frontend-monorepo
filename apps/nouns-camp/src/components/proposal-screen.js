@@ -1296,6 +1296,9 @@ export const ProposalHeader = ({
           value={createdAt}
           day="numeric"
           month="short"
+          year={
+            createdAt.getYear() !== new Date().getYear() ? "numeric" : undefined
+          }
         />{" "}
         by{" "}
         <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
