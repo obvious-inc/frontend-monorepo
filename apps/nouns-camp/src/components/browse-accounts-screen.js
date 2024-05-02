@@ -744,7 +744,7 @@ const AccountListItem = React.memo(
                   {
                     key: "votes",
                     element: (() => {
-                      if (sortStrategy.startsWith("recent"))
+                      if (sortStrategy.startsWith("timeframe"))
                         return (
                           <>
                             {recentVotes.length} recent{" "}
@@ -779,7 +779,7 @@ const AccountListItem = React.memo(
                   },
                   {
                     key: "revotes",
-                    element: sortStrategy.startsWith("recent") && (
+                    element: sortStrategy.startsWith("timeframe") && (
                       <span className="nowrap">
                         {recentRevoteCount}{" "}
                         {recentRevoteCount === 1 ? "revote" : "revotes"}
@@ -803,7 +803,7 @@ const AccountListItem = React.memo(
             {isOnScreen && (
               <>
                 <div className="votes-tag-group-container">
-                  {sortStrategy.startsWith("recent") ? (
+                  {sortStrategy.startsWith("timeframe") ? (
                     <DelegateVotesTagGroup votes={recentVotes} />
                   ) : delegate?.votes == null ? (
                     <div />
