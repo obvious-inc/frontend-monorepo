@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.47] - 2024-05-02
+
+### 🚀 Features
+
+- Migrate updates from upstream (#294)
+
 ## [1.0.0-alpha.46] - 2024-04-29
 
 ### 🚀 Features
@@ -11,6 +17,7 @@ All notable changes to this project will be documented in this file.
 ### ⚙️ Miscellaneous Tasks
 
 - Add node version 22.x to the build workflow matrix
+- Improve Git Cliff configs and update changelog
 
 ### ◀️ Revert
 
