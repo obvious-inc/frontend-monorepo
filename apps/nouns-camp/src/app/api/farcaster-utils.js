@@ -141,12 +141,16 @@ export const fetchAccountsWithVerifiedAddress = async (
   return parseNeynarUsers({ chainId }, sortedUsers);
 };
 
-export const fetchCastsByParentUrl = async (chainId, parentUrl) => {
+export const fetchCastsByParentUrl = async (
+  chainId,
+  parentUrl,
+  { limit = 100 } = {},
+) => {
   const searchParams = new URLSearchParams({
     feed_type: "filter",
     filter_type: "parent_url",
     parent_url: parentUrl,
-    limit: 100,
+    limit,
   });
 
   const response = await fetch(

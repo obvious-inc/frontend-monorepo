@@ -36,7 +36,8 @@ const jsonResponse = (statusCode, body, headers) =>
 
 const fetchProposalCasts = async (chainId, proposalId) => {
   const url = await createCanonicalProposalUrl(chainId, proposalId);
-  return fetchCastsByParentUrl(chainId, url);
+  const { accounts, casts } = await fetchCastsByParentUrl(chainId, url);
+  return { accounts, casts: casts.map((c) => ({ ...c, proposalId })) };
 };
 
 export async function GET(request) {

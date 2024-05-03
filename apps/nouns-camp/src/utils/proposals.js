@@ -152,6 +152,7 @@ export const buildFeed = (
         authorDisplayName: displayName,
         body: c.text,
         timestamp: new Date(c.timestamp),
+        proposalId: proposal.id,
       };
     }) ?? [];
 

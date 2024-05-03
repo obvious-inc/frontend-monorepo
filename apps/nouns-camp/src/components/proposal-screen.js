@@ -100,19 +100,7 @@ const useFeedItems = (proposalId) => {
   const startTimestamp = startBlock?.timestamp;
   const endTimestamp = endBlock?.timestamp;
 
-  const casts_ = useProposalCasts(proposalId);
-
-  const casts = (() => {
-    switch (farcasterFilter) {
-      case "none":
-        return casts_;
-      case "nouners":
-        return casts_.filter((c) => c.account.nounerAddress != null);
-      case "disabled":
-      default:
-        return null;
-    }
-  })();
+  const casts = useProposalCasts(proposalId, { filter: farcasterFilter });
 
   return React.useMemo(
     () =>

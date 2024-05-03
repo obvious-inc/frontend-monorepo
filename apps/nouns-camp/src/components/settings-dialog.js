@@ -33,7 +33,7 @@ const settingInputConfigByKey = {
     optionLabelsByValue: {
       nouners: "Filtered",
       none: "Show everything",
-      disabled: "Hide eveything",
+      disabled: "Hide everything",
     },
     hint: ({ value }) => {
       if (value !== "nouners") return null;

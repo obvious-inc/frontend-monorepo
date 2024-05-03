@@ -82,21 +82,8 @@ const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
 
-  const casts_ = useCandidateCasts(candidateId);
-
   const [farcasterFilter] = useSetting("farcaster-cast-filter");
-
-  const casts = (() => {
-    switch (farcasterFilter) {
-      case "none":
-        return casts_;
-      case "nouners":
-        return casts_.filter((c) => c.account.nounerAddress != null);
-      case "disabled":
-      default:
-        return null;
-    }
-  })();
+  const casts = useCandidateCasts(candidateId, { filter: farcasterFilter });
 
   return React.useMemo(
     () => buildFeed(candidate, { casts }),

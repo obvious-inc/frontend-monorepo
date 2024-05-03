@@ -830,10 +830,26 @@ const ItemTitle = ({ item, context }) => {
               {item.authorDisplayName}
             </span>{" "}
             commented
+            {!isIsolatedContext && (
+              <>
+                {" "}
+                on <ContextLink short {...item} />
+              </>
+            )}
           </>
         );
 
-      return <>{accountName} commented</>;
+      return (
+        <>
+          {accountName} commented{" "}
+          {!isIsolatedContext && (
+            <>
+              {" "}
+              on <ContextLink short {...item} />
+            </>
+          )}
+        </>
+      );
     }
 
     case "candidate-signature-added":

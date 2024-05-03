@@ -14,6 +14,19 @@ import {
 import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
 
+const isFiltered = (filter, cast) => {
+  switch (filter) {
+    case "none":
+      return false;
+    case "nouners":
+      return cast.account.nounerAddress == null;
+    case "disabled":
+      return true;
+    default:
+      throw new Error();
+  }
+};
+
 const Context = React.createContext();
 
 export const Provider = ({ children }) => {
@@ -79,7 +92,10 @@ export const useAccountsWithVerifiedEthAddress = (
   return accounts;
 };
 
-export const useProposalCasts = (proposalId, fetchOptions) => {
+export const useProposalCasts = (
+  proposalId,
+  { filter, ...fetchOptions } = {},
+) => {
   const chainId = useChainId();
 
   const {
@@ -108,13 +124,16 @@ export const useProposalCasts = (proposalId, fetchOptions) => {
         castHashesByProposalId: {
           ...s.castHashesByProposalId,
           [proposalId]: arrayUtils.unique([
-            ...(castHashesByProposalId[proposalId] ?? []),
+            ...(s.castHashesByProposalId[proposalId] ?? []),
             ...Object.keys(castsByHash),
           ]),
         },
       }));
     },
-    fetchOptions,
+    {
+      enabled: filter != null && filter !== "disabled",
+      ...fetchOptions,
+    },
     [chainId, proposalId],
   );
 
@@ -122,14 +141,20 @@ export const useProposalCasts = (proposalId, fetchOptions) => {
 
   if (castHashes == null) return [];
 
-  return castHashes.map((hash) => {
-    const cast = castsByHash[hash];
-    const account = accountsByFid[cast.fid];
-    return { ...cast, account };
-  });
+  return castHashes.reduce((casts, hash) => {
+    const cast = {
+      ...castsByHash[hash],
+      account: accountsByFid[cast.fid],
+    };
+
+    if (isFiltered(filter, cast)) return casts;
+
+    casts.push(cast);
+    return casts;
+  }, []);
 };
 
-export const useCandidateCasts = (candidateId, fetchOptions) => {
+export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
   const chainId = useChainId();
 
   const {
@@ -158,13 +183,16 @@ export const useCandidateCasts = (candidateId, fetchOptions) => {
         castHashesByCandidateId: {
           ...s.castHashesByCandidateId,
           [candidateId]: arrayUtils.unique([
-            ...(castHashesByCandidateId[candidateId] ?? []),
+            ...(s.castHashesByCandidateId[candidateId] ?? []),
             ...Object.keys(castsByHash),
           ]),
         },
       }));
     },
-    fetchOptions,
+    {
+      enabled: filter != null && filter !== "disabled",
+      ...fetchOptions,
+    },
     [chainId, candidateId],
   );
 
@@ -172,11 +200,17 @@ export const useCandidateCasts = (candidateId, fetchOptions) => {
 
   if (castHashes == null) return [];
 
-  return castHashes.map((hash) => {
-    const cast = castsByHash[hash];
-    const account = accountsByFid[cast.fid];
-    return { ...cast, account };
-  });
+  return castHashes.reduce((casts, hash) => {
+    const cast = {
+      ...castsByHash[hash],
+      account: accountsByFid[cast.fid],
+    };
+
+    if (isFiltered(filter, cast)) return casts;
+
+    casts.push(cast);
+    return casts;
+  }, []);
 };
 
 export const useSubmitProposalCast = (proposalId) => {
@@ -289,4 +323,92 @@ export const useSubmitCandidateCast = (candidateId) => {
     },
     [setState, signMessage, chainId, candidateId, connectedAccountAddress],
   );
+};
+
+export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
+  const chainId = useChainId();
+
+  const {
+    state: { accountsByFid, castsByHash },
+    setState,
+  } = React.useContext(Context);
+
+  useFetch(
+    async () => {
+      const searchParams = new URLSearchParams({
+        chain: chainId,
+      });
+
+      const res = await fetch(`/api/farcaster-casts?${searchParams}`);
+
+      if (!res.ok) {
+        console.error("Error fetching recent casts");
+        return;
+      }
+
+      const { casts, accounts } = await res.json();
+
+      const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
+      const castsByHash = arrayUtils.indexBy((c) => c.hash, casts);
+      const castHashesByProposalId = objectUtils.mapValues(
+        (casts) => casts.map((c) => c.hash),
+        arrayUtils.groupBy((c) => c.proposalId, casts),
+      );
+      const castHashesByCandidateId = objectUtils.mapValues(
+        (casts) => casts.map((c) => c.hash),
+        arrayUtils.groupBy((c) => c.candidateId, casts),
+      );
+
+      setState((s) => ({
+        ...s,
+        accountsByFid: objectUtils.merge(
+          (a1, a2) => ({ ...a1, ...a2 }),
+          s.accountsByFid,
+          accountsByFid,
+        ),
+        castsByHash: { ...s.castsByHash, ...castsByHash },
+        castHashesByProposalId: {
+          ...s.castHashesByProposalId,
+          ...Object.entries(castHashesByProposalId).reduce(
+            (acc, [proposalId, castHashes]) => ({
+              ...acc,
+              [proposalId]: arrayUtils.unique([
+                ...(s.castHashesByProposalId[proposalId] ?? []),
+                ...castHashes,
+              ]),
+            }),
+          ),
+        },
+        castHashesByCandidateId: {
+          ...s.castHashesByCandidateId,
+          ...Object.entries(castHashesByCandidateId).reduce(
+            (acc, [candidateId, castHashes]) => ({
+              ...acc,
+              [candidateId]: arrayUtils.unique([
+                ...(s.castHashesByCandidateId[candidateId] ?? []),
+                ...castHashes,
+              ]),
+            }),
+          ),
+        },
+      }));
+    },
+    {
+      enabled: filter != null && filter !== "disabled",
+      ...fetchOptions,
+    },
+    [chainId],
+  );
+
+  return Object.values(castsByHash).reduce((casts, cast_) => {
+    const cast = {
+      ...cast_,
+      account: accountsByFid[cast_.fid],
+    };
+
+    if (isFiltered(filter, cast)) return casts;
+
+    casts.push(cast);
+    return casts;
+  }, []);
 };

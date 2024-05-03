@@ -101,6 +101,7 @@ export const buildFeed = (candidate, { casts } = {}) => {
         authorDisplayName: displayName,
         body: c.text,
         timestamp: new Date(c.timestamp),
+        candidateId,
       };
     }) ?? [];
 
