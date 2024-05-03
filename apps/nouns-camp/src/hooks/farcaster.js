@@ -142,9 +142,10 @@ export const useProposalCasts = (
   if (castHashes == null) return [];
 
   return castHashes.reduce((casts, hash) => {
+    const cast_ = castsByHash[hash];
     const cast = {
-      ...castsByHash[hash],
-      account: accountsByFid[cast.fid],
+      ...cast_,
+      account: accountsByFid[cast_.fid],
     };
 
     if (isFiltered(filter, cast)) return casts;
@@ -201,9 +202,10 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
   if (castHashes == null) return [];
 
   return castHashes.reduce((casts, hash) => {
+    const cast_ = castsByHash[hash];
     const cast = {
-      ...castsByHash[hash],
-      account: accountsByFid[cast.fid],
+      ...cast_,
+      account: accountsByFid[cast_.fid],
     };
 
     if (isFiltered(filter, cast)) return casts;
