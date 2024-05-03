@@ -76,11 +76,33 @@ const buildFeedbackPostItems = (candidate) => {
   }));
 };
 
-export const buildFeed = (candidate) => {
+export const buildFeed = (candidate, { casts } = {}) => {
   if (candidate == null) return [];
 
   const candidateId = candidate.id;
   const targetProposalId = candidate.latestVersion?.targetProposalId;
+
+  const castItems =
+    casts?.map((c) => {
+      let displayName =
+        c.account?.displayName ?? c.account?.username ?? `FID ${c.fid}`;
+
+      if (
+        c.account?.username != null &&
+        c.account.username !== c.account.displayName
+      )
+        displayName += ` (@${c.account.username})`;
+
+      return {
+        type: "farcaster-cast",
+        id: c.hash,
+        authorAccount: c.account?.nounerAddress,
+        authorAvatarUrl: c.account?.pfpUrl,
+        authorDisplayName: displayName,
+        body: c.text,
+        timestamp: new Date(c.timestamp),
+      };
+    }) ?? [];
 
   const feedbackPostItems = buildFeedbackPostItems(candidate);
 
@@ -98,7 +120,7 @@ export const buildFeed = (candidate) => {
         authorAccount: candidate.proposerId, // only proposer can update
       })) ?? [];
 
-  const items = [...updateEventItems, ...feedbackPostItems];
+  const items = [...updateEventItems, ...feedbackPostItems, ...castItems];
 
   if (candidate.createdBlock != null)
     items.push({
@@ -137,7 +159,7 @@ export const buildFeed = (candidate) => {
     targetProposalId,
   }));
 
-  return arrayUtils.sortBy({ value: (i) => i.blockNumber, order: "desc" }, [
+  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, [
     ...items,
     ...signatureItems,
   ]);

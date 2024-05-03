@@ -50,6 +50,11 @@ import {
 import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
+import {
+  useCandidateCasts,
+  useSubmitCandidateCast,
+} from "../hooks/farcaster.js";
+import useSetting from "../hooks/setting.js";
 import NounCountNoggles from "./noun-count-noggles.js";
 import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
 import ProposalActionForm from "./proposal-action-form.js";
@@ -76,7 +81,27 @@ const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
 const useFeedItems = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
-  return React.useMemo(() => buildFeed(candidate), [candidate]);
+
+  const casts_ = useCandidateCasts(candidateId);
+
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+
+  const casts = (() => {
+    switch (farcasterFilter) {
+      case "none":
+        return casts_;
+      case "nouners":
+        return casts_.filter((c) => c.account.nounerAddress != null);
+      case "disabled":
+      default:
+        return null;
+    }
+  })();
+
+  return React.useMemo(
+    () => buildFeed(candidate, { casts }),
+    [candidate, casts],
+  );
 };
 
 const ProposalCandidateScreenContent = ({
@@ -105,9 +130,15 @@ const ProposalCandidateScreenContent = ({
 
   const feedItems = useFeedItems(candidateId);
 
+  const [formAction, setFormAction] = React.useState("onchain-comment");
+  const availableFormActions = ["onchain-comment", "farcaster-comment"];
+
   const [pendingFeedback, setPendingFeedback] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(null);
-  const sendProposalFeedback = useSendProposalCandidateFeedback(
+
+  const submitCandidateCast = useSubmitCandidateCast(candidateId);
+
+  const sendCandidateFeedback = useSendProposalCandidateFeedback(
     proposerId,
     slug,
     {
@@ -180,12 +211,24 @@ const ProposalCandidateScreenContent = ({
   const feedbackVoteCountExcludingAbstained =
     signals.forVotes + signals.againstVotes;
 
-  const handleFormSubmit = async () => {
-    // A contract simulation  takes a second to to do its thing after every
-    // argument change, so this might be null. This seems like a nicer
-    // behavior compared to disabling the submit button on every keystroke
-    if (sendProposalFeedback == null) return;
-    await sendProposalFeedback();
+  const handleFormSubmit = async (data) => {
+    switch (formAction) {
+      case "onchain-comment":
+        // A contract simulation  takes a second to to do its thing after every
+        // argument change, so this might be null. This seems like a nicer
+        // behavior compared to disabling the submit button on every keystroke
+        if (sendCandidateFeedback == null) return;
+        await sendCandidateFeedback();
+        break;
+
+      case "farcaster-comment":
+        await submitCandidateCast({ fid: data.fid, text: pendingFeedback });
+        break;
+
+      default:
+        throw new Error();
+    }
+
     setPendingFeedback("");
     setPendingSupport(null);
   };
@@ -338,7 +381,9 @@ const ProposalCandidateScreenContent = ({
                 <Tabs.Item key="activity" title="Activity">
                   <div style={{ padding: "3.2rem 0 4rem" }}>
                     <ProposalActionForm
-                      mode="onchain-comment"
+                      mode={formAction}
+                      setMode={setFormAction}
+                      availableModes={availableFormActions}
                       reason={pendingFeedback}
                       setReason={setPendingFeedback}
                       support={pendingSupport}
@@ -573,7 +618,9 @@ const ProposalCandidateScreenContent = ({
                         <>
                           <ProposalActionForm
                             size="small"
-                            mode="onchain-comment"
+                            mode={formAction}
+                            setMode={setFormAction}
+                            availableModes={availableFormActions}
                             reason={pendingFeedback}
                             setReason={setPendingFeedback}
                             support={pendingSupport}
@@ -611,7 +658,9 @@ const ProposalCandidateScreenContent = ({
                     <div style={{ marginBottom: "3.2rem" }}>
                       <ProposalActionForm
                         size="small"
-                        mode="onchain-comment"
+                        mode={formAction}
+                        setMode={setFormAction}
+                        availableModes={availableFormActions}
                         reason={pendingFeedback}
                         setReason={setPendingFeedback}
                         support={pendingSupport}
