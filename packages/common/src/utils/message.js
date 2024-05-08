@@ -290,31 +290,31 @@ export const stringifyBlocks = (
   );
 };
 
-const escapableCharacters = [
-  "\\",
-  "*",
-  "_",
-  "`",
-  "(",
-  ")",
-  "[",
-  "]",
-  "{",
-  "}",
-  "<",
-  ">",
-  "#",
-  "+",
-  "-",
-  ".",
-  "|",
-  "!",
-];
+// const escapableCharacters = [
+//   "\\",
+//   "*",
+//   "_",
+//   "`",
+//   "(",
+//   ")",
+//   "[",
+//   "]",
+//   "{",
+//   "}",
+//   "<",
+//   ">",
+//   "#",
+//   "+",
+//   "-",
+//   ".",
+//   "|",
+//   "!",
+// ];
 
 const escapeMarkdown = (string) => {
   let escaped = string;
 
-  for (const char of escapableCharacters) {
+  for (const char of ["*", "_", "`", "~"]) {
     const regexp = new RegExp(`\\${char}`, "g");
     escaped = escaped.replace(regexp, `\\${char}`);
   }
