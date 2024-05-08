@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.49] - 2024-05-08
+
+### ⚙️ Miscellaneous Tasks
+
+- Solve build id issue on next configs
+
 ## [1.0.0-alpha.48] - 2024-05-08
 
 ### 🚀 Features
