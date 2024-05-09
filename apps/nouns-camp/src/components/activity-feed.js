@@ -770,11 +770,7 @@ const ItemTitle = ({ item, context }) => {
           item.reposts?.length > 0 &&
           item.reposts.every((post) => post.support === item.support);
 
-        if (isRepost) {
-          const isRevote =
-            item.type === "vote" && item.reposts.some((q) => q.type === "vote");
-          return isRevote ? "revoted" : "reposted";
-        }
+        if (isRepost) return item.type === "vote" ? "revoted" : "reposted";
 
         switch (item.type) {
           case "vote":
