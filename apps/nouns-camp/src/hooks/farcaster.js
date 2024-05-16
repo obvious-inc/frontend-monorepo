@@ -379,6 +379,7 @@ export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
                 ...castHashes,
               ]),
             }),
+            {},
           ),
         },
         castHashesByCandidateId: {
@@ -391,6 +392,7 @@ export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
                 ...castHashes,
               ]),
             }),
+            {},
           ),
         },
       }));
