@@ -39,14 +39,6 @@ const withSentry = (config) =>
 const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev";
 
 const ignoredModules = [
-  // @prophouse/sdk
-  "fs",
-  "http",
-  "https",
-  "os",
-  "stream",
-  "tty",
-  "zlib",
   // wagmi / @walletconnect
   "pino-pretty",
   // wagmi / @metamask
