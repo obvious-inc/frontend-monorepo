@@ -33,6 +33,7 @@ const addressByIdentifierByChainId = {
     data: DAO_DATA_PROXY_CONTRACT,
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
+    "auction-house-admin": "0xc1c119932d78ab9080862c5fcb964029f086401e",
     descriptor: DAO_DESCRIPTOR_CONTRACT,
     "fork-escrow": "0x44d97d22b3d37d837ce4b22773aad9d1566055d9",
     payer: DAO_PAYER_CONTRACT,
@@ -52,6 +53,7 @@ const addressByIdentifierByChainId = {
     data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
     token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
     "auction-house": "0x488609b7113fcf3b761a05956300d605e8f6bcaf",
+    "auction-house-admin": "0x9a19e520d9cd6c40ecc79623f16390a68962b7e9",
     descriptor: "0x0000000000000000000000000000000000000000",
     "fork-escrow": "0xa15b495deb1b77f066b0c286fdb640c81ef356c4",
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
@@ -123,6 +125,10 @@ const metaByIdentifier = {
   "auction-house": {
     name: "Nouns Auction House",
     description: "NounsAuctionHouseProxy",
+  },
+  "auction-house-admin": {
+    name: "Nouns Auction House Admin",
+    description: "NounsAuctionHouseProxyAdmin",
   },
   descriptor: {
     name: "Nouns Art",
