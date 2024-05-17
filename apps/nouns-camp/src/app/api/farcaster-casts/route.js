@@ -13,16 +13,16 @@ const fetchRecentCasts = async (chainId) => {
   const { proposals, proposalCandidates } = await subgraphFetch({
     chainId,
     query: `
-    query {
-      proposals(where: {createdTimestamp_gt: "${threshold}"}) {
-        id
-        createdTransactionHash
-      }
-      proposalCandidates(where: {canceled: false, lastUpdatedTimestamp_gt: "${threshold}"}) {
-        id
-        createdTransactionHash
-      }
-    }`,
+      query {
+        proposals(where: {createdTimestamp_gt: "${threshold}"}) {
+          id
+          createdTransactionHash
+        }
+        proposalCandidates(where: {canceled: false, lastUpdatedTimestamp_gt: "${threshold}"}) {
+          id
+          createdTransactionHash
+        }
+      }`,
   });
 
   const casts = [];

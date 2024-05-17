@@ -54,7 +54,21 @@ module.exports = withSentry(
       emotion: true,
     },
     rewrites() {
-      return [{ source: "/sw.js", destination: "/service-worker.js" }];
+      return [
+        { source: "/sw.js", destination: "/service-worker.js" },
+        {
+          source: "/subgraphs/nouns-mainnet",
+          destination: process.env.NOUNS_SUBGRAPH_MAINNET_URL,
+        },
+        {
+          source: "/subgraphs/nouns-sepolia",
+          destination: process.env.NOUNS_SUBGRAPH_SEPOLIA_URL,
+        },
+        {
+          source: "/subgraphs/propdates-mainnet",
+          destination: process.env.PROPDATES_SUBGRAPH_MAINNET_URL,
+        },
+      ];
     },
     headers() {
       return [
