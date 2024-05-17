@@ -279,6 +279,9 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                   if (item.reposts.every((p) => p.support === item.support))
                     return null;
 
+                  // Don’t render support for abstained non-vote reposts
+                  if (post.type !== "vote" && post.support === 2) return null;
+
                   return (
                     <span
                       css={(t) =>
