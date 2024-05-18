@@ -13,16 +13,6 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
-import {
-  CREATE_AND_FUND_ROUND_INPUT_TYPES as PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES,
-  encodeTimedRoundConfig as encodePropHouseTimedRoundConfig,
-  decodeTimedRoundConfig as decodePropHouseTimedRoundConfig,
-} from "../utils/prop-house-transactions.js";
-
-// Not importing from Prophouse SDK here to work around vercel edge runtime issues
-const ProphouseAssetType = {
-  ETH: 0,
-};
 
 const decimalsByCurrency = {
   eth: 18,
@@ -262,53 +252,6 @@ export const parse = (data, { chainId }) => {
       };
     }
 
-    if (
-      target === resolveIdentifier(chainId, "prop-house")?.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature(
-          "createAndFundRoundOnExistingHouse(address, (address impl, bytes config, string title, string description), (uint8 assetType, address token, uint256 identifier, uint256 amount)[])",
-        )
-    ) {
-      const [houseAddress, { impl, config, title, description }, assets] =
-        functionInputs;
-
-      const resolveRoundType = (implementationAddress) => {
-        const { identifier } = resolveAddress(chainId, implementationAddress);
-        switch (identifier) {
-          case "prop-house-timed-round-implementation":
-            return "timed";
-          default:
-            throw new Error();
-        }
-      };
-
-      const roundType = resolveRoundType(impl);
-
-      const decodeRoundConfig = (roundType, encodedConfig) => {
-        switch (roundType) {
-          case "timed":
-            return decodePropHouseTimedRoundConfig(encodedConfig);
-          default:
-            throw new Error();
-        }
-      };
-
-      return {
-        type: "prop-house-create-and-fund-round",
-        houseAddress,
-        title,
-        description,
-        roundType,
-        roundConfig: decodeRoundConfig(roundType, config),
-        assets,
-        target,
-        functionName,
-        functionInputs,
-        functionInputTypes,
-        value,
-      };
-    }
-
     if (value > 0)
       return {
         type: "payable-function-call",
@@ -457,41 +400,6 @@ export const unparse = (transactions, { chainId }) => {
             ),
           });
 
-        case "prop-house-create-and-fund-round": {
-          const signature = `createAndFundRoundOnExistingHouse(${PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES.map(
-            (t) => formatAbiParameter(t),
-          ).join(",")}`;
-
-          const [propHousePrimaryAddress, timedRoundImplAddress] = [
-            "prop-house",
-            "prop-house-timed-round-implementation",
-          ].map((id) => resolveIdentifier(chainId, id).address);
-
-          const getRoundStruct = () => {
-            switch (t.roundType) {
-              case "timed":
-                return {
-                  impl: timedRoundImplAddress,
-                  title: t.title,
-                  description: t.description,
-                  config: encodePropHouseTimedRoundConfig(t.roundConfig),
-                };
-              default:
-                throw new Error();
-            }
-          };
-
-          return append({
-            target: propHousePrimaryAddress,
-            signature,
-            calldata: encodeAbiParameters(
-              PROPHOUSE_CREATE_AND_FUND_ROUND_INPUT_TYPES,
-              [t.houseAddress, getRoundStruct(), t.assets],
-            ),
-            value: t.value,
-          });
-        }
-
         // Fallback strategy
         case "usdc-approval": {
           if (
@@ -606,32 +514,6 @@ export const buildActions = (transactions, { chainId }) => {
 
   let transactionsLeft = [...transactions];
   const actions = [];
-
-  const extractPropHouseAction = () => {
-    const { address: propHouseNounsHouseAddress } = resolveIdentifier(
-      chainId,
-      "prop-house-nouns-house",
-    );
-
-    const createRoundTx = transactionsLeft.find(
-      (t) =>
-        t.type === "prop-house-create-and-fund-round" &&
-        // We don’t support selecting custom houses
-        t.houseAddress === propHouseNounsHouseAddress,
-    );
-
-    if (createRoundTx == null) return null;
-
-    transactionsLeft = transactionsLeft.filter((t) => t !== createRoundTx);
-
-    return {
-      type: "prop-house-timed-round",
-      title: createRoundTx.title,
-      description: createRoundTx.description,
-      roundConfig: createRoundTx.roundConfig,
-      firstTransactionIndex: getTransactionIndex(createRoundTx),
-    };
-  };
 
   const extractStreamAction = () => {
     const streamTx = transactionsLeft.find((t) => t.type === "stream");
@@ -778,12 +660,6 @@ export const buildActions = (transactions, { chainId }) => {
   };
 
   while (transactionsLeft.length > 0) {
-    const propHouseAction = extractPropHouseAction();
-    if (propHouseAction != null) {
-      actions.push(propHouseAction);
-      continue;
-    }
-
     const streamAction = extractStreamAction();
     if (streamAction != null) {
       actions.push(streamAction);
@@ -883,32 +759,6 @@ export const resolveAction = (a, { chainId }) => {
           default:
             throw new Error();
         }
-      }
-
-      case "prop-house-timed-round": {
-        const { address: propHouseNounsHouseAddress } = resolveIdentifier(
-          chainId,
-          "prop-house-nouns-house",
-        );
-        const getValue = () =>
-          a.roundConfig.awards.reduce((sum, award) => {
-            // Only support ETH for now
-            if (award.assetType !== ProphouseAssetType.ETH) throw new Error();
-            return sum + award.amount;
-          }, 0n);
-
-        return [
-          {
-            type: "prop-house-create-and-fund-round",
-            houseAddress: propHouseNounsHouseAddress,
-            title: a.title,
-            description: a.description,
-            roundType: "timed",
-            roundConfig: a.roundConfig,
-            assets: a.roundConfig.awards,
-            value: getValue(),
-          },
-        ];
       }
 
       case "payer-top-up":

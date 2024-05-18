@@ -17,10 +17,6 @@ import Code from "./code.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 
-const LazyPropHouseRoundDescriptionList = React.lazy(
-  () => import("./prop-house-round-description-list.js"),
-);
-
 const decimalsByCurrency = {
   eth: 18,
   weth: 18,
@@ -131,7 +127,6 @@ const ListItem = ({ transaction }) => {
       case "stream":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
-      case "prop-house-create-and-fund-round":
         return null;
 
       default:
@@ -225,7 +220,6 @@ const ListItem = ({ transaction }) => {
       case "stream":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
-      case "prop-house-create-and-fund-round":
         return null;
 
       default:
@@ -258,51 +252,6 @@ const ListItem = ({ transaction }) => {
       case "transfer":
       case "payer-top-up":
         return <UnparsedFunctionCallCodeBlock transaction={t} />;
-
-      case "prop-house-create-and-fund-round": {
-        return (
-          <>
-            <React.Suspense fallback={null}>
-              <div
-                css={(t) =>
-                  css({
-                    margin: "0.8rem 0",
-                    "dt,dd": { display: "block" },
-                    dt: {
-                      color: t.colors.textDimmed,
-                      fontWeight: t.text.weights.emphasis,
-                      margin: "0 0 0.2em",
-                    },
-                    dd: {
-                      color: t.colors.textNormal,
-                      whiteSpace: "pre-wrap",
-                    },
-                    "dd + dt": { marginTop: "1.2em" },
-                  })
-                }
-              >
-                <Code block>
-                  <LazyPropHouseRoundDescriptionList
-                    round={{
-                      title: t.title,
-                      description: t.description,
-                      configStruct: t.roundConfig,
-                    }}
-                  />
-                </Code>
-              </div>
-            </React.Suspense>
-
-            <FunctionCallCodeBlock
-              target={t.target}
-              name={t.functionName}
-              inputs={t.functionInputs}
-              inputTypes={t.functionInputTypes}
-              value={t.value}
-            />
-          </>
-        );
-      }
 
       case "unparsed-function-call":
       case "proxied-function-call":
@@ -722,22 +671,6 @@ export const TransactionExplanation = ({ transaction: t }) => {
           to{" "}
           <em>
             <AddressDisplayNameWithTooltip address={t.receiverAddress} />
-          </em>
-        </>
-      );
-
-    case "prop-house-create-and-fund-round":
-      return (
-        <>
-          Create and fund{" "}
-          <em>
-            <a href="https://prop.house" rel="noreferrer" target="_blank">
-              Prop House
-            </a>
-          </em>{" "}
-          round with{" "}
-          <em>
-            <FormattedEthWithConditionalTooltip value={t.value} />
           </em>
         </>
       );

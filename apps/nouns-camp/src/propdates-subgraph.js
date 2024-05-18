@@ -1,5 +1,3 @@
-const subgraphUrl = process.env.NEXT_PUBLIC_PROPDATES_SUBGRAPH_URL;
-
 const PROPDATE_FIELDS = `
 fragment PropdateFields on PropUpdate {
   id
@@ -47,63 +45,47 @@ const parseUpdate = (u) => ({
   proposalId: u.prop.id,
 });
 
-export const fetchPropdates = async (chainId, ...args) => {
-  return [];
-  // eslint-disable-next-line no-unreachable
+const subgraphUrl =
+  typeof window === "undefined"
+    ? process.env.PROPDATES_SUBGRAPH_MAINNET_URL
+    : "/subgraphs/propdates-mainnet";
+
+const subgraphFetch = async (chainId, query) => {
   if (chainId !== 1) return [];
-  return fetch(subgraphUrl, {
+  const response = await fetch(subgraphUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: createPropdatesQuery(...args),
-    }),
-  })
-    .then((res) => {
-      if (res.ok) return res.json();
-      return Promise.reject(new Error(res.statusText));
-    })
-    .then((body) => {
-      if (body.data.propUpdates == null) throw new Error("not-found");
-      return body.data.propUpdates.map(parseUpdate);
-    });
+    body: JSON.stringify({ query }),
+  });
+  if (response.ok) return response.json();
+  return Promise.reject(new Error(response.statusText));
+};
+
+export const fetchPropdates = async (chainId, ...args) => {
+  if (chainId !== 1) return [];
+  const body = await subgraphFetch(chainId, createPropdatesQuery(...args));
+  if (body.data.propUpdates == null) throw new Error("not-found");
+  return body.data.propUpdates.map(parseUpdate);
 };
 
 export const fetchPropdatesForProposal = async (chainId, ...args) => {
   return [];
   // eslint-disable-next-line no-unreachable
   if (chainId !== 1) return [];
-  return fetch(subgraphUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: createPropdatesForProposalQuery(...args),
-    }),
-  })
-    .then((res) => {
-      if (res.ok) return res.json();
-      return Promise.reject(new Error(res.statusText));
-    })
-    .then((body) => {
-      if (body.data.propUpdates == null) throw new Error("not-found");
-      return body.data.propUpdates.map(parseUpdate);
-    });
+  const body = await subgraphFetch(
+    chainId,
+    createPropdatesForProposalQuery(...args),
+  );
+  if (body.data?.propUpdates == null) throw new Error("not-found");
+  return body.data.propUpdates.map(parseUpdate);
 };
 
 export const fetchPropdatesByAccount = async (chainId, id) => {
   if (chainId !== 1) return [];
-  return fetch(subgraphUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query: createPropdatesByAccountQuery(id.toLowerCase()),
-    }),
-  })
-    .then((res) => {
-      if (res.ok) return res.json();
-      return Promise.reject(new Error(res.statusText));
-    })
-    .then((body) => {
-      if (body.data.propUpdates == null) throw new Error("not-found");
-      return body.data.propUpdates.map(parseUpdate);
-    });
+  const body = await subgraphFetch(
+    chainId,
+    createPropdatesByAccountQuery(id.toLowerCase()),
+  );
+  if (body.data?.propUpdates == null) throw new Error("not-found");
+  return body.data.propUpdates.map(parseUpdate);
 };
