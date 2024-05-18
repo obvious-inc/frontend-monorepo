@@ -240,6 +240,9 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                   if (item.reposts.every((p) => p.support === item.support))
                     return null;
 
+                  // Don’t render support for abstained non-vote reposts
+                  if (post.type !== "vote" && post.support === 2) return null;
+
                   return (
                     <span
                       css={(t) =>
@@ -728,11 +731,7 @@ const ItemTitle = ({ item, context }) => {
           item.reposts?.length > 0 &&
           item.reposts.every((post) => post.support === item.support);
 
-        if (isRepost) {
-          const isRevote =
-            item.type === "vote" && item.reposts.some((q) => q.type === "vote");
-          return isRevote ? "revoted" : "reposted";
-        }
+        if (isRepost) return item.type === "vote" ? "revoted" : "reposted";
 
         switch (item.type) {
           case "vote":

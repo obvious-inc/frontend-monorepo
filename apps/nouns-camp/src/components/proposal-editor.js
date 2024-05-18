@@ -650,13 +650,6 @@ const ActionSummary = ({ action: a }) => {
       );
     }
 
-    case "prop-house-timed-round":
-      return (
-        <TransactionExplanation
-          transaction={resolveActionTransactions(a, { chainId })[0]}
-        />
-      );
-
     case "custom-transaction":
       return (
         <TransactionExplanation
@@ -845,7 +838,6 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
       case "payer-top-up":
       case "treasury-noun-transfer":
       case "escrow-noun-transfer":
-      case "prop-house-create-and-fund-round":
         return null;
 
       case "unparsed-function-call":

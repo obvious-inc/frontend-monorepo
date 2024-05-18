@@ -18,8 +18,9 @@ env:
   ALCHEMY_API_KEY: ${{ secrets.ALCHEMY_API_KEY }}
   CLOUDFLARE_ACCT_HASH: ${{ secrets.CLOUDFLARE_ACCT_HASH }}
   WALLET_CONNECT_PROJECT_ID: ${{ secrets.WALLET_CONNECT_PROJECT_ID }}
-  NOUNS_MAINNET_SUBGRAPH_URL: ${{ secrets.NOUNS_MAINNET_SUBGRAPH_URL }}
-  PROPDATES_SUBGRAPH_URL: ${{ secrets.PROPDATES_SUBGRAPH_URL }}
+  NOUNS_SUBGRAPH_MAINNET_URL:  ${{ secrets.PROPDATES_SUBGRAPH_URL }}
+  NOUNS_SUBGRAPH_SEPOLIA_URL:  ${{ secrets.NOUNS_SUBGRAPH_SEPOLIA_URL }}
+  PROPDATES_SUBGRAPH_MAINNET_URL:  ${{ secrets.PROPDATES_SUBGRAPH_MAINNET_URL }}
 
 jobs:
   check:
@@ -30,7 +31,7 @@ jobs:
     steps:
       # The first step is to check out the repository code
       - name: Checking out repository code
-        uses: actions/checkout@v4.1.5 # Action for checking out a repo.
+        uses: actions/checkout@v4.1.6 # Action for checking out a repo.
         with:
           fetch-depth: 0 # Fetches all history for all branches and tags
 
@@ -64,7 +65,7 @@ jobs:
 
     steps: # The sequence of tasks that make up a job.
       - name: Checking out repository code
-        uses: actions/checkout@v4.1.5 # Action for checking out a repo.
+        uses: actions/checkout@v4.1.6 # Action for checking out a repo.
 
       - name: Setup Node.js ${{ matrix.node-version }} Environment
         uses: actions/setup-node@v4.0.2 # Action for setting up Node environment.
@@ -119,7 +120,7 @@ jobs:
     steps:
       # Checkout the repository code
       - name: Checkout code
-        uses: actions/checkout@v4.1.5
+        uses: actions/checkout@v4.1.6
         with:
           fetch-depth: 0 # Fetches all history for all branches and tags
 

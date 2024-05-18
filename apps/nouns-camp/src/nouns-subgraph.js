@@ -2,19 +2,13 @@ import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
-import { mainnet, sepolia, goerli } from "./chains.js";
+import { mainnet, sepolia } from "./chains.js";
 import { parse as parseTransactions } from "./utils/transactions.js";
 
 const customSubgraphEndpoint =
   typeof location === "undefined"
     ? null
     : new URLSearchParams(location.search).get("nouns-subgraph");
-
-const subgraphEndpointByChainId = {
-  [mainnet.id]: process.env.NEXT_PUBLIC_NOUNS_MAINNET_SUBGRAPH_URL,
-  [sepolia.id]: process.env.NEXT_PUBLIC_NOUNS_SEPOLIA_SUBGRAPH_URL,
-  [goerli.id]: process.env.NEXT_PUBLIC_NOUNS_GOERLI_SUBGRAPH_URL,
-};
 
 const parseTimestamp = (unixSeconds) => new Date(parseInt(unixSeconds) * 1000);
 
@@ -859,8 +853,21 @@ export const subgraphFetch = async ({
   query,
   variables,
 }) => {
-  const url =
-    endpoint ?? customSubgraphEndpoint ?? subgraphEndpointByChainId[chainId];
+  const url = (() => {
+    if (endpoint != null) return endpoint;
+    if (customSubgraphEndpoint != null) return customSubgraphEndpoint;
+
+    if (typeof window === "undefined")
+      return {
+        [mainnet.id]: process.env.NOUNS_SUBGRAPH_MAINNET_URL,
+        [sepolia.id]: process.env.NOUNS_SUBGRAPH_SEPOLIA_URL,
+      }[chainId];
+
+    return {
+      [mainnet.id]: "/subgraphs/nouns-mainnet",
+      [sepolia.id]: "/subgraphs/nouns-sepolia",
+    }[chainId];
+  })();
 
   if (url == null) throw new Error();
 
