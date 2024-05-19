@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0-alpha.51] - 2024-05-19
+
+### 🐛 Bug Fixes
+
+- Update general dependencies (#303)
+- Update contracts on main net and test nets
+
+## [1.0.0-alpha.50] - 2024-05-18
+
+### 🚀 Features
+
+- Migrate updates from upstream (#301)
+
 ## [1.0.0-alpha.49] - 2024-05-08
 
 ### ⚙️ Miscellaneous Tasks

@@ -11,8 +11,8 @@ const DAO_TOKEN_CONTRACT = "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B";
 const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
   "0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E";
 const DAO_DESCRIPTOR_CONTRACT = "0xb2a47999b3117c7dD628920ED8e77eBDfB948B68";
-const DAO_TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
-const DAO_PAYER_CONTRACT = "0xd97bcd9f47cee35c0a9ec1dc40c1269afc9e8e1d";
+const DAO_TOKEN_BUYER_CONTRACT = "0x0000000000000000000000000000000000000000";
+const DAO_PAYER_CONTRACT = "0x0000000000000000000000000000000000000000";
 
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
@@ -35,12 +35,12 @@ const addressByIdentifierByChainId = {
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
     "auction-house-admin": "0xc1c119932d78ab9080862c5fcb964029f086401e",
     descriptor: DAO_DESCRIPTOR_CONTRACT,
-    "fork-escrow": "0x44d97d22b3d37d837ce4b22773aad9d1566055d9",
+    "fork-escrow": "",
     payer: DAO_PAYER_CONTRACT,
     "executor-v1": "0x0bc3807ec262cb779b38d65b38158acc3bfede10",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
-    "stream-factory": "0x0fd206fc7a7dbcd5661157edcb1ffdd0d02a61ff",
-    "prop-house-nouns-house": "0xa1b73d8cb149ab30ec43f83f577646ac8fe7e617",
+    "stream-factory": "0x0000000000000000000000000000000000000000",
+    "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
   [sepolia.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
@@ -48,17 +48,17 @@ const addressByIdentifierByChainId = {
     "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
 
     // Nouns contracts
-    dao: "0x35d2670d7c8931aacdd37c89ddcb0638c3c44a57",
-    executor: "0x07e5d6a1550ad5e597a9b0698a474aa080a2fb28",
-    data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
-    token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
-    "auction-house": "0x488609b7113fcf3b761a05956300d605e8f6bcaf",
-    "auction-house-admin": "0x9a19e520d9cd6c40ecc79623f16390a68962b7e9",
-    descriptor: "0x0000000000000000000000000000000000000000",
-    "fork-escrow": "0xa15b495deb1b77f066b0c286fdb640c81ef356c4",
-    payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
-    "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
-    "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
+    dao: "0x0F4a7f71174E79e20fc192C487c2492A82d46FAE",
+    executor: "0x97c9d93e9Bec3b764aA1F9f344F7da0456c3D289",
+    data: "0x0F4a7f71174E79e20fc192C487c2492A82d46FAE",
+    token: "0xb189804b02C3A435dD8147335d7E3ba6E15C0366",
+    "auction-house": "0xB2e042E602582Aa58F076eB0aae379744bc6247E",
+    "auction-house-admin": "0x0c9342c19E12DB744802BA7fC60B42c79f9Dc013",
+    descriptor: "0x21bd07BF66267Ab3B15F83C888AFE9f56A2b58c7",
+    "fork-escrow": "0x0000000000000000000000000000000000000000",
+    payer: "0x0000000000000000000000000000000000000000",
+    "token-buyer": "0x0000000000000000000000000000000000000000",
+    "stream-factory": "0x0000000000000000000000000000000000000000",
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
   [goerli.id]: {
@@ -70,15 +70,15 @@ const addressByIdentifierByChainId = {
       "0x8f6084435799f15a78cd2f5c6dc1555d91ebd473",
 
     // Nouns contracts
-    dao: "0x22f7658f64be277e6b3968ece7b773b092a39864",
-    executor: "0xc15008de43d93d115bd64ed4d95817ffdbfb6dea",
-    data: "0xc0217355376e414a1c33dc3558a75625c5444006",
-    token: "0x99265ce0983aab76f5a3789663fdd887de66638a",
-    "auction-house": "0x32bbbf3721a1b05390daf4dec2f5fe4b935f25a1",
-    descriptor: "0xc5fcaab38c4ab043e2706f245183d747299df414",
-    payer: "0x63f8445c4549d17db181f9ade1a126eff8ee72d6",
-    "token-buyer": "0x7ee1fe5973c2f6e42d2d40c93f0fded078c85770",
-    "stream-factory": "0xc08a287ecb16ced801f28bb011924f7de5cc53a3",
+    dao: "0xddE586Bc15E36aFE7ED322DF8582171f224374ad",
+    executor: "0x4733DbF4dB8a0AFe3cc17921792dd2545a84B505",
+    data: "0xddE586Bc15E36aFE7ED322DF8582171f224374ad",
+    token: "0x77a74fBb28a1E08645587f52B73170D4c69Ba212",
+    "auction-house": "0x598949186a38683C18697705aDcdC705bFc691a0",
+    descriptor: "0xB6D0AF8C27930E13005Bf447d54be8235724a102",
+    payer: "0x0000000000000000000000000000000000000000",
+    "token-buyer": "0x0000000000000000000000000000000000000000",
+    "stream-factory": "0x0000000000000000000000000000000000000000",
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
 };
