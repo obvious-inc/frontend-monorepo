@@ -1,6 +1,7 @@
 import formatDate from "date-fns/format";
 import parseDate from "date-fns/parse";
 import React from "react";
+import { formatAbiParameter } from "abitype";
 import {
   isAddress,
   parseAbi,
@@ -243,7 +244,7 @@ const isFunctionAbiItem = (item) => {
 
 const createSignature = (functionAbiItem) =>
   `${functionAbiItem.name}(${
-    functionAbiItem.inputs?.map((i) => i.type).join(",") ?? ""
+    functionAbiItem.inputs?.map((t) => formatAbiParameter(t)).join(",") ?? ""
   })`;
 
 const StreamingPaymentActionForm = ({ state, setState }) => {
