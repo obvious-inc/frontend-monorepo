@@ -8,7 +8,7 @@ import {
   useBlockNumber,
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
-import { resolveIdentifier } from "../contracts.js";
+import { CAMP_CLIENT_ID, resolveIdentifier } from "../contracts.js";
 import { useActions } from "../store.js";
 import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
@@ -248,14 +248,14 @@ export const useCastProposalVote = (
     address: getContractAddress(chainId),
     abi: [
       {
-        inputs: [{ type: "uint256" }, { type: "uint8" }],
+        inputs: [{ type: "uint256" }, { type: "uint8" }, { type: "uint32" }],
         name: "castRefundableVote",
         outputs: [],
         type: "function",
       },
     ],
     functionName: "castRefundableVote",
-    args: [Number(proposalId), support],
+    args: [Number(proposalId), support, CAMP_CLIENT_ID],
     query: {
       enabled: enabled && support != null && !hasReason,
     },
@@ -269,14 +269,19 @@ export const useCastProposalVote = (
     address: getContractAddress(chainId),
     abi: [
       {
-        inputs: [{ type: "uint256" }, { type: "uint8" }, { type: "string" }],
+        inputs: [
+          { type: "uint256" },
+          { type: "uint8" },
+          { type: "string" },
+          { type: "uint32" },
+        ],
         name: "castRefundableVoteWithReason",
         outputs: [],
         type: "function",
       },
     ],
     functionName: "castRefundableVoteWithReason",
-    args: [Number(proposalId), support, reason],
+    args: [Number(proposalId), support, reason, CAMP_CLIENT_ID],
     query: {
       enabled: enabled && support != null && hasReason,
     },
@@ -345,6 +350,7 @@ export const useCreateProposal = () => {
             { name: "signatures", type: "string[]" },
             { name: "calldatas", type: "bytes[]" },
             { name: "description", type: "string" },
+            { name: "clientId", type: "uint32" },
           ],
           name: "propose",
           outputs: [{ type: "uint256" }],
@@ -352,7 +358,14 @@ export const useCreateProposal = () => {
         },
       ],
       functionName: "propose",
-      args: [targets, values, signatures, calldatas, description],
+      args: [
+        targets,
+        values,
+        signatures,
+        calldatas,
+        description,
+        CAMP_CLIENT_ID,
+      ],
     })
       .then((hash) => {
         registerEvent("Proposal successfully created", {
@@ -369,18 +382,11 @@ export const useCreateProposal = () => {
             {
               inputs: [
                 { name: "id", type: "uint256" },
-                { name: "proposer", type: "address" },
                 { name: "signers", type: "address[]" },
-                { name: "targets", type: "address[]" },
-                { name: "values", type: "uint256[]" },
-                { name: "signatures", type: "string[]" },
-                { name: "calldatas", type: "bytes[]" },
-                { name: "startBlock", type: "uint256" },
-                { name: "endBlock", type: "uint256" },
                 { name: "updatePeriodEndBlock", type: "uint256" },
                 { name: "proposalThreshold", type: "uint256" },
                 { name: "quorumVotes", type: "uint256" },
-                { name: "description", type: "string" },
+                { indexed: true, name: "clientId", type: "uint32" },
               ],
               name: "ProposalCreatedWithRequirements",
               type: "event",
@@ -428,6 +434,7 @@ export const useCreateProposalWithSignatures = () => {
             { name: "signatures", type: "string[]" },
             { name: "calldatas", type: "bytes[]" },
             { name: "description", type: "string" },
+            { name: "clientId", type: "uint32" },
           ],
           name: "proposeBySigs",
           outputs: [{ type: "uint256" }],
@@ -442,6 +449,7 @@ export const useCreateProposalWithSignatures = () => {
         signatures,
         calldatas,
         description,
+        CAMP_CLIENT_ID,
       ],
     })
       .then((hash) => {
@@ -459,18 +467,11 @@ export const useCreateProposalWithSignatures = () => {
             {
               inputs: [
                 { name: "id", type: "uint256" },
-                { name: "proposer", type: "address" },
                 { name: "signers", type: "address[]" },
-                { name: "targets", type: "address[]" },
-                { name: "values", type: "uint256[]" },
-                { name: "signatures", type: "string[]" },
-                { name: "calldatas", type: "bytes[]" },
-                { name: "startBlock", type: "uint256" },
-                { name: "endBlock", type: "uint256" },
                 { name: "updatePeriodEndBlock", type: "uint256" },
                 { name: "proposalThreshold", type: "uint256" },
                 { name: "quorumVotes", type: "uint256" },
-                { name: "description", type: "string" },
+                { indexed: true, name: "clientId", type: "uint32" },
               ],
               name: "ProposalCreatedWithRequirements",
               type: "event",
