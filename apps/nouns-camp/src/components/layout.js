@@ -2,7 +2,6 @@ import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
@@ -10,10 +9,16 @@ import {
   CaretDown as CaretDownIcon,
   DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
+import { CHAIN_ID } from "../constants/env.js";
+import {
+  getChain as getSupportedChain,
+  isTestnet as isTestnetChain,
+} from "../utils/chains.js";
 import { useAccount, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
 
@@ -122,14 +127,17 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   const {
     address: connectedWalletAccountAddress,
+    chainId: connectedChainId,
     requestAccess: requestWalletAccess,
     disconnect: disconnectWallet,
-    switchToMainnet: switchWalletToMainnet,
-    isUnsupportedChain,
-    isTestnet,
+    switchToTargetChain: switchWalletToTargetChain,
     isLoading: isLoadingWallet,
-    chain,
   } = useWallet();
+
+  const isTestnet = isTestnetChain(CHAIN_ID);
+  const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
+
+  const chain = getSupportedChain(CHAIN_ID);
 
   const connectedAccount = useAccount(connectedWalletAccountAddress);
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
@@ -220,13 +228,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       transform: "translateY(0.1rem) scale(1.05)",
                     })}
                     style={{
-                      filter:
-                        isTestnet || isUnsupportedChain
-                          ? "invert(1)"
-                          : undefined,
+                      filter: isTestnet ? "invert(1)" : undefined,
                     }}
                   />
-                  {(pathname !== "/" || isTestnet || isUnsupportedChain) && (
+                  {(pathname !== "/" || isTestnet) && (
                     <span
                       css={css({
                         display: "none",
@@ -236,11 +241,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         },
                       })}
                     >
-                      {isUnsupportedChain
-                        ? "Unsupported chain"
-                        : isTestnet
-                          ? chain?.name
-                          : "Camp"}
+                      {isTestnet ? chain.name : "Camp"}
                     </span>
                   )}
                 </>
@@ -339,19 +340,19 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       </>
                     ),
                   }
-                : isUnsupportedChain
+                : !isConnectedToTargetChain
                   ? {
                       onSelect: () => {
-                        switchWalletToMainnet();
+                        switchWalletToTargetChain();
                       },
                       buttonProps: {
                         variant: "default",
                         isLoading: isLoadingWallet,
                         disabled:
-                          switchWalletToMainnet == null || isLoadingWallet,
+                          switchWalletToTargetChain == null || isLoadingWallet,
                         style: { marginLeft: "0.9rem" },
                       },
-                      label: "Switch to Mainnet",
+                      label: `Switch to ${CHAIN_ID === 1 ? "Mainnet" : chain.name}`,
                     }
                   : null,
               connectedWalletAccountAddress == null

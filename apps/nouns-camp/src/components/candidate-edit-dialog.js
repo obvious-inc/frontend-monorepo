@@ -18,7 +18,6 @@ import {
 } from "../utils/transactions.js";
 import { diffParagraphs } from "../utils/diff.js";
 import { useProposalCandidate } from "../store.js";
-import useChainId from "../hooks/chain-id.js";
 import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
 import {
@@ -29,7 +28,6 @@ import {
 
 const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
-  const chainId = useChainId();
   const scrollContainerRef = React.useRef();
 
   const candidate = useProposalCandidate(candidateId);
@@ -47,11 +45,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     () =>
       buildActionsFromTransactions(
         candidate.latestVersion.content.transactions,
-        {
-          chainId,
-        },
       ),
-    [candidate, chainId],
+    [candidate],
   );
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
@@ -72,8 +67,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     if (hasTitleChanges) return true;
 
     const transactions = unparseTransactions(
-      actions.flatMap((a) => resolveActionTransactions(a, { chainId })),
-      { chainId },
+      actions.flatMap((a) => resolveActionTransactions(a)),
     );
 
     const persistedTransactions = {
@@ -104,7 +98,6 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     deferredBody,
     persistedMarkdownBody,
     actions,
-    chainId,
   ]);
 
   const dismissDialog = () => {
@@ -133,11 +126,11 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const createTransactionsDiff = () =>
     diffParagraphs(
       candidate.latestVersion.content.transactions
-        .map((t) => stringifyTransaction(t, { chainId }))
+        .map((t) => stringifyTransaction(t))
         .join("\n\n"),
       actions
-        .flatMap((a) => resolveActionTransactions(a, { chainId }))
-        .map((t) => stringifyTransaction(t, { chainId }))
+        .flatMap((a) => resolveActionTransactions(a))
+        .map((t) => stringifyTransaction(t))
         .join("\n\n"),
     );
 
@@ -146,9 +139,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       setPendingSubmit(true);
 
       const description = createMarkdownDescription({ title, body });
-      const transactions = actions.flatMap((a) =>
-        resolveActionTransactions(a, { chainId }),
-      );
+      const transactions = actions.flatMap((a) => resolveActionTransactions(a));
 
       await updateProposalCandidate({
         description,

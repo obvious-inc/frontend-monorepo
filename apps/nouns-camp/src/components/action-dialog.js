@@ -11,7 +11,6 @@ import {
   decodeAbiParameters,
 } from "viem";
 import { normalize as normalizeEnsName } from "viem/ens";
-import { usePublicClient } from "wagmi";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
 import {
@@ -26,11 +25,11 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
+import usePublicClient from "../hooks/public-client.js";
 import { fetchContractInfo } from "../hooks/etherscan-contract-info.js";
 import useEthToUsdRate, {
   Provider as EthToUsdRateProvider,
 } from "../hooks/eth-to-usd-rate.js";
-import useChainId from "../hooks/chain-id.js";
 import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
 import { formatAbiParameter } from "abitype";
@@ -100,7 +99,7 @@ const EnsCacheProvider = ({ children }) => {
 
 const useEnsCache = () => React.useContext(EnsCacheContext);
 
-const useEnsAddress = ({ name, enabled }) => {
+const useCustomCacheEnsAddress = (name, { enabled }) => {
   const publicClient = usePublicClient();
 
   const { resolve, register } = React.useContext(EnsCacheContext);
@@ -120,7 +119,7 @@ const useEnsAddress = ({ name, enabled }) => {
     );
   }, [name, address, enabled, publicClient, register]);
 
-  return { data: address };
+  return address;
 };
 
 // const useEnsName = ({ address, enabled }) => {
@@ -282,8 +281,7 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
     ],
   );
 
-  useEnsAddress({
-    name: state.receiverQuery.trim(),
+  useCustomCacheEnsAddress(state.receiverQuery.trim(), {
     enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
   });
 
@@ -723,8 +721,7 @@ const formConfigByActionType = {
       currency: state.currency,
     }),
     Component: ({ state, setState }) => {
-      useEnsAddress({
-        name: state.receiverQuery.trim(),
+      useCustomCacheEnsAddress(state.receiverQuery.trim(), {
         enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
       });
       return (
@@ -1581,17 +1578,12 @@ const AmountWithCurrencyInput = ({
 
 const useFetchPredictedStreamContractAddress = () => {
   const publicClient = usePublicClient();
-  const chainId = useChainId();
 
   return React.useCallback(
     ({ amount: amount_, currency, receiverAddress, startDate, endDate }) => {
-      const executorContract = getContractWithIdentifier(chainId, "executor");
-      const streamFactoryContract = getContractWithIdentifier(
-        chainId,
-        "stream-factory",
-      );
+      const executorContract = getContractWithIdentifier("executor");
+      const streamFactoryContract = getContractWithIdentifier("stream-factory");
       const paymentTokenContract = getContractWithIdentifier(
-        chainId,
         `${currency}-token`,
       );
 
@@ -1633,7 +1625,7 @@ const useFetchPredictedStreamContractAddress = () => {
         ],
       });
     },
-    [publicClient, chainId],
+    [publicClient],
   );
 };
 

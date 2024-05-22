@@ -47,7 +47,6 @@ import {
   useAddSignatureToProposalCandidate,
   useCancelProposalCandidate,
 } from "../hooks/data-contract.js";
-import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import {
@@ -1511,8 +1510,6 @@ const ProposalUpdateDiffDialogContent = ({
   titleProps,
   dismiss,
 }) => {
-  const chainId = useChainId();
-
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
     candidate?.latestVersion.targetProposalId,
@@ -1526,10 +1523,10 @@ const ProposalUpdateDiffDialogContent = ({
   );
   const transactionsDiff = diffParagraphs(
     updateTargetProposal.transactions
-      .map((t) => stringifyTransaction(t, { chainId }))
+      .map((t) => stringifyTransaction(t))
       .join("\n\n"),
     candidate.latestVersion.content.transactions
-      .map((t) => stringifyTransaction(t, { chainId }))
+      .map((t) => stringifyTransaction(t))
       .join("\n\n"),
   );
 

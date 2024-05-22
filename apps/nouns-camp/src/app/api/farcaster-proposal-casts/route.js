@@ -1,5 +1,6 @@
 import { kv } from "@vercel/kv";
 import { verifyMessage, isAddress } from "viem";
+import { CHAIN_ID } from "../../../constants/env.js";
 import { subgraphFetch } from "../../../nouns-subgraph.js";
 import {
   parseEpochTimestamp,
@@ -12,9 +13,8 @@ import {
   verifyEthAddress,
 } from "../farcaster-utils.js";
 
-const createCanonicalProposalUrl = async (chainId, proposalId) => {
+const createCanonicalProposalUrl = async (proposalId) => {
   const { proposal } = await subgraphFetch({
-    chainId,
     query: `
       query {
         proposal(id: ${proposalId}) {
@@ -25,7 +25,7 @@ const createCanonicalProposalUrl = async (chainId, proposalId) => {
 
   if (proposal == null) throw new Error();
 
-  return createTransactionReceiptUri(chainId, proposal.createdTransactionHash);
+  return createTransactionReceiptUri(CHAIN_ID, proposal.createdTransactionHash);
 };
 
 const jsonResponse = (statusCode, body, headers) =>
@@ -34,22 +34,20 @@ const jsonResponse = (statusCode, body, headers) =>
     headers: { "Content-Type": "application/json", ...headers },
   });
 
-const fetchProposalCasts = async (chainId, proposalId) => {
-  const url = await createCanonicalProposalUrl(chainId, proposalId);
-  const { accounts, casts } = await fetchCastsByParentUrl(chainId, url);
+const fetchProposalCasts = async (proposalId) => {
+  const url = await createCanonicalProposalUrl(proposalId);
+  const { accounts, casts } = await fetchCastsByParentUrl(url);
   return { accounts, casts: casts.map((c) => ({ ...c, proposalId })) };
 };
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const chainId = searchParams.get("chain");
   const proposalId = searchParams.get("proposal");
 
-  if (chainId == null) return jsonResponse(400, { error: "chain-required" });
   if (proposalId == null)
     return jsonResponse(400, { error: "proposal-required" });
 
-  const { casts, accounts } = await fetchProposalCasts(chainId, proposalId);
+  const { casts, accounts } = await fetchProposalCasts(proposalId);
 
   return jsonResponse(
     200,
@@ -59,17 +57,9 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const {
-    chainId,
-    proposalId,
-    text,
-    fid,
-    timestamp,
-    ethAddress,
-    ethSignature,
-  } = await request.json();
+  const { proposalId, text, fid, timestamp, ethAddress, ethSignature } =
+    await request.json();
 
-  if (chainId == null) return jsonResponse(400, { error: "chain-required" });
   if (proposalId == null)
     return jsonResponse(400, { error: "proposal-required" });
   if (fid == null) return jsonResponse(400, { error: "fid-required" });
@@ -89,7 +79,7 @@ export async function POST(request) {
     message: buildProposalCastSignatureMessage({
       text,
       proposalId,
-      chainId,
+      chainId: CHAIN_ID,
       timestamp,
     }),
     signature: ethSignature,
@@ -111,7 +101,7 @@ export async function POST(request) {
   try {
     const castMessage = await submitCastAdd(fid, privateAccountKey, {
       text,
-      parentUrl: await createCanonicalProposalUrl(chainId, proposalId),
+      parentUrl: await createCanonicalProposalUrl(proposalId),
     });
     return jsonResponse(201, {
       hash: castMessage.hash,
