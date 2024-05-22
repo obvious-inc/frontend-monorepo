@@ -437,7 +437,8 @@ export const unparse = (transactions, { chainId }) => {
         }
 
         case "function-call":
-        case "payable-function-call": {
+        case "payable-function-call":
+        case "weth-approval": {
           const signature = createSignature({
             functionName: t.functionName,
             inputTypes: t.functionInputTypes,
