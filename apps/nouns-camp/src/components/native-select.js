@@ -6,7 +6,7 @@ const NativeSelect = ({
   style,
   ...props
 }) => {
-  const selectedOption = options.find((o) => o.value === value);
+  const selectedOption = options.find((o) => String(o.value) === String(value));
   return (
     <span
       style={{
