@@ -2,7 +2,7 @@
 
 import React from "react";
 import { formatUnits } from "viem";
-import { useBlockNumber, useBlock } from "wagmi";
+import { useBlock } from "wagmi";
 import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
@@ -15,6 +15,7 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import { CHAIN_ID } from "../constants/env.js";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
@@ -28,6 +29,7 @@ import {
   useProposalFetch,
   useProposalCandidate,
 } from "../store.js";
+import useBlockNumber from "../hooks/block-number.js";
 import {
   useNavigate,
   useSearchParams,
@@ -81,7 +83,7 @@ const useFeedItems = (proposalId) => {
   const proposal = useProposal(proposalId);
   const candidate = useProposalCandidate(proposal?.candidateId);
 
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
+  const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 20_000,
   });
@@ -89,10 +91,12 @@ const useFeedItems = (proposalId) => {
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
   const { data: startBlock } = useBlock({
+    chainId: CHAIN_ID,
     blockNumber: proposal?.startBlock,
     query: { enabled: proposal?.startBlock != null },
   });
   const { data: endBlock } = useBlock({
+    chainId: CHAIN_ID,
     blockNumber: proposal?.endBlock,
     query: { enabled: proposal?.endBlock != null },
   });
@@ -127,7 +131,7 @@ const ProposalMainSection = ({
   scrollContainerRef,
   toggleVotesDialog,
 }) => {
-  const { data: latestBlockNumber } = useBlockNumber();
+  const latestBlockNumber = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const {
     address: connectedWalletAccountAddress,

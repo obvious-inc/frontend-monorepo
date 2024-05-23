@@ -1,6 +1,5 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { mainnet } from "wagmi/chains";
 import {
   useAccount,
   useConnect,
@@ -12,8 +11,8 @@ import { array as arrayUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import { CHAIN_ID } from "../constants/env.js";
 import { useConfig } from "../config-provider.js";
-import useChainId, { useConnectedChainId, defaultChainId } from "./chain-id.js";
 
 const impersonationAddress =
   typeof location === "undefined"
@@ -185,7 +184,7 @@ export const useWallet = () => {
   const { openDialog } = React.useContext(Context);
   const {
     address: connectedAccountAddress,
-    chain,
+    chainId: connectedChainId,
     isConnected,
     isConnecting: isConnectingAccount,
     isReconnecting: isReconnectingAccount,
@@ -195,12 +194,7 @@ export const useWallet = () => {
   const { disconnectAsync: disconnect } = useDisconnect();
   const { isLoading: isSwitchingNetwork, switchChainAsync: switchChain } =
     useSwitchChain();
-  const chainId = useChainId();
-  const connectedChainId = useConnectedChainId();
   const { canaryAccounts, betaAccounts } = useConfig();
-
-  const isUnsupportedChain =
-    connectedChainId != null && chainId !== connectedChainId;
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
@@ -225,27 +219,26 @@ export const useWallet = () => {
 
   return {
     address: isConnected || impersonationAddress != null ? address : null,
+    chainId: connectedChainId,
     requestAccess: hasReadyConnector ? requestAccess : null,
     disconnect,
     reset,
-    switchToMainnet: () =>
+    switchToTargetChain: () =>
       new Promise((resolve, reject) => {
         // Some wallets switch network without responding
         const timeoutHandle = setTimeout(() => {
           location.reload();
         }, 12_000);
 
-        switchChain({ chainId: mainnet.id })
+        switchChain({ chainId: CHAIN_ID })
           .then(resolve, reject)
           .finally(() => {
             clearTimeout(timeoutHandle);
           });
       }),
     isLoading,
-    isUnsupportedChain,
-    isTestnet: chainId !== defaultChainId,
+    isConnectedToTargetChain: connectedChainId === CHAIN_ID,
     isCanaryAccount: canaryAccounts.includes(address),
     isBetaAccount: betaAccounts.includes(address),
-    chain,
   };
 };

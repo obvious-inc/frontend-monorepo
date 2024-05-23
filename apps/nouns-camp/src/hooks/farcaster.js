@@ -7,12 +7,12 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
+import { CHAIN_ID } from "../constants/env.js";
 import {
   buildProposalCastSignatureMessage,
   buildCandidateCastSignatureMessage,
 } from "../utils/farcaster.js";
 import { useWallet } from "./wallet.js";
-import useChainId from "./chain-id.js";
 
 const isFiltered = (filter, cast) => {
   switch (filter) {
@@ -50,8 +50,6 @@ export const useAccountsWithVerifiedEthAddress = (
   ethAddress_,
   { enabled = true, fetchInterval } = {},
 ) => {
-  const chainId = useChainId();
-
   const {
     state: { accountsByFid, fidsByEthAddress },
     setState,
@@ -66,7 +64,7 @@ export const useAccountsWithVerifiedEthAddress = (
   useFetch(
     async () => {
       const res = await fetch(
-        `/api/farcaster-accounts?eth-address=${ethAddress}&chain=${chainId}`,
+        `/api/farcaster-accounts?eth-address=${ethAddress}`,
       );
       if (!res.ok) return;
       const { accounts } = await res.json();
@@ -86,7 +84,7 @@ export const useAccountsWithVerifiedEthAddress = (
       }));
     },
     { enabled: enabled && ethAddress != null, fetchInterval },
-    [chainId, ethAddress],
+    [ethAddress],
   );
 
   return accounts;
@@ -96,8 +94,6 @@ export const useProposalCasts = (
   proposalId,
   { filter, ...fetchOptions } = {},
 ) => {
-  const chainId = useChainId();
-
   const {
     state: { accountsByFid, castsByHash, castHashesByProposalId },
     setState,
@@ -105,10 +101,7 @@ export const useProposalCasts = (
 
   useFetch(
     async () => {
-      const searchParams = new URLSearchParams({
-        chain: chainId,
-        proposal: proposalId,
-      });
+      const searchParams = new URLSearchParams({ proposal: proposalId });
       const res = await fetch(`/api/farcaster-proposal-casts?${searchParams}`);
       const { casts, accounts } = await res.json();
       const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
@@ -134,7 +127,7 @@ export const useProposalCasts = (
       enabled: filter != null && filter !== "disabled",
       ...fetchOptions,
     },
-    [chainId, proposalId],
+    [proposalId],
   );
 
   const castHashes = castHashesByProposalId[proposalId];
@@ -156,8 +149,6 @@ export const useProposalCasts = (
 };
 
 export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
-  const chainId = useChainId();
-
   const {
     state: { accountsByFid, castsByHash, castHashesByCandidateId },
     setState,
@@ -166,7 +157,6 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
   useFetch(
     async () => {
       const searchParams = new URLSearchParams({
-        chain: chainId,
         candidate: candidateId,
       });
       const res = await fetch(`/api/farcaster-candidate-casts?${searchParams}`);
@@ -194,7 +184,7 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
       enabled: filter != null && filter !== "disabled",
       ...fetchOptions,
     },
-    [chainId, candidateId],
+    [candidateId],
   );
 
   const castHashes = castHashesByCandidateId[candidateId];
@@ -216,7 +206,6 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
 };
 
 export const useSubmitProposalCast = (proposalId) => {
-  const chainId = useChainId();
   const { address: connectedAccountAddress } = useWallet();
   const { signMessageAsync: signMessage } = useSignMessage();
 
@@ -229,7 +218,7 @@ export const useSubmitProposalCast = (proposalId) => {
         message: buildProposalCastSignatureMessage({
           text,
           proposalId,
-          chainId,
+          chainId: CHAIN_ID,
           timestamp,
         }),
       });
@@ -238,7 +227,6 @@ export const useSubmitProposalCast = (proposalId) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chainId,
           proposalId,
           text,
           fid,
@@ -267,12 +255,11 @@ export const useSubmitProposalCast = (proposalId) => {
         },
       }));
     },
-    [setState, signMessage, chainId, proposalId, connectedAccountAddress],
+    [setState, signMessage, proposalId, connectedAccountAddress],
   );
 };
 
 export const useSubmitCandidateCast = (candidateId) => {
-  const chainId = useChainId();
   const { address: connectedAccountAddress } = useWallet();
   const { signMessageAsync: signMessage } = useSignMessage();
 
@@ -285,7 +272,7 @@ export const useSubmitCandidateCast = (candidateId) => {
         message: buildCandidateCastSignatureMessage({
           text,
           candidateId,
-          chainId,
+          chainId: CHAIN_ID,
           timestamp,
         }),
       });
@@ -294,7 +281,6 @@ export const useSubmitCandidateCast = (candidateId) => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chainId,
           candidateId,
           text,
           fid,
@@ -323,13 +309,11 @@ export const useSubmitCandidateCast = (candidateId) => {
         },
       }));
     },
-    [setState, signMessage, chainId, candidateId, connectedAccountAddress],
+    [setState, signMessage, candidateId, connectedAccountAddress],
   );
 };
 
 export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
-  const chainId = useChainId();
-
   const {
     state: { accountsByFid, castsByHash },
     setState,
@@ -337,11 +321,7 @@ export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
 
   useFetch(
     async () => {
-      const searchParams = new URLSearchParams({
-        chain: chainId,
-      });
-
-      const res = await fetch(`/api/farcaster-casts?${searchParams}`);
+      const res = await fetch("/api/farcaster-casts");
 
       if (!res.ok) {
         console.error("Error fetching recent casts");
@@ -401,7 +381,7 @@ export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
       enabled: filter != null && filter !== "disabled",
       ...fetchOptions,
     },
-    [chainId],
+    [],
   );
 
   return Object.values(castsByHash).reduce((casts, cast_) => {

@@ -70,13 +70,12 @@ export const verifyEthAddress = async (fid, address) => {
   return verification != null;
 };
 
-const parseNeynarUsers = async ({ chainId }, users) => {
+const parseNeynarUsers = async (users) => {
   const verifiedAddresses = arrayUtils.unique(
     users.flatMap((u) => u.verifications.map((v) => v.toLowerCase())),
   );
 
   const { delegates } = await subgraphFetch({
-    chainId,
     query: `
       query {
         delegates(where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }) {
@@ -103,10 +102,7 @@ const parseNeynarUsers = async ({ chainId }, users) => {
   });
 };
 
-export const fetchAccountsWithVerifiedAddress = async (
-  address,
-  { chainId = 1 } = {},
-) => {
+export const fetchAccountsWithVerifiedAddress = async (address) => {
   const searchParams = new URLSearchParams({
     addresses: address,
     address_types: "verified_addresss",
@@ -138,11 +134,10 @@ export const fetchAccountsWithVerifiedAddress = async (
     neynarUsers,
   );
 
-  return parseNeynarUsers({ chainId }, sortedUsers);
+  return parseNeynarUsers(sortedUsers);
 };
 
 export const fetchCastsByParentUrl = async (
-  chainId,
   parentUrl,
   { limit = 100 } = {},
 ) => {
@@ -175,7 +170,6 @@ export const fetchCastsByParentUrl = async (
   }));
 
   const accounts = await parseNeynarUsers(
-    { chainId },
     arrayUtils.unique(
       (u1, u2) => u1.fid === u2.fid,
       rawCasts.map((c) => c.author),
