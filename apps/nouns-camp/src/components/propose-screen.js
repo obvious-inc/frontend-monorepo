@@ -14,6 +14,7 @@ import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
 import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
 import { useWallet } from "../hooks/wallet.js";
+import useChainId from "../hooks/chain-id.js";
 import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
@@ -47,6 +48,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const scrollContainerRef = React.useRef();
 
   const { address: connectedAccountAddress } = useWallet();
+  const chainId = useChainId();
 
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
@@ -119,7 +121,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
       const transactions = draft.actions.flatMap((a) =>
-        resolveActionTransactions(a),
+        resolveActionTransactions(a, { chainId }),
       );
 
       if (usdcSumValue > 0 && payerTopUpValue > 0)

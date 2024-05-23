@@ -2,19 +2,13 @@ import { isAddress as isEthereumAccountAddress } from "viem";
 import { useEnsName } from "wagmi";
 import { truncateAddress } from "../../utils/ethereum.js";
 
-const useAccountDisplayName = (
-  accountAddress,
-  { enabled = true, chainId } = {},
-) => {
+const useAccountDisplayName = (accountAddress, { enabled = true } = {}) => {
   const isAddress =
     accountAddress != null && isEthereumAccountAddress(accountAddress);
 
   const { data: ensName } = useEnsName({
     address: accountAddress,
-    chainId,
-    query: {
-      enabled: enabled && isAddress,
-    },
+    enabled: enabled && isAddress,
   });
 
   const truncatedAddress = isAddress ? truncateAddress(accountAddress) : null;

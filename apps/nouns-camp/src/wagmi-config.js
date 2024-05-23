@@ -5,34 +5,18 @@ import {
   createStorage,
   cookieToInitialState,
 } from "wagmi";
-import { mainnet, sepolia } from "wagmi/chains";
+import { mainnet, sepolia, goerli } from "wagmi/chains";
 import {
   walletConnect,
   coinbaseWallet,
   safe,
   injected,
 } from "wagmi/connectors";
-import { CHAIN_ID } from "./constants/env.js";
-import { getChain } from "./utils/chains.js";
-
-const chain = getChain(CHAIN_ID);
-
-const getJsonRpcUrl = (chainId) => {
-  switch (chainId) {
-    case mainnet.id:
-      return `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`;
-    case sepolia.id:
-      return `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`;
-    default:
-      throw new Error();
-  }
-};
 
 export const config = createConfig({
   ssr: true,
   storage: createStorage({ storage: cookieStorage }),
-  syncConnectedChain: false,
-  chains: [chain],
+  chains: [mainnet, sepolia, goerli],
   connectors: [
     walletConnect({
       projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID,
@@ -42,7 +26,16 @@ export const config = createConfig({
     injected(),
   ],
   transports: {
-    [chain.id]: http(getJsonRpcUrl(chain.id)),
+    [mainnet.id]: http(
+      `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+    ),
+    [sepolia.id]: http(
+      `https://eth-sepolia.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+    ),
+    // Rainbow doesn’t seem to allow goerli anymore
+    // [goerli.id]: http(
+    //   `https://eth-goerli.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+    // ),
   },
   batch: {
     multicall: {

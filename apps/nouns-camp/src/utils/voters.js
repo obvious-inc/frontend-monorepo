@@ -3,14 +3,16 @@ import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildProposalFeed } from "./proposals.js";
 import { resolveIdentifier } from "../contracts.js";
 
-const buildEventsFeed = (delegate, account) => {
+export const buildEventsFeed = (delegate, account, { chainId }) => {
   if (account == null) return [];
 
   const fromAuctionHouse = (e) =>
-    e.previousAccountId === resolveIdentifier("auction-house").address;
+    e.previousAccountId.toLowerCase() ===
+    resolveIdentifier(chainId, "auction-house")?.address?.toLowerCase();
 
   const toAuctionHouse = (e) =>
-    e.newAccountId === resolveIdentifier("auction-house").address;
+    e.newAccountId.toLowerCase() ===
+    resolveIdentifier(chainId, "auction-house")?.address?.toLowerCase();
 
   // transfer events always come with an associated delegate event, ignore the latter
   const uniqueEvents = arrayUtils.unique(
@@ -103,7 +105,10 @@ const buildEventsFeed = (delegate, account) => {
   return allEventItems;
 };
 
-export const buildFeed = (delegate, { proposals, candidates, account }) => {
+export const buildFeed = (
+  delegate,
+  { proposals, candidates, account, chainId },
+) => {
   if (delegate == null) return [];
 
   const propFeedItems =
@@ -122,7 +127,8 @@ export const buildFeed = (delegate, { proposals, candidates, account }) => {
         (i) => i.authorAccount?.toLowerCase() === delegate?.id.toLowerCase(),
       ) ?? [];
 
-  const eventItems = buildEventsFeed(delegate, account).flat() ?? [];
+  const eventItems =
+    buildEventsFeed(delegate, account, { chainId }).flat() ?? [];
 
   const items = [...propFeedItems, ...candidateFeedItems, ...eventItems];
   return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);

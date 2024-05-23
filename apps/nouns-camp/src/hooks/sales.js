@@ -1,6 +1,6 @@
 import React from "react";
 import { decodeEventLog } from "viem";
-import usePublicClient from "./public-client.js";
+import { usePublicClient } from "wagmi";
 
 const fetchAmountFromTransferEvents = ({ event, buyerAddress }) => {
   try {

@@ -29,6 +29,7 @@ import {
   useProposal,
   useAccountProposalCandidates,
 } from "../store.js";
+import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useNavigate } from "../hooks/navigation.js";
 import { useUpdateProposal } from "../hooks/dao-contract.js";
@@ -44,6 +45,7 @@ export const createMarkdownDescription = ({ title, body }) => {
 const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const chainId = useChainId();
 
   const { address: connectedAccountAddress } = useWallet();
 
@@ -63,8 +65,9 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   }, [persistedMarkdownBody]);
 
   const persistedActions = React.useMemo(
-    () => buildActionsFromTransactions(proposal.transactions ?? []),
-    [proposal],
+    () =>
+      buildActionsFromTransactions(proposal.transactions ?? [], { chainId }),
+    [proposal, chainId],
   );
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
@@ -92,9 +95,15 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     actions.some((a, i) => {
       const persistedAction = persistedActions[i];
 
-      const transactions = unparseTransactions(resolveActionTransactions(a));
+      const transactions = unparseTransactions(
+        resolveActionTransactions(a, { chainId }),
+        {
+          chainId,
+        },
+      );
       const persistedTransactions = unparseTransactions(
-        resolveActionTransactions(persistedAction),
+        resolveActionTransactions(persistedAction, { chainId }),
+        { chainId },
       );
 
       return !areTransactionsEqual(transactions, persistedTransactions);
@@ -110,11 +119,11 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const createTransactionsDiff = () =>
     diffParagraphs(
       (proposal.transactions ?? [])
-        .map((t) => stringifyTransaction(t))
+        .map((t) => stringifyTransaction(t, { chainId }))
         .join("\n\n"),
       actions
-        .flatMap((a) => resolveActionTransactions(a))
-        .map((t) => stringifyTransaction(t))
+        .flatMap((a) => resolveActionTransactions(a, { chainId }))
+        .map((t) => stringifyTransaction(t, { chainId }))
         .join("\n\n"),
     );
 
@@ -183,7 +192,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
     const getTransactionsIfChanged = () => {
       if (!hasActionChanges) return null;
-      return actions.flatMap((a) => resolveActionTransactions(a));
+      return actions.flatMap((a) => resolveActionTransactions(a, { chainId }));
     };
 
     try {
@@ -194,7 +203,9 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           targetProposalId: proposalId,
           slug: buildUpdateCandidateSlug(),
           description: createMarkdownDescription({ title, body }),
-          transactions: actions.flatMap((a) => resolveActionTransactions(a)),
+          transactions: actions.flatMap((a) =>
+            resolveActionTransactions(a, { chainId }),
+          ),
         });
         const candidateId = [
           connectedAccountAddress,

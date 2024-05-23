@@ -1,5 +1,5 @@
 import React from "react";
-import useBlockNumber from "./block-number.js";
+import { useBlockNumber } from "wagmi";
 
 const secondsPerBlock = 12;
 
@@ -12,7 +12,7 @@ export const approximateBlockTimestamp = (blockNumber, referenceBlock) => {
 };
 
 const useApproximateBlockTimestampCalculator = () => {
-  const latestBlockNumber = useBlockNumber();
+  const { data: latestBlockNumber } = useBlockNumber();
 
   return React.useCallback(
     (blockNumber, optionalReferenceBlock) => {

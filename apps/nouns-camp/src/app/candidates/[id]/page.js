@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound as nextNotFound } from "next/navigation";
 import {
   string as stringUtils,
@@ -5,16 +6,24 @@ import {
   message as messageUtils,
 } from "@shades/common/utils";
 import metaConfig from "../../../metadata-config.js";
+import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
 import { subgraphFetch, parseCandidate } from "../../../nouns-subgraph.js";
 import { normalizeId } from "../../../utils/candidates.js";
+import { mainnet } from "../../../chains.js";
 import { Hydrater as StoreHydrater } from "../../../store.js";
 import ClientAppProvider from "../../client-app-provider.js";
 import CandidateScreen from "../../../components/proposal-candidate-screen.js";
 
 // export const runtime = "edge";
 
-const fetchCandidate = async (id) => {
+const getChainId = () => {
+  const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
+  return wagmiState?.chainId ?? mainnet.id;
+};
+
+const fetchCandidate = async (id, { chainId }) => {
   const data = await subgraphFetch({
+    chainId,
     query: `
       query {
         proposalCandidate(id: "${id}") {
@@ -41,13 +50,15 @@ const fetchCandidate = async (id) => {
 
   if (data?.proposalCandidate == null) return null;
 
-  return parseCandidate(data.proposalCandidate);
+  return parseCandidate(data.proposalCandidate, { chainId });
 };
 const parseId = (id) => normalizeId(decodeURIComponent(id));
 
 export async function generateMetadata({ params }) {
   const candidateId = parseId(params.id);
-  const candidate = await fetchCandidate(candidateId);
+  const candidate = await fetchCandidate(candidateId, {
+    chainId: getChainId(),
+  });
 
   // Can’t notFound() here since we might be on a testnet
   if (candidate == null) nextNotFound();
@@ -82,7 +93,9 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const candidate = await fetchCandidate(parseId(params.id));
+  const candidate = await fetchCandidate(parseId(params.id), {
+    chainId: getChainId(),
+  });
 
   if (candidate == null) nextNotFound();
 

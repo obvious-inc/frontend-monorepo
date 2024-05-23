@@ -1,9 +1,10 @@
-import { mainnet } from "wagmi/chains";
-import { CHAIN_ID } from "../constants/env.js";
+import { mainnet } from "../chains.js";
+import useChainId from "./chain-id.js";
 
 const useRegisterEvent = () => {
+  const chainId = useChainId();
   return (name, data) => {
-    if (CHAIN_ID !== mainnet.id) return;
+    if (chainId !== mainnet.id) return;
     fetch("/api/events", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

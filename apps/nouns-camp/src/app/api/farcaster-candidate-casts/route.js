@@ -1,7 +1,6 @@
 import { kv } from "@vercel/kv";
 import { verifyMessage, isAddress } from "viem";
 import { subgraphFetch } from "../../../nouns-subgraph.js";
-import { CHAIN_ID } from "../../../constants/env.js";
 import {
   parseEpochTimestamp,
   buildCandidateCastSignatureMessage,
@@ -13,8 +12,9 @@ import {
   verifyEthAddress,
 } from "../farcaster-utils.js";
 
-const createCanonicalCandidateUrl = async (candidateId) => {
+const createCanonicalCandidateUrl = async (chainId, candidateId) => {
   const { proposalCandidate } = await subgraphFetch({
+    chainId,
     query: `
       query {
         proposalCandidate(id: ${JSON.stringify(candidateId)}) {
@@ -26,7 +26,7 @@ const createCanonicalCandidateUrl = async (candidateId) => {
   if (proposalCandidate == null) throw new Error();
 
   return createTransactionReceiptUri(
-    CHAIN_ID,
+    chainId,
     proposalCandidate.createdTransactionHash,
   );
 };
@@ -37,20 +37,22 @@ const jsonResponse = (statusCode, body, headers) =>
     headers: { "Content-Type": "application/json", ...headers },
   });
 
-const fetchCandidateCasts = async (candidateId) => {
-  const url = await createCanonicalCandidateUrl(candidateId);
-  const { accounts, casts } = await fetchCastsByParentUrl(url);
+const fetchCandidateCasts = async (chainId, candidateId) => {
+  const url = await createCanonicalCandidateUrl(chainId, candidateId);
+  const { accounts, casts } = await fetchCastsByParentUrl(chainId, url);
   return { accounts, casts: casts.map((c) => ({ ...c, candidateId })) };
 };
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
+  const chainId = searchParams.get("chain");
   const candidateId = searchParams.get("candidate");
 
+  if (chainId == null) return jsonResponse(400, { error: "chain-required" });
   if (candidateId == null)
     return jsonResponse(400, { error: "candidate-required" });
 
-  const { casts, accounts } = await fetchCandidateCasts(candidateId);
+  const { casts, accounts } = await fetchCandidateCasts(chainId, candidateId);
 
   return jsonResponse(
     200,
@@ -60,9 +62,17 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { candidateId, text, fid, timestamp, ethAddress, ethSignature } =
-    await request.json();
+  const {
+    chainId,
+    candidateId,
+    text,
+    fid,
+    timestamp,
+    ethAddress,
+    ethSignature,
+  } = await request.json();
 
+  if (chainId == null) return jsonResponse(400, { error: "chain-required" });
   if (candidateId == null)
     return jsonResponse(400, { error: "candidate-required" });
   if (fid == null) return jsonResponse(400, { error: "fid-required" });
@@ -82,7 +92,7 @@ export async function POST(request) {
     message: buildCandidateCastSignatureMessage({
       text,
       candidateId,
-      chainId: CHAIN_ID,
+      chainId,
       timestamp,
     }),
     signature: ethSignature,
@@ -104,7 +114,7 @@ export async function POST(request) {
   try {
     const castMessage = await submitCastAdd(fid, privateAccountKey, {
       text,
-      parentUrl: await createCanonicalCandidateUrl(candidateId),
+      parentUrl: await createCanonicalCandidateUrl(chainId, candidateId),
     });
     return jsonResponse(201, {
       hash: castMessage.hash,

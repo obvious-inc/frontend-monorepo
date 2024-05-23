@@ -1,19 +1,17 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
-import { useEnsAvatar } from "wagmi";
+import { useEnsName, useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
-import { CHAIN_ID } from "../constants/env.js";
 import { useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
-import useEnsName from "../hooks/ens-name.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -122,13 +120,10 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     checksumEncodeAddress(accountAddress),
   );
 
-  const ensName = useEnsName(accountAddress);
+  const { data: ensName } = useEnsName({ address: accountAddress });
   const { data: ensAvatarUrl } = useEnsAvatar({
     name: ensName,
-    chainId: CHAIN_ID,
-    query: {
-      enabled: ensName != null,
-    },
+    enabled: ensName != null,
   });
 
   const { open: openDelegationDialog } = useDialog("delegation");

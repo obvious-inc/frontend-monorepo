@@ -1,6 +1,5 @@
-import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
-import { CHAIN_ID } from "./constants/env.js";
+import { mainnet, sepolia, goerli } from "./chains.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -60,6 +59,26 @@ const addressByIdentifierByChainId = {
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
     "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
     "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
+    "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
+  },
+  [goerli.id]: {
+    "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
+    "usdc-token": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
+    "weth-token": "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
+    "prop-house": "0x6381795e52fa8bc7957e355d1d685986bc8d841b",
+    "prop-house-timed-round-implementation":
+      "0x8f6084435799f15a78cd2f5c6dc1555d91ebd473",
+
+    // Nouns contracts
+    dao: "0x22f7658f64be277e6b3968ece7b773b092a39864",
+    executor: "0xc15008de43d93d115bd64ed4d95817ffdbfb6dea",
+    data: "0xc0217355376e414a1c33dc3558a75625c5444006",
+    token: "0x99265ce0983aab76f5a3789663fdd887de66638a",
+    "auction-house": "0x32bbbf3721a1b05390daf4dec2f5fe4b935f25a1",
+    descriptor: "0xc5fcaab38c4ab043e2706f245183d747299df414",
+    payer: "0x63f8445c4549d17db181f9ade1a126eff8ee72d6",
+    "token-buyer": "0x7ee1fe5973c2f6e42d2d40c93f0fded078c85770",
+    "stream-factory": "0xc08a287ecb16ced801f28bb011924f7de5cc53a3",
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
 };
@@ -127,16 +146,18 @@ const metaByIdentifier = {
   },
 };
 
-export const resolveIdentifier = (identifier) => {
-  const address = addressByIdentifierByChainId[CHAIN_ID]?.[identifier];
+export const CAMP_CLIENT_ID = 3;
+
+export const resolveIdentifier = (chainId, identifier) => {
+  const address = addressByIdentifierByChainId[chainId]?.[identifier];
   if (address == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, ...meta };
 };
 
-export const resolveAddress = (address) => {
+export const resolveAddress = (chainId, address) => {
   const identifier =
-    identifierByAddressByChainId[CHAIN_ID]?.[address.toLowerCase()];
+    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };

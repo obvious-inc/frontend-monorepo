@@ -5,11 +5,12 @@ import { formatEther, formatUnits } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
+import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
+import useChainId from "../hooks/chain-id.js";
 import useContract from "../hooks/contract.js";
 import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import Code from "./code.js";
@@ -453,6 +454,8 @@ export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
 );
 
 export const TransactionExplanation = ({ transaction: t }) => {
+  const chainId = useChainId();
+
   switch (t.type) {
     case "transfer":
       return (
@@ -546,7 +549,10 @@ export const TransactionExplanation = ({ transaction: t }) => {
       );
 
     case "payer-top-up": {
-      const { address: nounsPayerAddress } = resolveContractIdentifier("payer");
+      const { address: nounsPayerAddress } = resolveContractIdentifier(
+        chainId,
+        "payer",
+      );
       return (
         <>
           Top up the{" "}

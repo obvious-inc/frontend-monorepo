@@ -6,8 +6,6 @@ import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import Avatar from "@shades/ui-web/avatar";
-import { CHAIN_ID } from "../constants/env.js";
-import { getChain } from "../utils/chains.js";
 import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
@@ -45,16 +43,11 @@ const ProposalActionForm = ({
 
   const {
     address: connectedWalletAccountAddress,
-    chainId: connectedChainId,
     requestAccess: requestWalletAccess,
-    switchToTargetChain: requestWalletNetworkSwitchToTargetChain,
+    switchToMainnet: requestWalletNetworkSwitchToMainnet,
     isLoading: hasPendingWalletAction,
+    isUnsupportedChain,
   } = useWallet();
-
-  const chain = getChain(CHAIN_ID);
-
-  const isConnectedToTargetChainId = connectedChainId === CHAIN_ID;
-
   const [
     selectedFarcasterAccountFidByWalletAccountAddress,
     setSelectedFarcasterAccount,
@@ -107,8 +100,8 @@ const ProposalActionForm = ({
   if (mode == null) throw new Error();
 
   const renderHelpText = () => {
-    if (!isConnectedToTargetChainId)
-      return `Switch to ${CHAIN_ID === 1 ? "Ethereum Mainnet" : chain.name} to ${
+    if (isUnsupportedChain)
+      return `Switch to Ethereum Mainnet to ${
         mode === "vote" ? "vote" : "give feedback"
       }.`;
 
@@ -187,9 +180,7 @@ const ProposalActionForm = ({
   const showModePicker = availableModes != null && availableModes.length > 1;
 
   const disableForm =
-    isPending ||
-    connectedWalletAccountAddress == null ||
-    !isConnectedToTargetChainId;
+    isPending || connectedWalletAccountAddress == null || isUnsupportedChain;
 
   return (
     <>
@@ -557,7 +548,7 @@ const ProposalActionForm = ({
                         disabled={disableForm}
                       />
 
-                      {!isConnectedToTargetChainId ? (
+                      {isUnsupportedChain ? (
                         <Button
                           type="button"
                           variant="primary"
@@ -565,10 +556,10 @@ const ProposalActionForm = ({
                           isLoading={hasPendingWalletAction}
                           size={size}
                           onClick={() => {
-                            requestWalletNetworkSwitchToTargetChain();
+                            requestWalletNetworkSwitchToMainnet();
                           }}
                         >
-                          Switch to {CHAIN_ID === 1 ? "Mainnet" : chain.name}
+                          Switch to Mainnet
                         </Button>
                       ) : (
                         <Button
