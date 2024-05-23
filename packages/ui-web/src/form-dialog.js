@@ -126,9 +126,23 @@ const FormDialog = ({
                   }}
                   label={c.label}
                   placeholder={c.placeholder}
-                  hint={c.hint}
                   rows={c.rows}
                 />
+              )}
+
+              {c.hint != null && (
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                      marginTop: "0.7rem",
+                      strong: { fontWeight: t.text.weights.emphasis },
+                    })
+                  }
+                >
+                  {c.hint}
+                </div>
               )}
             </div>
           ))}
