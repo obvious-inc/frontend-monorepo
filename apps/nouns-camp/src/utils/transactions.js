@@ -1,4 +1,3 @@
-import { formatAbiParameter } from "abitype";
 import {
   decodeAbiParameters,
   encodeAbiParameters,
@@ -23,6 +22,18 @@ const decimalsByCurrency = {
 const normalizeSignature = (s) => {
   if (s == null) return null;
   return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
+};
+
+const createSignature = ({ functionName, inputTypes }) => {
+  const stringifyTuple = ({ components }) =>
+    `(${components.map(stringifyType).join(",")})`;
+  const stringifyType = ({ type, components }) => {
+    if (type === "tuple") return stringifyTuple({ components });
+    if (type === "tuple[]") return `${stringifyTuple({ components })}[]`;
+    return type;
+  };
+  const formattedInputs = inputTypes?.map(stringifyType) ?? [];
+  return `${functionName}(${formattedInputs.join(",")})`;
 };
 
 const CREATE_STREAM_SIGNATURE =
@@ -410,9 +421,10 @@ export const unparse = (transactions, { chainId }) => {
           )
             throw new Error(`Unknown transaction type "${t.type}"`);
 
-          const signature = `${t.functionName}(${t.functionInputTypes
-            .map((t) => formatAbiParameter(t))
-            .join(",")})`;
+          const signature = createSignature({
+            functionName: t.functionName,
+            inputTypes: t.functionInputTypes,
+          });
           return append({
             target: t.target,
             value: t.value ?? "0",
@@ -425,10 +437,12 @@ export const unparse = (transactions, { chainId }) => {
         }
 
         case "function-call":
-        case "payable-function-call": {
-          const signature = `${t.functionName}(${t.functionInputTypes
-            .map((t) => formatAbiParameter(t))
-            .join(",")})`;
+        case "payable-function-call":
+        case "weth-approval": {
+          const signature = createSignature({
+            functionName: t.functionName,
+            inputTypes: t.functionInputTypes,
+          });
           return append({
             target: t.target,
             value: t.type === "payable-function-call" ? t.value : "0",
@@ -645,9 +659,10 @@ export const buildActions = (transactions, { chainId }) => {
       signature: signatures[0],
       calldata: calldatas[0],
     });
-    const signature = `${name}(${inputTypes
-      .map((t) => formatAbiParameter(t))
-      .join(",")})`;
+    const signature = createSignature({
+      functionName: name,
+      inputTypes: inputTypes,
+    });
 
     return {
       type: "custom-transaction",
