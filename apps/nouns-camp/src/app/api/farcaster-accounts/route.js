@@ -6,7 +6,6 @@ import { fetchAccountsWithVerifiedAddress } from "../farcaster-utils.js";
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const ethAddress = searchParams.get("eth-address");
-  const chainId = searchParams.get("chain");
 
   if (!isAddress(ethAddress))
     return new Response(JSON.stringify({ error: "invalid-eth-address" }), {
@@ -16,17 +15,7 @@ export async function GET(request) {
       },
     });
 
-  if (chainId == null)
-    return new Response(JSON.stringify({ error: "chain-required" }), {
-      status: 400,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-  const accounts = await fetchAccountsWithVerifiedAddress(ethAddress, {
-    chainId,
-  });
+  const accounts = await fetchAccountsWithVerifiedAddress(ethAddress);
 
   const accountsWithKeyData = await Promise.all(
     accounts.map(async (account) => {

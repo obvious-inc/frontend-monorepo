@@ -5,11 +5,9 @@ import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { useBlockNumber } from "wagmi";
 import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
 import { useCachedState } from "@shades/common/app";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import {
   array as arrayUtils,
   object as objectUtils,
@@ -39,6 +37,8 @@ import {
   getSponsorSignatures as getCandidateSponsorSignatures,
 } from "../utils/candidates.js";
 import { buildFeed as buildPropdateFeed } from "../utils/propdates.js";
+import useBlockNumber from "../hooks/block-number.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useRecentCasts } from "../hooks/farcaster.js";
@@ -1079,7 +1079,7 @@ const useActivityFeedItems = ({ filter = "all" }) => {
     hasFetchedActivityFeedOnce,
   );
 
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
+  const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 10_000,
   });

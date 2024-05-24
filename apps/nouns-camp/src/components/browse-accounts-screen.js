@@ -2,7 +2,6 @@
 
 import React from "react";
 import { css } from "@emotion/react";
-import { useEnsName } from "wagmi";
 import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
 import {
@@ -26,10 +25,10 @@ import {
 import { subgraphFetch } from "../nouns-subgraph.js";
 import { getReposts } from "../utils/markdown.js";
 import { useSearchParams } from "../hooks/navigation.js";
-import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useContract from "../hooks/contract.js";
+import useEnsName from "../hooks/ens-name.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import AccountAvatar from "./account-avatar.js";
 import DateRangePicker, { toLocalDate } from "./date-range-picker.js";
@@ -57,15 +56,12 @@ const searchEns = (nameByAddress, rawQuery) => {
 };
 
 const useRecentVotes = ({ start, end } = {}) => {
-  const chainId = useChainId();
-
   const [votesByAccountAddress, setVotesByAccountAddress] =
     React.useState(null);
 
   useFetch(async () => {
     const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
       const { votes } = await subgraphFetch({
-        chainId,
         query: `{
           votes (
             orderBy: blockNumber,
@@ -99,7 +95,7 @@ const useRecentVotes = ({ start, end } = {}) => {
     }, {});
 
     setVotesByAccountAddress(votesByAccountAddress);
-  }, [chainId, start, end]);
+  }, [start, end]);
 
   const vwrCountByAccountAddress = React.useMemo(() => {
     if (votesByAccountAddress == null) return null;
@@ -117,15 +113,12 @@ const useRecentVotes = ({ start, end } = {}) => {
 };
 
 const useRecentRevoteCount = ({ start, end } = {}) => {
-  const chainId = useChainId();
-
   const [revoteCountByAccountAddress, setRevoteCountByAccountAddress] =
     React.useState(null);
 
   useFetch(async () => {
     const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
       const { votes } = await subgraphFetch({
-        chainId,
         query: `{
           votes (
             orderBy: blockNumber,
@@ -190,7 +183,7 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
     }, {});
 
     setRevoteCountByAccountAddress(revoteCountByAccountAddress);
-  }, [chainId, start, end]);
+  }, [start, end]);
 
   return revoteCountByAccountAddress;
 };
@@ -709,8 +702,7 @@ const AccountListItem = React.memo(
     const enableDelegation = connectedAccount?.nouns.length > 0;
 
     const delegate = useDelegate(accountAddress);
-    const { data: ensName } = useEnsName({
-      address: accountAddress,
+    const ensName = useEnsName(accountAddress, {
       enabled: hasBeenOnScreen,
     });
     const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);

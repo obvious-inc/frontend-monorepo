@@ -22,7 +22,6 @@ import Link from "@shades/ui-web/link";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
-import useChainId from "../hooks/chain-id.js";
 import useContract from "../hooks/contract.js";
 import useKeyboardShortcuts from "../hooks/keyboard-shortcuts.js";
 import RichTextEditor, {
@@ -82,11 +81,9 @@ const useEditorMode = ({ body }, { setBody }) => {
 };
 
 const useActionTransactions = (actions) => {
-  const chainId = useChainId();
-
   return React.useMemo(
-    () => actions.flatMap((a) => resolveActionTransactions(a, { chainId })),
-    [actions, chainId],
+    () => actions.flatMap((a) => resolveActionTransactions(a)),
+    [actions],
   );
 };
 
@@ -579,8 +576,6 @@ const currencyFractionDigits = {
 };
 
 const ActionSummary = ({ action: a }) => {
-  const chainId = useChainId();
-
   switch (a.type) {
     case "one-time-payment": {
       const [minimumFractionDigits, maximumFractionDigits] =
@@ -652,9 +647,7 @@ const ActionSummary = ({ action: a }) => {
 
     case "custom-transaction":
       return (
-        <TransactionExplanation
-          transaction={resolveActionTransactions(a, { chainId })[0]}
-        />
+        <TransactionExplanation transaction={resolveActionTransactions(a)[0]} />
       );
 
     case "payer-top-up":
@@ -768,8 +761,7 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
 );
 
 const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
-  const chainId = useChainId();
-  const actionTransactions = resolveActionTransactions(a, { chainId });
+  const actionTransactions = resolveActionTransactions(a);
 
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
