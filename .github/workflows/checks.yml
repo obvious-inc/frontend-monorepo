@@ -8,6 +8,9 @@ jobs:
   checks:
     runs-on: ubuntu-latest
 
+    env:
+      CI_LINT: 1
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
