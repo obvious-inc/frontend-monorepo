@@ -145,6 +145,9 @@ importers:
       '@cloudflare/next-on-pages':
         specifier: ^1.11.0
         version: 1.11.3(bufferutil@4.0.8)(vercel@34.2.0(@swc/core@1.5.7))(wrangler@3.57.0(bufferutil@4.0.8))
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.4.5
       eslint:
         specifier: ^8.57.0
         version: 8.57.0
@@ -2971,9 +2974,11 @@ packages:
 
   '@serwist/background-sync@8.4.4':
     resolution: {integrity: sha512-Rt1BwpUZb1G9lj4znrshC6di5hwB5xEmhilzFbHEbZuiFfeCNwn8tMc8JUMoGdj2Btx4/XlUDgvsFvqRi1BkTA==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/broadcast-update@8.4.4':
     resolution: {integrity: sha512-hN/S9xbVpg17NLcHqa/vEIMmZrpH/MnFN33bT1Wsh11QAj/IY6aOu5nq/8vbppMPM9OlkKimYT6bJDNRSbsIDA==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/build@8.4.4':
     resolution: {integrity: sha512-24BfRoVfbzlWAlra9m8fU6vutCZjcZ5QHaL2LEAexPBixsDGaTVjBrfbNipEbM7OejLPp99MqZaj3U3EgWU2ag==}
@@ -2981,15 +2986,19 @@ packages:
 
   '@serwist/cacheable-response@8.4.4':
     resolution: {integrity: sha512-oSPPaGDmfDhtAQfHC5LIIyYF2djCprYHdWntD8IQygnjEjbh2MP6xnD7zPD+Ztghlg9VX0aGRxEAFT8rDhW7tQ==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/core@8.4.4':
     resolution: {integrity: sha512-mB3XFoUFbfgxkqWUhn9khqZP9c+K3qsuY1WQazl7S00hd+JUH2We/FmNMoOpei5ydVK61rIX690ScfXO0FbjXw==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/expiration@8.4.4':
     resolution: {integrity: sha512-zn5Q3qkE2827RUDwta198QTeIWzQx+EtWikQog9LZZvXSDOuOogzYeyiuskrfvrGFLk11myOJLtpVbXpeNCHeA==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/google-analytics@8.4.4':
     resolution: {integrity: sha512-nkNLyLmSfiYeJGFtHDzRdLDcUabyTGvrjC2VAlduC97rLhfE1c1KUhWBwBO+ZR0TONsh9roJso2vooEZc2dWAQ==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/next@8.4.4':
     resolution: {integrity: sha512-WUTMTqjGl4uEO61olHkbqTWCV8bsNSYpzHNmhWksg+RXJJKCENU3Io+UcJlPX+oBJVzlIHP0cHtPsQZx7I+2sw==}
@@ -3011,9 +3020,11 @@ packages:
 
   '@serwist/routing@8.4.4':
     resolution: {integrity: sha512-TimZ54n5UpQoJMjGdLIXQ1VJlQ669yfJ8scdfZKwRjggILJ3f1rI13N8vicetwZMGqveTz2Q9sVYIXaeQuFmQg==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/strategies@8.4.4':
     resolution: {integrity: sha512-Yr/wKD16vXUqVbyfHhLM25qRWTtWgNJnY8Bot0yjCV/BvHM81cOIkG3sE76FIjcUntCvfemhaN9Zx53fbRzLPQ==}
+    deprecated: This package has been deprecated. Please use serwist instead.
 
   '@serwist/sw@9.0.2':
     resolution: {integrity: sha512-dJ7uu1yHfglCT1KcTg/FrgBs4wfuBDeDjXEmYIfN9kHvpw1SN42bY84+dhV+cCdVJPhWQ+6lFrADQsr+6vsELw==}
@@ -3714,6 +3725,7 @@ packages:
   are-we-there-yet@2.0.0:
     resolution: {integrity: sha512-Ci/qENmwHnsYo9xKIcUJN5LeDKdJ6R1Z1j9V/J5wyq8nh/mYPEpIKJbBZXtZjG04HiK7zV/p6Vs9952MrMeUIw==}
     engines: {node: '>=10'}
+    deprecated: This package is no longer supported.
 
   arg@4.1.0:
     resolution: {integrity: sha512-ZWc51jO3qegGkVh8Hwpv636EkbesNV5ZNQPCtRa+0qytRYPEs9IYT9qITY9buezqUH5uqyzlWLcufrzU2rffdg==}
@@ -4380,6 +4392,10 @@ packages:
   doctrine@3.0.0:
     resolution: {integrity: sha512-yS+Q5i3hBf7GBkd4KG8a7eBNNWNGLTaEwwYWUijIYM7zrlYDM0BFXHjjPWlWZ1Rg7UaddZeIDmi9jF3HmqiQ2w==}
     engines: {node: '>=6.0.0'}
+
+  dotenv@16.4.5:
+    resolution: {integrity: sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==}
+    engines: {node: '>=12'}
 
   duplexify@4.1.3:
     resolution: {integrity: sha512-M3BmBhwJRZsSx38lZyhE53Csddgzl5R7xGJNk7CVddZD6CcmwMCH8J+7AprIrQKH7TonKxaCjcv27Qmf+sQ+oA==}
@@ -5105,6 +5121,7 @@ packages:
   gauge@3.0.2:
     resolution: {integrity: sha512-+5J6MS/5XksCuXq++uFRsnUd7Ovu1XenbeuIuNRJxYWjgQbPuFhT14lAvsWfqfAmnwluf1OwMjz39HjfLPci0Q==}
     engines: {node: '>=10'}
+    deprecated: This package is no longer supported.
 
   generic-pool@3.4.2:
     resolution: {integrity: sha512-H7cUpwCQSiJmAHM4c/aFu6fUfrhWXW1ncyh8ftxEPMu6AiYkHw9K8br720TGPZJbk5eOH2bynjZD1yPvdDAmag==}
@@ -5349,6 +5366,7 @@ packages:
 
   inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
+    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
 
   inherits@2.0.1:
     resolution: {integrity: sha512-8nWq2nLTAwd02jTqJExUYFSD/fKq6VH9Y/oG2accc/kdI0V98Bag8d5a4gi3XHz73rDWa2PvTtvcWYquKqSENA==}
@@ -6223,6 +6241,7 @@ packages:
 
   npmlog@5.0.1:
     resolution: {integrity: sha512-AqZtDUWOMKs1G/8lwylVjrdYgqA4d9nu8hc+0gzRxlDb1I10+FHBGMXs6aiQHFdCUUlqH99MUMuLfzWDNDtfxw==}
+    deprecated: This package is no longer supported.
 
   nullthrows@1.1.1:
     resolution: {integrity: sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw==}
@@ -13497,6 +13516,8 @@ snapshots:
   doctrine@3.0.0:
     dependencies:
       esutils: 2.0.3
+
+  dotenv@16.4.5: {}
 
   duplexify@4.1.3:
     dependencies:

@@ -7,6 +7,20 @@
     },
     "nouns-camp#build": {
       "dependsOn": ["^build"],
+      "env": [
+        "NOUNS_SUBGRAPH_URL",
+        "PROPDATES_SUBGRAPH_URL",
+        "CAMP_FARCASTER_ACCOUNT_FID",
+        "CAMP_FARCASTER_ACCOUNT_PRIVATE_KEY",
+        "FARCASTER_HUB_HTTP_ENDPOINT",
+        "NEYNAR_API_KEY",
+        "ETHERSCAN_API_KEY",
+        "EDGE_CONFIG",
+        "KV_REST_API_READ_ONLY_TOKEN",
+        "KV_REST_API_TOKEN",
+        "KV_REST_API_URL",
+        "KV_URL"
+      ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "lint": {},
