@@ -215,9 +215,11 @@ const BrowseScreen = () => {
       if (c.proposerId.toLowerCase() === connectedWalletAccountAddress)
         return true;
 
-      const isSponsor = c.targetProposal.signers.some(
-        (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
-      );
+      const isSponsor =
+        c.targetProposal?.signers != null &&
+        c.targetProposal.signers.some(
+          (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
+        );
 
       return isSponsor && !hasSigned(c);
     });
@@ -513,16 +515,13 @@ const BrowseScreen = () => {
 
   const { fetchBrowseScreenData } = useActions();
 
-  useFetch(
-    () =>
-      fetchBrowseScreenData({ first: 40 }).then(() => {
-        setHasFetchedOnce(true);
-        if (hasFetchedOnce) return;
-        hasFetchedBrowseDataOnce = true;
-        fetchBrowseScreenData({ skip: 40, first: 1000 });
-      }),
-    [fetchBrowseScreenData],
-  );
+  useFetch(async () => {
+    await fetchBrowseScreenData({ first: 40 });
+    setHasFetchedOnce(true);
+    if (hasFetchedOnce) return;
+    hasFetchedBrowseDataOnce = true;
+    fetchBrowseScreenData({ skip: 40, first: 1000 });
+  }, [fetchBrowseScreenData]);
 
   const handleSearchInputChange = useDebouncedCallback((query) => {
     setPage(1);

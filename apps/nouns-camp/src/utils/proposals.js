@@ -81,12 +81,16 @@ const buildVoteAndFeedbackPostFeedItems = ({
 }) => {
   // Add a "type" since there’s no way to distinguis votes from feedback posts
   const votes = (votes_ ?? []).map((v) => ({ ...v, type: "vote" }));
+  // Hide proposal votes with 0 voting power account if no reason is given
+  const filteredVotes = votes.filter(
+    (v) => v.votes > 0 || (v.reason?.trim() ?? "") !== "",
+  );
   const feedbackPosts = (feedbackPosts_ ?? []).map((p) => ({
     ...p,
     type: "feedback-post",
   }));
   const ascendingPosts = arrayUtils.sortBy("createdBlock", [
-    ...votes,
+    ...filteredVotes,
     ...feedbackPosts,
   ]);
 
