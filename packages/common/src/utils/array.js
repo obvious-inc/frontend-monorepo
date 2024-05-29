@@ -99,3 +99,11 @@ export const partition = (size, list) => {
     resultList.push(list.slice(i, i + size));
   return resultList;
 };
+
+export const range = (size, { step = 1, start = 0 } = {}) => {
+  const list = [];
+  for (let i = 0; i < size; i++) {
+    list.push(i * step + start);
+  }
+  return list;
+};

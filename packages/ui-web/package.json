@@ -42,6 +42,7 @@
     "./inline-user-button": "./dist/inline-user-button.js",
     "./inline-channel-button": "./dist/inline-channel-button.js",
     "./channel-messages-scroll-view": "./dist/channel-messages-scroll-view.js",
+    "./qr-code": "./dist/qr-code.js",
     "./slate": "./dist/slate/index.js"
   },
   "devDependencies": {
