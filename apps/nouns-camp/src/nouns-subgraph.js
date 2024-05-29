@@ -136,6 +136,9 @@ fragment DelegationEventFields on DelegationEvent {
   id
   noun {
     id
+    owner {
+      id
+    }
   }
   newDelegate {
     id
@@ -1160,7 +1163,7 @@ const parseEvents = (data, accountId) => {
     ...e,
     blockTimestamp: parseTimestamp(e.blockTimestamp),
     accountRef: accountId?.toLowerCase(),
-    delegatorId: e.delegator?.id,
+    delegatorId: e.noun?.owner?.id,
     newAccountId: e.newDelegate?.id,
     previousAccountId: e.previousDelegate?.id,
     nounId: e.noun?.id,
