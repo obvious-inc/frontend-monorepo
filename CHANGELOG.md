@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-alpha.0] - 2024-05-29
+
+### 🚀 Features
+
+- Migrate updates from upstream (#308)
+- Add new native select component
+- Add farcaster hooks and utils and components
+- Add fallback image and display name for account
+- Migrate updates from upstream (#314)
+
+### 🐛 Bug Fixes
+
+- Replace missing delegator id by noun owner id
+
+### 🚜 Refactor
+
+- Update workspace packages to the recent versions
+
 ## [1.0.0-alpha.51] - 2024-05-19
 
 ### 🐛 Bug Fixes
