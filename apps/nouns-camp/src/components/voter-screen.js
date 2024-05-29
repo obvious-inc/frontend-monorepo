@@ -33,6 +33,7 @@ import {
 import useBlockNumber from "../hooks/block-number.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import { useSearchParams } from "../hooks/navigation.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import useEnsName from "../hooks/ens-name.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -179,10 +180,8 @@ const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 });
 
 const FeedSidebar = React.memo(({ voterAddress }) => {
-  const [filter, setFilter] = useCachedState(
-    "voter-screen:activity-filter",
-    "all",
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = searchParams.get("feed-filter") ?? "all";
 
   return (
     <React.Suspense fallback={null}>
@@ -205,7 +204,15 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
               { value: "representation", label: "Delegation activity only" },
             ]}
             onChange={(value) => {
-              setFilter(value);
+              setSearchParams(
+                (p) => {
+                  const newParams = new URLSearchParams(p);
+                  if (value === "all") newParams.delete("feed-filter");
+                  else newParams.set("feed-filter", value);
+                  return newParams;
+                },
+                { replace: true },
+              );
             }}
             fullWidth={false}
             width="max-content"
