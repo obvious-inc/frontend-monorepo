@@ -792,18 +792,23 @@ const ItemTitle = ({ item, context }) => {
               case 0:
                 return (
                   <Signal negative>
-                    {signalWord} against ({item.voteCount})
+                    {signalWord} against
+                    {item.voteCount != null && <> ({item.voteCount})</>}
                   </Signal>
                 );
               case 1:
                 return (
                   <Signal positive>
-                    {signalWord} for ({item.voteCount})
+                    {signalWord} for
+                    {item.voteCount != null && <> ({item.voteCount})</>}
                   </Signal>
                 );
               case 2:
                 return item.type === "vote" ? (
-                  <Signal>abstained ({item.voteCount})</Signal>
+                  <Signal>
+                    abstained
+                    {item.voteCount != null && <> ({item.voteCount})</>}
+                  </Signal>
                 ) : isIsolatedContext ? (
                   "commented"
                 ) : (
