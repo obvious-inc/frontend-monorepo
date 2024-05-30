@@ -76,7 +76,10 @@ const buildFeedbackPostItems = (candidate) => {
   }));
 };
 
-export const buildFeed = (candidate, { casts } = {}) => {
+export const buildFeed = (
+  candidate,
+  { casts, includeFeedbackPosts = true } = {},
+) => {
   if (candidate == null) return [];
 
   const candidateId = candidate.id;
@@ -105,7 +108,9 @@ export const buildFeed = (candidate, { casts } = {}) => {
       };
     }) ?? [];
 
-  const feedbackPostItems = buildFeedbackPostItems(candidate);
+  const feedbackPostItems = includeFeedbackPosts
+    ? buildFeedbackPostItems(candidate)
+    : [];
 
   const updateEventItems =
     candidate.versions
