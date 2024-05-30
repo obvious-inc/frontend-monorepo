@@ -291,6 +291,7 @@ export const useCastProposalVote = (
       reason,
       support,
       createdBlock: blockNumber,
+      createdTimestamp: new Date(),
       voterId,
       voter: { id: voterId },
     });
