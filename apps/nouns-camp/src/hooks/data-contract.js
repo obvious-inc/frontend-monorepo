@@ -98,7 +98,10 @@ export const useSendProposalCandidateFeedback = (
 
 export const useSendProposalFeedback = (proposalId, { support, reason }) => {
   const { address: accountAddress } = useWallet();
+  const blockNumber = useBlockNumber();
   const registerEvent = useRegisterEvent();
+
+  const { addOptimitisicProposalFeedbackPost } = useActions();
 
   const { data: simulationResult, isSuccess: simulationSuccessful } =
     useSimulate({
@@ -120,11 +123,21 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
   if (!simulationSuccessful) return null;
 
   return async () => {
+    const voterId = accountAddress.toLowerCase();
     const hash = await writeContract(simulationResult.request);
     registerEvent("Proposal feedback successfully submitted", {
       proposalId,
       hash,
       account: accountAddress,
+    });
+    addOptimitisicProposalFeedbackPost(proposalId, {
+      id: String(Math.random()),
+      reason,
+      support,
+      createdTimestamp: new Date(),
+      createdBlock: blockNumber,
+      voterId,
+      voter: { id: voterId },
     });
     return hash;
   };

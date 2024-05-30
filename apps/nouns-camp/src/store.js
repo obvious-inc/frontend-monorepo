@@ -33,6 +33,12 @@ import {
 } from "./nouns-subgraph.js";
 import * as PropdatesSubgraph from "./propdates-subgraph.js";
 
+const createFeedbackPostCompositeId = (post) =>
+  [post.proposalId, post.candidateId, post.reason, post.support, post.voterId]
+    .join("-")
+    .trim()
+    .toLowerCase();
+
 const mergeProposals = (p1, p2) => {
   if (p1 == null) return p2;
 
@@ -40,7 +46,16 @@ const mergeProposals = (p1, p2) => {
 
   if (p1.feedbackPosts != null && p2.feedbackPosts != null)
     mergedProposal.feedbackPosts = arrayUtils.unique(
-      (p1, p2) => p1.id === p2.id,
+      (p1, p2) => {
+        if (p1.id === p2.id) return true;
+        if (!p1.isPending) return false;
+        // Bit of a hack to clear optimistic entries without proper ids
+        const [compositeId1, compositeId2] = [p1, p2].map(
+          createFeedbackPostCompositeId,
+        );
+        return compositeId1 === compositeId2;
+      },
+      // p2 has to be first here to take precedence
       [...p2.feedbackPosts, ...p1.feedbackPosts],
     );
 
@@ -68,13 +83,9 @@ const mergeProposalCandidates = (p1, p2) => {
       (p1, p2) => {
         if (p1.id === p2.id) return true;
         if (!p1.isPending) return false;
-
         // Bit of a hack to clear optimistic entries without proper ids
-        const [compositeId1, compositeId2] = [p1, p2].map((p) =>
-          [p.proposalId, p.candidateId, p.reason, p.support, p.voterId]
-            .join("-")
-            .trim()
-            .toLowerCase(),
+        const [compositeId1, compositeId2] = [p1, p2].map(
+          createFeedbackPostCompositeId,
         );
         return compositeId1 === compositeId2;
       },
@@ -671,7 +682,6 @@ const createStore = ({ initialState }) =>
       addOptimitisicProposalVote: (proposalId, vote) => {
         set((s) => {
           const proposal = s.proposalsById[proposalId];
-
           return {
             proposalsById: {
               ...s.proposalsById,
@@ -682,10 +692,22 @@ const createStore = ({ initialState }) =>
           };
         });
       },
+      addOptimitisicProposalFeedbackPost: (proposalId, post) => {
+        set((s) => {
+          const proposal = s.proposalsById[proposalId];
+          return {
+            proposalsById: {
+              ...s.proposalsById,
+              [proposalId]: mergeProposals(proposal, {
+                feedbackPosts: [{ ...post, proposalId, isPending: true }],
+              }),
+            },
+          };
+        });
+      },
       addOptimitisicCandidateFeedbackPost: (candidateId, post) => {
         set((s) => {
           const candidate = s.proposalCandidatesById[candidateId];
-
           return {
             proposalCandidatesById: {
               ...s.proposalCandidatesById,
@@ -1695,6 +1717,9 @@ export const useActions = () => {
   const addOptimitisicProposalVote = useStore(
     (s) => s.addOptimitisicProposalVote,
   );
+  const addOptimitisicProposalFeedbackPost = useStore(
+    (s) => s.addOptimitisicProposalFeedbackPost,
+  );
   const addOptimitisicCandidateFeedbackPost = useStore(
     (s) => s.addOptimitisicCandidateFeedbackPost,
   );
@@ -1723,6 +1748,7 @@ export const useActions = () => {
     resolveEnsNames,
     reverseResolveEnsAddresses,
     addOptimitisicProposalVote,
+    addOptimitisicProposalFeedbackPost,
     addOptimitisicCandidateFeedbackPost,
   };
 };
