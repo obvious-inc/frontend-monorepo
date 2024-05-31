@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-alpha.5] - 2024-05-31
+
+### ◀️ Revert
+
+- Add infura as wagmi fallback provider
+
 ## [1.1.0-alpha.4] - 2024-05-31
 
 ### 🐛 Bug Fixes
