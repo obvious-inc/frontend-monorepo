@@ -133,8 +133,8 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
             skip: ${(page - 1) * pageSize}
             where: {
               reason_not: "",
-              blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}",
-              blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
+              # blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}",
+              # blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
             }
           ) {
             reason
