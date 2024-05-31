@@ -286,10 +286,6 @@ const entrypoints = [
       ...emotionDeps,
     ],
   },
-  {
-    file: "qr-code.js",
-    dependencies: ["react", "qrcode"],
-  },
 ];
 
 export default entrypoints.map(createConfig);

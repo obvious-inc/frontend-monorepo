@@ -19,7 +19,6 @@ const Avatar = React.forwardRef(
   ) => {
     const sharedProps = {
       ref,
-      "data-avatar": true,
       css: (t) =>
         css({
           borderRadius: `var(--custom-border-radius, ${t.avatars.borderRadius})`,
