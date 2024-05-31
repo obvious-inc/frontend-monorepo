@@ -699,7 +699,7 @@ const AccountListItem = React.memo(
 
     const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
     const enableImpersonation = !isMe && isDebugSession;
-    const enableDelegation = connectedAccount?.nouns.length > 0;
+    const enableDelegation = connectedAccount?.nouns?.length > 0;
 
     const delegate = useDelegate(accountAddress);
     const ensName = useEnsName(accountAddress, {

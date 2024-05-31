@@ -499,7 +499,7 @@ const VoterHeader = ({ accountAddress }) => {
   const connectedAccount = useAccount(connectedAccountAddress);
 
   const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
-  const enableDelegation = !isMe && connectedAccount?.nouns.length > 0;
+  const enableDelegation = !isMe && connectedAccount?.nouns?.length > 0;
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
 
   const displayName = useAccountDisplayName(accountAddress);
