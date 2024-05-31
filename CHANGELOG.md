@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.1] - 2024-05-31
+
+### 🐛 Bug Fixes
+
+- Disable block timestamp fields on brows account screen query
+
 ## [1.1.0-beta.0] - 2024-05-31
 
 ### 🐛 Bug Fixes
