@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-alpha.2] - 2024-05-31
+
+### ◀️ Revert
+
+- Migrate updates from upstream (#308)
+
 ## [1.1.0-alpha.1] - 2024-05-30
 
 ### 🐛 Bug Fixes
