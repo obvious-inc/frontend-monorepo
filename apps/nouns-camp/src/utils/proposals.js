@@ -21,6 +21,8 @@ export const getState = (proposal, { blockNumber }) => {
   if (proposal.status === "CANCELLED") return "canceled";
   if (proposal.status === "EXECUTED") return "executed";
 
+  if (blockNumber == null) return null;
+
   if (blockNumber <= proposal.updatePeriodEndBlock) return "updatable";
   if (blockNumber <= proposal.startBlock) return "pending";
   if (blockNumber <= proposal.endBlock) return "active";
