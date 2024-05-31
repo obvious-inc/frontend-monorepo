@@ -403,10 +403,12 @@ export const subgraphFetch = async ({
   query,
   variables,
 }) => {
+  const isServer = typeof window === "undefined";
+
   const url = (() => {
     if (endpoint != null) return endpoint;
     if (customSubgraphEndpoint != null) return customSubgraphEndpoint;
-    if (typeof window === "undefined") return SERVER_URL;
+    if (isServer) return SERVER_URL;
     return CLIENT_URL;
   })();
 
@@ -416,6 +418,7 @@ export const subgraphFetch = async ({
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ operationName, query, variables }),
+    cache: isServer ? "no-cache" : "default",
   });
   if (!response.ok) {
     console.error("Unsuccessful subgraph request", {
