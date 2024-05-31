@@ -1132,7 +1132,7 @@ const ProposalScreen = ({ proposalId }) => {
         navigationStack={[
           { to: "/?tab=proposals", label: "Proposals", desktopOnly: true },
           {
-            to: `/proposals/${proposalId} `,
+            to: `/proposals/${proposalId}`,
             label: (
               <>
                 Proposal {proposalId}
