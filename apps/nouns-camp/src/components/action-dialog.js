@@ -33,7 +33,6 @@ import useEthToUsdRate, {
 import useChainId from "../hooks/chain-id.js";
 import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
-import { formatAbiParameter } from "abitype";
 
 const decimalsByCurrency = {
   eth: 18,
@@ -242,11 +241,10 @@ const isFunctionAbiItem = (item) => {
   return !item.pure || !item.view;
 };
 
-const createSignature = (functionAbiItem) => {
-  const formattedInputs =
-    functionAbiItem.inputs?.map((p) => formatAbiParameter(p)) ?? [];
-  return `${functionAbiItem.name}(${formattedInputs.join(",")})`;
-};
+const createSignature = (functionAbiItem) =>
+  `${functionAbiItem.name}(${
+    functionAbiItem.inputs?.map((i) => i.type).join(",") ?? ""
+  })`;
 
 const StreamingPaymentActionForm = ({ state, setState }) => {
   const fetchPredictedStreamContractAddress =

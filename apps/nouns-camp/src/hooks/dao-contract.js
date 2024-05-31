@@ -188,8 +188,8 @@ const useProposalState = (proposalId) => {
     "expired",
     "executed",
     "vetoed",
-    // "objection-period",
-    // "updatable",
+    "objection-period",
+    "updatable",
   ][Number(data)];
 };
 
@@ -200,10 +200,10 @@ export const useActiveProposalId = (accountAddress) => {
   if (latestProposalId === undefined || state === undefined) return undefined;
 
   const isActive = [
-    // "updatable",
+    "updatable",
     "pending",
     "active",
-    // "objection-period",
+    "objection-period",
   ].includes(state);
 
   return isActive ? latestProposalId : null;
@@ -377,7 +377,7 @@ export const useCreateProposal = () => {
                 { name: "calldatas", type: "bytes[]" },
                 { name: "startBlock", type: "uint256" },
                 { name: "endBlock", type: "uint256" },
-                // { name: "updatePeriodEndBlock", type: "uint256" },
+                { name: "updatePeriodEndBlock", type: "uint256" },
                 { name: "proposalThreshold", type: "uint256" },
                 { name: "quorumVotes", type: "uint256" },
                 { name: "description", type: "string" },
