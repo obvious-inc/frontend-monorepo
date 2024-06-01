@@ -2,7 +2,6 @@ import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
@@ -14,6 +13,7 @@ import { useAccount, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
 

@@ -6,7 +6,6 @@ import {
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Spinner from "@shades/ui-web/spinner";
@@ -22,6 +21,7 @@ import {
   useProposalCandidate,
   useDelegate,
 } from "../store.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import {
   useProposalThreshold,
   useCreateProposal,

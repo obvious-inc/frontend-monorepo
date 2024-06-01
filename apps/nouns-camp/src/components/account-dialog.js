@@ -1,7 +1,6 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
@@ -11,6 +10,7 @@ import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useEnsName from "../hooks/ens-name.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";

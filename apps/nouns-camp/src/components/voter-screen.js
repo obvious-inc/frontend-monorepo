@@ -9,7 +9,6 @@ import {
 } from "@shades/common/utils";
 import { useCachedState } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Select from "@shades/ui-web/select";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
@@ -34,6 +33,7 @@ import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import useEnsName from "../hooks/ens-name.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
