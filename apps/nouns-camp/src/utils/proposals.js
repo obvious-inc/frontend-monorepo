@@ -78,16 +78,26 @@ const buildVoteAndFeedbackPostFeedItems = ({
   proposalId,
   votes: votes_,
   feedbackPosts: feedbackPosts_,
+  candidateFeedbackPosts: candidateFeedbackPosts_,
 }) => {
   // Add a "type" since there’s no way to distinguis votes from feedback posts
   const votes = (votes_ ?? []).map((v) => ({ ...v, type: "vote" }));
+  // Hide proposal votes with 0 voting power account if no reason is given
+  const filteredVotes = votes.filter(
+    (v) => v.votes > 0 || (v.reason?.trim() ?? "") !== "",
+  );
   const feedbackPosts = (feedbackPosts_ ?? []).map((p) => ({
     ...p,
     type: "feedback-post",
   }));
+  const candidateFeedbackPosts = (candidateFeedbackPosts_ ?? []).map((p) => ({
+    ...p,
+    type: "feedback-post",
+  }));
   const ascendingPosts = arrayUtils.sortBy("createdBlock", [
-    ...votes,
+    ...filteredVotes,
     ...feedbackPosts,
+    ...candidateFeedbackPosts,
   ]);
 
   return ascendingPosts.map((p) => {
@@ -120,16 +130,52 @@ const buildVoteAndFeedbackPostFeedItems = ({
 
 export const buildFeed = (
   proposal,
-  { latestBlockNumber, candidate, includePropdates = true },
+  {
+    latestBlockNumber,
+    startTimestamp,
+    endTimestamp,
+    candidate,
+    casts,
+    includePropdates = true,
+  },
 ) => {
   if (proposal == null) return [];
 
-  const candidateItems = candidate == null ? [] : buildCandidateFeed(candidate);
+  const candidateItems =
+    candidate == null
+      ? []
+      : buildCandidateFeed(candidate, { includeFeedbackPosts: false });
+
+  const castItems =
+    casts?.map((c) => {
+      let displayName =
+        c.account?.displayName ?? c.account?.username ?? `FID ${c.fid}`;
+
+      if (
+        c.account?.username != null &&
+        c.account.username !== c.account.displayName
+      )
+        displayName += ` (@${c.account.username})`;
+
+      return {
+        type: "farcaster-cast",
+        id: c.hash,
+        authorAccount: c.account?.nounerAddress,
+        authorAvatarUrl: c.account?.pfpUrl,
+        authorDisplayName: displayName,
+        body: c.text,
+        timestamp: new Date(c.timestamp),
+        proposalId: proposal.id,
+      };
+    }) ?? [];
 
   const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
     proposalId: proposal.id,
     votes: proposal.votes,
-    feedbackPosts: proposal?.feedbackPosts ?? [],
+    feedbackPosts: [
+      ...(proposal?.feedbackPosts ?? []),
+      ...(candidate?.feedbackPosts ?? []),
+    ],
   });
 
   const propdateItems =
@@ -156,6 +202,7 @@ export const buildFeed = (
     ...voteAndFeedbackPostItems,
     ...propdateItems,
     ...updateEventItems,
+    ...castItems,
   ];
 
   if (proposal.createdTimestamp != null)
@@ -209,6 +256,8 @@ export const buildFeed = (
       eventType: "proposal-started",
       id: `${proposal.id}-started`,
       blockNumber: proposal.startBlock,
+      timestamp:
+        startTimestamp == null ? null : new Date(Number(startTimestamp) * 1000),
       proposalId: proposal.id,
     });
   }
@@ -238,14 +287,13 @@ export const buildFeed = (
       eventType: "proposal-ended",
       id: `${proposal.id}-ended`,
       blockNumber: actualEndBlock,
+      timestamp:
+        endTimestamp == null ? null : new Date(Number(endTimestamp) * 1000),
       proposalId: proposal.id,
     });
   }
 
-  return arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
-    items,
-  );
+  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);
 };
 
 export const getStateLabel = (state) => {
