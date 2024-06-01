@@ -1,4 +1,3 @@
-import { formatAbiParameter } from "abitype";
 import {
   decodeAbiParameters,
   encodeAbiParameters,
@@ -23,6 +22,18 @@ const decimalsByCurrency = {
 const normalizeSignature = (s) => {
   if (s == null) return null;
   return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
+};
+
+const createSignature = ({ functionName, inputTypes }) => {
+  const stringifyTuple = ({ components }) =>
+    `(${components.map(stringifyType).join(",")})`;
+  const stringifyType = ({ type, components }) => {
+    if (type === "tuple") return stringifyTuple({ components });
+    if (type === "tuple[]") return `${stringifyTuple({ components })}[]`;
+    return type;
+  };
+  const formattedInputs = inputTypes?.map(stringifyType) ?? [];
+  return `${functionName}(${formattedInputs.join(",")})`;
 };
 
 const CREATE_STREAM_SIGNATURE =
@@ -272,17 +283,14 @@ export const parse = (data) => {
   });
 };
 
-export const unparse = (transactions, { chainId }) => {
+export const unparse = (transactions) => {
   const nounsGovernanceContract = resolveIdentifier("dao");
   const nounsExecutorContract = resolveIdentifier("executor");
   const nounsTokenContract = resolveIdentifier("token");
   const wethTokenContract = resolveIdentifier("weth-token");
   const nounsPayerContract = resolveIdentifier("payer");
   const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
-  const nounsStreamFactoryContract = resolveIdentifier(
-    chainId,
-    "stream-factory",
-  );
+  const nounsStreamFactoryContract = resolveIdentifier("stream-factory");
 
   return transactions.reduce(
     (acc, t) => {
@@ -345,7 +353,6 @@ export const unparse = (transactions, { chainId }) => {
 
         case "stream": {
           const tokenContract = resolveIdentifier(
-            chainId,
             `${t.token.toLowerCase()}-token`,
           );
           return append({
@@ -410,9 +417,10 @@ export const unparse = (transactions, { chainId }) => {
           )
             throw new Error(`Unknown transaction type "${t.type}"`);
 
-          const signature = `${t.functionName}(${t.functionInputTypes
-            .map((t) => formatAbiParameter(t))
-            .join(",")})`;
+          const signature = createSignature({
+            functionName: t.functionName,
+            inputTypes: t.functionInputTypes,
+          });
           return append({
             target: t.target,
             value: t.value ?? "0",
@@ -425,10 +433,12 @@ export const unparse = (transactions, { chainId }) => {
         }
 
         case "function-call":
-        case "payable-function-call": {
-          const signature = `${t.functionName}(${t.functionInputTypes
-            .map((t) => formatAbiParameter(t))
-            .join(",")})`;
+        case "payable-function-call":
+        case "weth-approval": {
+          const signature = createSignature({
+            functionName: t.functionName,
+            inputTypes: t.functionInputTypes,
+          });
           return append({
             target: t.target,
             value: t.type === "payable-function-call" ? t.value : "0",
@@ -509,7 +519,7 @@ export const extractAmounts = (parsedTransactions) => {
   ].filter((e) => e.amount > 0 || e.tokens?.length > 0);
 };
 
-export const buildActions = (transactions, { chainId }) => {
+export const buildActions = (transactions) => {
   const getTransactionIndex = (t) => transactions.findIndex((t_) => t_ === t);
 
   let transactionsLeft = [...transactions];
@@ -635,9 +645,7 @@ export const buildActions = (transactions, { chainId }) => {
 
     const tx = transactionsLeft[0];
 
-    const { targets, signatures, calldatas, values } = unparse([tx], {
-      chainId,
-    });
+    const { targets, signatures, calldatas, values } = unparse([tx]);
 
     transactionsLeft = transactionsLeft.slice(1);
 
@@ -645,9 +653,10 @@ export const buildActions = (transactions, { chainId }) => {
       signature: signatures[0],
       calldata: calldatas[0],
     });
-    const signature = `${name}(${inputTypes
-      .map((t) => formatAbiParameter(t))
-      .join(",")})`;
+    const signature = createSignature({
+      functionName: name,
+      inputTypes: inputTypes,
+    });
 
     return {
       type: "custom-transaction",
@@ -690,7 +699,7 @@ export const buildActions = (transactions, { chainId }) => {
   return arrayUtils.sortBy("firstTransactionIndex", actions);
 };
 
-export const resolveAction = (a, { chainId }) => {
+export const resolveAction = (a) => {
   const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
 
   const getParsedTransactions = () => {
@@ -803,14 +812,13 @@ export const resolveAction = (a, { chainId }) => {
     }
   };
 
-  return parse(unparse(getParsedTransactions(), { chainId }), { chainId });
+  return parse(unparse(getParsedTransactions()));
 };
 
-export const stringify = (parsedTransaction, { chainId }) => {
-  const { targets, values, signatures, calldatas } = unparse(
-    [parsedTransaction],
-    { chainId },
-  );
+export const stringify = (parsedTransaction) => {
+  const { targets, values, signatures, calldatas } = unparse([
+    parsedTransaction,
+  ]);
 
   if (signatures[0] == null || signatures[0] === "") {
     return [
