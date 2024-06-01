@@ -1,25 +1,21 @@
 "use client";
 
 import React from "react";
-import NextLink from "next/link";
 import { formatUnits } from "viem";
+import { useBlock } from "wagmi";
 import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
-import {
-  ErrorBoundary,
-  AutoAdjustingHeightTextarea,
-} from "@shades/common/react";
+import { ErrorBoundary } from "@shades/common/react";
 import {
   Clock as ClockIcon,
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
   CrossCircle as CrossCircleIcon,
-  Cross as CrossIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
-import Select from "@shades/ui-web/select";
 import Spinner from "@shades/ui-web/spinner";
+import { CHAIN_ID } from "../constants/env.js";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
@@ -32,7 +28,6 @@ import {
   useProposal,
   useProposalFetch,
   useProposalCandidate,
-  useDelegate,
 } from "../store.js";
 import useBlockNumber from "../hooks/block-number.js";
 import {
@@ -48,11 +43,12 @@ import {
   useExecuteProposal,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
-import { usePriorVotes } from "../hooks/token-contract.js";
+import useSetting from "../hooks/setting.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
+import { useProposalCasts, useSubmitProposalCast } from "../hooks/farcaster.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -64,6 +60,7 @@ import * as Tabs from "./tabs.js";
 import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
+import ProposalActionForm from "./proposal-action-form.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -82,6 +79,10 @@ const supportToString = (n) => {
 };
 
 const useFeedItems = (proposalId) => {
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const proposal = useProposal(proposalId);
+  const candidate = useProposalCandidate(proposal?.candidateId);
+
   const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 20_000,
@@ -89,12 +90,39 @@ const useFeedItems = (proposalId) => {
 
   const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
 
-  const proposal = useProposal(proposalId);
-  const candidate = useProposalCandidate(proposal?.candidateId);
+  const { data: startBlock } = useBlock({
+    chainId: CHAIN_ID,
+    blockNumber: proposal?.startBlock,
+    query: { enabled: proposal?.startBlock != null },
+  });
+  const { data: endBlock } = useBlock({
+    chainId: CHAIN_ID,
+    blockNumber: proposal?.endBlock,
+    query: { enabled: proposal?.endBlock != null },
+  });
+
+  const startTimestamp = startBlock?.timestamp;
+  const endTimestamp = endBlock?.timestamp;
+
+  const casts = useProposalCasts(proposalId, { filter: farcasterFilter });
 
   return React.useMemo(
-    () => buildProposalFeed(proposal, { latestBlockNumber, candidate }),
-    [proposal, latestBlockNumber, candidate],
+    () =>
+      buildProposalFeed(proposal, {
+        latestBlockNumber,
+        startTimestamp,
+        endTimestamp,
+        candidate,
+        casts,
+      }),
+    [
+      proposal,
+      latestBlockNumber,
+      startTimestamp,
+      endTimestamp,
+      candidate,
+      casts,
+    ],
   );
 };
 
@@ -157,7 +185,11 @@ const ProposalMainSection = ({
   const [formActionOverride, setFormActionOverride] = React.useState(null);
 
   const possibleFormActions =
-    !hasCastVote && isVotingOngoing ? ["vote", "feedback"] : ["feedback"];
+    !hasCastVote && isVotingOngoing
+      ? ["vote", "onchain-comment", "farcaster-comment"]
+      : ["onchain-comment", "farcaster-comment"];
+
+  const submitProposalCast = useSubmitProposalCast(proposalId);
 
   const defaultFormAction = possibleFormActions[0];
 
@@ -441,18 +473,29 @@ const ProposalMainSection = ({
     }
   };
 
-  const handleFormSubmit = async () => {
-    if (currentFormAction === "vote") {
-      // A contract simulation  takes a second to to do its thing after every
-      // argument change, so this might be null. This seems like a nicer
-      // behavior compared to disabling the submit button on every keystroke
-      if (castProposalVote == null) return;
-      await castProposalVote();
-      setCastVoteCallSupportDetailed(pendingSupport);
-    } else {
-      // Same as above
-      if (sendProposalFeedback == null) return;
-      await sendProposalFeedback();
+  const handleFormSubmit = async (data) => {
+    switch (currentFormAction) {
+      case "vote":
+        // A contract simulation  takes a second to to do its thing after every
+        // argument change, so this might be null. This seems like a nicer
+        // behavior compared to disabling the submit button on every keystroke
+        if (castProposalVote == null) return;
+        await castProposalVote();
+        setCastVoteCallSupportDetailed(pendingSupport);
+        break;
+
+      case "onchain-comment":
+        // Same as above
+        if (sendProposalFeedback == null) return;
+        await sendProposalFeedback();
+        break;
+
+      case "farcaster-comment":
+        await submitProposalCast({ fid: data.fid, text: pendingFeedback });
+        break;
+
+      default:
+        throw new Error();
     }
 
     setPendingFeedback("");
@@ -793,453 +836,6 @@ const ProposalMainSection = ({
             )}
           </div>
         </MainContentContainer>
-      </div>
-    </>
-  );
-};
-
-export const ProposalActionForm = ({
-  proposalId,
-  size = "default",
-  mode,
-  setMode,
-  availableModes,
-  reason,
-  setReason,
-  support,
-  setSupport,
-  onSubmit,
-  quotedFeedItems,
-  cancelQuote,
-  inputRef,
-}) => {
-  const [isPending, setPending] = React.useState(false);
-  // const [error, setError] = React.useState(null);
-
-  const {
-    address: connectedWalletAccountAddress,
-    requestAccess: requestWalletAccess,
-    switchToMainnet: requestWalletNetworkSwitchToMainnet,
-    isLoading: hasPendingWalletAction,
-    isUnsupportedChain,
-  } = useWallet();
-  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
-
-  const proposal = useProposal(proposalId);
-
-  const proposalVoteCount = usePriorVotes({
-    account: connectedWalletAccountAddress,
-    blockNumber: proposal?.startBlock,
-    enabled: mode === "vote",
-  });
-  const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
-
-  const hasRequiredInputs = support != null;
-  const hasQuote = quotedFeedItems?.length > 0;
-
-  if (mode == null) throw new Error();
-
-  const renderHelpText = () => {
-    if (isUnsupportedChain)
-      return `Switch to Ethereum Mainnet to ${
-        mode === "vote" ? "vote" : "give feedback"
-      }.`;
-
-    if (mode === "feedback") {
-      const isFinalOrSucceededState =
-        proposal != null &&
-        (isFinalProposalState(proposal.state) ||
-          isSucceededProposalState(proposal.state));
-
-      if (isFinalOrSucceededState) return null;
-
-      return "Signal your voting intentions to influence and guide proposers.";
-    }
-
-    if (currentVoteCount > 0 && proposalVoteCount === 0)
-      return (
-        <>
-          <p>
-            Although you currently control <em>{currentVoteCount}</em>{" "}
-            {currentVoteCount === 1 ? "vote" : "votes"}, your voting power on
-            this proposal is <em>0</em>, which represents your voting power at
-            this proposal’s vote snapshot block.
-          </p>
-          <p>
-            You may still vote with <em>0</em> votes, but gas spent will not be
-            refunded.
-          </p>
-        </>
-      );
-
-    if (proposalVoteCount === 0)
-      return "You can vote with zero voting power, but gas spent will not be refunded.";
-
-    return "Gas spent on voting will be refunded.";
-  };
-
-  const helpText = renderHelpText();
-
-  const showModePicker = availableModes != null && availableModes.length > 1;
-
-  const disableForm =
-    isPending || connectedWalletAccountAddress == null || isUnsupportedChain;
-
-  return (
-    <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-        <div
-          style={{
-            display: "flex",
-            gap: "0.6rem",
-            justifyContent: "space-between",
-            alignItems: "flex-end",
-          }}
-        >
-          <label
-            htmlFor="message-input"
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
-                "& + *": { marginTop: "0.8rem" },
-              })
-            }
-          >
-            {mode === "vote" ? "Cast vote as" : "Comment as"}{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={connectedWalletAccountAddress}
-            />
-          </label>
-          {showModePicker && (
-            <div>
-              <Select
-                aria-label="Pick action type"
-                value={mode}
-                onChange={(m) => {
-                  setMode(m);
-                  // Default to "abstain" for comments, and reset for votes
-                  setSupport(m === "feedback" ? 2 : null);
-                }}
-                options={availableModes.map((m) => ({
-                  value: m,
-                  label: { vote: "Cast vote", feedback: "Post comment" }[m],
-                }))}
-                size="tiny"
-                variant="opaque"
-                width="max-content"
-                align="right"
-                buttonProps={{
-                  css: (t) => css({ color: t.colors.textDimmed }),
-                }}
-              />
-            </div>
-          )}
-        </div>
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            setPending(true);
-            // setError(null);
-            try {
-              await onSubmit();
-              // } catch (e) {
-              //   setError(e);
-              //   throw e;
-            } finally {
-              setPending(false);
-            }
-          }}
-          css={(t) =>
-            css({
-              borderRadius: "0.5rem",
-              background: t.colors.backgroundModifierNormal,
-              padding: "var(--padding, 1rem)",
-              "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
-            })
-          }
-          style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
-        >
-          <AutoAdjustingHeightTextarea
-            ref={inputRef}
-            id="message-input"
-            rows={1}
-            placeholder={hasQuote ? "Optional comment" : "I believe..."}
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-            css={(t) =>
-              css({
-                background: "transparent",
-                fontSize: t.text.sizes.base,
-                display: "block",
-                color: t.colors.textNormal,
-                fontWeight: "400",
-                width: "100%",
-                maxWidth: "100%",
-                outline: "none",
-                border: 0,
-                padding: "0.3rem 0.3rem",
-                "::placeholder": { color: t.colors.inputPlaceholder },
-                "&:disabled": {
-                  color: t.colors.textMuted,
-                  cursor: "not-allowed",
-                },
-                // Prevents iOS zooming in on input fields
-                "@supports (-webkit-touch-callout: none)": {
-                  fontSize: "1.6rem",
-                },
-              })
-            }
-            disabled={disableForm}
-          />
-          {quotedFeedItems?.length > 0 && (
-            <ul
-              css={(t) =>
-                css({
-                  listStyle: "none",
-                  fontSize: "0.875em",
-                  margin: "0.8rem 0",
-                  li: {
-                    position: "relative",
-                    border: "0.1rem solid",
-                    borderRadius: "0.5rem",
-                    borderColor: t.colors.borderLighter,
-                    padding: "0.4rem 0.4rem 0.4rem 0.6rem",
-                    whiteSpace: "nowrap",
-                    display: "flex",
-                    alignItems: "center",
-                  },
-                  "li + li": { marginTop: "0.6rem" },
-                  button: { position: "relative" },
-                  "[data-cancel]": {
-                    padding: "0.3rem",
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": { color: t.colors.textAccent },
-                    },
-                  },
-                })
-              }
-            >
-              {quotedFeedItems.map((item) => (
-                <li key={item.id}>
-                  <NextLink
-                    href={`#${item.id}`}
-                    style={{ display: "block", position: "absolute", inset: 0 }}
-                  />
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    <AccountPreviewPopoverTrigger
-                      showAvatar
-                      accountAddress={item.authorAccount}
-                    />
-                    :{" "}
-                    <MarkdownRichText
-                      text={item.body}
-                      displayImages={false}
-                      inline
-                      css={css({
-                        // Make all headings small
-                        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-                        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-                        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
-                          { marginBottom: "0.625em" },
-                      })}
-                    />
-                  </div>
-                  <button data-cancel onClick={() => cancelQuote(item.id)}>
-                    <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* {error != null && (
-            <div
-              css={(t) =>
-                css({
-                  padding: "0.3rem",
-                  color: t.colors.textDanger,
-                  whiteSpace: "pre-wrap",
-                  overflow: "auto",
-                })
-              }
-            >
-              Error: {error.message}
-            </div>
-          )} */}
-          <div
-            style={{
-              display: "grid",
-              gridAutoFlow: "column",
-              justifyContent: "flex-end",
-              gridGap: "1rem",
-              marginTop: "1rem",
-            }}
-          >
-            {connectedWalletAccountAddress == null ? (
-              <Button
-                type="button"
-                onClick={() => {
-                  requestWalletAccess();
-                }}
-                size={size}
-              >
-                Connect wallet to{" "}
-                {mode === "feedback" ? "give feedback" : "vote"}
-              </Button>
-            ) : (
-              <>
-                <Select
-                  aria-label="Select support"
-                  width="15rem"
-                  variant="default"
-                  size={size}
-                  multiline={false}
-                  value={support}
-                  onChange={(value) => {
-                    setSupport(value);
-                  }}
-                  renderTriggerContent={
-                    support == null
-                      ? null
-                      : (key, options) =>
-                          options.find((o) => o.value === key).label
-                  }
-                  placeholder={
-                    mode === "feedback" ? "Select signal" : "Select vote"
-                  }
-                  options={
-                    mode === "vote"
-                      ? [
-                          {
-                            value: 1,
-                            textValue: "For",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textPositive })
-                                }
-                              >
-                                For
-                              </span>
-                            ),
-                          },
-                          {
-                            value: 0,
-                            textValue: "Against",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textNegative })
-                                }
-                              >
-                                Against
-                              </span>
-                            ),
-                          },
-                          { value: 2, label: "Abstain" },
-                        ]
-                      : [
-                          {
-                            value: 1,
-                            textValue: "Signal for",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textPositive })
-                                }
-                              >
-                                Signal for
-                              </span>
-                            ),
-                          },
-                          {
-                            value: 0,
-                            textValue: "Signal against",
-                            label: (
-                              <span
-                                css={(t) =>
-                                  css({ color: t.colors.textNegative })
-                                }
-                              >
-                                Signal against
-                              </span>
-                            ),
-                          },
-                          { value: 2, label: "No signal" },
-                        ]
-                  }
-                  disabled={disableForm}
-                />
-                {isUnsupportedChain ? (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    disabled={hasPendingWalletAction}
-                    isLoading={hasPendingWalletAction}
-                    size={size}
-                    onClick={() => {
-                      requestWalletNetworkSwitchToMainnet();
-                    }}
-                  >
-                    Switch to Mainnet
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    disabled={isPending || !hasRequiredInputs}
-                    isLoading={isPending}
-                    size={size}
-                  >
-                    {(() => {
-                      switch (mode) {
-                        case "vote":
-                          return hasQuote
-                            ? "Cast revote"
-                            : proposalVoteCount === 1
-                              ? "Cast vote"
-                              : `Cast ${proposalVoteCount ?? "..."} votes`;
-                        case "feedback":
-                          return hasQuote ? "Submit repost" : "Submit comment";
-                        default:
-                          throw new Error();
-                      }
-                    })()}
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </form>
-
-        {helpText != null && (
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.tiny,
-                color: t.colors.textDimmed,
-                "p + p": { marginTop: "1em" },
-                em: {
-                  fontStyle: "normal",
-                  fontWeight: t.text.weights.emphasis,
-                },
-              })
-            }
-          >
-            {helpText}
-          </div>
-        )}
       </div>
     </>
   );
