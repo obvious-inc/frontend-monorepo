@@ -98,7 +98,7 @@ const EnsCacheProvider = ({ children }) => {
 
 const useEnsCache = () => React.useContext(EnsCacheContext);
 
-const useEnsAddress = ({ name, enabled }) => {
+const useCustomCacheEnsAddress = (name, { enabled }) => {
   const publicClient = usePublicClient();
 
   const { resolve, register } = React.useContext(EnsCacheContext);
@@ -118,7 +118,7 @@ const useEnsAddress = ({ name, enabled }) => {
     );
   }, [name, address, enabled, publicClient, register]);
 
-  return { data: address };
+  return address;
 };
 
 // const useEnsName = ({ address, enabled }) => {
@@ -279,8 +279,7 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
     ],
   );
 
-  useEnsAddress({
-    name: state.receiverQuery.trim(),
+  useCustomCacheEnsAddress(state.receiverQuery.trim(), {
     enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
   });
 
@@ -720,8 +719,7 @@ const formConfigByActionType = {
       currency: state.currency,
     }),
     Component: ({ state, setState }) => {
-      useEnsAddress({
-        name: state.receiverQuery.trim(),
+      useCustomCacheEnsAddress(state.receiverQuery.trim(), {
         enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
       });
       return (
