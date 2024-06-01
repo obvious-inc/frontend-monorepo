@@ -7,13 +7,13 @@ import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
 import { useActions, useNoun } from "../store.js";
 import { resolveIdentifier } from "../contracts.js";
+import { useSaleInfo } from "../hooks/sales.js";
 import useEnsName from "../hooks/ens-name.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import { useSaleInfo } from "../hooks/sales.js";
 
 export const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
