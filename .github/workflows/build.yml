@@ -31,8 +31,10 @@ env:
   KV_REST_API_URL: ${{ secrets.KV_REST_API_URL }}
   KV_URL: ${{ secrets.KV_URL }}
   CLOUDFLARE_ACCT_HASH: ${{ secrets.CLOUDFLARE_ACCT_HASH }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
   SENTRY_ORG: ${{ vars.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+  SENTRY_LOG_LEVEL: ${{ vars.SENTRY_LOG_LEVEL }}
 
 jobs:
   check:
