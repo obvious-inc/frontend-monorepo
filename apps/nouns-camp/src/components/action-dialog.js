@@ -11,7 +11,6 @@ import {
   decodeAbiParameters,
 } from "viem";
 import { normalize as normalizeEnsName } from "viem/ens";
-import { usePublicClient } from "wagmi";
 import { css } from "@emotion/react";
 import { useFetch } from "@shades/common/react";
 import {
@@ -26,6 +25,7 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
+import usePublicClient from "../hooks/public-client.js";
 import { fetchContractInfo } from "../hooks/etherscan-contract-info.js";
 import useEthToUsdRate, {
   Provider as EthToUsdRateProvider,

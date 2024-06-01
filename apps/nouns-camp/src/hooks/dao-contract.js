@@ -4,12 +4,12 @@ import {
   useReadContract,
   useWriteContract,
   useSimulateContract,
-  usePublicClient,
   useBlockNumber,
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
 import { useActions } from "../store.js";
+import usePublicClient from "./public-client.js";
 import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
 import useRegisterEvent from "./register-event.js";

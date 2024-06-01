@@ -6,7 +6,6 @@ import {
   useStore as useZustandStore,
 } from "zustand";
 import { normalize as normalizeEnsName } from "viem/ens";
-import { usePublicClient, useBlockNumber } from "wagmi";
 import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
   array as arrayUtils,
@@ -22,6 +21,8 @@ import {
 } from "./utils/candidates.js";
 import useChainId from "./hooks/chain-id.js";
 import * as NounsSubgraph from "./nouns-subgraph.js";
+import useBlockNumber from "./hooks/block-number.js";
+import usePublicClient from "./hooks/public-client.js";
 import * as PropdatesSubgraph from "./propdates-subgraph.js";
 
 const mergeProposals = (p1, p2) => {
