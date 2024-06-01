@@ -67,8 +67,6 @@ const beforeInteractive = () => {
 };
 
 const fetchConfig = async () => {
-  return [];
-  // eslint-disable-next-line no-unreachable
   try {
     const [canaryAccounts = [], betaAccounts = []] = await Promise.all([
       getConfig("canary-accounts"),
@@ -82,7 +80,7 @@ const fetchConfig = async () => {
 };
 
 export default async function RootLayout({ children }) {
-  const config = await fetchConfig();
+  const config = { canaryAccounts: [], betaAccounts: [] } | await fetchConfig();
   return (
     <html lang="en">
       <body>
