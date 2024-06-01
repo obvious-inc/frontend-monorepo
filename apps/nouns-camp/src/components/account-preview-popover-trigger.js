@@ -7,7 +7,7 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
-import InlineUserButton from "@shades/ui-web/inline-user-button";
+import InlineButton from "@shades/ui-web/inline-button";
 import { useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -57,9 +57,9 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 
       if (avatar == null)
         return (
-          <InlineUserButton
+          <InlineAccountButton
             ref={triggerRef}
-            walletAddress={accountAddress}
+            address={accountAddress}
             variant={buttonVariant}
             {...props}
           />
@@ -79,10 +79,10 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
           })}
         >
           {avatar}
-          <InlineUserButton
+          <InlineAccountButton
             data-display-name
             component="div"
-            walletAddress={accountAddress}
+            address={accountAddress}
             variant={buttonVariant}
             {...props}
           />
@@ -105,7 +105,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const { address: connectedAccountAddress } = useWallet();
   const connectedAccount = useAccount(connectedAccountAddress);
 
-  const isMe = accountAddress?.toLowerCase() === connectedAccountAddress?.toLowerCase();
+  const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
   const enableDelegation = connectedAccount?.nouns.length > 0;
 
@@ -431,5 +431,33 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     </div>
   );
 });
+
+const InlineAccountButton = React.forwardRef(
+  (
+    { address, variant = "button", fallbackDisplayName, children, ...props },
+    ref,
+  ) => {
+    const displayName = useAccountDisplayName(address);
+    const displayNameOrFallback =
+      fallbackDisplayName == null ||
+      displayName !== ethereumUtils.truncateAddress(address)
+        ? displayName
+        : fallbackDisplayName;
+
+    return (
+      // {children} need to be rendered to work in Slate editor
+      <InlineButton
+        ref={ref}
+        variant={variant}
+        {...props}
+        css={css({ userSelect: "text" })}
+      >
+        {variant === "button" && "@"}
+        {displayNameOrFallback}
+        {children}
+      </InlineButton>
+    );
+  },
+);
 
 export default AccountPreviewPopoverTrigger;
