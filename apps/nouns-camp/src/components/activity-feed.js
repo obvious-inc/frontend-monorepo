@@ -28,7 +28,7 @@ const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
   <ul
     css={(t) =>
       css({
-        lineHeight: 1.4285714286, // 20px line height given font size if 14px
+        lineHeight: "calc(20/14)", // 20px line height given font size if 14px
         fontSize: t.text.sizes.base,
         '[role="listitem"]': {
           scrollMargin: "calc(3.2rem + 1.6rem) 0",
