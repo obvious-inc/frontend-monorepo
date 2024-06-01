@@ -31,6 +31,8 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       showAvatar = false,
       avatarFallback = false,
       avatarBackground,
+      fallbackImageUrl,
+      fallbackDisplayName,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
       children,
@@ -44,6 +46,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         size="1.2em"
         placeholder={avatarFallback}
         background={avatarBackground}
+        fallbackImageUrl={fallbackImageUrl}
         css={css({
           display: "inline-block",
           marginRight: "0.3em",
@@ -61,6 +64,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
             ref={triggerRef}
             address={accountAddress}
             variant={buttonVariant}
+            fallbackDisplayName={fallbackDisplayName}
             {...props}
           />
         );
@@ -84,6 +88,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
             component="div"
             address={accountAddress}
             variant={buttonVariant}
+            fallbackDisplayName={fallbackDisplayName}
             {...props}
           />
         </button>
