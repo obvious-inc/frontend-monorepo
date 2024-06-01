@@ -266,7 +266,11 @@ const parseToken = (token, context = {}) => {
       return null;
 
     case "html":
-      return { type: "text", text: token.text };
+      if (!token.block) return { type: "text", text: token.text };
+      return {
+        type: "paragraph",
+        children: [{ type: "text", text: token.text }],
+      };
 
     default:
       if (isProduction) return null;
