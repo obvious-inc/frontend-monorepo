@@ -44,7 +44,7 @@ const Content = ({ titleProps, dismiss }) => {
   const delegate = useDelegate(accountAddress);
   const currentQuorum = useCurrentDynamicQuorum();
 
-  const hasNouns = account?.nouns.length > 0;
+  const hasNouns = account?.nouns != null && account.nouns.length > 0;
   const nounsRepresented = delegate?.nounsRepresented ?? [];
   const nounsDelegatedToAccount = nounsRepresented.filter(
     (n) => n.ownerId.toLowerCase() !== accountAddress,
