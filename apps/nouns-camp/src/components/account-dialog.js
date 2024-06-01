@@ -1,6 +1,5 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import { css } from "@emotion/react";
-import { useEnsName } from "wagmi";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Dialog from "@shades/ui-web/dialog";
@@ -11,6 +10,7 @@ import { useNavigate } from "../hooks/navigation.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import useEnsName from "../hooks/ens-name.js";
 import AccountAvatar from "./account-avatar.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -33,7 +33,7 @@ const Content = ({ titleProps, dismiss }) => {
 
   const { address: accountAddress } = useWallet();
   const displayName = useAccountDisplayName(accountAddress);
-  const { data: ensName } = useEnsName({ address: accountAddress });
+  const ensName = useEnsName(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(
     checksumEncodeAddress(accountAddress),
   );

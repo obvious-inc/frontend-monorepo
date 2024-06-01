@@ -1,7 +1,7 @@
 import React from "react";
 import NextLink from "next/link";
 import { isAddress, getAddress as checksumEncodeAddress } from "viem";
-import { useBlockNumber, useEnsName, useEnsAddress } from "wagmi";
+import { useBlockNumber, useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import {
   array as arrayUtils,
@@ -33,6 +33,7 @@ import {
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
+import useEnsName from "../hooks/ens-name.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
@@ -302,7 +303,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
   const account = useAccount(voterAddress);
   const delegateDisplayName = useAccountDisplayName(account?.delegateId);
-  const { data: ensName } = useEnsName({ address: account?.delegateId });
+  const ensName = useEnsName(account?.delegateId);
 
   const delegate = useDelegate(voterAddress);
   const voteCount = delegate?.delegatedVotes ?? 0;

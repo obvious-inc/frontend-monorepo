@@ -1,6 +1,6 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
-import { useEnsName, useEnsAvatar } from "wagmi";
+import { useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import { useAccountDisplayName } from "@shades/common/ethereum-react";
@@ -12,6 +12,7 @@ import InlineUserButton from "@shades/ui-web/inline-user-button";
 import { useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import useEnsName from "../hooks/ens-name.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -115,7 +116,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     checksumEncodeAddress(accountAddress),
   );
 
-  const { data: ensName } = useEnsName({ address: accountAddress });
+  const ensName = useEnsName(accountAddress);
   const { data: ensAvatarUrl } = useEnsAvatar({
     name: ensName,
     enabled: ensName != null,

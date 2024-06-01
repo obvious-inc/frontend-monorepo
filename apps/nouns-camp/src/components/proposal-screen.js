@@ -82,7 +82,7 @@ const supportToString = (n) => {
 };
 
 const useFeedItems = (proposalId) => {
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
+  const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 20_000,
   });

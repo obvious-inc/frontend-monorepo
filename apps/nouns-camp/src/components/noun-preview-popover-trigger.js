@@ -1,13 +1,13 @@
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
-import { useEnsName } from "wagmi";
 import { useFetch } from "@shades/common/react";
 import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
 import { useActions, useNoun } from "../store.js";
+import useEnsName from "../hooks/ens-name.js";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -158,9 +158,9 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
   const transactionHash = event.id.split("_")[0];
   const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
-  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const newAccountEns = useEnsName(event.newAccountId);
   const ownerDisplayName = useAccountDisplayName(noun.ownerId);
-  const { data: ownerEns } = useEnsName({ address: noun.ownerId });
+  const ownerEns = useEnsName(noun.ownerId);
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -252,13 +252,11 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   });
 
   const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
-  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const newAccountEns = useEnsName(event.newAccountId);
   const previousAccountDisplayName = useAccountDisplayName(
     event.previousAccountId,
   );
-  const { data: previousAccountEns } = useEnsName({
-    address: event.previousAccountId,
-  });
+  const previousAccountEns = useEnsName(event.previousAccountId);
 
   const isDestinationAccount =
     contextAccount != null &&

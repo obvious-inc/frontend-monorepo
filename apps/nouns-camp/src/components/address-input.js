@@ -1,8 +1,9 @@
 import React from "react";
 import { isAddress } from "viem";
-import { useEnsName, useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import Input from "@shades/ui-web/input";
+import useEnsName from "../hooks/ens-name.js";
+import useEnsAddress from "../hooks/ens-address.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const AddressInput = ({
@@ -12,11 +13,8 @@ const AddressInput = ({
 }) => {
   const [hasFocus, setFocused] = React.useState(false);
 
-  const { data: ensName } = useEnsName({
-    address: value.trim(),
-    query: {
-      enabled: isAddress(value.trim()),
-    },
+  const ensName = useEnsName(value.trim(), {
+    enabled: isAddress(value.trim()),
   });
   const { data: ensAddress } = useEnsAddress({
     name: value.trim(),

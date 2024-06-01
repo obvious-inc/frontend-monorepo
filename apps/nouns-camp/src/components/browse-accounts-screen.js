@@ -2,7 +2,6 @@
 
 import React from "react";
 import { css } from "@emotion/react";
-import { useEnsName } from "wagmi";
 import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
 import {
@@ -30,6 +29,7 @@ import useChainId from "../hooks/chain-id.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useContract from "../hooks/contract.js";
+import useEnsName from "../hooks/ens-name.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import AccountAvatar from "./account-avatar.js";
 import DateRangePicker, { toLocalDate } from "./date-range-picker.js";
@@ -709,8 +709,7 @@ const AccountListItem = React.memo(
     const enableDelegation = connectedAccount?.nouns.length > 0;
 
     const delegate = useDelegate(accountAddress);
-    const { data: ensName } = useEnsName({
-      address: accountAddress,
+    const ensName = useEnsName(accountAddress, {
       enabled: hasBeenOnScreen,
     });
     const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
