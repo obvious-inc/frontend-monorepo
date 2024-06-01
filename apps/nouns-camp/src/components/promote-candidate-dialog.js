@@ -12,8 +12,6 @@ import Spinner from "@shades/ui-web/spinner";
 import { Label } from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
-import AccountAvatar from "./account-avatar.js";
-import Callout from "./callout.js";
 import { getSponsorSignatures } from "../utils/candidates.js";
 import {
   useActions,
@@ -30,6 +28,8 @@ import {
 } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useNavigate } from "../hooks/navigation.js";
+import AccountAvatar from "./account-avatar.js";
+import Callout from "./callout.js";
 
 const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const navigate = useNavigate();
