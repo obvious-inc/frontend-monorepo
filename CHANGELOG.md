@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.2] - 2024-06-01
+
+### 🐛 Bug Fixes
+
+- Disable block timestamp fields on brows account screen query
+
+### 🚜 Refactor
+
+- Update `fetchConfig` function in `layout.js`
+
+### ⚙️ Miscellaneous Tasks
+
+- Add `.vercel` to `.gitignore` in nouns camp app
+- Enable source map uploading logs in Sentry config
+
 ## [1.1.0-beta.1] - 2024-05-31
 
 ### 🐛 Bug Fixes
