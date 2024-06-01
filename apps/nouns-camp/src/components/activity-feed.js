@@ -153,7 +153,7 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                   // WebkitBoxOrient: "vertical",
                   // WebkitLineClamp: 2,
                   // overflow: "hidden",
-                  color: t.colors.textDimmed,
+                  color: t.colors.textNormal,
                 })
               }
             >
