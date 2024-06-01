@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.3] - 2024-06-01
+
+### 🐛 Bug Fixes
+
+- Improve common package components and hooks
+
+### 🚜 Refactor
+
+- Add qrcode to the web ui package
+- Add farcaster gate to the web ui icons
+- Add some utility functions to common package and improve fetch
+- Add hint to form dialog on web ui package
+- Improve avatar on web ui package
+
 ## [1.1.0-beta.2] - 2024-06-01
 
 ### 🐛 Bug Fixes

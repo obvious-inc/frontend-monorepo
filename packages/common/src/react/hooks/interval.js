@@ -43,9 +43,12 @@ const useInterval = (
     if (requireOnline) {
       window.addEventListener("online", set);
       window.addEventListener("offline", pause);
+      if (window.navigator.onLine) {
+        set();
+      }
+    } else {
+      set();
     }
-
-    set();
 
     return () => {
       clearInterval(id);
