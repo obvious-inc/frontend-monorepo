@@ -41,6 +41,8 @@ const addressByIdentifierByChainId = {
     "executor-v1": "0x0bc3807ec262cb779b38d65b38158acc3bfede10",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0000000000000000000000000000000000000000",
+    "client-incentives-rewards-proxy":
+      "0x0000000000000000000000000000000000000000",
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
   [sepolia.id]: {
@@ -60,6 +62,7 @@ const addressByIdentifierByChainId = {
     payer: "0x0000000000000000000000000000000000000000",
     "token-buyer": "0x0000000000000000000000000000000000000000",
     "stream-factory": "0x0000000000000000000000000000000000000000",
+    "client-incentives-rewards-proxy": null,
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
 };
@@ -124,6 +127,9 @@ const metaByIdentifier = {
   },
   "stream-factory": {
     name: "Nouns Stream Factory",
+  },
+  "client-incentives-rewards-proxy": {
+    name: "Nouns Client Incentives Rewards Proxy",
   },
 };
 
