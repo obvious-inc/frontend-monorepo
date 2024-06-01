@@ -5,7 +5,11 @@ import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Button from "@shades/ui-web/button";
-import { Retweet as RepostIcon } from "@shades/ui-web/icons";
+import Avatar from "@shades/ui-web/avatar";
+import {
+  Retweet as RepostIcon,
+  FarcasterGate as FarcasterGateIcon,
+} from "@shades/ui-web/icons";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -121,16 +125,51 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
     >
       <div data-header>
         <div>
-          {item.type === "event" || item.authorAccount == null ? (
+          {item.type === "farcaster-cast" ? (
+            <div style={{ position: "relative" }}>
+              {item.authorAccount == null ? (
+                <Avatar url={item.authorAvatarUrl} size="2rem" />
+              ) : (
+                <AccountPreviewPopoverTrigger
+                  accountAddress={item.authorAccount}
+                >
+                  <button data-avatar-button>
+                    <AccountAvatar
+                      address={item.authorAccount}
+                      fallbackImageUrl={item.authorAvatarUrl}
+                      size="2rem"
+                    />
+                  </button>
+                </AccountPreviewPopoverTrigger>
+              )}
+              <span
+                css={(t) =>
+                  css({
+                    position: "absolute",
+                    top: 0,
+                    right: 0,
+                    display: "flex",
+                    width: "1rem",
+                    height: "1rem",
+                    borderRadius: "50%",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#855DCD", // Farcaster purple
+                    transform: "translateY(-35%) translateX(35%)",
+                    boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+                    svg: { width: "0.6rem", height: "auto", color: "white" },
+                  })
+                }
+              >
+                <FarcasterGateIcon />
+              </span>
+            </div>
+          ) : item.type === "event" || item.authorAccount == null ? (
             <div data-timeline-symbol />
           ) : (
             <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
               <button data-avatar-button>
-                <AccountAvatar
-                  data-avatar
-                  address={item.authorAccount}
-                  size="2rem"
-                />
+                <AccountAvatar address={item.authorAccount} size="2rem" />
               </button>
             </AccountPreviewPopoverTrigger>
           )}
@@ -157,9 +196,9 @@ const FeedItem = React.memo(({ context, onQuote, ...item }) => {
                 })
               }
             >
-              <span css={(t) => css({ color: t.colors.textNormal })}>
-                <ItemTitle item={item} context={context} />
-              </span>
+              {/* <span css={(t) => css({ color: t.colors.textNormal })}> */}
+              <ItemTitle item={item} context={context} />
+              {/* </span> */}
             </div>
             <div>
               {item.isPending ? (
@@ -462,7 +501,10 @@ const ItemTitle = ({ item, context }) => {
   };
 
   const accountName = (
-    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+    <AccountPreviewPopoverTrigger
+      accountAddress={item.authorAccount}
+      fallbackDisplayName={item.authorDisplayName}
+    />
   );
 
   switch (item.type) {
@@ -750,18 +792,23 @@ const ItemTitle = ({ item, context }) => {
               case 0:
                 return (
                   <Signal negative>
-                    {signalWord} against ({item.voteCount})
+                    {signalWord} against
+                    {item.voteCount != null && <> ({item.voteCount})</>}
                   </Signal>
                 );
               case 1:
                 return (
                   <Signal positive>
-                    {signalWord} for ({item.voteCount})
+                    {signalWord} for
+                    {item.voteCount != null && <> ({item.voteCount})</>}
                   </Signal>
                 );
               case 2:
                 return item.type === "vote" ? (
-                  <Signal>abstained ({item.voteCount})</Signal>
+                  <Signal>
+                    abstained
+                    {item.voteCount != null && <> ({item.voteCount})</>}
+                  </Signal>
                 ) : isIsolatedContext ? (
                   "commented"
                 ) : (
@@ -776,6 +823,36 @@ const ItemTitle = ({ item, context }) => {
             </>
           )}
         </span>
+      );
+    }
+
+    case "farcaster-cast": {
+      if (item.authorAccount == null)
+        return (
+          <>
+            <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
+              {item.authorDisplayName}
+            </span>{" "}
+            commented
+            {!isIsolatedContext && (
+              <>
+                {" "}
+                on <ContextLink short {...item} />
+              </>
+            )}
+          </>
+        );
+
+      return (
+        <>
+          {accountName} commented{" "}
+          {!isIsolatedContext && (
+            <>
+              {" "}
+              on <ContextLink short {...item} />
+            </>
+          )}
+        </>
       );
     }
 
