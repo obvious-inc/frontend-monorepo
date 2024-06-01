@@ -12,10 +12,10 @@ const customSubgraphEndpoint =
 
 const parseTimestamp = (unixSeconds) => new Date(parseInt(unixSeconds) * 1000);
 
-const VOTE_FIELDS = `
-fragment VoteFields on Vote {
-  id
-  blockNumber
+export const VOTE_FIELDS = `
+  fragment VoteFields on Vote {
+    id
+    blockNumber
 # blockTimestamp
   reason
   supportDetailed
@@ -28,54 +28,46 @@ fragment VoteFields on Vote {
   }
 }`;
 
-const CANDIDATE_FEEDBACK_FIELDS = `
-fragment CandidateFeedbackFields on CandidateFeedback {
-  id
-  reason
-  supportDetailed
-  createdBlock
-  createdTimestamp
-  votes
-  voter {
+export const CANDIDATE_FEEDBACK_FIELDS = `
+  fragment CandidateFeedbackFields on CandidateFeedback {
     id
-    nounsRepresented {
+    reason
+    supportDetailed
+    createdBlock
+    createdTimestamp
+    votes
+    voter {
       id
+      nounsRepresented { id }
     }
-  }
-  candidate {
-    id
-  }
-}`;
+    candidate { id }
+  }`;
 
-const PROPOSAL_FEEDBACK_FIELDS = `
-fragment ProposalFeedbackFields on ProposalFeedback {
-  id
-  reason
-  supportDetailed
-  createdBlock
-  createdTimestamp
-  votes
-  voter {
+export const PROPOSAL_FEEDBACK_FIELDS = `
+  fragment ProposalFeedbackFields on ProposalFeedback {
     id
-    nounsRepresented {
+    reason
+    supportDetailed
+    createdBlock
+    createdTimestamp
+    votes
+    voter {
       id
+      nounsRepresented { id }
     }
-  }
-  proposal {
-    id
-  }
-}`;
+    proposal { id }
+  }`;
 
-const FULL_PROPOSAL_FIELDS = `
-${VOTE_FIELDS}
-${PROPOSAL_FEEDBACK_FIELDS}
-fragment FullProposalFields on Proposal {
-  id
-  status
-  title
-  description
-  createdBlock
-  createdTimestamp
+export const FULL_PROPOSAL_FIELDS = `
+  ${VOTE_FIELDS}
+  ${PROPOSAL_FEEDBACK_FIELDS}
+  fragment FullProposalFields on Proposal {
+    id
+    status
+    title
+    description
+    createdBlock
+    createdTimestamp
 # lastUpdatedBlock
 # lastUpdatedTimestamp
   startBlock
@@ -112,28 +104,24 @@ fragment FullProposalFields on Proposal {
 }
 `;
 
-const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
-fragment CandidateContentSignatureFields on ProposalCandidateSignature {
-  reason
-  canceled
-  createdBlock
-  createdTimestamp
-  expirationTimestamp
-  sig
-  signer {
-    id
-    nounsRepresented {
+export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
+  fragment CandidateContentSignatureFields on ProposalCandidateSignature {
+    reason
+    canceled
+    createdBlock
+    createdTimestamp
+    expirationTimestamp
+    sig
+    signer {
       id
+      nounsRepresented { id }
     }
-  }
-  content {
-    id
-  }
-}`;
+    content { id }
+  }`;
 
-const DELEGATION_EVENT_FIELDS = `
-fragment DelegationEventFields on DelegationEvent {
-  id
+export const DELEGATION_EVENT_FIELDS = `
+  fragment DelegationEventFields on DelegationEvent {
+    id
   noun {
     id
     owner {
@@ -153,21 +141,15 @@ fragment DelegationEventFields on DelegationEvent {
   blockTimestamp
 }`;
 
-const TRANSFER_EVENT_FIELDS = `
-fragment TransferEventFields on TransferEvent {
-  id
-  noun {
+export const TRANSFER_EVENT_FIELDS = `
+  fragment TransferEventFields on TransferEvent {
     id
-  }
-  newHolder {
-    id
-  }
-  previousHolder {
-    id
-  }
-  blockNumber
-  blockTimestamp
-}`;
+    noun { id }
+    newHolder { id }
+    previousHolder { id }
+    blockNumber
+    blockTimestamp
+  }`;
 
 const createDelegatesQuery = ({
   includeVotes = false,
