@@ -6,16 +6,16 @@ import {
   decodeEventLog,
 } from "viem";
 import {
-  usePublicClient,
   useReadContract,
   useWriteContract,
   useSimulateContract,
   useSignTypedData,
-  useBlockNumber,
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
 import { useActions } from "../store.js";
+import usePublicClient from "./public-client.js";
+import useBlockNumber from "./block-number.js";
 import { useWallet } from "./wallet.js";
 import useChainId from "./chain-id.js";
 import useRegisterEvent from "./register-event.js";
@@ -30,8 +30,8 @@ export const useSendProposalCandidateFeedback = (
   { support, reason },
 ) => {
   const { address: accountAddress } = useWallet();
-  const { data: blockNumber } = useBlockNumber();
   const chainId = useChainId();
+  const blockNumber = useBlockNumber();
   const registerEvent = useRegisterEvent();
 
   const { addOptimitisicCandidateFeedbackPost } = useActions();

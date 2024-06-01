@@ -1,7 +1,7 @@
 import React from "react";
 import NextLink from "next/link";
 import { isAddress, getAddress as checksumEncodeAddress } from "viem";
-import { useBlockNumber, useEnsAddress } from "wagmi";
+import { useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import {
   array as arrayUtils,
@@ -29,6 +29,7 @@ import {
   useProposalCandidates,
   useProposals,
 } from "../store.js";
+import useBlockNumber from "../hooks/block-number.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -121,7 +122,7 @@ const getDelegateVotes = (delegate) => {
 };
 
 const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
-  const { data: latestBlockNumber } = useBlockNumber({
+  const latestBlockNumber = useBlockNumber({
     watch: true,
     cache: 20_000,
   });

@@ -4,13 +4,13 @@ import {
   useReadContract,
   useWriteContract,
   useSimulateContract,
-  useBlockNumber,
 } from "wagmi";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
 import { useActions } from "../store.js";
 import usePublicClient from "./public-client.js";
 import { useWallet } from "./wallet.js";
+import useBlockNumber from "./block-number.js";
 import useChainId from "./chain-id.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
@@ -88,7 +88,7 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
   const latestQuorumRef = React.useRef();
 
   const chainId = useChainId();
-  const { data: blockNumber } = useBlockNumber({ watch: true, cache: 20_000 });
+  const blockNumber = useBlockNumber({ watch: true, cache: 20_000 });
 
   const { data: adjustedTotalSupply } = useReadContract({
     address: getContractAddress(chainId),
@@ -233,7 +233,7 @@ export const useCastProposalVote = (
   { support, reason, enabled = true },
 ) => {
   const chainId = useChainId();
-  const { data: blockNumber } = useBlockNumber();
+  const blockNumber = useBlockNumber();
   const { address: accountAddress } = useWallet();
   const { addOptimitisicProposalVote } = useActions();
   const registerEvent = useRegisterEvent();

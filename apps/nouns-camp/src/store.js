@@ -1134,10 +1134,7 @@ export const useDelegateFetch = (id, options) => {
 };
 
 export const useProposalFetch = (id, options) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 10_000 });
   const onError = useLatestCallback(options?.onError);
 
   const { fetchProposal, fetchPropdatesForProposal } = useActions();
@@ -1160,10 +1157,7 @@ export const useProposalFetch = (id, options) => {
 };
 
 export const useActiveProposalsFetch = () => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 10_000 });
   const { fetchActiveProposals } = useActions();
   useFetch(
     blockNumber == null ? undefined : () => fetchActiveProposals(blockNumber),
@@ -1172,10 +1166,7 @@ export const useActiveProposalsFetch = () => {
 };
 
 export const useProposalCandidateFetch = (id, options) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 10_000,
-  });
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 10_000 });
   const onError = useLatestCallback(options?.onError);
 
   const { fetchProposalCandidate } = useActions();
@@ -1236,10 +1227,7 @@ export const useProposals = ({
   propdates = false,
   filter,
 } = {}) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 20_000,
-  });
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 20_000 });
 
   return useStore(
     React.useCallback(
@@ -1281,7 +1269,7 @@ export const useProposals = ({
 };
 
 export const useProposal = (id, { watch = true } = {}) => {
-  const { data: blockNumber } = useBlockNumber({ watch, cacheTime: 10_000 });
+  const blockNumber = useBlockNumber({ watch, cacheTime: 10_000 });
 
   return useStore(
     React.useCallback(
@@ -1309,10 +1297,7 @@ export const useProposalCandidates = ({
   includePromoted = false,
   includeProposalUpdates = false,
 } = {}) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 30_000,
-  });
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 30_000 });
 
   const candidatesById = useStore((s) => s.proposalCandidatesById);
   const proposalsById = useStore((s) => s.proposalsById);
@@ -1358,10 +1343,7 @@ export const useProposalCandidates = ({
 export const useProposalUpdateCandidates = ({
   includeTargetProposal = false,
 } = {}) => {
-  const { data: blockNumber } = useBlockNumber({
-    watch: true,
-    cacheTime: 30_000,
-  });
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 30_000 });
 
   const candidatesById = useStore((s) => s.proposalCandidatesById);
   const proposalsById = useStore((s) => s.proposalsById);
