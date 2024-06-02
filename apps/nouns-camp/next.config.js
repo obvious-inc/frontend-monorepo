@@ -35,7 +35,7 @@ const withSentry = (config) =>
   withSentryConfig(
     config,
     {
-      // silent: true, // Suppresses source map uploading logs during build
+      silent: true, // Suppresses source map uploading logs during build
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
     },
