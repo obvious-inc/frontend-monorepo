@@ -15,8 +15,8 @@ import useChainId from "./chain-id.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
 
-const getContractAddress = (chainId) =>
-  resolveIdentifier(chainId, "dao").address;
+const getContractAddress = () =>
+  resolveIdentifier("dao").address;
 
 export const useProposalThreshold = () => {
   const chainId = useChainId();

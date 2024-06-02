@@ -48,14 +48,14 @@ const decodeCalldataWithSignature = ({ signature, calldata }) => {
   }
 };
 
-export const parse = (data, { chainId }) => {
-  const nounsGovernanceContract = resolveIdentifier(chainId, "dao");
-  const nounsPayerContract = resolveIdentifier(chainId, "payer");
-  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
-  const nounsExecutorContract = resolveIdentifier(chainId, "executor");
-  const nounsTokenContract = resolveIdentifier(chainId, "token");
-  const wethTokenContract = resolveIdentifier(chainId, "weth-token");
-  const usdcTokenContract = resolveIdentifier(chainId, "usdc-token");
+export const parse = (data) => {
+  const nounsGovernanceContract = resolveIdentifier("dao");
+  const nounsPayerContract = resolveIdentifier("payer");
+  const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
+  const nounsExecutorContract = resolveIdentifier("executor");
+  const nounsTokenContract = resolveIdentifier("token");
+  const wethTokenContract = resolveIdentifier("weth-token");
+  const usdcTokenContract = resolveIdentifier("usdc-token");
 
   const transactions = data.targets.map((target, i) => ({
     target: target.toLowerCase(),
@@ -113,7 +113,7 @@ export const parse = (data, { chainId }) => {
       normalizeSignature(CREATE_STREAM_SIGNATURE)
     ) {
       const tokenContractAddress = functionInputs[2].toLowerCase();
-      const tokenContract = resolveAddress(chainId, tokenContractAddress);
+      const tokenContract = resolveAddress(tokenContractAddress);
       return {
         type: "stream",
         target,
@@ -273,12 +273,12 @@ export const parse = (data, { chainId }) => {
 };
 
 export const unparse = (transactions, { chainId }) => {
-  const nounsGovernanceContract = resolveIdentifier(chainId, "dao");
-  const nounsExecutorContract = resolveIdentifier(chainId, "executor");
-  const nounsTokenContract = resolveIdentifier(chainId, "token");
-  const wethTokenContract = resolveIdentifier(chainId, "weth-token");
-  const nounsPayerContract = resolveIdentifier(chainId, "payer");
-  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+  const nounsGovernanceContract = resolveIdentifier("dao");
+  const nounsExecutorContract = resolveIdentifier("executor");
+  const nounsTokenContract = resolveIdentifier("token");
+  const wethTokenContract = resolveIdentifier("weth-token");
+  const nounsPayerContract = resolveIdentifier("payer");
+  const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
   const nounsStreamFactoryContract = resolveIdentifier(
     chainId,
     "stream-factory",
@@ -691,7 +691,7 @@ export const buildActions = (transactions, { chainId }) => {
 };
 
 export const resolveAction = (a, { chainId }) => {
-  const nounsTokenBuyerContract = resolveIdentifier(chainId, "token-buyer");
+  const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
 
   const getParsedTransactions = () => {
     switch (a.type) {

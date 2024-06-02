@@ -1579,17 +1579,12 @@ const AmountWithCurrencyInput = ({
 
 const useFetchPredictedStreamContractAddress = () => {
   const publicClient = usePublicClient();
-  const chainId = useChainId();
 
   return React.useCallback(
     ({ amount: amount_, currency, receiverAddress, startDate, endDate }) => {
-      const executorContract = getContractWithIdentifier(chainId, "executor");
-      const streamFactoryContract = getContractWithIdentifier(
-        chainId,
-        "stream-factory",
-      );
+      const executorContract = getContractWithIdentifier("executor");
+      const streamFactoryContract = getContractWithIdentifier("stream-factory");
       const paymentTokenContract = getContractWithIdentifier(
-        chainId,
         `${currency}-token`,
       );
 
@@ -1631,7 +1626,7 @@ const useFetchPredictedStreamContractAddress = () => {
         ],
       });
     },
-    [publicClient, chainId],
+    [publicClient],
   );
 };
 

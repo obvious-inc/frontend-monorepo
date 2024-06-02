@@ -21,8 +21,8 @@ import useChainId from "./chain-id.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
 
-const getContractAddress = (chainId) =>
-  resolveIdentifier(chainId, "data").address;
+const getContractAddress = () =>
+  resolveIdentifier("data").address;
 
 export const useSendProposalCandidateFeedback = (
   proposerId,
@@ -489,7 +489,7 @@ export const useSignProposalCandidate = () => {
       domain: {
         name: "Nouns DAO",
         chainId,
-        verifyingContract: resolveIdentifier(chainId, "dao").address,
+        verifyingContract: resolveIdentifier("dao").address,
       },
       types:
         targetProposalId == null
