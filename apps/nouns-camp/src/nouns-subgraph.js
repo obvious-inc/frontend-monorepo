@@ -909,7 +909,7 @@ const parseProposalVersion = (v) => ({
   proposalId: v.proposal?.id,
 });
 
-export const parseProposal = (data, { chainId }) => {
+export const parseProposal = (data) => {
   const parsedData = { ...data };
 
   // Block numbers
@@ -984,7 +984,6 @@ export const parseProposal = (data, { chainId }) => {
 const hideProposalVote = (v) =>
   v.votes === 0 && (v.reason?.trim() ?? "") === "";
 
-const parseCandidateVersion = (v, { chainId }) => {
   const parsedVersion = { ...v };
 
   if (v.createdBlock != null)
@@ -1017,16 +1016,14 @@ const parseCandidateVersion = (v, { chainId }) => {
     );
 
   if (v.content?.targets != null)
-    parsedVersion.content.transactions = parseTransactions(v.content, {
-      chainId,
-    });
+    parsedVersion.content.transactions = parseTransactions(v.content);
 
   if (v.proposal != null) parsedVersion.candidateId = v.proposal.id;
 
   return parsedVersion;
 };
 
-export const parseCandidate = (data, { chainId }) => {
+export const parseCandidate = (data) => {
   const parsedData = {
     ...data,
     latestVersion: {
@@ -1058,17 +1055,13 @@ export const parseCandidate = (data, { chainId }) => {
   }
 
   if (data.latestVersion != null)
-    parsedData.latestVersion = parseCandidateVersion(data.latestVersion, {
-      chainId,
-    });
+    parsedData.latestVersion = parseCandidateVersion(data.latestVersion);
 
   if (data.feedbackPosts != null)
     parsedData.feedbackPosts = data.feedbackPosts.map(parseFeedbackPost);
 
   if (data.versions != null)
-    parsedData.versions = data.versions.map((v) =>
-      parseCandidateVersion(v, { chainId }),
-    );
+    parsedData.versions = data.versions.map(parseCandidateVersion);
 
   return parsedData;
 };
