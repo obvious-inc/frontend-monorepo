@@ -441,16 +441,16 @@ const createStore = ({ initialState }) =>
     const fetchProposalsVersions = async (proposalIds) =>
       subgraphFetch({
         query: `{
-          proposalVersions(
-            where: {
-              proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
-            }
-          ) {
-            createdAt
-            createdBlock
-            updateMessage
-            proposal { id }
-          }
+        # proposalVersions(
+        #   where: {
+        #     proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
+        #   }
+        # ) {
+        #   createdAt
+        #   createdBlock
+        #   updateMessage
+        #   proposal { id }
+        # }
         }`,
       });
 
@@ -459,14 +459,14 @@ const createStore = ({ initialState }) =>
         query: `
         ${CANDIDATE_FEEDBACK_FIELDS}
         query {
-          candidateFeedbacks(
-            where: {
-              candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
-            },
-            first: 1000
-          ) {
-            ...CandidateFeedbackFields
-          }
+        # candidateFeedbacks(
+        #   where: {
+        #     candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
+        #   },
+        #   first: 1000
+        # ) {
+        #   ...CandidateFeedbackFields
+        # }
         }`,
       });
 
@@ -479,55 +479,55 @@ const createStore = ({ initialState }) =>
           ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
           ${CANDIDATE_FEEDBACK_FIELDS}
           query {
-            proposalCandidate(id: ${JSON.stringify(id)}) {
-              id
-              slug
-              proposer
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              latestVersion {
-                id
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    ...CandidateContentSignatureFields
-                  }
-                }
-              }
-              versions {
-                id
-                createdBlock
-                createdTimestamp
-                updateMessage
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                }
-              }
-            }
-
-            candidateFeedbacks(
-              where: {
-                candidate_: { id: ${JSON.stringify(id)} }
-              }
-            ) {
-              ...CandidateFeedbackFields
-            }
+          # proposalCandidate(id: ${JSON.stringify(id)}) {
+          #   id
+          #   slug
+          #   proposer
+          #   canceledTimestamp
+          #   createdTimestamp
+          #   lastUpdatedTimestamp
+          #   createdBlock
+          #   canceledBlock
+          #   lastUpdatedBlock
+          #   latestVersion {
+          #     id
+          #     content {
+          #       title
+          #       description
+          #       targets
+          #       values
+          #       signatures
+          #       calldatas
+          #       matchingProposalIds
+          #       proposalIdToUpdate
+          #       contentSignatures {
+          #         ...CandidateContentSignatureFields
+          #       }
+          #     }
+          #   }
+          #   versions {
+          #     id
+          #     createdBlock
+          #     createdTimestamp
+          #     updateMessage
+          #     content {
+          #       title
+          #       description
+          #       targets
+          #       values
+          #       signatures
+          #       calldatas
+          #     }
+          #   }
+          # }
+          #
+          # candidateFeedbacks(
+          #   where: {
+          #     candidate_: { id: ${JSON.stringify(id)} }
+          #   }
+          # ) {
+          #   ...CandidateFeedbackFields
+          # }
           }`,
       });
 
@@ -560,37 +560,37 @@ const createStore = ({ initialState }) =>
         query: `
           ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
           query {
-            proposalCandidates(
-              where: {
-                id_in: [${ids.map((id) => JSON.stringify(id))}]
-              }
-            ) {
-              id
-              slug
-              proposer
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              latestVersion {
-                id
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    ...CandidateContentSignatureFields
-                  }
-                }
-              }
-            }
+          # proposalCandidates(
+          #   where: {
+          #     id_in: [${ids.map((id) => JSON.stringify(id))}]
+          #   }
+          # ) {
+          #   id
+          #   slug
+          #   proposer
+          #   canceledTimestamp
+          #   createdTimestamp
+          #   lastUpdatedTimestamp
+          #   createdBlock
+          #   canceledBlock
+          #   lastUpdatedBlock
+          #   latestVersion {
+          #     id
+          #     content {
+          #       title
+          #       description
+          #       targets
+          #       values
+          #       signatures
+          #       calldatas
+          #       matchingProposalIds
+          #       proposalIdToUpdate
+          #       contentSignatures {
+          #         ...CandidateContentSignatureFields
+          #       }
+          #     }
+          #   }
+          # }
           }`,
       });
     };
@@ -760,25 +760,25 @@ const createStore = ({ initialState }) =>
                 ...FullProposalFields
               }
 
-              proposalVersions(where: {proposal: "${id}"}) {
-                createdAt
-                createdBlock
-                updateMessage
-              }
-
-              proposalCandidateVersions(
-                where: {
-                  content_: {
-                    matchingProposalIds_contains: ["${id}"]
-                  }
-                }
-              ) {
-                createdBlock
-                createdTimestamp
-                updateMessage
-                proposal { id }
-                content { matchingProposalIds }
-              }
+            # proposalVersions(where: {proposal: "${id}"}) {
+            #   createdAt
+            #   createdBlock
+            #   updateMessage
+            # }
+            #
+            # proposalCandidateVersions(
+            #   where: {
+            #     content_: {
+            #       matchingProposalIds_contains: ["${id}"]
+            #     }
+            #   }
+            # ) {
+            #   createdBlock
+            #   createdTimestamp
+            #   updateMessage
+            #   proposal { id }
+            #   content { matchingProposalIds }
+            # }
             }`,
         });
 
@@ -901,18 +901,18 @@ const createStore = ({ initialState }) =>
                   status
                   createdBlock
                   createdTimestamp
-                  lastUpdatedBlock
-                  lastUpdatedTimestamp
+                # lastUpdatedBlock
+                # lastUpdatedTimestamp
                   startBlock
                   endBlock
-                  updatePeriodEndBlock
-                  objectionPeriodEndBlock
-                  canceledBlock
-                  canceledTimestamp
-                  queuedBlock
-                  queuedTimestamp
-                  executedBlock
-                  executedTimestamp
+                # updatePeriodEndBlock
+                # objectionPeriodEndBlock
+                # canceledBlock
+                # canceledTimestamp
+                # queuedBlock
+                # queuedTimestamp
+                # executedBlock
+                # executedTimestamp
                   forVotes
                   againstVotes
                   abstainVotes
@@ -1007,34 +1007,35 @@ const createStore = ({ initialState }) =>
           query: `
             ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
             query {
-              proposalCandidates(
-                where: { proposer: "${accountAddress}" }
-              ) {
-                id
-                slug
-                proposer
-                createdBlock
-                canceledBlock
-                lastUpdatedBlock
-                canceledTimestamp
-                createdTimestamp
-                lastUpdatedTimestamp
-                latestVersion {
-                  id
-                  content {
-                    title
-                    matchingProposalIds
-                    proposalIdToUpdate
-                    contentSignatures {
-                      ...CandidateContentSignatureFields
-                    }
-                  }
-                }
-              }
+            # proposalCandidates(
+            #   where: { proposer: "${accountAddress}" }
+            # ) {
+            #   id
+            #   slug
+            #   proposer
+            #   createdBlock
+            #   canceledBlock
+            #   lastUpdatedBlock
+            #   canceledTimestamp
+            #   createdTimestamp
+            #   lastUpdatedTimestamp
+            #   latestVersion {
+            #     id
+            #     content {
+            #       title
+            #       matchingProposalIds
+            #       proposalIdToUpdate
+            #       contentSignatures {
+            #         ...CandidateContentSignatureFields
+            #       }
+            #     }
+            #   }
+            # }
             }`,
         }),
       fetchBrowseScreenData: async (client, { skip = 0, first = 1000 }) => {
-        const { proposals, proposalCandidates } = await subgraphFetch({
+        const proposalCandidates = []
+        const { proposals } = await subgraphFetch({
           query: `
             ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
             query {
@@ -1049,53 +1050,53 @@ const createStore = ({ initialState }) =>
                 status
                 createdBlock
                 createdTimestamp
-                lastUpdatedBlock
-                lastUpdatedTimestamp
+              # lastUpdatedBlock
+              # lastUpdatedTimestamp
                 startBlock
                 endBlock
-                updatePeriodEndBlock
-                objectionPeriodEndBlock
-                canceledBlock
-                canceledTimestamp
-                queuedBlock
-                queuedTimestamp
-                executedBlock
-                executedTimestamp
+              # updatePeriodEndBlock
+              # objectionPeriodEndBlock
+              # canceledBlock
+              # canceledTimestamp
+              # queuedBlock
+              # queuedTimestamp
+              # executedBlock
+              # executedTimestamp
                 forVotes
                 againstVotes
                 abstainVotes
                 quorumVotes
                 executionETA
                 proposer { id }
-                signers { id }
+              # signers { id }
               }
-              proposalCandidates(
-                orderBy: createdBlock,
-                orderDirection: desc,
-                skip: ${skip},
-                first: ${first}
-              ) {
-                id
-                slug
-                proposer
-                createdBlock
-                canceledBlock
-                lastUpdatedBlock
-                canceledTimestamp
-                createdTimestamp
-                lastUpdatedTimestamp
-                latestVersion {
-                  id
-                  content {
-                    title
-                    matchingProposalIds
-                    proposalIdToUpdate
-                    contentSignatures {
-                      ...CandidateContentSignatureFields
-                    }
-                  }
-                }
-              }
+            # proposalCandidates(
+            #   orderBy: createdBlock,
+            #   orderDirection: desc,
+            #   skip: ${skip},
+            #   first: ${first}
+            # ) {
+            #   id
+            #   slug
+            #   proposer
+            #   createdBlock
+            #   canceledBlock
+            #   lastUpdatedBlock
+            #   canceledTimestamp
+            #   createdTimestamp
+            #   lastUpdatedTimestamp
+            #   latestVersion {
+            #     id
+            #     content {
+            #       title
+            #       matchingProposalIds
+            #       proposalIdToUpdate
+            #       contentSignatures {
+            #         ...CandidateContentSignatureFields
+            #       }
+            #     }
+            #   }
+            # }
             }`,
         });
 
@@ -1134,46 +1135,46 @@ const createStore = ({ initialState }) =>
                 votes { ...VoteFields }
               }
 
-              proposalVersions(
-                where: {
-                  proposal_in: [${proposals.map((p) => `"${p.id}"`)}]
-                }
-              ) {
-                createdAt
-                createdBlock
-                updateMessage
-                proposal { id }
-              }
+            # proposalVersions(
+            #   where: {
+            #     proposal_in: [${proposals.map((p) => `"${p.id}"`)}]
+            #   }
+            # ) {
+            #   createdAt
+            #   createdBlock
+            #   updateMessage
+            #   proposal { id }
+            # }
 
-              proposalCandidateVersions(
-                where: {
-                  proposal_in: [${proposalCandidates.map((c) => JSON.stringify(c.id))}]
-                }
-              ) {
-                id
-                createdBlock
-                createdTimestamp
-                updateMessage
-                proposal { id }
-              }
+            # proposalCandidateVersions(
+            #   where: {
+            #     proposal_in: [${proposalCandidates.map((c) => JSON.stringify(c.id))}]
+            #   }
+            # ) {
+            #   id
+            #   createdBlock
+            #   createdTimestamp
+            #   updateMessage
+            #   proposal { id }
+            # }
 
-              proposalFeedbacks(
-                where: {
-                  proposal_in: [${proposals.map((p) => `"${p.id}"`)}]
-                },
-                first: 1000
-              ) {
-                ...ProposalFeedbackFields
-              }
+            # proposalFeedbacks(
+            #   where: {
+            #     proposal_in: [${proposals.map((p) => `"${p.id}"`)}]
+            #   },
+            #   first: 1000
+            # ) {
+            #   ...ProposalFeedbackFields
+            # }
 
-              candidateFeedbacks(
-                where: {
-                  candidate_in: [${proposalCandidates.map((c) => JSON.stringify(c.id))}]
-                },
-                first: 1000
-              ) {
-                ...CandidateFeedbackFields
-              }
+            # candidateFeedbacks(
+            #   where: {
+            #     candidate_in: [${proposalCandidates.map((c) => JSON.stringify(c.id))}]
+            #   },
+            #   first: 1000
+            # ) {
+            #   ...CandidateFeedbackFields
+            # }
             }`,
         });
       },
@@ -1215,56 +1216,56 @@ const createStore = ({ initialState }) =>
                     status
                     createdBlock
                     createdTimestamp
-                    lastUpdatedBlock
-                    lastUpdatedTimestamp
+                  # lastUpdatedBlock
+                  # lastUpdatedTimestamp
                     startBlock
                     endBlock
-                    updatePeriodEndBlock
-                    objectionPeriodEndBlock
-                    canceledBlock
-                    canceledTimestamp
-                    queuedBlock
-                    queuedTimestamp
-                    executedBlock
-                    executedTimestamp
+                  # updatePeriodEndBlock
+                  # objectionPeriodEndBlock
+                  # canceledBlock
+                  # canceledTimestamp
+                  # queuedBlock
+                  # queuedTimestamp
+                  # executedBlock
+                  # executedTimestamp
                     forVotes
                     againstVotes
                     abstainVotes
                     quorumVotes
                     executionETA
                     proposer { id }
-                    signers { id }
+                  # signers { id }
                     votes { ...VoteFields }
                   }
 
-                  proposalCandidates(
-                    orderBy: createdBlock,
-                    orderDirection: desc,
-                    skip: ${skip},
-                    first: ${first},
-                    where: { proposer: "${id}" }
-                  ) {
-                    id
-                    slug
-                    proposer
-                    createdBlock
-                    canceledBlock
-                    lastUpdatedBlock
-                    canceledTimestamp
-                    createdTimestamp
-                    lastUpdatedTimestamp
-                    latestVersion {
-                      id
-                      content {
-                        title
-                        matchingProposalIds
-                        proposalIdToUpdate
-                        contentSignatures {
-                          ...CandidateContentSignatureFields
-                        }
-                      }
-                    }
-                  }
+                # proposalCandidates(
+                #   orderBy: createdBlock,
+                #   orderDirection: desc,
+                #   skip: ${skip},
+                #   first: ${first},
+                #   where: { proposer: "${id}" }
+                # ) {
+                #   id
+                #   slug
+                #   proposer
+                #   createdBlock
+                #   canceledBlock
+                #   lastUpdatedBlock
+                #   canceledTimestamp
+                #   createdTimestamp
+                #   lastUpdatedTimestamp
+                #   latestVersion {
+                #     id
+                #     content {
+                #       title
+                #       matchingProposalIds
+                #       proposalIdToUpdate
+                #       contentSignatures {
+                #         ...CandidateContentSignatureFields
+                #       }
+                #     }
+                #   }
+                # }
                   votes (
                     orderBy: blockNumber,
                     orderDirection: desc,
@@ -1274,20 +1275,20 @@ const createStore = ({ initialState }) =>
                   ) {
                     ...VoteFields
                   }
-                  candidateFeedbacks(
-                    skip: ${skip},
-                    first: ${first},
-                    where: { voter: "${id}" }
-                  ) {
-                    ...CandidateFeedbackFields
-                  }
-                  proposalFeedbacks(
-                    skip: ${skip},
-                    first: ${first},
-                    where: { voter: "${id}" }
-                  ) {
-                    ...ProposalFeedbackFields
-                  }
+                # candidateFeedbacks(
+                #   skip: ${skip},
+                #   first: ${first},
+                #   where: { voter: "${id}" }
+                # ) {
+                #   ...CandidateFeedbackFields
+                # }
+                # proposalFeedbacks(
+                #   skip: ${skip},
+                #   first: ${first},
+                #   where: { voter: "${id}" }
+                # ) {
+                #   ...ProposalFeedbackFields
+                # }
                   nouns(where: { owner: "${id}" }) {
                     id
                     seed {
@@ -1339,11 +1340,11 @@ const createStore = ({ initialState }) =>
             const { proposalCandidateSignatures } = await subgraphFetch({
               query: `
                 query {
-                  proposalCandidateSignatures(
-                    where: { signer: "${id.toLowerCase()}" }
-                  ) {
-                    content { id }
-                  }
+                # proposalCandidateSignatures(
+                #   where: { signer: "${id.toLowerCase()}" }
+                # ) {
+                #   content { id }
+                # }
                 }`,
             });
 
@@ -1354,13 +1355,13 @@ const createStore = ({ initialState }) =>
             const { proposalCandidateVersions } = await subgraphFetch({
               query: `
                 query {
-                  proposalCandidateVersions(
-                    where: {
-                      content_in: [${contentIds.map((id) => `"${id}"`)}]
-                    }
-                  ) {
-                    id
-                  }
+                # proposalCandidateVersions(
+                #   where: {
+                #     content_in: [${contentIds.map((id) => `"${id}"`)}]
+                #   }
+                # ) {
+                #   id
+                # }
                 }`,
             });
 
@@ -1368,38 +1369,38 @@ const createStore = ({ initialState }) =>
               query: `
                 ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
                 query {
-                  proposalCandidates(
-                    where: {
-                      latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
-                    }
-                  ) {
-                    id
-                    slug
-                    proposer
-                    canceledTimestamp
-                    createdTimestamp
-                    lastUpdatedTimestamp
-                    createdBlock
-                    canceledBlock
-                    lastUpdatedBlock
-                    latestVersion {
-                      id
-                      content {
-                        title
-                        description
-                        targets
-                        values
-                        signatures
-                        calldatas
-                        matchingProposalIds
-                        proposalIdToUpdate
-                        contentSignatures {
-                          ...CandidateContentSignatureFields
-                        }
-                      }
-                    }
-                    versions { id }
-                  }
+                # proposalCandidates(
+                #   where: {
+                #     latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
+                #   }
+                # ) {
+                #   id
+                #   slug
+                #   proposer
+                #   canceledTimestamp
+                #   createdTimestamp
+                #   lastUpdatedTimestamp
+                #   createdBlock
+                #   canceledBlock
+                #   lastUpdatedBlock
+                #   latestVersion {
+                #     id
+                #     content {
+                #       title
+                #       description
+                #       targets
+                #       values
+                #       signatures
+                #       calldatas
+                #       matchingProposalIds
+                #       proposalIdToUpdate
+                #       contentSignatures {
+                #         ...CandidateContentSignatureFields
+                #       }
+                #     }
+                #   }
+                #   versions { id }
+                # }
                 }`,
             });
           })(),
@@ -1455,24 +1456,24 @@ const createStore = ({ initialState }) =>
               ${PROPOSAL_FEEDBACK_FIELDS}
               ${VOTE_FIELDS}
               query {
-                candidateFeedbacks(
-                  where: {
-                    createdBlock_gte: ${startBlock},
-                    createdBlock_lte: ${endBlock}
-                  },
-                  first: 1000
-                ) {
-                  ...CandidateFeedbackFields
-                }
-                proposalFeedbacks(
-                  where: {
-                    createdBlock_gte: ${startBlock},
-                    createdBlock_lte: ${endBlock}
-                  },
-                  first: 1000
-                ) {
-                  ...ProposalFeedbackFields
-                }
+              # candidateFeedbacks(
+              #   where: {
+              #     createdBlock_gte: ${startBlock},
+              #     createdBlock_lte: ${endBlock}
+              #   },
+              #   first: 1000
+              # ) {
+              #   ...CandidateFeedbackFields
+              # }
+              # proposalFeedbacks(
+              #   where: {
+              #     createdBlock_gte: ${startBlock},
+              #     createdBlock_lte: ${endBlock}
+              #   },
+              #   first: 1000
+              # ) {
+              #   ...ProposalFeedbackFields
+              # }
                 votes(
                   where: {
                     blockNumber_gte: ${startBlock},
@@ -1513,26 +1514,26 @@ const createStore = ({ initialState }) =>
               ${TRANSFER_EVENT_FIELDS}
               ${DELEGATION_EVENT_FIELDS}
               query {
-                candidateFeedbacks(
-                  where: {
-                    voter: "${voterAddress}",
-                    createdBlock_gte: ${startBlock},
-                    createdBlock_lte: ${endBlock}
-                  },
-                  first: 1000
-                ) {
-                  ...CandidateFeedbackFields
-                }
-                proposalFeedbacks(
-                  where: {
-                    voter: "${voterAddress}",
-                    createdBlock_gte: ${startBlock},
-                    createdBlock_lte: ${endBlock}
-                  },
-                  first: 1000
-                ) {
-                  ...ProposalFeedbackFields
-                }
+              # candidateFeedbacks(
+              #   where: {
+              #     voter: "${voterAddress}",
+              #     createdBlock_gte: ${startBlock},
+              #     createdBlock_lte: ${endBlock}
+              #   },
+              #   first: 1000
+              # ) {
+              #   ...CandidateFeedbackFields
+              # }
+              # proposalFeedbacks(
+              #   where: {
+              #     voter: "${voterAddress}",
+              #     createdBlock_gte: ${startBlock},
+              #     createdBlock_lte: ${endBlock}
+              #   },
+              #   first: 1000
+              # ) {
+              #   ...ProposalFeedbackFields
+              # }
                 votes(
                   where: {
                     voter: "${voterAddress}",
