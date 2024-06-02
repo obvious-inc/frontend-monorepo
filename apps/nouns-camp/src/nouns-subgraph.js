@@ -66,18 +66,18 @@ export const FULL_PROPOSAL_FIELDS = `
     description
     createdBlock
     createdTimestamp
-# lastUpdatedBlock
-# lastUpdatedTimestamp
+  # lastUpdatedBlock
+  # lastUpdatedTimestamp
     startBlock
     endBlock
-# updatePeriodEndBlock
-# objectionPeriodEndBlock
-# canceledBlock
-# canceledTimestamp
-# queuedBlock
-# queuedTimestamp
-# executedBlock
-# executedTimestamp
+  # updatePeriodEndBlock
+  # objectionPeriodEndBlock
+  # canceledBlock
+  # canceledTimestamp
+  # queuedBlock
+  # queuedTimestamp
+  # executedBlock
+  # executedTimestamp
     targets
     signatures
     calldatas
@@ -88,13 +88,9 @@ export const FULL_PROPOSAL_FIELDS = `
     executionETA
     quorumVotes
     proposer { id }
-# signers {
-#   id
-# }
+  # signers { id }
     votes { ...VoteFields }
-# feedbackPosts {
-#   ...ProposalFeedbackFields
-# }
+  # feedbackPosts { ...ProposalFeedbackFields }
 }
 `;
 
@@ -116,17 +112,10 @@ export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
 export const DELEGATION_EVENT_FIELDS = `
   fragment DelegationEventFields on DelegationEvent {
     id
-  noun {
-    id
-    owner {
-      id
-    }
-  }
+    noun { id owner { id } }
     newDelegate { id }
     previousDelegate { id }
-# delegator {
-#   id
-# }
+  # delegator { id }
     blockNumber
     blockTimestamp
   }`;
