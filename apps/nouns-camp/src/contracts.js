@@ -1,5 +1,6 @@
+import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
-import { mainnet, sepolia } from "./chains.js";
+import { CHAIN_ID } from "./constants/env.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -126,16 +127,16 @@ const metaByIdentifier = {
   },
 };
 
-export const resolveIdentifier = (chainId, identifier) => {
-  const address = addressByIdentifierByChainId[chainId]?.[identifier];
+export const resolveIdentifier = (identifier) => {
+  const address = addressByIdentifierByChainId[CHAIN_ID]?.[identifier];
   if (address == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, ...meta };
 };
 
-export const resolveAddress = (chainId, address) => {
+export const resolveAddress = (address) => {
   const identifier =
-    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
+    identifierByAddressByChainId[CHAIN_ID]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };
