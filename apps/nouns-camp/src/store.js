@@ -1102,11 +1102,12 @@ const createStore = ({ initialState }) =>
 
         const accountAddresses = [];
 
-        for (const p of proposals)
+        for (const p of proposals) {
           accountAddresses.push(
             p.proposerId,
-            ...(p.signers ?? []).map((s) => s.id),
+            ...(p.signers ?? []).map((s) => s ? s.id : undefined),
           );
+        }
 
         for (const c of proposalCandidates)
           accountAddresses.push(
