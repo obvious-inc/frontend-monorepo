@@ -30,7 +30,6 @@ import { fetchContractInfo } from "../hooks/etherscan-contract-info.js";
 import useEthToUsdRate, {
   Provider as EthToUsdRateProvider,
 } from "../hooks/eth-to-usd-rate.js";
-import useChainId from "../hooks/chain-id.js";
 import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
 
