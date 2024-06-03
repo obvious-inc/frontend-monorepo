@@ -1,17 +1,19 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
-import { useEnsName, useEnsAvatar } from "wagmi";
+import { useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
-import InlineUserButton from "@shades/ui-web/inline-user-button";
+import InlineButton from "@shades/ui-web/inline-button";
+import { CHAIN_ID } from "../constants/env.js";
 import { useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import useEnsName from "../hooks/ens-name.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
@@ -30,6 +32,8 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       showAvatar = false,
       avatarFallback = false,
       avatarBackground,
+      fallbackImageUrl,
+      fallbackDisplayName,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
       children,
@@ -43,6 +47,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
         size="1.2em"
         placeholder={avatarFallback}
         background={avatarBackground}
+        fallbackImageUrl={fallbackImageUrl}
         css={css({
           display: "inline-block",
           marginRight: "0.3em",
@@ -56,10 +61,11 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
 
       if (avatar == null)
         return (
-          <InlineUserButton
+          <InlineAccountButton
             ref={triggerRef}
-            walletAddress={accountAddress}
+            address={accountAddress}
             variant={buttonVariant}
+            fallbackDisplayName={fallbackDisplayName}
             {...props}
           />
         );
@@ -78,11 +84,12 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
           })}
         >
           {avatar}
-          <InlineUserButton
+          <InlineAccountButton
             data-display-name
             component="div"
-            walletAddress={accountAddress}
+            address={accountAddress}
             variant={buttonVariant}
+            fallbackDisplayName={fallbackDisplayName}
             {...props}
           />
         </button>
@@ -104,7 +111,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const { address: connectedAccountAddress } = useWallet();
   const connectedAccount = useAccount(connectedAccountAddress);
 
-  const isMe = accountAddress?.toLowerCase() === connectedAccountAddress?.toLowerCase();
+  const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
   const enableDelegation = connectedAccount?.nouns.length > 0;
 
@@ -115,10 +122,13 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     checksumEncodeAddress(accountAddress),
   );
 
-  const { data: ensName } = useEnsName({ address: accountAddress });
+  const ensName = useEnsName(accountAddress);
   const { data: ensAvatarUrl } = useEnsAvatar({
     name: ensName,
-    enabled: ensName != null,
+    chainId: CHAIN_ID,
+    query: {
+      enabled: ensName != null,
+    },
   });
 
   const { open: openDelegationDialog } = useDialog("delegation");
@@ -430,5 +440,33 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     </div>
   );
 });
+
+const InlineAccountButton = React.forwardRef(
+  (
+    { address, variant = "button", fallbackDisplayName, children, ...props },
+    ref,
+  ) => {
+    const displayName = useAccountDisplayName(address);
+    const displayNameOrFallback =
+      fallbackDisplayName == null ||
+      displayName !== ethereumUtils.truncateAddress(address)
+        ? displayName
+        : fallbackDisplayName;
+
+    return (
+      // {children} need to be rendered to work in Slate editor
+      <InlineButton
+        ref={ref}
+        variant={variant}
+        {...props}
+        css={css({ userSelect: "text" })}
+      >
+        {variant === "button" && "@"}
+        {displayNameOrFallback}
+        {children}
+      </InlineButton>
+    );
+  },
+);
 
 export default AccountPreviewPopoverTrigger;

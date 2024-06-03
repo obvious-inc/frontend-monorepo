@@ -3,83 +3,78 @@ import { buildFeed as buildCandidateFeed } from "./candidates.js";
 import { buildFeed as buildProposalFeed } from "./proposals.js";
 import { resolveIdentifier } from "../contracts.js";
 
-export const buildEventsFeed = (delegate, account, { chainId }) => {
+const buildEventsFeed = (delegate, account) => {
   if (account == null) return [];
 
   const fromAuctionHouse = (e) =>
-    e.previousAccountId.toLowerCase() ===
-    resolveIdentifier(chainId, "auction-house")?.address?.toLowerCase();
+    e.previousAccountId === resolveIdentifier("auction-house").address;
 
   const toAuctionHouse = (e) =>
-    e.newAccountId.toLowerCase() ===
-    resolveIdentifier(chainId, "auction-house")?.address?.toLowerCase();
+    e.newAccountId === resolveIdentifier("auction-house").address;
+
+  const events = account.events ?? [];
 
   // transfer events always come with an associated delegate event, ignore the latter
   const uniqueEvents = arrayUtils.unique(
-    (e1, e2) => {
-      if (e1.id === e2.id) return true;
-    },
+    (e1, e2) => e1.id === e2.id,
     // transfer events have to be first here to take precedence
-    [
-      ...account.events.filter((e) => e.type === "transfer"),
-      ...account.events.filter((e) => e.type === "delegate"),
-    ],
+    arrayUtils.sortBy(
+      { value: (e) => e.type === "transfer", order: "asc" },
+      events,
+    ),
   );
 
-  const auctionBoughtEventItems =
-    uniqueEvents
-      ?.filter((e) => e.type === "transfer" && fromAuctionHouse(e))
-      .map((e) => ({
-        type: "noun-auction-bought",
-        id: `${e.nounId}-auction-bought-${e.id}`,
+  const auctionBoughtEventItems = uniqueEvents
+    .filter((e) => e.type === "transfer" && fromAuctionHouse(e))
+    .map((e) => ({
+      type: "noun-auction-bought",
+      id: `${e.nounId}-auction-bought-${e.id}`,
+      timestamp: e.blockTimestamp,
+      blockNumber: e.blockNumber,
+      nounId: e.nounId,
+      authorAccount: e.newAccountId,
+      fromAccount: e.previousAccountId,
+      toAccount: e.newAccountId,
+      transactionHash: e.id.split("_")[0],
+    }));
+
+  const delegatedEventItems = uniqueEvents
+    .filter((e) => e.type === "delegate" && !fromAuctionHouse(e))
+    .map((e) => {
+      const eventType =
+        delegate?.id === e.previousAccountId && delegate?.id !== e.delegatorId
+          ? "noun-undelegated"
+          : "noun-delegated";
+      return {
+        type: eventType,
+        id: `${e.nounId}-delegated-${e.id}`,
         timestamp: e.blockTimestamp,
         blockNumber: e.blockNumber,
         nounId: e.nounId,
-        authorAccount: e.newAccountId,
+        authorAccount: e.delegatorId,
         fromAccount: e.previousAccountId,
         toAccount: e.newAccountId,
         transactionHash: e.id.split("_")[0],
-      })) ?? [];
+      };
+    });
 
-  const delegatedEventItems =
-    uniqueEvents
-      ?.filter((e) => e.type === "delegate" && !fromAuctionHouse(e))
-      .map((e) => {
-        const eventType =
-          delegate?.id === e.previousAccountId && delegate?.id !== e.delegatorId
-            ? "noun-undelegated"
-            : "noun-delegated";
-        return {
-          type: eventType,
-          id: `${e.nounId}-delegated-${e.id}`,
-          timestamp: e.blockTimestamp,
-          blockNumber: e.blockNumber,
-          nounId: e.nounId,
-          authorAccount: e.delegatorId,
-          fromAccount: e.previousAccountId,
-          toAccount: e.newAccountId,
-          transactionHash: e.id.split("_")[0],
-        };
-      }) ?? [];
-
-  const transferredEventItems =
-    uniqueEvents
-      ?.filter(
-        (e) =>
-          e.type === "transfer" && !fromAuctionHouse(e) && !toAuctionHouse(e),
-      )
-      .map((e) => ({
-        type: "noun-transferred",
-        id: `${e.nounId}-transferred-${e.id}`,
-        timestamp: e.blockTimestamp,
-        blockNumber: e.blockNumber,
-        nounId: e.nounId,
-        authorAccount: e.previousAccountId,
-        fromAccount: e.previousAccountId,
-        toAccount: e.newAccountId,
-        transactionHash: e.id.split("_")[0],
-        accountRef: delegate?.id,
-      })) ?? [];
+  const transferredEventItems = uniqueEvents
+    .filter(
+      (e) =>
+        e.type === "transfer" && !fromAuctionHouse(e) && !toAuctionHouse(e),
+    )
+    .map((e) => ({
+      type: "noun-transferred",
+      id: `${e.nounId}-transferred-${e.id}`,
+      timestamp: e.blockTimestamp,
+      blockNumber: e.blockNumber,
+      nounId: e.nounId,
+      authorAccount: e.previousAccountId,
+      fromAccount: e.previousAccountId,
+      toAccount: e.newAccountId,
+      transactionHash: e.id.split("_")[0],
+      accountRef: delegate?.id,
+    }));
 
   const groupedAllEventItems = arrayUtils.groupBy(
     (e) => `${e.transactionHash}-${e.type}-${e.fromAccount}-${e.toAccount}`,
@@ -95,9 +90,6 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
     return {
       ...lastEvent,
       id: `${lastEvent.blockNumber}-${lastEvent.transactionHash}-${lastEvent.type}-${lastEvent.fromAccount}-${lastEvent.toAccount}`,
-      blockNumber: lastEvent.blockNumber,
-      timestamp: lastEvent.timestamp,
-      transactionHash: lastEvent.transactionHash,
       nouns: group.map((e) => e.nounId),
     };
   });
@@ -105,10 +97,7 @@ export const buildEventsFeed = (delegate, account, { chainId }) => {
   return allEventItems;
 };
 
-export const buildFeed = (
-  delegate,
-  { proposals, candidates, account, chainId },
-) => {
+export const buildFeed = (delegate, { proposals, candidates, account }) => {
   if (delegate == null) return [];
 
   const propFeedItems =
@@ -127,8 +116,7 @@ export const buildFeed = (
         (i) => i.authorAccount?.toLowerCase() === delegate?.id.toLowerCase(),
       ) ?? [];
 
-  const eventItems =
-    buildEventsFeed(delegate, account, { chainId }).flat() ?? [];
+  const eventItems = buildEventsFeed(delegate, account).flat() ?? [];
 
   const items = [...propFeedItems, ...candidateFeedItems, ...eventItems];
   return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);

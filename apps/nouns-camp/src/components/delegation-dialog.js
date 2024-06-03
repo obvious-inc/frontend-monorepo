@@ -1,7 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
 import { isAddress } from "viem";
-import { useEnsAddress } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Button from "@shades/ui-web/button";
@@ -12,6 +11,7 @@ import {
   useAccountFetch,
   useDelegateFetch,
 } from "../store.js";
+import useEnsAddress from "../hooks/ens-address.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useSetDelegate } from "../hooks/token-contract.js";
@@ -59,11 +59,8 @@ const Content = ({ targetAddress, titleProps, dismiss }) => {
   const [submittedSuccessfulTransaction, setSuccessfulTransaction] =
     React.useState(false);
 
-  const { data: ensAddress } = useEnsAddress({
-    name: accountQuery.trim(),
-    query: {
-      enabled: accountQuery.trim().split("."),
-    },
+  const ensAddress = useEnsAddress(accountQuery.trim(), {
+    enabled: accountQuery.trim().split("."),
   });
 
   const nounsRepresented = delegate?.nounsRepresented ?? [];

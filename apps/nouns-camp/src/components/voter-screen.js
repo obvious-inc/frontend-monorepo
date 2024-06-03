@@ -1,7 +1,7 @@
 import React from "react";
 import NextLink from "next/link";
 import { isAddress, getAddress as checksumEncodeAddress } from "viem";
-import { useBlockNumber, useEnsName, useEnsAddress } from "wagmi";
+import { useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import {
   array as arrayUtils,
@@ -9,12 +9,12 @@ import {
 } from "@shades/common/utils";
 import { useCachedState } from "@shades/common/app";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Select from "@shades/ui-web/select";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
+import { CHAIN_ID } from "../constants/env.js";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
@@ -30,9 +30,13 @@ import {
   useProposalCandidates,
   useProposals,
 } from "../store.js";
+import useBlockNumber from "../hooks/block-number.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import { useSearchParams } from "../hooks/navigation.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
+import useEnsName from "../hooks/ens-name.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
@@ -44,7 +48,6 @@ import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger, {
   DelegationStatusDot,
 } from "./noun-preview-popover-trigger.js";
-import useChainId from "../hooks/chain-id.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -58,7 +61,6 @@ const isDebugSession =
   new URLSearchParams(location.search).get("debug") != null;
 
 const useFeedItems = (accountAddress, { filter } = {}) => {
-  const chainId = useChainId();
   const delegate = useDelegate(accountAddress);
 
   const proposals = useProposals({ state: true, propdates: true });
@@ -73,7 +75,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
     const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
     const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
     const buildNounRepresentationItems = () =>
-      buildVoterFeed(delegate, { account, chainId });
+      buildVoterFeed(delegate, { account });
 
     const buildFeedItems = () => {
       switch (filter) {
@@ -89,7 +91,6 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
               proposals,
               candidates,
               account,
-              chainId,
             }),
           ];
       }
@@ -99,7 +100,7 @@ const useFeedItems = (accountAddress, { filter } = {}) => {
       { value: (i) => i.blockNumber, order: "desc" },
       buildFeedItems(),
     );
-  }, [delegate, proposals, candidates, account, chainId, filter]);
+  }, [delegate, proposals, candidates, account, filter]);
 };
 
 const getDelegateVotes = (delegate) => {
@@ -120,7 +121,7 @@ const getDelegateVotes = (delegate) => {
 };
 
 const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
-  const { data: latestBlockNumber } = useBlockNumber({
+  const latestBlockNumber = useBlockNumber({
     watch: true,
     cache: 20_000,
   });
@@ -179,10 +180,8 @@ const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 });
 
 const FeedSidebar = React.memo(({ voterAddress }) => {
-  const [filter, setFilter] = useCachedState(
-    "voter-screen:activity-filter",
-    "all",
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = searchParams.get("feed-filter") ?? "all";
 
   return (
     <React.Suspense fallback={null}>
@@ -205,7 +204,15 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
               { value: "representation", label: "Delegation activity only" },
             ]}
             onChange={(value) => {
-              setFilter(value);
+              setSearchParams(
+                (p) => {
+                  const newParams = new URLSearchParams(p);
+                  if (value === "all") newParams.delete("feed-filter");
+                  else newParams.set("feed-filter", value);
+                  return newParams;
+                },
+                { replace: true },
+              );
             }}
             fullWidth={false}
             width="max-content"
@@ -302,7 +309,7 @@ const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
   const account = useAccount(voterAddress);
   const delegateDisplayName = useAccountDisplayName(account?.delegateId);
-  const { data: ensName } = useEnsName({ address: account?.delegateId });
+  const ensName = useEnsName(account?.delegateId);
 
   const delegate = useDelegate(voterAddress);
   const voteCount = delegate?.delegatedVotes ?? 0;
@@ -1017,6 +1024,7 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
 
   const { data: ensAddress, isPending: isFetching } = useEnsAddress({
     name: addressOrEnsName,
+    chainId: CHAIN_ID,
     query: {
       enabled: addressOrEnsName.includes("."),
     },

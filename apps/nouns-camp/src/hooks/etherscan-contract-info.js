@@ -1,7 +1,7 @@
 import { getAbiItem, trim as trimHexOrBytes } from "viem";
 import React from "react";
-import { usePublicClient } from "wagmi";
 import { useFetch } from "@shades/common/react";
+import usePublicClient from "./public-client.js";
 
 // https://eips.ethereum.org/EIPS/eip-1967#logic-contract-address
 const EIP_1967_IMPLEMENTATION_CONTRACT_ADDRESS_STORAGE_SLOT =

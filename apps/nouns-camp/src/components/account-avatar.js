@@ -1,9 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useEnsName, useEnsAvatar } from "wagmi";
+import { useEnsAvatar } from "wagmi";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
+import { CHAIN_ID } from "../constants/env.js";
 import { useNounsRepresented } from "../store.js";
+import useEnsName from "../hooks/ens-name.js";
 import { useNounSeeds } from "../hooks/token-contract.js";
 
 const { reverse } = arrayUtils;
@@ -35,16 +37,20 @@ const NounsAccountAvatar = React.forwardRef(
       transparent = false,
       maxStackCount = 2,
       ensOnly = false,
+      fallbackImageUrl,
       ...props
     },
     ref,
   ) => {
     const nouns = useNounsRepresented(accountAddress);
 
-    const { data: ensName } = useEnsName({ address: accountAddress });
+    const ensName = useEnsName(accountAddress);
     const { data: ensAvatarUrl } = useEnsAvatar({
       name: ensName,
-      enabled: ensName != null,
+      chainId: CHAIN_ID,
+      query: {
+        enabled: ensName != null,
+      },
     });
 
     // const isMissingSeeds = nouns != null && nouns.some((n) => n.seed == null);
@@ -73,7 +79,7 @@ const NounsAccountAvatar = React.forwardRef(
       );
 
     const nounAvatarUrl = nounAvatarUrls?.[0];
-    const imageUrl = ensAvatarUrl ?? nounAvatarUrl;
+    const imageUrl = ensAvatarUrl ?? nounAvatarUrl ?? fallbackImageUrl;
 
     if (!placeholder && imageUrl == null) return null;
 

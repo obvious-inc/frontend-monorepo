@@ -6,22 +6,25 @@ import { useFetch } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import { CHAIN_ID } from "../constants/env.js";
 import {
   parse as parseTransactions,
   extractAmounts as getRequestedAssets,
 } from "../utils/transactions.js";
 import { subgraphFetch as queryNounsSubgraph } from "../nouns-subgraph.js";
 import useContract from "../hooks/contract.js";
-import useChainId from "../hooks/chain-id.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
+import NativeSelect from "./native-select.js";
 
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
 const useChainlinkUsdcToEthConverter = () => {
   const { data: rate } = useReadContract({
     // Chainlink USDC/ETH price feed
+    // TODO: multi-chain support
     address: "0x986b5E1e1755e3C2440e960477f25201B0a8bbD4",
+    chainId: CHAIN_ID,
     abi: [
       {
         type: "function",
@@ -37,7 +40,6 @@ const useChainlinkUsdcToEthConverter = () => {
 };
 
 const useRecentSettledAuctions = ({ count = 30 } = {}) => {
-  const chainId = useChainId();
   const [auctions, setAuctions] = React.useState(null);
 
   useFetch(async () => {
@@ -52,15 +54,14 @@ const useRecentSettledAuctions = ({ count = 30 } = {}) => {
         amount
       }
     }`;
-    const { auctions } = await queryNounsSubgraph({ chainId, query });
+    const { auctions } = await queryNounsSubgraph({ query });
     setAuctions(auctions);
-  }, [count, chainId]);
+  }, [count]);
 
   return auctions;
 };
 
 const useAssetsDeployed = ({ days = 30 } = {}) => {
-  const chainId = useChainId();
   const [{ assets, proposalIds }, setData] = React.useState({
     assets: null,
     proposalIds: null,
@@ -82,9 +83,9 @@ const useAssetsDeployed = ({ days = 30 } = {}) => {
         values
       }
     }`;
-    const { proposals } = await queryNounsSubgraph({ chainId, query });
+    const { proposals } = await queryNounsSubgraph({ query });
     const transactions = proposals.flatMap((proposal) =>
-      parseTransactions(proposal, { chainId }),
+      parseTransactions(proposal),
     );
     const assets = getRequestedAssets(transactions).reduce((assets, asset) => {
       // Merge ETH amounts
@@ -103,7 +104,7 @@ const useAssetsDeployed = ({ days = 30 } = {}) => {
       proposals.map(({ id }) => id),
     );
     setData({ assets, proposalIds });
-  }, [chainId, days]);
+  }, [days]);
 
   return { assets, proposalIds };
 };
@@ -112,6 +113,7 @@ const useBalanceOf = ({ contract, account }) => {
   const address = useContract(contract)?.address;
   const { data: balance } = useReadContract({
     address,
+    chainId: CHAIN_ID,
     abi: [
       {
         type: "function",
@@ -133,10 +135,17 @@ const useBalances = () => {
   const tokenBuyerAddress = useContract("token-buyer")?.address;
   const daoPayerAddress = useContract("payer")?.address;
 
-  const { data: treasuryEthBalance } = useBalance({ address: treasuryAddress });
-  const { data: daoProxyEthBalance } = useBalance({ address: daoProxyAddress });
+  const { data: treasuryEthBalance } = useBalance({
+    address: treasuryAddress,
+    chainId: CHAIN_ID,
+  });
+  const { data: daoProxyEthBalance } = useBalance({
+    address: daoProxyAddress,
+    chainId: CHAIN_ID,
+  });
   const { data: tokenBuyerEthBalance } = useBalance({
     address: tokenBuyerAddress,
+    chainId: CHAIN_ID,
   });
 
   const treasuryUsdc = useBalanceOf({
@@ -469,34 +478,25 @@ const Content = ({ titleProps, dismiss }) => {
 
         <Heading>
           Activity last{" "}
-          <span
+          <NativeSelect
+            value={activityDayCount}
+            options={[7, 14, 30, 60, 90, 365].map((count) => ({
+              value: count,
+              label: `${count} days`,
+            }))}
             css={(t) =>
               css({
                 display: "inline-block",
-                position: "relative",
-                // background: t.colors.backgroundModifierNormal,
                 border: "0.1rem solid",
                 borderColor: t.colors.borderLighter,
                 borderRadius: "0.3rem",
                 padding: "0 0.4rem",
               })
             }
-          >
-            {activityDayCount} days
-            <select
-              value={activityDayCount}
-              onChange={(e) => {
-                setActivityDayCount(e.target.value);
-              }}
-              style={{ position: "absolute", inset: 0, opacity: 0 }}
-            >
-              {[7, 14, 30, 60, 90, 365].map((count) => (
-                <option key={count} value={count}>
-                  {count} days
-                </option>
-              ))}
-            </select>
-          </span>
+            onChange={(e) => {
+              setActivityDayCount(e.target.value);
+            }}
+          />
         </Heading>
         <Dl>
           <dt>
