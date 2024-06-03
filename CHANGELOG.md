@@ -2,6 +2,79 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.4] - 2024-06-03
+
+### 🚀 Features
+
+- Use constants for `chainId` and contract addresses
+
+### 🐛 Bug Fixes
+
+- Adjust `hasNouns` calculation in account dialog
+- Update text color in activity feed component
+- Handle null cases for signers in store
+- Ensure valid array before assignment of `candidateId` in store
+- Comment out delegator checks in store
+
+### 🚜 Refactor
+
+- Add erc-2400 utility for creating URIs
+- Add `chainId` and `clientId` to `.env` and `env.js` in nouns camp
+- Remove `goerli` network configurations in contracts
+- Add chain support utils in nouns camp
+- Update chain configuration in wagmi config
+- Centralize chain ID in contracts module
+- Revise the use of `chainId` throughout the code
+- Remove unused import in action dialog
+- Add `NativeSelect` component
+- Replace span with `NativeSelect` for day count selection
+- Update code to introduce `useEnsName` hook
+- Introduce locally scoped `useAccountDisplayName` hook.
+- Introduce `usePublicClient` hook for enhanced modularity
+- Introduce `useBlockNumber` hook for localizing block fetches
+- Update code to incorporate `useEnsAddress` hook
+- Add `ProposalActionForm` component
+- Add `fallbackImageUrl` to account avatar
+- Update `lineHeight` calculation in activity feed component
+- Reorder import statements in promote candidate dialog
+- Update `AccountPreviewPopoverTrigger` component and enhance UI
+- Add fallback display name and image url to account preview popover
+- Update `useEnsAddress` function to `useCustomCacheEnsAddress`
+- Remove `chainId` dependency from components
+- Simplify account comparison in voters
+- Add client incentives rewards proxy to contracts
+- Add abi parameter formatting to action dialog
+- Rearrange import order in noun preview popover trigger
+- Simplify dao contract hooks and add clientId to proposals
+- Refactor data contract hooks to use constant chainId
+- Filter votes and enhance proposals feed
+- Update transaction stringifying and parsing
+- Update voter screen for search params and URL change
+- Improve voters clarity and remove redundant code
+- Simplify subgraph URL mapping in `next.config.js`
+- Export graphql fragments in nouns subgraph
+- Remove `chainId` parameter from nouns subgraph
+- Clean up and simplify code of nouns subgraph
+- Update propdates subgraph queries and chainId checks
+- Improve merging of entities and required data fetching in store
+- Comment out incompatible query blocks in store
+- Update code comments in nouns subgraph
+
+### 📚 Documentation
+
+- Remove `README.md` for nouns camp app
+
+### ⚙️ Miscellaneous Tasks
+
+- Suppress source map uploading logs during build
+- Add chain ID environment variable to build workflow
+- Add camp client ID to workflow environment variables
+- Simplify environment variables in GitHub actions
+- Update reference for subgraph URLs in build workflow
+- Change chain id source in build workflow
+- Add sentry configuration to build workflow
+- Add Sentry tokens to Github action config
+
 ## [1.1.0-beta.3] - 2024-06-01
 
 ### 🐛 Bug Fixes
