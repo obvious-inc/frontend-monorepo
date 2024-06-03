@@ -980,7 +980,7 @@ const createStore = ({ initialState }) =>
                     or: [
                       { newDelegate: "${id}" },
                       { previousDelegate: "${id}" },
-                      { delegator: "${id}" }
+                    # { delegator: "${id}" }
                     ]
                   }
                 ) {
@@ -1327,7 +1327,7 @@ const createStore = ({ initialState }) =>
                       or: [
                         { newDelegate: "${id}" },
                         { previousDelegate: "${id}" },
-                        { delegator: "${id}" }
+                      # { delegator: "${id}" }
                       ]
                     }
                   ) {
@@ -1583,7 +1583,7 @@ const createStore = ({ initialState }) =>
                         or: [
                           { newDelegate: "${voterAddress}" },
                           { previousDelegate: "${voterAddress}" },
-                          { delegator: "${voterAddress}" }
+                        # { delegator: "${voterAddress}" }
                         ]
                       }
                     ]
