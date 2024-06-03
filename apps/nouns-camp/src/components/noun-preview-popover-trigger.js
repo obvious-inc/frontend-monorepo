@@ -1,20 +1,19 @@
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
-import { useEnsName } from "wagmi";
 import { useFetch } from "@shades/common/react";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
 import { useActions, useNoun } from "../store.js";
+import { resolveIdentifier } from "../contracts.js";
+import { useSaleInfo } from "../hooks/sales.js";
+import useEnsName from "../hooks/ens-name.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { resolveIdentifier } from "../contracts.js";
-import useChainId from "../hooks/chain-id.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import { useSaleInfo } from "../hooks/sales.js";
 
 export const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
@@ -159,9 +158,9 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const noun = useNoun(nounId);
   const transactionHash = event.id.split("_")[0];
   const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
-  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const newAccountEns = useEnsName(event.newAccountId);
   const ownerDisplayName = useAccountDisplayName(noun.ownerId);
-  const { data: ownerEns } = useEnsName({ address: noun.ownerId });
+  const ownerEns = useEnsName(noun.ownerId);
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -245,7 +244,6 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
 };
 
 const NounTransferPreviewText = ({ event, contextAccount }) => {
-  const chainId = useChainId();
   const noun = useNoun(event.nounId);
   const transactionHash = event.id.split("_")[0];
   const { amount: saleAmount } = useSaleInfo({
@@ -254,13 +252,11 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   });
 
   const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
-  const { data: newAccountEns } = useEnsName({ address: event.newAccountId });
+  const newAccountEns = useEnsName(event.newAccountId);
   const previousAccountDisplayName = useAccountDisplayName(
     event.previousAccountId,
   );
-  const { data: previousAccountEns } = useEnsName({
-    address: event.previousAccountId,
-  });
+  const previousAccountEns = useEnsName(event.previousAccountId);
 
   const isDestinationAccount =
     contextAccount != null &&
@@ -269,11 +265,9 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   if (!isDestinationAccount) return null;
 
   const transferredFromAuction =
-    event.previousAccountId.toLowerCase() ===
-    resolveIdentifier(chainId, "auction-house").address.toLowerCase();
+    event.previousAccountId === resolveIdentifier("auction-house").address;
   const transferredFromTreasury =
-    event.previousAccountId.toLowerCase() ===
-    resolveIdentifier(chainId, "executor").address.toLowerCase();
+    event.previousAccountId === resolveIdentifier("executor").address;
 
   const previousAccount = isDestinationAccount
     ? previousAccountDisplayName

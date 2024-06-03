@@ -6,15 +6,12 @@ import {
   array as arrayUtils,
   function as functionUtils,
 } from "@shades/common/utils";
-import { useAccountDisplayName } from "@shades/common/ethereum-react";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Spinner from "@shades/ui-web/spinner";
 import { Label } from "@shades/ui-web/input";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
-import AccountAvatar from "./account-avatar.js";
-import Callout from "./callout.js";
 import { getSponsorSignatures } from "../utils/candidates.js";
 import {
   useActions,
@@ -22,6 +19,7 @@ import {
   useProposalCandidate,
   useDelegate,
 } from "../store.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
 import {
   useProposalThreshold,
   useCreateProposal,
@@ -30,6 +28,8 @@ import {
 } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useNavigate } from "../hooks/navigation.js";
+import AccountAvatar from "./account-avatar.js";
+import Callout from "./callout.js";
 
 const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const navigate = useNavigate();

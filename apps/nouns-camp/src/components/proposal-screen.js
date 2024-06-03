@@ -3,7 +3,6 @@
 import React from "react";
 import NextLink from "next/link";
 import { formatUnits } from "viem";
-import { useBlockNumber } from "wagmi";
 import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
@@ -35,6 +34,7 @@ import {
   useProposalCandidate,
   useDelegate,
 } from "../store.js";
+import useBlockNumber from "../hooks/block-number.js";
 import {
   useNavigate,
   useSearchParams,
@@ -82,7 +82,7 @@ const supportToString = (n) => {
 };
 
 const useFeedItems = (proposalId) => {
-  const { data: eagerLatestBlockNumber } = useBlockNumber({
+  const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 20_000,
   });
@@ -103,7 +103,7 @@ const ProposalMainSection = ({
   scrollContainerRef,
   toggleVotesDialog,
 }) => {
-  const { data: latestBlockNumber } = useBlockNumber();
+  const latestBlockNumber = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const {
     address: connectedWalletAccountAddress,

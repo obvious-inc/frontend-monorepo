@@ -1,5 +1,6 @@
+import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
-import { mainnet, sepolia, goerli } from "./chains.js";
+import { CHAIN_ID } from "./constants/env.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -40,6 +41,8 @@ const addressByIdentifierByChainId = {
     "executor-v1": "0x0bc3807ec262cb779b38d65b38158acc3bfede10",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0000000000000000000000000000000000000000",
+    "client-incentives-rewards-proxy":
+      "0x0000000000000000000000000000000000000000",
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
   [sepolia.id]: {
@@ -59,26 +62,7 @@ const addressByIdentifierByChainId = {
     payer: "0x0000000000000000000000000000000000000000",
     "token-buyer": "0x0000000000000000000000000000000000000000",
     "stream-factory": "0x0000000000000000000000000000000000000000",
-    "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
-  },
-  [goerli.id]: {
-    "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
-    "usdc-token": "0x07865c6e87b9f70255377e024ace6630c1eaa37f",
-    "weth-token": "0xb4fbf271143f4fbf7b91a5ded31805e42b2208d6",
-    "prop-house": "0x6381795e52fa8bc7957e355d1d685986bc8d841b",
-    "prop-house-timed-round-implementation":
-      "0x8f6084435799f15a78cd2f5c6dc1555d91ebd473",
-
-    // Nouns contracts
-    dao: "0xddE586Bc15E36aFE7ED322DF8582171f224374ad",
-    executor: "0x4733DbF4dB8a0AFe3cc17921792dd2545a84B505",
-    data: "0xddE586Bc15E36aFE7ED322DF8582171f224374ad",
-    token: "0x77a74fBb28a1E08645587f52B73170D4c69Ba212",
-    "auction-house": "0x598949186a38683C18697705aDcdC705bFc691a0",
-    descriptor: "0xB6D0AF8C27930E13005Bf447d54be8235724a102",
-    payer: "0x0000000000000000000000000000000000000000",
-    "token-buyer": "0x0000000000000000000000000000000000000000",
-    "stream-factory": "0x0000000000000000000000000000000000000000",
+    "client-incentives-rewards-proxy": null,
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
 };
@@ -144,18 +128,21 @@ const metaByIdentifier = {
   "stream-factory": {
     name: "Nouns Stream Factory",
   },
+  "client-incentives-rewards-proxy": {
+    name: "Nouns Client Incentives Rewards Proxy",
+  },
 };
 
-export const resolveIdentifier = (chainId, identifier) => {
-  const address = addressByIdentifierByChainId[chainId]?.[identifier];
+export const resolveIdentifier = (identifier) => {
+  const address = addressByIdentifierByChainId[CHAIN_ID]?.[identifier];
   if (address == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, ...meta };
 };
 
-export const resolveAddress = (chainId, address) => {
+export const resolveAddress = (address) => {
   const identifier =
-    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
+    identifierByAddressByChainId[CHAIN_ID]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };

@@ -35,7 +35,7 @@ const withSentry = (config) =>
   withSentryConfig(
     config,
     {
-      // silent: true, // Suppresses source map uploading logs during build
+      silent: true, // Suppresses source map uploading logs during build
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
     },
@@ -79,16 +79,12 @@ module.exports = withSentry(
       return [
         { source: "/sw.js", destination: "/service-worker.js" },
         {
-          source: "/subgraphs/nouns-mainnet",
-          destination: process.env.NOUNS_SUBGRAPH_MAINNET_URL,
+          source: "/subgraphs/nouns",
+          destination: process.env.NOUNS_SUBGRAPH_URL,
         },
         {
-          source: "/subgraphs/nouns-sepolia",
-          destination: process.env.NOUNS_SUBGRAPH_SEPOLIA_URL,
-        },
-        {
-          source: "/subgraphs/propdates-mainnet",
-          destination: process.env.PROPDATES_SUBGRAPH_MAINNET_URL,
+          source: "/subgraphs/propdates",
+          destination: process.env.PROPDATES_SUBGRAPH_URL,
         },
       ];
     },
