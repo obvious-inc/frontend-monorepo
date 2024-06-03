@@ -39,7 +39,8 @@ const subgraphFetch = async (query) => {
 };
 
 export const fetchPropdates = async ({ startBlock, endBlock }) => {
-  if (CHAIN_ID !== 1) return [];
+  /*if (CHAIN_ID !== 1)*/ return [];
+  // eslint-disable-next-line no-unreachable
   const body = await subgraphFetch(`
     ${PROPDATE_FIELDS}
     query {
