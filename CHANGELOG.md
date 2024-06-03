@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.5] - 2024-06-03
+
+### 🐛 Bug Fixes
+
+- Implement working changes from upstream
+
+### 🚜 Refactor
+
+- Simplify contract address definitions
+
 ## [1.1.0-beta.4] - 2024-06-03
 
 ### 🚀 Features
@@ -15,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - Handle null cases for signers in store
 - Ensure valid array before assignment of `candidateId` in store
 - Comment out delegator checks in store
+- Disable chain ID condition in fetchPropdates function
 
 ### 🚜 Refactor
 
