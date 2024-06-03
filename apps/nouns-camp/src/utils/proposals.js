@@ -295,7 +295,7 @@ export const buildFeed = (
     });
   }
 
-  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);
+  return arrayUtils.sortBy({ value: (i) => i.blockNumber, order: "desc" }, items);
 };
 
 export const getStateLabel = (state) => {
