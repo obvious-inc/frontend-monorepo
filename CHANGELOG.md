@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.6] - 2024-06-03
+
+### 🚜 Refactor
+
+- Add `FarcasterSetupDialog` component
+- Add farcaster setup to app provider
+- Integrate farcaster state provider into layout
+- Add hooks for farcaster usage in nouns camp
+- Add farcaster utility functions
+- Add farcaster utilities to API
+- Add farcaster content filter in settings
+- Add farcaster cast filter option in setting
+- Add farcaster cast support and enhance UI in activity feed
+- Add farcaster hooks and improve browsing experience
+- Update `buildFeed` function to include casts and feedback options
+- Add support for farcaster comments in proposal candidate screen
+- Update proposal screen and remove proposal action form component
+
 ## [1.1.0-beta.5] - 2024-06-03
 
 ### 🐛 Bug Fixes
