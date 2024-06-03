@@ -31,6 +31,12 @@ const dialogs = [
     key: "settings",
     component: React.lazy(() => import("../components/settings-dialog.js")),
   },
+  {
+    key: "farcaster-setup",
+    component: React.lazy(
+      () => import("../components/farcaster-setup-dialog.js"),
+    ),
+  },
 ];
 
 const GlobalClientFetcher = () => {
