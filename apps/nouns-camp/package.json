@@ -55,9 +55,9 @@
     "slate-history": "^0.100.0",
     "slate-react": "^0.104.0",
     "tinykeys": "^2.1.0",
-    "wagmi": "^2.5.11",
     "use-debounce": "^10.0.1",
     "viem": "^2.13.3",
+    "wagmi": "^2.9.8",
     "zustand": "^4.5.2"
   }
 }
