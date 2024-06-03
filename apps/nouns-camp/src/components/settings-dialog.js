@@ -28,6 +28,18 @@ const settingInputConfigByKey = {
       huge: "Huge",
     },
   },
+  "farcaster-cast-filter": {
+    label: "Farcaster content",
+    optionLabelsByValue: {
+      nouners: "Filtered",
+      none: "Show everything",
+      disabled: "Hide everything",
+    },
+    hint: ({ value }) => {
+      if (value !== "nouners") return null;
+      return "This setting will filter feeds to only show casts from accounts with past or present voting power.";
+    },
+  },
   "xmas-effects-opt-out": {
     label: "Christmas effects",
     optionLabelsByValue: {
@@ -62,9 +74,12 @@ const Content = ({ titleProps, dismiss }) => {
 
   const [theme, setTheme] = useSetting("theme");
   const [zoom, setZoom] = useSetting("zoom");
+  const [farcasterFilter, setFarcasterFilter] = useSetting(
+    "farcaster-cast-filter",
+  );
   const [xmasOptOut, setXmasOptOut] = useSetting("xmas-effects-opt-out");
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
 
   const betaFeaturesEnabled =
     isCanaryAccount ||
@@ -89,31 +104,36 @@ const Content = ({ titleProps, dismiss }) => {
           state: zoom,
           setState: setZoom,
         },
+        {
+          key: "farcaster-cast-filter",
+          state: farcasterFilter,
+          setState: setFarcasterFilter,
+        },
         config["xmas-effects"] && {
           key: "xmas-effects-opt-out",
           state: xmasOptOut,
           setState: setXmasOptOut,
         },
-        {
-          key: "debug-mode",
-          type: "bool",
-          state: searchParams.get("debug") != null,
-          setState: (on) => {
-            setSearchParams(
-              (params) => {
-                const newParams = new URLSearchParams(params);
-                if (on) {
-                  newParams.set("debug", 1);
-                  return newParams;
-                }
+        // {
+        //   key: "debug-mode",
+        //   type: "bool",
+        //   state: searchParams.get("debug") != null,
+        //   setState: (on) => {
+        //     setSearchParams(
+        //       (params) => {
+        //         const newParams = new URLSearchParams(params);
+        //         if (on) {
+        //           newParams.set("debug", 1);
+        //           return newParams;
+        //         }
 
-                newParams.delete("debug");
-                return newParams;
-              },
-              { replace: true },
-            );
-          },
-        },
+        //         newParams.delete("debug");
+        //         return newParams;
+        //       },
+        //       { replace: true },
+        //     );
+        //   },
+        // },
       ]
         .filter(Boolean)
         .map(({ key, type: type_, state, setState, values }) => {
@@ -121,17 +141,25 @@ const Content = ({ titleProps, dismiss }) => {
 
           const inputConfig = settingInputConfigByKey[key];
 
+          const shared = {
+            key,
+            label: inputConfig.label,
+            hint:
+              typeof inputConfig.hint === "function"
+                ? inputConfig.hint({ value: state })
+                : inputConfig.hint,
+            value: state,
+            onChange: (value) => {
+              setState(value);
+            },
+          };
+
           switch (type) {
             case "enum":
               return {
-                key,
+                ...shared,
                 type: "select",
                 size: "medium",
-                value: state,
-                onChange: (value) => {
-                  setState(value);
-                },
-                label: inputConfig.label,
                 options:
                   values ??
                   getSettingConfig(key).values.map((value) => ({
@@ -142,14 +170,9 @@ const Content = ({ titleProps, dismiss }) => {
 
             case "bool":
               return {
-                key,
+                ...shared,
                 type: "select",
                 size: "medium",
-                value: state,
-                onChange: (value) => {
-                  setState(value);
-                },
-                label: inputConfig.label,
                 options: [true, false].map((value) => ({
                   value,
                   label: inputConfig.optionLabelsByValue[value],
@@ -162,38 +185,37 @@ const Content = ({ titleProps, dismiss }) => {
         })}
       cancelLabel="Close"
     >
-      {searchParams.get("debug") != null && (
-        <div
-          css={(t) =>
-            css({
-              marginTop: "1.6rem",
-              fontSize: t.text.sizes.tiny,
-              color: t.colors.textDimmed,
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              em: {
-                fontWeight: t.text.weights.emphasis,
-                fontStyle: "normal",
-              },
-            })
-          }
-        >
-          {BUILD_ID != null && (
-            <div>
-              Build ID: <em>{BUILD_ID}</em>
-            </div>
-          )}
+      <div
+        css={(t) =>
+          css({
+            marginTop: "2.8rem",
+            fontSize: t.text.sizes.tiny,
+            color: t.colors.textDimmed,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            em: {
+              fontWeight: t.text.weights.emphasis,
+              fontStyle: "normal",
+            },
+          })
+        }
+      >
+        {BUILD_ID != null && (
           <div>
-            Beta features:{" "}
-            <em>{betaFeaturesEnabled ? "Enabled" : "Disabled"}</em>
+            Build ID: <em>{BUILD_ID}</em>
           </div>
+        )}
+        {betaFeaturesEnabled && (
           <div>
-            Wallet connector:{" "}
-            <em>{connector == null ? "None" : connector.name}</em>
+            Beta features: <em>Enabled</em>
           </div>
+        )}
+        <div>
+          Wallet connector:{" "}
+          <em>{connector == null ? "None" : connector.name}</em>
         </div>
-      )}
+      </div>
     </FormDialog>
   );
 };

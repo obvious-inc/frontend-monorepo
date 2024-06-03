@@ -41,6 +41,7 @@ import useBlockNumber from "../hooks/block-number.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
+import { useRecentCasts } from "../hooks/farcaster.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import {
@@ -59,6 +60,7 @@ import {
   useCollection as useDrafts,
   useSingleItem as useDraft,
 } from "../hooks/drafts.js";
+import useSetting from "../hooks/setting.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -213,9 +215,11 @@ const BrowseScreen = () => {
       if (c.proposerId.toLowerCase() === connectedWalletAccountAddress)
         return true;
 
-      const isSponsor = c.targetProposal.signers.some(
-        (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
-      );
+      const isSponsor =
+        c.targetProposal?.signers != null &&
+        c.targetProposal.signers.some(
+          (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
+        );
 
       return isSponsor && !hasSigned(c);
     });
@@ -309,9 +313,8 @@ const BrowseScreen = () => {
     if (connectedAccount == null) return "proposals:ongoing";
 
     if (
-      p.proposerId &&
-      p.proposerId.toLowerCase() === connectedAccount /*||
-      p.signers.some((s) => s.id.toLowerCase() === connectedAccount)*/
+      p.proposerId.toLowerCase() === connectedAccount ||
+      p.signers.some((s) => s.id.toLowerCase() === connectedAccount)
     )
       return "proposals:authored";
 
@@ -512,16 +515,13 @@ const BrowseScreen = () => {
 
   const { fetchBrowseScreenData } = useActions();
 
-  useFetch(
-    () =>
-      fetchBrowseScreenData({ first: 40 }).then(() => {
-        setHasFetchedOnce(true);
-        if (hasFetchedOnce) return;
-        hasFetchedBrowseDataOnce = true;
-        fetchBrowseScreenData({ skip: 40, first: 1000 });
-      }),
-    [fetchBrowseScreenData],
-  );
+  useFetch(async () => {
+    await fetchBrowseScreenData({ first: 40 });
+    setHasFetchedOnce(true);
+    if (hasFetchedOnce) return;
+    hasFetchedBrowseDataOnce = true;
+    fetchBrowseScreenData({ skip: 40, first: 1000 });
+  }, [fetchBrowseScreenData]);
 
   const handleSearchInputChange = useDebouncedCallback((query) => {
     setPage(1);
@@ -1110,6 +1110,9 @@ const useActivityFeedItems = ({ filter = "all" }) => {
     [latestBlockNumber, fetchNounsActivity],
   );
 
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const casts = useRecentCasts({ filter: farcasterFilter });
+
   const proposals = useProposals({ state: true, propdates: true });
   const candidates = useProposalCandidates({
     includeCanceled: true,
@@ -1121,12 +1124,23 @@ const useActivityFeedItems = ({ filter = "all" }) => {
   return React.useMemo(() => {
     if (!hasFetchedOnce) return [];
 
+    const castsByProposalId = arrayUtils.groupBy((c) => c.proposalId, casts);
+    const castsByCandidateId = arrayUtils.groupBy((c) => c.candidateId, casts);
+
     const buildProposalItems = () =>
       proposals.flatMap((p) =>
-        buildProposalFeed(p, { latestBlockNumber, includePropdates: false }),
+        buildProposalFeed(p, {
+          latestBlockNumber,
+          casts: castsByProposalId[p.id],
+          includePropdates: false,
+        }),
       );
+
     const buildCandidateItems = () =>
-      candidates.flatMap((c) => buildCandidateFeed(c));
+      candidates.flatMap((c) =>
+        buildCandidateFeed(c, { casts: castsByCandidateId[c.id] }),
+      );
+
     const buildPropdateItems = () => buildPropdateFeed(propdates);
 
     const buildFeedItems = () => {
@@ -1147,13 +1161,14 @@ const useActivityFeedItems = ({ filter = "all" }) => {
     };
 
     return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
+      { value: (i) => i.timestamp, order: "desc" },
       buildFeedItems(),
     );
   }, [
     proposals,
     candidates,
     propdates,
+    casts,
     filter,
     latestBlockNumber,
     hasFetchedOnce,
@@ -1323,8 +1338,6 @@ const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
   const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
-
-  if (!proposal) return null;
 
   const statusText = renderPropStatusText({
     proposal,
