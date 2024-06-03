@@ -6,8 +6,8 @@ import { getReposts, stripReposts } from "./markdown.js";
 export const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 const isDefeated = (proposal) =>
-  Number(proposal.forVotes) <= Number(proposal.againstVotes) ||
-  Number(proposal.forVotes) < Number(proposal.quorumVotes);
+  proposal.forVotes <= proposal.againstVotes ||
+  proposal.forVotes < proposal.quorumVotes;
 
 export const isExecutable = (proposal, { blockNumber }) => {
   const state = getState(proposal, { blockNumber });
@@ -20,6 +20,8 @@ export const getState = (proposal, { blockNumber }) => {
   if (proposal.status === "VETOED") return "vetoed";
   if (proposal.status === "CANCELLED") return "canceled";
   if (proposal.status === "EXECUTED") return "executed";
+
+  if (blockNumber == null) return null;
 
   if (blockNumber <= proposal.updatePeriodEndBlock) return "updatable";
   if (blockNumber <= proposal.startBlock) return "pending";
