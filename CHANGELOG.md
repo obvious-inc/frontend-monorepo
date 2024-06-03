@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.8] - 2024-06-03
+
+### ⚙️ Miscellaneous Tasks
+
+- Add `save-exact` config in `.npmrc`
+- Update packages to use exact versions
+
 ## [1.1.0-beta.7] - 2024-06-03
 
 ### 🐛 Bug Fixes
