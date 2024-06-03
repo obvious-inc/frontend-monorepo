@@ -211,7 +211,12 @@ export const parseProposal = (data) => {
       data.executionETA == null ? null : parseTimestamp(data.executionETA);
 
   // Regular numbers
-  for (const prop of ["forVotes", "againstVotes", "abstainVotes"]) {
+  for (const prop of [
+    "forVotes",
+    "againstVotes",
+    "abstainVotes",
+    "quorumVotes",
+  ]) {
     if (data[prop] != null) {
       parsedData[prop] = Number(data[prop]);
     }

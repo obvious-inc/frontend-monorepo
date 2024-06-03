@@ -268,7 +268,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 prefetch
                 href={item.to}
                 data-index={index}
-                data-disabled={pathname === item.to}
+                // data-disabled={pathname === item.to}
                 data-desktop-only={item.desktopOnly}
                 css={(t) =>
                   css({

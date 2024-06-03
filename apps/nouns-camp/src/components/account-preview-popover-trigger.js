@@ -113,7 +113,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
   const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
-  const enableDelegation = connectedAccount?.nouns.length > 0;
+  const enableDelegation = connectedAccount?.nouns?.length > 0;
 
   const delegate = useDelegate(accountAddress);
 
