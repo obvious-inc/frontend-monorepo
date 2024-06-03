@@ -3,6 +3,7 @@ import { css } from "@emotion/react";
 import { useEnsAvatar } from "wagmi";
 import { array as arrayUtils } from "@shades/common/utils";
 import Avatar from "@shades/ui-web/avatar";
+import { CHAIN_ID } from "../constants/env.js";
 import { useNounsRepresented } from "../store.js";
 import useEnsName from "../hooks/ens-name.js";
 import { useNounSeeds } from "../hooks/token-contract.js";
@@ -46,7 +47,10 @@ const NounsAccountAvatar = React.forwardRef(
     const ensName = useEnsName(accountAddress);
     const { data: ensAvatarUrl } = useEnsAvatar({
       name: ensName,
-      enabled: ensName != null,
+      chainId: CHAIN_ID,
+      query: {
+        enabled: ensName != null,
+      },
     });
 
     // const isMissingSeeds = nouns != null && nouns.some((n) => n.seed == null);

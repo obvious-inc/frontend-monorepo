@@ -6,12 +6,12 @@ import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
 import { useActions, useNoun } from "../store.js";
+import { resolveIdentifier } from "../contracts.js";
 import useEnsName from "../hooks/ens-name.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { resolveIdentifier } from "../contracts.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { useSaleInfo } from "../hooks/sales.js";
 
@@ -265,11 +265,9 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
   if (!isDestinationAccount) return null;
 
   const transferredFromAuction =
-    event.previousAccountId.toLowerCase() ===
-    resolveIdentifier("auction-house").address.toLowerCase();
+    event.previousAccountId === resolveIdentifier("auction-house").address;
   const transferredFromTreasury =
-    event.previousAccountId.toLowerCase() ===
-    resolveIdentifier("executor").address.toLowerCase();
+    event.previousAccountId === resolveIdentifier("executor").address;
 
   const previousAccount = isDestinationAccount
     ? previousAccountDisplayName
