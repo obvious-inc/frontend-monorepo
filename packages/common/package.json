@@ -19,7 +19,7 @@
     "./custom-emoji": "./dist/custom-emoji.js"
   },
   "dependencies": {
-    "reselect": "^5.1.0"
+    "reselect": "^5.1.1"
   },
   "devDependencies": {
     "@swc/core": "^1.5.7",
