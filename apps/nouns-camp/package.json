@@ -50,7 +50,7 @@
     "react-aria": "^3.33.1",
     "react-aria-components": "1.2.1",
     "react-dom": "18.3.1",
-    "react-stately": "^3.31.0",
+    "react-stately": "^3.31.1",
     "slate": "^0.103.0",
     "slate-history": "^0.100.0",
     "slate-react": "^0.104.0",
