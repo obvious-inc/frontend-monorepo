@@ -1161,7 +1161,7 @@ const useActivityFeedItems = ({ filter = "all" }) => {
     };
 
     return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
+      { value: (i) => i.timestamp, order: "desc" },
       buildFeedItems(),
     );
   }, [
