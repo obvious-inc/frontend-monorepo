@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.10] - 2024-06-03
+
+### 🐛 Bug Fixes
+
+- Modify item sorting method in browse screen
+
+## [1.1.0-beta.9] - 2024-06-03
+
+### 🐛 Bug Fixes
+
+- Change sorting parameter in browse screen component
+
 ## [1.1.0-beta.8] - 2024-06-03
 
 ### ⚙️ Miscellaneous Tasks
