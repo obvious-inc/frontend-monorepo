@@ -1,9 +1,11 @@
 import { useReadContract } from "wagmi";
+import { CHAIN_ID } from "../constants/env.js";
 import { resolveIdentifier } from "../contracts.js";
 
 export const useTokenBuyerEthNeeded = (additionalUsdcTokens) => {
   const { data } = useReadContract({
     address: resolveIdentifier("token-buyer").address,
+    chainId: CHAIN_ID,
     abi: [
       {
         inputs: [

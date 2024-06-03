@@ -5,15 +5,16 @@ import {
   useWriteContract,
   useSimulateContract,
 } from "wagmi";
+import { CHAIN_ID } from "../constants/env.js";
 import { resolveIdentifier } from "../contracts.js";
 import usePublicClient from "./public-client.js";
 
-const getContractAddress = () =>
-  resolveIdentifier("token").address;
+const { address: contractAddress } = resolveIdentifier("token");
 
 export const useCurrentVotes = (accountAddress) => {
   const { data, isSuccess } = useReadContract({
-    address: getContractAddress(),
+    address: contractAddress,
+    chainId: CHAIN_ID,
     abi: [
       {
         inputs: [{ type: "address" }],
@@ -36,7 +37,8 @@ export const useCurrentVotes = (accountAddress) => {
 
 export const usePriorVotes = ({ account, blockNumber, enabled = true }) => {
   const { data } = useReadContract({
-    address: getContractAddress(),
+    address: contractAddress,
+    chainId: CHAIN_ID,
     abi: [
       {
         inputs: [{ type: "address" }, { type: "uint256" }],
@@ -57,7 +59,8 @@ export const usePriorVotes = ({ account, blockNumber, enabled = true }) => {
 
 export const useNounSeed = (nounId, { enabled = true } = {}) => {
   const { data } = useReadContract({
-    address: getContractAddress(),
+    address: contractAddress,
+    chainId: CHAIN_ID,
     abi: [
       {
         inputs: [{ type: "uint256" }],
@@ -93,7 +96,8 @@ export const useNounSeed = (nounId, { enabled = true } = {}) => {
 export const useNounSeeds = (nounIds, { enabled = true } = {}) => {
   const { data } = useReadContracts({
     contracts: nounIds.map((nounId) => ({
-      address: getContractAddress(),
+      address: contractAddress,
+      chainId: CHAIN_ID,
       abi: [
         {
           inputs: [{ type: "uint256" }],
@@ -132,7 +136,8 @@ export const useSetDelegate = (address) => {
 
   const { data: simulationResult, isSuccess: simulationSuccessful } =
     useSimulateContract({
-      address: getContractAddress(),
+      address: contractAddress,
+      chainId: CHAIN_ID,
       abi: [
         {
           type: "function",
