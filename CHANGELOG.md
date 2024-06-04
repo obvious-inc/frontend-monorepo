@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.13] - 2024-06-04
+
+### 🚀 Features
+
+- Add route for fetching recent casts
+
+### 🐛 Bug Fixes
+
+- Comment out logics in farcaster casts route
+
 ## [1.1.0-beta.12] - 2024-06-04
 
 ### ⚙️ Miscellaneous Tasks
