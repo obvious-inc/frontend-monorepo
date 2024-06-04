@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.14] - 2024-06-04
+
+### 🐛 Bug Fixes
+
+- Disable conditional return in `fetchPropdatesForProposal` function
+
 ## [1.1.0-beta.13] - 2024-06-04
 
 ### 🚀 Features
