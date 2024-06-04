@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.15] - 2024-06-04
+
+### 🚀 Features
+
+- Add farcaster proposal casts route
+- Add runtime export to route files
+
+### 🐛 Bug Fixes
+
+- Comment out most functionalities in farcaster proposal casts route
+
 ## [1.1.0-beta.14] - 2024-06-04
 
 ### 🐛 Bug Fixes
