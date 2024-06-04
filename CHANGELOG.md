@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.12] - 2024-06-04
+
+### ⚙️ Miscellaneous Tasks
+
+- Update packages to use exact versions
+- Update package dependencies in pnpm lock file
+
+## [1.1.0-beta.11] - 2024-06-03
+
+### 🐛 Bug Fixes
+
+- Change sorting criteria in proposals
+
 ## [1.1.0-beta.10] - 2024-06-03
 
 ### 🐛 Bug Fixes
