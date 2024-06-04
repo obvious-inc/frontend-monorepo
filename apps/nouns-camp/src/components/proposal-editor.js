@@ -1,6 +1,6 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
-import { formatEther, parseEther } from "viem";
+import { encodeFunctionData, formatEther, parseAbi, parseEther } from "viem";
 import { css, Global as GlobalStyles } from "@emotion/react";
 import { Overlay } from "react-aria";
 import {
@@ -771,6 +771,56 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
     a.type === "custom-transaction",
   );
 
+  const simulateTransaction = async () => {
+    if (a.type !== "custom-transaction") {
+      // TODO: properly parse non-functions
+      throw new Error("Can only simulate custom transactions");
+    }
+
+    const encodedData = encodeFunctionData({
+      abi: parseAbi([`function ${a.contractCallSignature}`]),
+      name: a.contractCallSignature.split("(")[0],
+      args: a.contractCallArguments,
+    });
+
+    const parsedTransactions = actionTransactions.map((t) => {
+      return {
+        to: t.target,
+        value: t.type === "payable-function-call" ? Number(t.value) : 0,
+        input: encodedData,
+      };
+    });
+
+    fetch("/api/simulate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ transactions: parsedTransactions }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to simulate transactions");
+        }
+
+        return response.json();
+      })
+      .then((data) => {
+        if (data.status) {
+          console.log("## Simulation successful");
+        } else {
+          console.error(data.error_message);
+          const url = `https://www.tdly.co/shared/simulation/${data.id}`;
+          console.log("simulation url", url);
+        }
+      })
+      .catch((error) => {
+        console.error("simulation error", error);
+      });
+
+    return null;
+  };
+
   const renderTransactionComment = (t) => {
     switch (t.type) {
       case "usdc-transfer-via-payer":
@@ -889,21 +939,39 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
         })}
       >
         {openEditDialog != null && (
-          <Button
-            variant="opaque"
-            size="tiny"
-            onClick={() => {
-              openEditDialog();
-            }}
-            disabled={disabled}
-            css={(t) =>
-              css({
-                color: t.colors.textDimmed,
-              })
-            }
-          >
-            Edit
-          </Button>
+          <>
+            <Button
+              variant="opaque"
+              size="tiny"
+              onClick={() => {
+                openEditDialog();
+              }}
+              disabled={disabled}
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              Edit
+            </Button>
+
+            <Button
+              variant="opaque"
+              size="tiny"
+              onClick={() => {
+                simulateTransaction();
+              }}
+              disabled={disabled}
+              css={(t) =>
+                css({
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              Simulate
+            </Button>
+          </>
         )}
 
         <Button
