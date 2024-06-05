@@ -1506,7 +1506,7 @@ const createStore = ({ initialState }) =>
       },
       fetchVoterActivity: async (voterAddress_, { startBlock, endBlock }) => {
         const voterAddress = voterAddress_.toLowerCase();
-        const { votes, proposalFeedbacks, candidateFeedbacks } =
+        const { votes/*, proposalFeedbacks, candidateFeedbacks*/ } =
           await subgraphFetch({
             query: `
               ${CANDIDATE_FEEDBACK_FIELDS}
@@ -1595,10 +1595,10 @@ const createStore = ({ initialState }) =>
           });
 
         const proposalIds = arrayUtils.unique(
-          [...votes, ...proposalFeedbacks].map((p) => p.proposalId),
+          [...votes/*, ...proposalFeedbacks*/].map((p) => p.proposalId),
         );
         const candidateIds = arrayUtils.unique(
-          candidateFeedbacks.map((p) => p.candidateId),
+          [/*...candidateFeedbacks, */].map((p) => p.candidateId),
         );
 
         // TODO: Merge into one request

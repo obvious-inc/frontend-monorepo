@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.16] - 2024-06-05
+
+### 🚀 Features
+
+- Add chain specific etherscan endpoint urls
+
+### 🐛 Bug Fixes
+
+- Disable fetching of proposal and candidate feedback
+
+### ⚙️ Miscellaneous Tasks
+
+- Remove `.env.example` file
+- Remove `.licrc` configuration file
+
 ## [1.1.0-beta.15] - 2024-06-04
 
 ### 🚀 Features
