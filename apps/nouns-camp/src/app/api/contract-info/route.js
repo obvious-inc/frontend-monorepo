@@ -1,13 +1,26 @@
+import { mainnet, sepolia } from "../../../chains";
+import { CHAIN_ID } from "../../../constants/env";
+
 export const runtime = "edge";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
 
+const getEtherscanEndpointUrl = (chainId) => {
+  switch (chainId) {
+    case mainnet.id:
+      return `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}`;
+    case sepolia.id:
+      return `https://api-sepolia.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}`;
+    default:
+      throw new Error();
+  }
+};
+
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
-  return new Request(
-    `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`,
-  );
+  const url = getEtherscanEndpointUrl(CHAIN_ID);
+  return new Request(`${url}&${searchParams}`);
 };
 
 const contractInfoCache = new Map();
