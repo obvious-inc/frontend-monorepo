@@ -18,7 +18,7 @@ import "../index.css";
 
 import "../snow.css";
 
-const isProduction = process.env.NODE_ENV === "production";
+// const isProduction = process.env.NODE_ENV === "production";
 
 const title = metaConfig.appTitle;
 const description = metaConfig.appDescription;
