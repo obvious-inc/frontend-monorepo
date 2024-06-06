@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import Script from "next/script";
 import { get as getConfig } from "@vercel/edge-config";
-import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
+// import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../wagmi-config.js";
 import metaConfig from "../metadata-config.js";
@@ -18,7 +18,7 @@ import "../index.css";
 
 import "../snow.css";
 
-const isProduction = process.env.NODE_ENV === "production";
+// const isProduction = process.env.NODE_ENV === "production";
 
 const title = metaConfig.appTitle;
 const description = metaConfig.appDescription;
@@ -90,7 +90,7 @@ export default async function RootLayout({ children }) {
           strategy="beforeInteractive"
         >{`(${beforeInteractive})()`}</Script>
 
-        {isProduction && <VercelAnalytics />}
+        {/*{isProduction && <VercelAnalytics />}*/}
 
         <EmotionRootStyleRegistry>
           <ConfigProvider config={config}>
