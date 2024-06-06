@@ -6,21 +6,34 @@ import {
   useStore as useZustandStore,
 } from "zustand";
 import { normalize as normalizeEnsName } from "viem/ens";
+import { useBlock } from "wagmi";
 import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
+import { CHAIN_ID } from "./constants/env.js";
 import {
   getState as getProposalState,
   isActiveState as isActiveProposalState,
 } from "./utils/proposals.js";
+import {
+  buildAccountFeed,
+  buildProposalFeed,
+  buildCandidateFeed,
+} from "./store-selectors/feeds.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures as getCandidateSponsorSignatures,
 } from "./utils/candidates.js";
 import usePublicClient from "./hooks/public-client.js";
 import useBlockNumber from "./hooks/block-number.js";
+import useSetting from "./hooks/setting.js";
+import {
+  useProposalCasts,
+  useCandidateCasts,
+  useRecentCasts,
+} from "./hooks/farcaster.js";
 import {
   parsedSubgraphFetch,
   FULL_PROPOSAL_FIELDS,
@@ -759,13 +772,11 @@ const createStore = ({ initialState }) =>
               proposal(id: "${id}") {
                 ...FullProposalFields
               }
-
               proposalVersions(where: {proposal: "${id}"}) {
                 createdAt
                 createdBlock
                 updateMessage
               }
-
               proposalCandidateVersions(
                 where: {
                   content_: {
@@ -1117,6 +1128,49 @@ const createStore = ({ initialState }) =>
 
         // Populate ENS cache async
         reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
+
+        (async () => {
+          const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
+
+          const { proposalCandidateVersions } = await subgraphFetch({
+            query: `{
+              proposalCandidateVersions(
+                where: {
+                  or: [${proposals.map(
+                    (p) => `{
+                      content_: { matchingProposalIds_contains: ["${p.id}"] }
+                    }`,
+                  )}]
+                },
+                first: 1000
+              ) {
+                content { matchingProposalIds }
+                proposal { id }
+              }
+            }`,
+          });
+
+          const missingCandidateIds = arrayUtils.unique(
+            proposalCandidateVersions
+              .map((v) => v.proposal.id)
+              .filter((id) => !fetchedCandidateIds.includes(id)),
+          );
+
+          subgraphFetch({
+            query: `
+              ${CANDIDATE_FEEDBACK_FIELDS}
+              query {
+                candidateFeedbacks(
+                  where: {
+                    candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
+                  },
+                  first: 1000
+                ) {
+                  ...CandidateFeedbackFields
+                }
+              }`,
+          });
+        })();
 
         // Fetch less urgent data async
         subgraphFetch({
@@ -2177,3 +2231,158 @@ export const useEnsCache = () =>
     nameByAddress: s.ensNameByAddress,
     addressByName: s.ensAddressByName,
   }));
+
+export const useProposalFeedItems = (proposalId) => {
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const proposal = useStore((s) => s.proposalsById[proposalId]);
+
+  const eagerLatestBlockNumber = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
+
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
+  const { data: startBlock } = useBlock({
+    chainId: CHAIN_ID,
+    blockNumber: proposal?.startBlock,
+    query: { enabled: proposal?.startBlock != null },
+  });
+  const { data: endBlock } = useBlock({
+    chainId: CHAIN_ID,
+    blockNumber: proposal?.endBlock,
+    query: { enabled: proposal?.endBlock != null },
+  });
+
+  const startTimestamp = startBlock?.timestamp;
+  const endTimestamp = endBlock?.timestamp;
+
+  const casts = useProposalCasts(proposalId, { filter: farcasterFilter });
+
+  return useStore(
+    React.useCallback(
+      (s) =>
+        buildProposalFeed(s, proposalId, {
+          startTimestamp,
+          endTimestamp,
+          latestBlockNumber,
+          casts,
+          includePropdates: false,
+        }),
+      [proposalId, latestBlockNumber, startTimestamp, endTimestamp, casts],
+    ),
+  );
+};
+
+export const useCandidateFeedItems = (candidateId) => {
+  const eagerLatestBlockNumber = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const casts = useCandidateCasts(candidateId, { filter: farcasterFilter });
+
+  return useStore(
+    React.useCallback(
+      (s) =>
+        buildCandidateFeed(s, candidateId, {
+          latestBlockNumber,
+          casts,
+        }),
+      [candidateId, latestBlockNumber, casts],
+    ),
+  );
+};
+
+export const useAccountFeedItems = (accountAddress, { filter }) => {
+  return useStore(
+    React.useCallback(
+      (s) => buildAccountFeed(s, accountAddress, { filter }),
+      [accountAddress, filter],
+    ),
+  );
+};
+
+export const useMainFeedItems = (filter, { enabled = true }) => {
+  const eagerLatestBlockNumber = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+    enabled,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const casts = useRecentCasts({ filter: farcasterFilter });
+
+  return useStore(
+    React.useCallback(
+      (s) => {
+        if (!enabled) return [];
+
+        const castsByProposalId = arrayUtils.groupBy(
+          (c) => c.proposalId,
+          casts,
+        );
+        const castsByCandidateId = arrayUtils.groupBy(
+          (c) => c.candidateId,
+          casts,
+        );
+
+        const buildProposalItems = () =>
+          Object.keys(s.proposalsById).flatMap((proposalId) =>
+            buildProposalFeed(s, proposalId, {
+              latestBlockNumber,
+              casts: castsByProposalId[proposalId],
+              includePropdates: false,
+            }),
+          );
+
+        const buildCandidateItems = () =>
+          Object.keys(s.proposalCandidatesById).flatMap((candidateId) =>
+            buildCandidateFeed(s, candidateId, {
+              casts: castsByCandidateId[candidateId],
+            }),
+          );
+
+        const buildPropdateItems = () =>
+          Object.values(s.propdatesByProposalId).map((p) => ({
+            type: "event",
+            eventType: p.markedCompleted
+              ? "propdate-marked-completed"
+              : "propdate-posted",
+            id: `propdate-${p.id}`,
+            body: p.update,
+            blockNumber: p.blockNumber,
+            authorAccount: p.authorAccount,
+            timestamp: p.blockTimestamp,
+            proposalId: p.proposalId,
+          }));
+
+        const buildFeedItems = () => {
+          switch (filter) {
+            case "proposals":
+              return [...buildProposalItems(), ...buildPropdateItems()];
+            case "candidates":
+              return buildCandidateItems();
+            case "propdates":
+              return buildPropdateItems();
+            default:
+              return [
+                ...buildProposalItems(),
+                ...buildCandidateItems(),
+                ...buildPropdateItems(),
+              ];
+          }
+        };
+
+        return arrayUtils.sortBy(
+          { value: (i) => i.timestamp, order: "desc" },
+          buildFeedItems(),
+        );
+      },
+      [enabled, filter, casts, latestBlockNumber],
+    ),
+  );
+};
