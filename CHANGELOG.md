@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.18] - 2024-06-06
+
+### 🐛 Bug Fixes
+
+- Solve some minor issues and update dependencies
+
 ## [1.1.0-beta.17] - 2024-06-06
 
 ### ⚙️ Miscellaneous Tasks
@@ -9,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Disable `automaticVercelMonitors` in `next.config.js`
 - Comment out tracking functionality in event route
 - Disable vercel analytics in layout
+- Comment out production environment check in layout
 
 ## [1.1.0-beta.16] - 2024-06-05
 
