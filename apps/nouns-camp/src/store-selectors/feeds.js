@@ -70,13 +70,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
 export const buildProposalFeed = (
   storeState,
   proposalId,
-  {
-    latestBlockNumber,
-    startTimestamp,
-    endTimestamp,
-    casts,
-    includePropdates = true,
-  },
+  { latestBlockNumber, casts, includePropdates = true },
 ) => {
   const proposal = storeState.proposalsById[proposalId];
 
@@ -204,8 +198,7 @@ export const buildProposalFeed = (
       eventType: "proposal-started",
       id: `${proposal.id}-started`,
       blockNumber: proposal.startBlock,
-      timestamp:
-        startTimestamp == null ? null : new Date(Number(startTimestamp) * 1000),
+      timestamp: proposal.startTimestamp,
       proposalId: proposal.id,
     });
   }
@@ -220,11 +213,14 @@ export const buildProposalFeed = (
       eventType: "proposal-objection-period-started",
       id: `${proposal.id}-objection-period-start`,
       blockNumber: proposal.endBlock,
+      timestamp: proposal.endTimestamp,
       proposalId: proposal.id,
     });
   }
 
   const actualEndBlock = proposal.objectionPeriodEndBlock ?? proposal.endBlock;
+  const actualEndTimestamp =
+    proposal.objectionPeriodEndTimestamp ?? proposal.endTimestamp;
 
   if (
     latestBlockNumber > actualEndBlock &&
@@ -235,13 +231,15 @@ export const buildProposalFeed = (
       eventType: "proposal-ended",
       id: `${proposal.id}-ended`,
       blockNumber: actualEndBlock,
-      timestamp:
-        endTimestamp == null ? null : new Date(Number(endTimestamp) * 1000),
+      timestamp: actualEndTimestamp,
       proposalId: proposal.id,
     });
   }
 
-  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, items);
+  return arrayUtils.sortBy(
+    { value: (i) => i.timestamp ?? 0, order: "desc" },
+    items,
+  );
 };
 
 export const buildCandidateFeed = (
@@ -353,7 +351,7 @@ export const buildCandidateFeed = (
     targetProposalId,
   }));
 
-  return arrayUtils.sortBy({ value: (i) => i.timestamp, order: "desc" }, [
+  return arrayUtils.sortBy({ value: (i) => i.timestamp ?? 0, order: "desc" }, [
     ...items,
     ...signatureItems,
   ]);
@@ -497,7 +495,7 @@ export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
   };
 
   return arrayUtils.sortBy(
-    { value: (i) => i.blockNumber, order: "desc" },
+    { value: (i) => i.timestamp ?? 0, order: "desc" },
     getFilteredItems(),
   );
 };
