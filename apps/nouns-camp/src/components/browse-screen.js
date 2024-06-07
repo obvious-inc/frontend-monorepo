@@ -309,15 +309,15 @@ const BrowseScreen = () => {
     if (connectedAccount == null) return "proposals:ongoing";
 
     if (
-      p.proposerId.toLowerCase() === connectedAccount ||
-      p.signers.some((s) => s.id.toLowerCase() === connectedAccount)
+      p.proposerId === connectedAccount ||
+      p.signers?.some((s) => s.id === connectedAccount)
     )
       return "proposals:authored";
 
     if (
       isVotableProposalState(p.state) &&
       p.votes != null &&
-      !p.votes.some((v) => v.voterId.toLowerCase() === connectedAccount)
+      !p.votes.some((v) => v.voterId === connectedAccount)
     )
       return "proposals:awaiting-vote";
 
