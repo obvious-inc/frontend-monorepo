@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.19] - 2024-06-07
+
+### ⚙️ Miscellaneous Tasks
+
+- Create new `FUNDING.json` file (#351)
+
 ## [1.1.0-beta.18] - 2024-06-06
 
 ### 🐛 Bug Fixes
