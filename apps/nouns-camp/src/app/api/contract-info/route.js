@@ -34,6 +34,7 @@ const fetchAbi = async (address) => {
       address,
     }),
   );
+  console.log(response);
 
   const responseBody = await response.json();
 
