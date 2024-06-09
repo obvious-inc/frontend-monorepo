@@ -16,7 +16,6 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import { CHAIN_ID } from "../constants/env.js";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
-import { buildFeed as buildVoterFeed } from "../utils/voters.js";
 import {
   useAccount,
   useAccountFetch,
@@ -27,8 +26,7 @@ import {
   useAllNounsByAccount,
   useDelegate,
   useDelegateFetch,
-  useProposalCandidates,
-  useProposals,
+  useAccountFeedItems,
 } from "../store.js";
 import useBlockNumber from "../hooks/block-number.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -60,49 +58,6 @@ const isDebugSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("debug") != null;
 
-const useFeedItems = (accountAddress, { filter } = {}) => {
-  const delegate = useDelegate(accountAddress);
-
-  const proposals = useProposals({ state: true, propdates: true });
-  const candidates = useProposalCandidates({
-    includeCanceled: true,
-    includePromoted: true,
-    includeProposalUpdates: true,
-  });
-  const account = useAccount(accountAddress);
-
-  return React.useMemo(() => {
-    const buildProposalItems = () => buildVoterFeed(delegate, { proposals });
-    const buildCandidateItems = () => buildVoterFeed(delegate, { candidates });
-    const buildNounRepresentationItems = () =>
-      buildVoterFeed(delegate, { account });
-
-    const buildFeedItems = () => {
-      switch (filter) {
-        case "proposals":
-          return [...buildProposalItems()];
-        case "candidates":
-          return [...buildCandidateItems()];
-        case "representation":
-          return [...buildNounRepresentationItems()];
-        default:
-          return [
-            ...buildVoterFeed(delegate, {
-              proposals,
-              candidates,
-              account,
-            }),
-          ];
-      }
-    };
-
-    return arrayUtils.sortBy(
-      { value: (i) => i.blockNumber, order: "desc" },
-      buildFeedItems(),
-    );
-  }, [delegate, proposals, candidates, account, filter]);
-};
-
 const getDelegateVotes = (delegate) => {
   if (delegate?.votes == null) return null;
   return delegate.votes.reduce(
@@ -130,7 +85,7 @@ const TruncatedActivityFeed = React.memo(({ voterAddress, filter = "all" }) => {
 
   const [page, setPage] = React.useState(1);
 
-  const feedItems = useFeedItems(voterAddress, { filter });
+  const feedItems = useAccountFeedItems(voterAddress, { filter });
   const visibleItems = feedItems.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
   // Fetch feed items

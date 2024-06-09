@@ -10,17 +10,29 @@ import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
   array as arrayUtils,
   object as objectUtils,
+  function as functionUtils,
 } from "@shades/common/utils";
 import {
   getState as getProposalState,
   isActiveState as isActiveProposalState,
 } from "./utils/proposals.js";
 import {
+  buildAccountFeed,
+  buildProposalFeed,
+  buildCandidateFeed,
+} from "./store-selectors/feeds.js";
+import {
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures as getCandidateSponsorSignatures,
 } from "./utils/candidates.js";
 import usePublicClient from "./hooks/public-client.js";
 import useBlockNumber from "./hooks/block-number.js";
+import useSetting from "./hooks/setting.js";
+import {
+  useProposalCasts,
+  useCandidateCasts,
+  useRecentCasts,
+} from "./hooks/farcaster.js";
 import {
   parsedSubgraphFetch,
   FULL_PROPOSAL_FIELDS,
@@ -155,279 +167,320 @@ const mergeNouns = (n1, n2) => {
   return mergedNoun;
 };
 
-const createStore = ({ initialState }) =>
+const mergeStoreState = (state1, state2) => {
+  const getMergeFn = (key) => {
+    const mergeFn = {
+      accountsById: mergeAccounts,
+      delegatesById: mergeDelegates,
+      nounsById: mergeNouns,
+      proposalsById: mergeProposals,
+      proposalCandidatesById: mergeProposalCandidates,
+    }[key];
+    if (mergeFn == null) throw new Error(`Missing merge function for "${key}"`);
+    return mergeFn;
+  };
+
+  return Object.entries(state2).reduce(
+    (stateAcc, [key, value]) => ({
+      ...stateAcc,
+      [key]: objectUtils.merge(getMergeFn(key), stateAcc[key], value),
+    }),
+    state1,
+  );
+};
+
+const fetchMissingProposalTimestamps = async ({ publicClient }, proposals) => {
+  const mostRecentBlockNumber = await publicClient.getBlockNumber();
+  const getBlockTimestamp = async (blockNumber) => {
+    // const block = await publicClient.getBlock({ blockNumber });
+    const response = await fetch(`/api/block-timestamps?block=${blockNumber}`);
+    const { timestamp } = await response.json();
+    return new Date(timestamp * 1000);
+  };
+  const fetchTimestamps = async (p) => {
+    const [startTimestamp, endTimestamp, objectionPeriodEndTimestamp] =
+      await Promise.all([
+        (async () => {
+          if (p.startTimestamp != null) return p.startTimestamp;
+          if (p.startBlock > mostRecentBlockNumber) return null;
+          return getBlockTimestamp(p.startBlock);
+        })(),
+        (async () => {
+          if (p.endTimestamp != null) return p.endTimestamp;
+          if (p.endBlock > mostRecentBlockNumber) return null;
+          return getBlockTimestamp(p.endBlock);
+        })(),
+        (async () => {
+          if (p.objectionPeriodEndTimestamp != null)
+            return p.objectionPeriodEndTimestamp;
+          if (
+            p.objectionPeriodEndBlock == null ||
+            p.objectionPeriodEndBlock > mostRecentBlockNumber
+          )
+            return null;
+          return getBlockTimestamp(p.objectionPeriodEndBlock);
+        })(),
+      ]);
+    return { startTimestamp, endTimestamp, objectionPeriodEndTimestamp };
+  };
+  return functionUtils.waterfall(
+    proposals.map((p) => async () => {
+      const timestamps = await fetchTimestamps(p);
+      return { id: p.id, ...timestamps };
+    }),
+  );
+};
+
+const createStore = ({ initialState, publicClient }) =>
   createZustandStore((set) => {
-    const subgraphFetch = async (...args) => {
-      const mergeState = (state1, state2) => {
-        const getMergeFn = (key) => {
-          const mergeFn = {
-            accountsById: mergeAccounts,
-            delegatesById: mergeDelegates,
-            nounsById: mergeNouns,
-            proposalsById: mergeProposals,
-            proposalCandidatesById: mergeProposalCandidates,
-          }[key];
-          if (mergeFn == null)
-            throw new Error(`Missing merge function for "${key}"`);
-          return mergeFn;
-        };
+    const mergeSubgraphEntitiesIntoStore = (storeState, subgraphEntities) =>
+      Object.entries(subgraphEntities).reduce((stateAcc, [key, value]) => {
+        const mergeIntoStore = (state) => mergeStoreState(stateAcc, state);
+        switch (key) {
+          case "account":
+            if (value == null) return stateAcc;
+            return mergeIntoStore({
+              accountsById: { [value.id]: value },
+            });
 
-        return Object.entries(state2).reduce(
-          (stateAcc, [key, value]) => ({
-            ...stateAcc,
-            [key]: objectUtils.merge(getMergeFn(key), stateAcc[key], value),
-          }),
-          state1,
-        );
-      };
+          case "accounts":
+            return mergeIntoStore({
+              accountsById: arrayUtils.indexBy((d) => d.id, value),
+            });
 
-      const mergeSubgraphEntitiesIntoStore = (storeState, subgraphEntities) =>
-        Object.entries(subgraphEntities).reduce((stateAcc, [key, value]) => {
-          const mergeIntoStore = (state) => mergeState(stateAcc, state);
-          switch (key) {
-            case "account":
-              if (value == null) return stateAcc;
-              return mergeIntoStore({
-                accountsById: { [value.id]: value },
-              });
+          case "delegate":
+            if (value == null) return stateAcc;
+            return mergeIntoStore({
+              delegatesById: { [value.id]: value },
+              proposalsById: arrayUtils.indexBy(
+                (p) => p.id,
+                value.proposals ?? [],
+              ),
+              nounsById: arrayUtils.indexBy(
+                (n) => n.id,
+                value.nounsRepresented ?? [],
+              ),
+            });
 
-            case "accounts":
-              return mergeIntoStore({
-                accountsById: arrayUtils.indexBy((d) => d.id, value),
-              });
+          case "delegates": {
+            return mergeIntoStore({
+              delegatesById: arrayUtils.indexBy((d) => d.id, value),
+              proposalsById: arrayUtils.indexBy(
+                (p) => p.id,
+                value.flatMap((d) => d.proposals ?? []),
+              ),
+              nounsById: arrayUtils.indexBy(
+                (n) => n.id,
+                value.flatMap((d) => d.nounsRepresented ?? []),
+              ),
+            });
+          }
 
-            case "delegate":
-              if (value == null) return stateAcc;
-              return mergeIntoStore({
-                delegatesById: { [value.id]: value },
-                proposalsById: arrayUtils.indexBy(
-                  (p) => p.id,
-                  value.proposals ?? [],
-                ),
-                nounsById: arrayUtils.indexBy(
-                  (n) => n.id,
-                  value.nounsRepresented ?? [],
-                ),
-              });
+          case "nouns":
+            return mergeIntoStore({
+              nounsById: arrayUtils.indexBy((n) => n.id, value),
+            });
 
-            case "delegates": {
-              return mergeIntoStore({
-                delegatesById: arrayUtils.indexBy((d) => d.id, value),
-                proposalsById: arrayUtils.indexBy(
-                  (p) => p.id,
-                  value.flatMap((d) => d.proposals ?? []),
-                ),
-                nounsById: arrayUtils.indexBy(
-                  (n) => n.id,
-                  value.flatMap((d) => d.nounsRepresented ?? []),
-                ),
-              });
-            }
+          case "auctions": {
+            const auctionsByNounId = arrayUtils.indexBy((a) => a.id, value);
+            return mergeIntoStore({
+              nounsById: objectUtils.mapValues(
+                (auction, nounId) => ({ id: nounId, auction }),
+                auctionsByNounId,
+              ),
+            });
+          }
 
-            case "nouns":
-              return mergeIntoStore({
-                nounsById: arrayUtils.indexBy((n) => n.id, value),
-              });
+          case "proposal":
+            if (value == null) return stateAcc;
+            return mergeIntoStore({ proposalsById: { [value.id]: value } });
 
-            case "auctions": {
-              const auctionsByNounId = arrayUtils.indexBy((a) => a.id, value);
-              return mergeIntoStore({
-                nounsById: objectUtils.mapValues(
-                  (auction, nounId) => ({ id: nounId, auction }),
-                  auctionsByNounId,
-                ),
-              });
-            }
+          case "proposals":
+            return mergeIntoStore({
+              proposalsById: arrayUtils.indexBy((p) => p.id, value),
+            });
 
-            case "proposal":
-              if (value == null) return stateAcc;
-              return mergeIntoStore({ proposalsById: { [value.id]: value } });
+          case "proposalVersions": {
+            const versionsByProposalId = arrayUtils.groupBy(
+              (v) => v.proposalId,
+              value,
+            );
+            return mergeIntoStore({
+              proposalsById: objectUtils.mapValues(
+                (versions, id) => ({ id, versions }),
+                versionsByProposalId,
+              ),
+            });
+          }
 
-            case "proposals":
-              return mergeIntoStore({
-                proposalsById: arrayUtils.indexBy((p) => p.id, value),
-              });
+          case "proposalCandidate": {
+            if (value == null) return stateAcc;
 
-            case "proposalVersions": {
-              const versionsByProposalId = arrayUtils.groupBy(
-                (v) => v.proposalId,
-                value,
-              );
-              return mergeIntoStore({
-                proposalsById: objectUtils.mapValues(
-                  (versions, id) => ({ id, versions }),
-                  versionsByProposalId,
-                ),
-              });
-            }
-
-            case "proposalCandidate": {
-              if (value == null) return stateAcc;
-
-              if (value.proposalId == null)
-                return mergeIntoStore({
-                  proposalCandidatesById: { [value.id]: value },
-                });
-
+            if (value.proposalId == null)
               return mergeIntoStore({
                 proposalCandidatesById: { [value.id]: value },
-                // Merge the candidate id into the matching proposal
-                proposalsById: {
-                  [value.proposalId]: {
-                    id: value.proposalId,
-                    candidateId: value.id,
-                  },
+              });
+
+            return mergeIntoStore({
+              proposalCandidatesById: { [value.id]: value },
+              // Merge the candidate id into the matching proposal
+              proposalsById: {
+                [value.proposalId]: {
+                  id: value.proposalId,
+                  candidateId: value.id,
                 },
-              });
-            }
-
-            case "proposalCandidates":
-              return mergeIntoStore({
-                proposalCandidatesById: arrayUtils.indexBy((c) => c.id, value),
-                // Merge the candidate ids into matching proposals
-                proposalsById: value.reduce((acc, c) => {
-                  if (c.proposalId == null) return acc;
-                  return {
-                    ...acc,
-                    [c.proposalId]: { id: c.proposalId, candidateId: c.id },
-                  };
-                }, {}),
-              });
-
-            case "proposalCandidateVersions": {
-              const versionsByCandidateId = arrayUtils.groupBy(
-                (v) => v.candidateId,
-                value,
-              );
-              return mergeIntoStore({
-                proposalsById: value.reduce((acc, v) => {
-                  if (v.proposalId == null) return acc;
-                  return {
-                    ...acc,
-                    [v.proposalId]: {
-                      id: v.proposalId,
-                      candidateId: v.candidateId,
-                    },
-                  };
-                }, {}),
-                proposalCandidatesById: objectUtils.mapValues(
-                  (versions, id) => ({
-                    id,
-                    slug: extractSlugFromCandidateId(id),
-                    versions,
-                  }),
-                  versionsByCandidateId,
-                ),
-              });
-            }
-
-            case "votes": {
-              const votesByProposalId = arrayUtils.groupBy(
-                (v) => v.proposalId,
-                value,
-              );
-              return mergeIntoStore({
-                proposalsById: objectUtils.mapValues(
-                  (votes, id) => ({ id, votes }),
-                  votesByProposalId,
-                ),
-              });
-            }
-
-            case "candidateFeedbacks": {
-              const feedbackPostsByCandidateId = arrayUtils.groupBy(
-                (f) => f.candidateId,
-                value,
-              );
-              return mergeIntoStore({
-                proposalCandidatesById: objectUtils.mapValues(
-                  (feedbackPosts, id) => ({
-                    id,
-                    slug: extractSlugFromCandidateId(id),
-                    feedbackPosts,
-                  }),
-                  feedbackPostsByCandidateId,
-                ),
-              });
-            }
-
-            case "proposalFeedbacks": {
-              const feedbackPostsByProposalId = arrayUtils.groupBy(
-                (f) => f.proposalId,
-                value,
-              );
-              return mergeIntoStore({
-                proposalsById: objectUtils.mapValues(
-                  (feedbackPosts, id) => ({ id, feedbackPosts }),
-                  feedbackPostsByProposalId,
-                ),
-              });
-            }
-
-            case "delegationEvents":
-            case "transferEvents": {
-              // Putting events in all relevant nouns and accounts for now,
-              // will likely normalize at some point
-
-              // TODO: Move sorting closer to UI code?
-              const sortEvents = (events) =>
-                arrayUtils.sortBy(
-                  { value: (e) => e.blockTimestamp, order: "desc" },
-                  {
-                    value: (e) => {
-                      // delegate events should come after transfers chronologically
-                      if (e.type === "transfer") return 0;
-                      if (e.type === "delegate") return 1;
-                      else return -1;
-                    },
-                    order: "desc",
-                  },
-                  events,
-                );
-
-              const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, value);
-
-              const eventsByAccountId = value.reduce((acc, event) => {
-                for (const propName of [
-                  "newAccountId",
-                  "previousAccountId",
-                  "delegatorId",
-                ]) {
-                  const accountId = event[propName];
-                  if (accountId == null) continue;
-                  if (acc[accountId] == null) acc[accountId] = [];
-                  acc[accountId].push(event);
-                }
-                return acc;
-              }, {});
-
-              return mergeIntoStore({
-                accountsById: objectUtils.mapValues(
-                  (events, accountId) => ({
-                    id: accountId,
-                    events: sortEvents(events),
-                  }),
-                  eventsByAccountId,
-                ),
-                nounsById: objectUtils.mapValues(
-                  (events, nounId) => ({
-                    id: nounId,
-                    events: sortEvents(events),
-                  }),
-                  eventsByNounId,
-                ),
-              });
-            }
-
-            case "proposalCandidateSignatures":
-              // Don’t cache
-              return stateAcc;
-
-            default:
-              throw new Error(`Unknown subgraph entity "${key}"`);
+              },
+            });
           }
-        }, storeState);
 
+          case "proposalCandidates":
+            return mergeIntoStore({
+              proposalCandidatesById: arrayUtils.indexBy((c) => c.id, value),
+              // Merge the candidate ids into matching proposals
+              proposalsById: value.reduce((acc, c) => {
+                if (c.proposalId == null) return acc;
+                return {
+                  ...acc,
+                  [c.proposalId]: { id: c.proposalId, candidateId: c.id },
+                };
+              }, {}),
+            });
+
+          case "proposalCandidateVersions": {
+            const versionsByCandidateId = arrayUtils.groupBy(
+              (v) => v.candidateId,
+              value,
+            );
+            return mergeIntoStore({
+              proposalsById: value.reduce((acc, v) => {
+                if (v.proposalId == null) return acc;
+                return {
+                  ...acc,
+                  [v.proposalId]: {
+                    id: v.proposalId,
+                    candidateId: v.candidateId,
+                  },
+                };
+              }, {}),
+              proposalCandidatesById: objectUtils.mapValues(
+                (versions, id) => ({
+                  id,
+                  slug: extractSlugFromCandidateId(id),
+                  versions,
+                }),
+                versionsByCandidateId,
+              ),
+            });
+          }
+
+          case "votes": {
+            const votesByProposalId = arrayUtils.groupBy(
+              (v) => v.proposalId,
+              value,
+            );
+            return mergeIntoStore({
+              proposalsById: objectUtils.mapValues(
+                (votes, id) => ({ id, votes }),
+                votesByProposalId,
+              ),
+            });
+          }
+
+          case "candidateFeedbacks": {
+            const feedbackPostsByCandidateId = arrayUtils.groupBy(
+              (f) => f.candidateId,
+              value,
+            );
+            return mergeIntoStore({
+              proposalCandidatesById: objectUtils.mapValues(
+                (feedbackPosts, id) => ({
+                  id,
+                  slug: extractSlugFromCandidateId(id),
+                  feedbackPosts,
+                }),
+                feedbackPostsByCandidateId,
+              ),
+            });
+          }
+
+          case "proposalFeedbacks": {
+            const feedbackPostsByProposalId = arrayUtils.groupBy(
+              (f) => f.proposalId,
+              value,
+            );
+            return mergeIntoStore({
+              proposalsById: objectUtils.mapValues(
+                (feedbackPosts, id) => ({ id, feedbackPosts }),
+                feedbackPostsByProposalId,
+              ),
+            });
+          }
+
+          case "delegationEvents":
+          case "transferEvents": {
+            // Putting events in all relevant nouns and accounts for now,
+            // will likely normalize at some point
+
+            // TODO: Move sorting closer to UI code?
+            const sortEvents = (events) =>
+              arrayUtils.sortBy(
+                { value: (e) => e.blockTimestamp, order: "desc" },
+                {
+                  value: (e) => {
+                    // delegate events should come after transfers chronologically
+                    if (e.type === "transfer") return 0;
+                    if (e.type === "delegate") return 1;
+                    else return -1;
+                  },
+                  order: "desc",
+                },
+                events,
+              );
+
+            const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, value);
+
+            const eventsByAccountId = value.reduce((acc, event) => {
+              for (const propName of [
+                "newAccountId",
+                "previousAccountId",
+                "delegatorId",
+              ]) {
+                const accountId = event[propName];
+                if (accountId == null) continue;
+                if (acc[accountId] == null) acc[accountId] = [];
+                acc[accountId].push(event);
+              }
+              return acc;
+            }, {});
+
+            return mergeIntoStore({
+              accountsById: objectUtils.mapValues(
+                (events, accountId) => ({
+                  id: accountId,
+                  events: sortEvents(events),
+                }),
+                eventsByAccountId,
+              ),
+              nounsById: objectUtils.mapValues(
+                (events, nounId) => ({
+                  id: nounId,
+                  events: sortEvents(events),
+                }),
+                eventsByNounId,
+              ),
+            });
+          }
+
+          case "proposalCandidateSignatures":
+            // Don’t cache
+            return stateAcc;
+
+          default:
+            throw new Error(`Unknown subgraph entity "${key}"`);
+        }
+      }, storeState);
+
+    const subgraphFetch = async (...args) => {
       const subgraphEntities = await parsedSubgraphFetch(...args);
 
       // Normalize and merge data into store
@@ -457,8 +510,8 @@ const createStore = ({ initialState }) =>
     const fetchCandidatesFeedbackPosts = (candidateIds) =>
       subgraphFetch({
         query: `
-        ${CANDIDATE_FEEDBACK_FIELDS}
-        query {
+          ${CANDIDATE_FEEDBACK_FIELDS}
+          query {
         # candidateFeedbacks(
         #   where: {
         #     candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
@@ -467,7 +520,7 @@ const createStore = ({ initialState }) =>
         # ) {
         #   ...CandidateFeedbackFields
         # }
-        }`,
+          }`,
       });
 
     const fetchProposalCandidate = async (rawId) => {
@@ -759,13 +812,11 @@ const createStore = ({ initialState }) =>
               proposal(id: "${id}") {
                 ...FullProposalFields
               }
-
             # proposalVersions(where: {proposal: "${id}"}) {
             #   createdAt
             #   createdBlock
             #   updateMessage
             # }
-            #
             # proposalCandidateVersions(
             #   where: {
             #     content_: {
@@ -790,6 +841,19 @@ const createStore = ({ initialState }) =>
         // Fetch candidate async
         if (candidateId != null) fetchProposalCandidate(candidateId);
 
+        (async () => {
+          const proposalsWithTimestamps = await fetchMissingProposalTimestamps(
+            { publicClient },
+            [data.proposal],
+          );
+
+          set((storeState) =>
+            mergeSubgraphEntitiesIntoStore(storeState, {
+              proposals: proposalsWithTimestamps,
+            }),
+          );
+        })();
+
         return data.proposal;
       },
       fetchActiveProposals: (referenceBlock) =>
@@ -804,7 +868,7 @@ const createStore = ({ initialState }) =>
                     {
                       or: [
                         { endBlock_gt: ${referenceBlock} },
-                        { objectionPeriodEndBlock_gt: ${referenceBlock} }
+                      # { objectionPeriodEndBlock_gt: ${referenceBlock} }
                       ]
                     }
                   ]
@@ -820,45 +884,44 @@ const createStore = ({ initialState }) =>
         { includeVotes = false, includeZeroVotingPower = false },
       ) => {
         const { delegates } = await subgraphFetch({
-          query: `
-            query {
-              delegates(
-                first: 1000
-                ${
-                  !includeZeroVotingPower
-                    ? ", where: { nounsRepresented_: {} }"
-                    : ", where: { votes_: {} }"
-                }
-              ) {
-                id
-                delegatedVotes
-                ${
-                  includeVotes
-                    ? `
-                  votes(first: 1000, orderBy: blockNumber, orderDirection: desc) {
-                    id
-                    blockNumber
-                    supportDetailed
-                    reason
-                  }`
-                    : ""
-                }
-                nounsRepresented(first: 1000) {
+          query: `{
+            delegates(
+              first: 1000
+              ${
+                !includeZeroVotingPower
+                  ? ", where: { nounsRepresented_: {} }"
+                  : ", where: { votes_: {} }"
+              }
+            ) {
+              id
+              delegatedVotes
+              ${
+                includeVotes
+                  ? `
+                votes(first: 1000, orderBy: blockNumber, orderDirection: desc) {
                   id
-                  seed {
-                    head
-                    glasses
-                    body
-                    background
-                    accessory
-                  }
-                  owner {
-                    id
-                    delegate { id }
-                  }
+                  blockNumber
+                  supportDetailed
+                  reason
+                }`
+                  : ""
+              }
+              nounsRepresented(first: 1000) {
+                id
+                seed {
+                  head
+                  glasses
+                  body
+                  background
+                  accessory
+                }
+                owner {
+                  id
+                  delegate { id }
                 }
               }
-            }`,
+            }
+          }`,
         });
 
         // Resolse ENS async
@@ -1120,6 +1183,49 @@ const createStore = ({ initialState }) =>
         // Populate ENS cache async
         reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
 
+        (async () => {
+          const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
+
+          const { proposalCandidateVersions } = await subgraphFetch({
+            query: `{
+              proposalCandidateVersions(
+                where: {
+                  or: [${proposals.map(
+                    (p) => `{
+                      content_: { matchingProposalIds_contains: ["${p.id}"] }
+                    }`,
+                  )}]
+                },
+                first: 1000
+              ) {
+                content { matchingProposalIds }
+                proposal { id }
+              }
+            }`,
+          });
+
+          const missingCandidateIds = arrayUtils.unique(
+            proposalCandidateVersions
+              .map((v) => v.proposal.id)
+              .filter((id) => !fetchedCandidateIds.includes(id)),
+          );
+
+          subgraphFetch({
+            query: `
+              ${CANDIDATE_FEEDBACK_FIELDS}
+              query {
+                candidateFeedbacks(
+                  where: {
+                    candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
+                  },
+                  first: 1000
+                ) {
+                  ...CandidateFeedbackFields
+                }
+              }`,
+          });
+        })();
+
         // Fetch less urgent data async
         subgraphFetch({
           query: `
@@ -1209,7 +1315,7 @@ const createStore = ({ initialState }) =>
                     orderDirection: desc,
                     skip: ${skip},
                     first: ${first},
-                    where: { proposer: "${id}"}
+                    where: { proposer: "${id}" }
                   ) {
                     id
                     description
@@ -1267,7 +1373,7 @@ const createStore = ({ initialState }) =>
                 #     }
                 #   }
                 # }
-                  votes (
+                  votes(
                     orderBy: blockNumber,
                     orderDirection: desc,
                     skip: ${skip},
@@ -1310,11 +1416,11 @@ const createStore = ({ initialState }) =>
                     skip: ${skip},
                     first: ${first},
                     where: {
-                      or: [
-                        { newHolder: "${id}" },
-                        { previousHolder: "${id}" }
-                      ]
-                    }
+                    or: [
+                      { newHolder: "${id}" },
+                      { previousHolder: "${id}" }
+                    ]
+                  }
                   ) {
                     ...TransferEventFields
                   }
@@ -1324,16 +1430,16 @@ const createStore = ({ initialState }) =>
                     skip: ${skip},
                     first: ${first},
                     where: {
-                      or: [
-                        { newDelegate: "${id}" },
-                        { previousDelegate: "${id}" },
+                    or: [
+                      { newDelegate: "${id}" },
+                      { previousDelegate: "${id}" },
                       # { delegator: "${id}" }
-                      ]
-                    }
+                    ]
+                  }
                   ) {
                     ...DelegationEventFields
                   }
-                }`,
+                } `,
           }),
 
           (async () => {
@@ -1346,7 +1452,7 @@ const createStore = ({ initialState }) =>
                 # ) {
                 #   content { id }
                 # }
-                }`,
+                } `,
             });
 
             const contentIds = arrayUtils.unique(
@@ -1363,7 +1469,7 @@ const createStore = ({ initialState }) =>
                 # ) {
                 #   id
                 # }
-                }`,
+                } `,
             });
 
             return subgraphFetch({
@@ -1449,7 +1555,7 @@ const createStore = ({ initialState }) =>
         }));
       },
       fetchNounsActivity: async ({ startBlock, endBlock }) => {
-        const [propdates] = await Promise.all([
+        const [propdates, { proposals }] = await Promise.all([
           PropdatesSubgraph.fetchPropdates({ startBlock, endBlock }),
           subgraphFetch({
             query: `
@@ -1457,6 +1563,21 @@ const createStore = ({ initialState }) =>
               ${PROPOSAL_FEEDBACK_FIELDS}
               ${VOTE_FIELDS}
               query {
+                proposals(
+                  where: {
+                    or: [
+                      { startBlock_gte: ${startBlock}, startBlock_lte: ${endBlock} },
+                      { endBlock_gte: ${startBlock}, endBlock_lte: ${endBlock} },
+                    # { objectionPeriodEndBlock_gte: ${startBlock}, objectionPeriodEndBlock_lte: ${endBlock} },
+                    ]
+                  },
+                  first: 1000
+                ) {
+                  id
+                  startBlock
+                  endBlock
+                # objectionPeriodEndBlock
+                }
               # candidateFeedbacks(
               #   where: {
               #     createdBlock_gte: ${startBlock},
@@ -1490,19 +1611,28 @@ const createStore = ({ initialState }) =>
               }`,
           }),
         ]);
-        set((s) => {
-          return {
-            propdatesByProposalId: objectUtils.merge(
-              (ps1 = [], ps2 = []) =>
-                arrayUtils.unique(
-                  (p1, p2) => p1.id === p2.id,
-                  [...ps1, ...ps2],
-                ),
-              s.propdatesByProposalId,
-              arrayUtils.groupBy((d) => d.proposalId, propdates),
-            ),
-          };
-        });
+
+        (async () => {
+          const proposalsWithTimestamps = await fetchMissingProposalTimestamps(
+            { publicClient },
+            proposals,
+          );
+
+          set((storeState) =>
+            mergeSubgraphEntitiesIntoStore(storeState, {
+              proposals: proposalsWithTimestamps,
+            }),
+          );
+        })();
+
+        set((s) => ({
+          propdatesByProposalId: objectUtils.merge(
+            (ps1 = [], ps2 = []) =>
+              arrayUtils.unique((p1, p2) => p1.id === p2.id, [...ps1, ...ps2]),
+            s.propdatesByProposalId,
+            arrayUtils.groupBy((d) => d.proposalId, propdates),
+          ),
+        }));
       },
       fetchVoterActivity: async (voterAddress_, { startBlock, endBlock }) => {
         const voterAddress = voterAddress_.toLowerCase();
@@ -1574,21 +1704,20 @@ const createStore = ({ initialState }) =>
                   orderDirection: desc,
                   first: 1000,
                   where: {
-                    and: [
-                      {
-                        blockNumber_gte: ${startBlock},
-                        blockNumber_lte: ${endBlock}
-                      },
-                      {
-                        or: [
-                          { newDelegate: "${voterAddress}" },
-                          { previousDelegate: "${voterAddress}" },
+                  and: [
+                    {
+                      blockNumber_gte: ${startBlock},
+                      blockNumber_lte: ${endBlock}
+                    },
+                    {
+                      or: [
+                        { newDelegate: "${voterAddress}" },
+                        { previousDelegate: "${voterAddress}" },
                         # { delegator: "${voterAddress}" }
-                        ]
-                      }
-                    ]
-                  }
-                ) {
+                      ]
+                    }
+                  ]
+                }) {
                   ...DelegationEventFields
                 }
               }`,
@@ -1627,10 +1756,11 @@ const createStore = ({ initialState }) =>
 const StoreContext = React.createContext();
 
 export const Provider = ({ children, initialState }) => {
+  const publicClient = usePublicClient();
   const storeRef = React.useRef();
 
   if (storeRef.current == null) {
-    storeRef.current = createStore({ initialState });
+    storeRef.current = createStore({ initialState, publicClient });
   }
 
   return (
@@ -2179,3 +2309,141 @@ export const useEnsCache = () =>
     nameByAddress: s.ensNameByAddress,
     addressByName: s.ensAddressByName,
   }));
+
+export const useProposalFeedItems = (proposalId) => {
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+
+  const eagerLatestBlockNumber = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
+
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
+  const casts = useProposalCasts(proposalId, { filter: farcasterFilter });
+
+  return useStore(
+    React.useCallback(
+      (s) =>
+        buildProposalFeed(s, proposalId, {
+          latestBlockNumber,
+          casts,
+          includePropdates: false,
+        }),
+      [proposalId, latestBlockNumber, casts],
+    ),
+  );
+};
+
+export const useCandidateFeedItems = (candidateId) => {
+  const eagerLatestBlockNumber = useBlockNumber({
+    watch: true,
+    cacheTime: 20_000,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const casts = useCandidateCasts(candidateId, { filter: farcasterFilter });
+
+  return useStore(
+    React.useCallback(
+      (s) =>
+        buildCandidateFeed(s, candidateId, {
+          latestBlockNumber,
+          casts,
+        }),
+      [candidateId, latestBlockNumber, casts],
+    ),
+  );
+};
+
+export const useAccountFeedItems = (accountAddress, { filter }) => {
+  return useStore(
+    React.useCallback(
+      (s) => buildAccountFeed(s, accountAddress, { filter }),
+      [accountAddress, filter],
+    ),
+  );
+};
+
+export const useMainFeedItems = (filter, { enabled = true }) => {
+  const eagerLatestBlockNumber = useBlockNumber({
+    watch: true,
+    cacheTime: 10_000,
+    enabled,
+  });
+  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
+
+  const [farcasterFilter] = useSetting("farcaster-cast-filter");
+  const casts = useRecentCasts({ filter: farcasterFilter });
+
+  return useStore(
+    React.useCallback(
+      (s) => {
+        if (!enabled) return [];
+
+        const castsByProposalId = arrayUtils.groupBy(
+          (c) => c.proposalId,
+          casts,
+        );
+        const castsByCandidateId = arrayUtils.groupBy(
+          (c) => c.candidateId,
+          casts,
+        );
+
+        const buildProposalItems = () =>
+          Object.keys(s.proposalsById).flatMap((proposalId) =>
+            buildProposalFeed(s, proposalId, {
+              latestBlockNumber,
+              casts: castsByProposalId[proposalId],
+              includePropdates: false,
+            }),
+          );
+
+        const buildCandidateItems = () =>
+          Object.keys(s.proposalCandidatesById).flatMap((candidateId) =>
+            buildCandidateFeed(s, candidateId, {
+              casts: castsByCandidateId[candidateId],
+            }),
+          );
+
+        const buildPropdateItems = () =>
+          Object.values(s.propdatesByProposalId).map((p) => ({
+            type: "event",
+            eventType: p.markedCompleted
+              ? "propdate-marked-completed"
+              : "propdate-posted",
+            id: `propdate-${p.id}`,
+            body: p.update,
+            blockNumber: p.blockNumber,
+            authorAccount: p.authorAccount,
+            timestamp: p.blockTimestamp,
+            proposalId: p.proposalId,
+          }));
+
+        const buildFeedItems = () => {
+          switch (filter) {
+            case "proposals":
+              return [...buildProposalItems(), ...buildPropdateItems()];
+            case "candidates":
+              return buildCandidateItems();
+            case "propdates":
+              return buildPropdateItems();
+            default:
+              return [
+                ...buildProposalItems(),
+                ...buildCandidateItems(),
+                ...buildPropdateItems(),
+              ];
+          }
+        };
+
+        return arrayUtils.sortBy(
+          { value: (i) => i.timestamp ?? 0, order: "desc" },
+          buildFeedItems(),
+        );
+      },
+      [enabled, filter, casts, latestBlockNumber],
+    ),
+  );
+};

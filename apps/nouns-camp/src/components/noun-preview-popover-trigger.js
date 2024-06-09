@@ -122,6 +122,15 @@ const NounEvents = ({ nounId, contextAccount }) => {
   const latestDelegationEvent = events.find((e) => e.type === "delegate");
   const latestTransferEvent = events.find((e) => e.type === "transfer");
 
+  const ignoreLastDelegationEvent =
+    latestDelegationEvent?.newAccountId === noun.ownerId;
+
+  if (
+    !latestTransferEvent &&
+    (!latestDelegationEvent || ignoreLastDelegationEvent)
+  )
+    return null;
+
   return (
     <div
       css={(t) =>
@@ -169,8 +178,6 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
   const delegatingText = isDestinationAccount
     ? "Delegated from"
     : "Delegating to";
-
-  if (event.newAccountId === noun?.ownerId) return null;
 
   const previousAccount = isDestinationAccount
     ? ownerDisplayName
