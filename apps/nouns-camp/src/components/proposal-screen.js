@@ -2,7 +2,6 @@
 
 import React from "react";
 import { formatUnits } from "viem";
-import { useBlock } from "wagmi";
 import { notFound as nextNotFound } from "next/navigation";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
@@ -15,11 +14,9 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
-import { CHAIN_ID } from "../constants/env.js";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
-  buildFeed as buildProposalFeed,
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
@@ -27,7 +24,7 @@ import {
 import {
   useProposal,
   useProposalFetch,
-  useProposalCandidate,
+  useProposalFeedItems,
 } from "../store.js";
 import useBlockNumber from "../hooks/block-number.js";
 import {
@@ -43,12 +40,11 @@ import {
   useExecuteProposal,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
-import useSetting from "../hooks/setting.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import { useProposalCasts, useSubmitProposalCast } from "../hooks/farcaster.js";
+import { useSubmitProposalCast } from "../hooks/farcaster.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -78,54 +74,6 @@ const supportToString = (n) => {
   return nameBySupport[n];
 };
 
-const useFeedItems = (proposalId) => {
-  const [farcasterFilter] = useSetting("farcaster-cast-filter");
-  const proposal = useProposal(proposalId);
-  const candidate = useProposalCandidate(proposal?.candidateId);
-
-  const eagerLatestBlockNumber = useBlockNumber({
-    watch: true,
-    cacheTime: 20_000,
-  });
-
-  const latestBlockNumber = React.useDeferredValue(eagerLatestBlockNumber);
-
-  const { data: startBlock } = useBlock({
-    chainId: CHAIN_ID,
-    blockNumber: proposal?.startBlock,
-    query: { enabled: proposal?.startBlock != null },
-  });
-  const { data: endBlock } = useBlock({
-    chainId: CHAIN_ID,
-    blockNumber: proposal?.endBlock,
-    query: { enabled: proposal?.endBlock != null },
-  });
-
-  const startTimestamp = startBlock?.timestamp;
-  const endTimestamp = endBlock?.timestamp;
-
-  const casts = useProposalCasts(proposalId, { filter: farcasterFilter });
-
-  return React.useMemo(
-    () =>
-      buildProposalFeed(proposal, {
-        latestBlockNumber,
-        startTimestamp,
-        endTimestamp,
-        candidate,
-        casts,
-      }),
-    [
-      proposal,
-      latestBlockNumber,
-      startTimestamp,
-      endTimestamp,
-      candidate,
-      casts,
-    ],
-  );
-};
-
 const ProposalMainSection = ({
   proposalId,
   scrollContainerRef,
@@ -148,7 +96,7 @@ const ProposalMainSection = ({
     searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
 
   const proposal = useProposal(proposalId);
-  const feedItems = useFeedItems(proposalId);
+  const feedItems = useProposalFeedItems(proposalId);
 
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);

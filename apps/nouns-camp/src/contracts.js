@@ -10,6 +10,7 @@ const addressByIdentifierByChainId = {
     "reth-token": "0xae78736cd615f374d3085123a210448e74fc6393",
     "usdc-token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
     "steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
+    "$nouns-token": "0x5c1760c98be951a4067df234695c8014d8e7619c",
     "lido-withdrawal-queque": "0x889edc2edab5f40e902b864ad4d7ade8e412f9b1",
     "prop-house": "0x000000002c93cad6f9cfd00c603aef62458d8a48",
     "prop-house-timed-round-implementation":
@@ -74,6 +75,10 @@ const metaByIdentifier = {
   "steth-token": {
     name: "stETH Token",
     token: "stETH",
+  },
+  "$nouns-token": {
+    name: "$nouns Token",
+    token: "$nouns",
   },
   "lido-withdrawal-queque": {
     name: "Lido: Withdrawal Queue",

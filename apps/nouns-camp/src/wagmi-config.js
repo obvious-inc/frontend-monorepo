@@ -17,7 +17,7 @@ import { getChain } from "./utils/chains.js";
 
 const chain = getChain(CHAIN_ID);
 
-const getJsonRpcUrl = (chainId) => {
+export const getJsonRpcUrl = (chainId) => {
   switch (chainId) {
     case mainnet.id:
       return `https://eth-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`;

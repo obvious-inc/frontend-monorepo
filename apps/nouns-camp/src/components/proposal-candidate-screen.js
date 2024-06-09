@@ -22,7 +22,6 @@ import {
   normalizeId,
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures,
-  buildFeed,
   getSignals,
 } from "../utils/candidates.js";
 import {
@@ -34,6 +33,7 @@ import {
   useProposalCandidateFetch,
   useProposalFetch,
   useActiveProposalsFetch,
+  useCandidateFeedItems,
 } from "../store.js";
 import { useNavigate, useSearchParamToggleState } from "../hooks/navigation.js";
 import {
@@ -49,11 +49,7 @@ import {
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import {
-  useCandidateCasts,
-  useSubmitCandidateCast,
-} from "../hooks/farcaster.js";
-import useSetting from "../hooks/setting.js";
+import { useSubmitCandidateCast } from "../hooks/farcaster.js";
 import NounCountNoggles from "./noun-count-noggles.js";
 import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
 import ProposalActionForm from "./proposal-action-form.js";
@@ -77,18 +73,6 @@ const PromoteCandidateDialog = React.lazy(
   () => import("./promote-candidate-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
-
-const useFeedItems = (candidateId) => {
-  const candidate = useProposalCandidate(candidateId);
-
-  const [farcasterFilter] = useSetting("farcaster-cast-filter");
-  const casts = useCandidateCasts(candidateId, { filter: farcasterFilter });
-
-  return React.useMemo(
-    () => buildFeed(candidate, { casts }),
-    [candidate, casts],
-  );
-};
 
 const ProposalCandidateScreenContent = ({
   candidateId,
@@ -114,7 +98,7 @@ const ProposalCandidateScreenContent = ({
     candidate.latestVersion.targetProposalId,
   );
 
-  const feedItems = useFeedItems(candidateId);
+  const feedItems = useCandidateFeedItems(candidateId);
 
   const [formAction, setFormAction] = React.useState("onchain-comment");
   const availableFormActions = ["onchain-comment", "farcaster-comment"];
