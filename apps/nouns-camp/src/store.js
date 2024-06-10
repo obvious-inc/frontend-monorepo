@@ -20,6 +20,7 @@ import {
   buildAccountFeed,
   buildProposalFeed,
   buildCandidateFeed,
+  buildPropdateFeedItem,
 } from "./store-selectors/feeds.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -2326,7 +2327,7 @@ export const useProposalFeedItems = (proposalId) => {
         buildProposalFeed(s, proposalId, {
           latestBlockNumber,
           casts,
-          includePropdates: false,
+          includePropdateItems: true,
         }),
       [proposalId, latestBlockNumber, casts],
     ),
@@ -2394,7 +2395,8 @@ export const useMainFeedItems = (filter, { enabled = true }) => {
             buildProposalFeed(s, proposalId, {
               latestBlockNumber,
               casts: castsByProposalId[proposalId],
-              includePropdates: false,
+              includePropdateItems: false,
+              includeCandidateItems: false,
             }),
           );
 
@@ -2406,18 +2408,9 @@ export const useMainFeedItems = (filter, { enabled = true }) => {
           );
 
         const buildPropdateItems = () =>
-          Object.values(s.propdatesByProposalId).map((p) => ({
-            type: "event",
-            eventType: p.markedCompleted
-              ? "propdate-marked-completed"
-              : "propdate-posted",
-            id: `propdate-${p.id}`,
-            body: p.update,
-            blockNumber: p.blockNumber,
-            authorAccount: p.authorAccount,
-            timestamp: p.blockTimestamp,
-            proposalId: p.proposalId,
-          }));
+          Object.values(s.propdatesByProposalId).flatMap((propdates) =>
+            propdates.map(buildPropdateFeedItem),
+          );
 
         const buildFeedItems = () => {
           switch (filter) {

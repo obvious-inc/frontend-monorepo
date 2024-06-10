@@ -5,20 +5,6 @@ import { resolveIdentifier } from "../contracts.js";
 import { extractReposts } from "../utils/proposals.js";
 import { getSponsorSignatures as getCandidateSponsorSignatures } from "../utils/candidates.js";
 
-const buildPropdateFeed = (propdates) =>
-  propdates.map((p) => ({
-    type: "event",
-    eventType: p.markedCompleted
-      ? "propdate-marked-completed"
-      : "propdate-posted",
-    id: `propdate-${p.id}`,
-    body: p.update,
-    blockNumber: p.blockNumber,
-    authorAccount: p.authorAccount,
-    timestamp: p.blockTimestamp,
-    proposalId: p.proposalId,
-  }));
-
 const buildVoteAndFeedbackPostFeedItems = ({
   proposalId,
   votes: votes_,
@@ -70,7 +56,12 @@ const buildVoteAndFeedbackPostFeedItems = ({
 export const buildProposalFeed = (
   storeState,
   proposalId,
-  { latestBlockNumber, casts, includePropdates = true },
+  {
+    latestBlockNumber,
+    casts,
+    includeCandidateItems = true,
+    includePropdateItems = true,
+  },
 ) => {
   const proposal = storeState.proposalsById[proposalId];
 
@@ -79,7 +70,7 @@ export const buildProposalFeed = (
   const candidate = storeState.proposalCandidatesById[proposal.candidateId];
 
   const candidateItems =
-    candidate == null
+    !includeCandidateItems || candidate == null
       ? []
       : buildCandidateFeed(storeState, proposal.candidateId, {
           includeFeedbackPosts: false,
@@ -119,9 +110,11 @@ export const buildProposalFeed = (
 
   const propdateItems = [];
 
-  if (includePropdates) {
+  if (includePropdateItems) {
     propdateItems.push(
-      ...buildPropdateFeed(storeState.propdatesByProposalId[proposalId] ?? []),
+      ...(storeState.propdatesByProposalId[proposalId] ?? []).map(
+        buildPropdateFeedItem,
+      ),
     );
   }
 
@@ -499,3 +492,16 @@ export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
     getFilteredItems(),
   );
 };
+
+export const buildPropdateFeedItem = (p) => ({
+  type: "event",
+  eventType: p.markedCompleted
+    ? "propdate-marked-completed"
+    : "propdate-posted",
+  id: `propdate-${p.id}`,
+  body: p.update,
+  blockNumber: p.blockNumber,
+  authorAccount: p.authorAccount,
+  timestamp: p.blockTimestamp,
+  proposalId: p.proposalId,
+});
