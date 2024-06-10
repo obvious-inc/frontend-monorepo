@@ -1,6 +1,6 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
-import { encodeFunctionData, formatEther, parseAbi, parseEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { css, Global as GlobalStyles } from "@emotion/react";
 import { Overlay } from "react-aria";
 import {
@@ -44,6 +44,7 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
+import { useTransactionSimulation } from "../hooks/simulation.js";
 
 const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
@@ -662,8 +663,9 @@ const ActionSummary = ({ action: a }) => {
   }
 };
 
-const TransactionCodeBlock = ({ transaction }) => {
+const TransactionCodeBlock = ({ action, transaction }) => {
   const t = useEnhancedParsedTransaction(transaction);
+  const simulation = useTransactionSimulation(action, transaction);
 
   switch (t.type) {
     case "transfer":
@@ -688,6 +690,7 @@ const TransactionCodeBlock = ({ transaction }) => {
           inputs={t.functionInputs}
           inputTypes={t.functionInputTypes}
           value={t.value}
+          simulation={simulation}
         />
       );
     }
@@ -770,56 +773,6 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
   const [isExpanded, setExpanded] = React.useState(
     a.type === "custom-transaction",
   );
-
-  const simulateTransaction = async () => {
-    if (a.type !== "custom-transaction") {
-      // TODO: properly parse non-functions
-      throw new Error("Can only simulate custom transactions");
-    }
-
-    const encodedData = encodeFunctionData({
-      abi: parseAbi([`function ${a.contractCallSignature}`]),
-      name: a.contractCallSignature.split("(")[0],
-      args: a.contractCallArguments,
-    });
-
-    const parsedTransactions = actionTransactions.map((t) => {
-      return {
-        to: t.target,
-        value: t.type === "payable-function-call" ? Number(t.value) : 0,
-        input: encodedData,
-      };
-    });
-
-    fetch("/api/simulate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ transactions: parsedTransactions }),
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to simulate transactions");
-        }
-
-        return response.json();
-      })
-      .then((data) => {
-        if (data.status) {
-          console.log("## Simulation successful");
-        } else {
-          console.error(data.error_message);
-          const url = `https://www.tdly.co/shared/simulation/${data.id}`;
-          console.log("simulation url", url);
-        }
-      })
-      .catch((error) => {
-        console.error("simulation error", error);
-      });
-
-    return null;
-  };
 
   const renderTransactionComment = (t) => {
     switch (t.type) {
@@ -955,22 +908,6 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
             >
               Edit
             </Button>
-
-            <Button
-              variant="opaque"
-              size="tiny"
-              onClick={() => {
-                simulateTransaction();
-              }}
-              disabled={disabled}
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
-              Simulate
-            </Button>
           </>
         )}
 
@@ -1007,7 +944,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
             const comment = renderTransactionComment(t);
             return (
               <li key={i}>
-                <TransactionCodeBlock transaction={t} />
+                <TransactionCodeBlock transaction={t} action={a} />
 
                 {comment != null && (
                   <div

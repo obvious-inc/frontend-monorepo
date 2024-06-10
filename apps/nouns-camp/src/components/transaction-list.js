@@ -6,7 +6,11 @@ import React from "react";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
-import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
+import {
+  CaretDown as CaretDownIcon,
+  Checkmark as CheckmarkIcon,
+  CrossCircle as CrossCircleIcon,
+} from "@shades/ui-web/icons";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -15,6 +19,8 @@ import useDecodedFunctionData from "../hooks/decoded-function-data.js";
 import Code from "./code.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import Link from "@shades/ui-web/link";
+import Spinner from "@shades/ui-web/spinner";
 
 const decimalsByCurrency = {
   eth: 18,
@@ -333,12 +339,42 @@ const ListItem = ({ transaction }) => {
   );
 };
 
+const SimulationBadge = ({ simulation }) => (
+  <span css={css({ float: "right" })}>
+    {simulation.fetching ? (
+      <Spinner size="1.2rem" />
+    ) : simulation.error ? (
+      <div title={simulation?.error ?? "Simulation failed"}>
+        <Link
+          component="a"
+          href={`https://www.tdly.co/shared/simulation/${simulation.raw.id}`}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <CrossCircleIcon
+            aria-hidden="true"
+            css={(t) => css({ width: "1.3rem", color: t.colors.textNegative })}
+          />
+        </Link>
+      </div>
+    ) : (
+      <div title="Simulation passed">
+        <CheckmarkIcon
+          aria-hidden="true"
+          css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
+        />
+      </div>
+    )}
+  </span>
+);
+
 export const FunctionCallCodeBlock = ({
   target,
   name,
   inputs,
   value,
   inputTypes,
+  simulation,
 }) => (
   <Code block>
     <AddressDisplayNameWithTooltip address={target} data-identifier>
@@ -401,7 +437,7 @@ export const FunctionCallCodeBlock = ({
         })}
       </>
     )}
-    )
+    ){simulation && <SimulationBadge simulation={simulation} />}
     {value > 0 && (
       <>
         <br />
