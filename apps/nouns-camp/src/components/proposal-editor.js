@@ -892,23 +892,21 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
         })}
       >
         {openEditDialog != null && (
-          <>
-            <Button
-              variant="opaque"
-              size="tiny"
-              onClick={() => {
-                openEditDialog();
-              }}
-              disabled={disabled}
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
-              Edit
-            </Button>
-          </>
+          <Button
+            variant="opaque"
+            size="tiny"
+            onClick={() => {
+              openEditDialog();
+            }}
+            disabled={disabled}
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+              })
+            }
+          >
+            Edit
+          </Button>
         )}
 
         <Button
