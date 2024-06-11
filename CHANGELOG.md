@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.22] - 2024-06-11
+
+### 🚀 Features
+
+- Add farcaster accounts route
+- Implement farcaster account key generation and management
+- Add farcaster candidate casts route
+
+### 🐛 Bug Fixes
+
+- Add runtime for farcaster accounts route
+- Add runtime export in farcaster-account-key route
+- Add runtime constant to farcaster candidate casts route
+
+### 🚜 Refactor
+
+- Make `reverseResolveEnsAddresses` call async and comment out query execution
+- Disable kv usage for account key validation
+- Temporarily disable `fetchAccountsWithVerifiedAddress` in api route
+- Comment out farcaster account key route code
+- Temporary deactivate unused queries for proposal candidates and feedbacks
+- Comment out unused code in farcaster candidate casts
+- Enable data property in request json extraction
+
 ## [1.1.0-beta.21] - 2024-06-11
 
 ### 🚀 Features
