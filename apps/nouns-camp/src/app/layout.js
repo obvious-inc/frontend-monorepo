@@ -18,7 +18,8 @@ import "../index.css";
 
 import "../snow.css";
 
-// const isProduction = process.env.NODE_ENV === "production";
+// eslint-disable-next-line no-unused-vars
+const isProduction = process.env.NODE_ENV === "production";
 
 const title = metaConfig.appTitle;
 const description = metaConfig.appDescription;
