@@ -3,7 +3,8 @@
 export const runtime = "edge";
 
 export async function POST(request) {
-  const { name/*, data*/ } = await request.json();
+  // eslint-disable-next-line no-unused-vars
+  const { name, data } = await request.json();
 
   if (name == null)
     return Response.json({ code: "name-required" }, { status: 400 });
