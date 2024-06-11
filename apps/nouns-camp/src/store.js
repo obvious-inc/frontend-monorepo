@@ -1182,49 +1182,49 @@ const createStore = ({ initialState, publicClient }) =>
           );
 
         // Populate ENS cache async
-        reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
+        await reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
 
-        (async () => {
-          const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
+        await (async () => {
+          // const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
 
-          const { proposalCandidateVersions } = await subgraphFetch({
-            query: `{
-              proposalCandidateVersions(
-                where: {
-                  or: [${proposals.map(
-                    (p) => `{
-                      content_: { matchingProposalIds_contains: ["${p.id}"] }
-                    }`,
-                  )}]
-                },
-                first: 1000
-              ) {
-                content { matchingProposalIds }
-                proposal { id }
-              }
-            }`,
-          });
+          // const { proposalCandidateVersions } = await subgraphFetch({
+          //   query: `{
+          //     proposalCandidateVersions(
+          //       where: {
+          //         or: [${proposals.map(
+          //     (p) => `{
+          //             content_: { matchingProposalIds_contains: ["${p.id}"] }
+          //           }`,
+          //   )}]
+          //       },
+          //       first: 1000
+          //     ) {
+          //       content { matchingProposalIds }
+          //       proposal { id }
+          //     }
+          //   }`,
+          // });
 
-          const missingCandidateIds = arrayUtils.unique(
-            proposalCandidateVersions
-              .map((v) => v.proposal.id)
-              .filter((id) => !fetchedCandidateIds.includes(id)),
-          );
+          // const missingCandidateIds = arrayUtils.unique(
+          //   proposalCandidateVersions
+          //     .map((v) => v.proposal.id)
+          //     .filter((id) => !fetchedCandidateIds.includes(id)),
+          // );
 
-          subgraphFetch({
-            query: `
-              ${CANDIDATE_FEEDBACK_FIELDS}
-              query {
-                candidateFeedbacks(
-                  where: {
-                    candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
-                  },
-                  first: 1000
-                ) {
-                  ...CandidateFeedbackFields
-                }
-              }`,
-          });
+          // subgraphFetch({
+          //   query: `
+          //     ${CANDIDATE_FEEDBACK_FIELDS}
+          //     query {
+          //       candidateFeedbacks(
+          //         where: {
+          //           candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
+          //         },
+          //         first: 1000
+          //       ) {
+          //         ...CandidateFeedbackFields
+          //       }
+          //     }`,
+          // });
         })();
 
         // Fetch less urgent data async
