@@ -1185,9 +1185,8 @@ const createStore = ({ initialState, publicClient }) =>
         await reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
 
         await (async () => {
-          const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
+          // const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
 
-          const proposalCandidateVersions = []
           // const { proposalCandidateVersions } = await subgraphFetch({
           //   query: `{
           //     proposalCandidateVersions(
@@ -1206,26 +1205,26 @@ const createStore = ({ initialState, publicClient }) =>
           //   }`,
           // });
 
-          const missingCandidateIds = arrayUtils.unique(
-            proposalCandidateVersions
-              .map((v) => v.proposal.id)
-              .filter((id) => !fetchedCandidateIds.includes(id)),
-          );
+          // const missingCandidateIds = arrayUtils.unique(
+          //   proposalCandidateVersions
+          //     .map((v) => v.proposal.id)
+          //     .filter((id) => !fetchedCandidateIds.includes(id)),
+          // );
 
-          subgraphFetch({
-            query: `
-              ${CANDIDATE_FEEDBACK_FIELDS}
-              query {
-                candidateFeedbacks(
-                  where: {
-                    candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
-                  },
-                  first: 1000
-                ) {
-                  ...CandidateFeedbackFields
-                }
-              }`,
-          });
+          // subgraphFetch({
+          //   query: `
+          //     ${CANDIDATE_FEEDBACK_FIELDS}
+          //     query {
+          //       candidateFeedbacks(
+          //         where: {
+          //           candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
+          //         },
+          //         first: 1000
+          //       ) {
+          //         ...CandidateFeedbackFields
+          //       }
+          //     }`,
+          // });
         })();
 
         // Fetch less urgent data async
