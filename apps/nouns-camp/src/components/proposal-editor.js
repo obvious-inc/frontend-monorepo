@@ -663,9 +663,9 @@ const ActionSummary = ({ action: a }) => {
   }
 };
 
-const TransactionCodeBlock = ({ action, transaction }) => {
+const TransactionCodeBlock = ({ transaction }) => {
   const t = useEnhancedParsedTransaction(transaction);
-  const simulation = useTransactionSimulation(action, transaction);
+  const simulation = useTransactionSimulation(transaction);
 
   switch (t.type) {
     case "transfer":
@@ -764,7 +764,10 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
 );
 
 const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
-  const actionTransactions = resolveActionTransactions(a);
+  const actionTransactions = React.useMemo(
+    () => resolveActionTransactions(a),
+    [a],
+  );
 
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
@@ -942,7 +945,7 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
             const comment = renderTransactionComment(t);
             return (
               <li key={i}>
-                <TransactionCodeBlock transaction={t} action={a} />
+                <TransactionCodeBlock transaction={t} />
 
                 {comment != null && (
                   <div

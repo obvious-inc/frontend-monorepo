@@ -1,13 +1,26 @@
 import React from "react";
-import { useFetch } from "@shades/common/react";
-import { encodeFunctionData, parseAbi } from "viem";
+import { encodeFunctionData } from "viem";
 
-export const fetchSimulation = async (action, transaction) => {
-  // TODO: should this be part of the transaction?
+const SIMULATE_TRANSACTION_TYPES = [
+  "function-call",
+  "proxied-function-call",
+  "payable-function-call",
+  "proxied-payable-function-call",
+  "treasury-noun-transfer",
+  "escrow-noun-transfer",
+];
+
+export const fetchSimulation = async (transaction) => {
   const encodedData = encodeFunctionData({
-    abi: parseAbi([`function ${action.contractCallSignature}`]),
-    name: action.contractCallSignature.split("(")[0],
-    args: action.contractCallArguments,
+    abi: [
+      {
+        inputs: transaction.functionInputTypes,
+        name: transaction.functionName,
+        type: "function",
+      },
+    ],
+    functionName: transaction.functionName,
+    args: transaction.functionInputs,
   });
   const parsedTransaction = {
     to: transaction.target,
@@ -34,29 +47,29 @@ export const fetchSimulation = async (action, transaction) => {
   return simulation;
 };
 
-export const useTransactionSimulation = (action, transaction) => {
+export const useTransactionSimulation = (transaction) => {
   const [isFetching, setIsFetching] = React.useState(false);
   const [simulation, setSimulation] = React.useState(null);
 
-  const fetchData = React.useCallback(
-    async ({ signal }) => {
-      try {
-        setIsFetching(true);
-        const sim = await fetchSimulation(action, transaction);
-        if (signal?.aborted) return;
-        setSimulation(sim);
-      } finally {
-        setIsFetching(false);
-      }
-    },
-    [action, transaction],
-  );
+  const fetchData = React.useCallback(async () => {
+    try {
+      setIsFetching(true);
+      const sim = await fetchSimulation(transaction);
+      setSimulation(sim);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [transaction]);
 
-  useFetch(fetchData, [fetchData]);
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  if (action.type !== "custom-transaction") {
-    // TODO: parse non-custom transactions too
-    throw new Error("Can only simulate custom transactions");
+  if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
+    console.warn(
+      "Transaction type not supported for simulation",
+      transaction.type,
+    );
   }
 
   return {
