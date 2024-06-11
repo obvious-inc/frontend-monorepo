@@ -2,6 +2,8 @@ import { kv } from "@vercel/kv";
 import { isAddress } from "viem";
 import { fetchAccountsWithVerifiedAddress } from "../farcaster-utils.js";
 
+export const runtime = "edge";
+
 // Returns Farcaster accounts matching a verified Ethereum account address
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
