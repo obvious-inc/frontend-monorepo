@@ -1182,28 +1182,29 @@ const createStore = ({ initialState, publicClient }) =>
           );
 
         // Populate ENS cache async
-        reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
+        await reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
 
-        (async () => {
+        await (async () => {
           const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
 
-          const { proposalCandidateVersions } = await subgraphFetch({
-            query: `{
-              proposalCandidateVersions(
-                where: {
-                  or: [${proposals.map(
-                    (p) => `{
-                      content_: { matchingProposalIds_contains: ["${p.id}"] }
-                    }`,
-                  )}]
-                },
-                first: 1000
-              ) {
-                content { matchingProposalIds }
-                proposal { id }
-              }
-            }`,
-          });
+          const proposalCandidateVersions = []
+          // const { proposalCandidateVersions } = await subgraphFetch({
+          //   query: `{
+          //     proposalCandidateVersions(
+          //       where: {
+          //         or: [${proposals.map(
+          //     (p) => `{
+          //             content_: { matchingProposalIds_contains: ["${p.id}"] }
+          //           }`,
+          //   )}]
+          //       },
+          //       first: 1000
+          //     ) {
+          //       content { matchingProposalIds }
+          //       proposal { id }
+          //     }
+          //   }`,
+          // });
 
           const missingCandidateIds = arrayUtils.unique(
             proposalCandidateVersions
