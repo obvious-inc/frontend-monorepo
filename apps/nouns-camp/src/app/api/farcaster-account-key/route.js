@@ -3,6 +3,8 @@
 // import { privateKeyToAccount } from "viem/accounts";
 // import { kv } from "@vercel/kv";
 
+export const runtime = "edge";
+
 // const SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
 //   name: "Farcaster SignedKeyRequestValidator",
 //   version: "1",
