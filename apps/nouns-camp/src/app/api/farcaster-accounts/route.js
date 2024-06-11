@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+// import { kv } from "@vercel/kv";
 import { isAddress } from "viem";
 import { fetchAccountsWithVerifiedAddress } from "../farcaster-utils.js";
 
@@ -22,8 +22,8 @@ export async function GET(request) {
   const accountsWithKeyData = await Promise.all(
     accounts.map(async (account) => {
       // `exists` returns the number of existing keys
-      const hasAccountKey =
-        (await kv.exists(`fid:${account.fid}:account-key`)) > 0;
+      const hasAccountKey = false
+        // (await kv.exists(`fid:${account.fid}:account-key`)) > 0;
       return { ...account, hasAccountKey };
     }),
   );
