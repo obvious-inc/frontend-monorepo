@@ -1,6 +1,6 @@
 // import { kv } from "@vercel/kv";
 // import { verifyMessage, isAddress } from "viem";
-// import { CHAIN_ID } from "../../../constants/env.js";
+// import { CHAIN_ID, APP_URL } from "../../../constants/env.js";
 // import { subgraphFetch } from "../../../nouns-subgraph.js";
 // import {
 //   parseEpochTimestamp,
@@ -105,6 +105,7 @@ export async function POST(request) {
   //   const castMessage = await submitCastAdd(fid, privateAccountKey, {
   //     text,
   //     parentUrl: await createCanonicalProposalUrl(proposalId),
+  //     embeds: [{ url: `${APP_URL}/proposals/${proposalId}` }],
   //   });
   //   return jsonResponse(201, {
   //     hash: castMessage.hash,
