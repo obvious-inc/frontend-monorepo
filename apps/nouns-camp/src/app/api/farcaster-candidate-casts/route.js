@@ -13,6 +13,8 @@
 //   verifyEthAddress,
 // } from "../farcaster-utils.js";
 
+export const runtime = "edge";
+
 // const createCanonicalCandidateUrl = async (candidateId) => {
 //   const { proposalCandidate } = await subgraphFetch({
 //     query: `
