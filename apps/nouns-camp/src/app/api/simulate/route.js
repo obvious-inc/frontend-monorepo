@@ -1,5 +1,5 @@
+import { CHAIN_ID } from "../../../constants/env.js";
 import { resolveIdentifier } from "../../../contracts";
-import { CHAIN_ID } from "./constants/env.js";
 
 const API_ENDPOINT = `https://api.tenderly.co/api/v1/account/me/project/${process.env.TENDERLY_PROJECT_SLUG}`;
 
