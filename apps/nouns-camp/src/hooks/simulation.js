@@ -8,28 +8,44 @@ const SIMULATE_TRANSACTION_TYPES = [
   "proxied-payable-function-call",
   "treasury-noun-transfer",
   "escrow-noun-transfer",
+  "transfer",
 ];
 
 export const fetchSimulation = async (transaction) => {
-  const encodedData = encodeFunctionData({
-    abi: [
-      {
-        inputs: transaction.functionInputTypes,
-        name: transaction.functionName,
-        type: "function",
-      },
-    ],
-    functionName: transaction.functionName,
-    args: transaction.functionInputs,
-  });
+  const transactionValue = (transaction) => {
+    switch (transaction.type) {
+      case "payable-function-call":
+      case "proxied-payable-function-call":
+        return transaction.value;
+      default:
+        return 0;
+    }
+  };
+
+  const encodedData = (transaction) => {
+    if (!transaction.functionName) {
+      return "0x";
+    }
+
+    return encodeFunctionData({
+      abi: [
+        {
+          inputs: transaction.functionInputTypes,
+          name: transaction.functionName,
+          type: "function",
+        },
+      ],
+      functionName: transaction.functionName,
+      args: transaction.functionInputs,
+    });
+  };
+
   const parsedTransaction = {
     to: transaction.target,
-    value:
-      transaction.type === "payable-function-call"
-        ? Number(transaction.value)
-        : 0,
-    input: encodedData,
+    value: Number(transactionValue(transaction)),
+    input: encodedData(transaction),
   };
+
   const body = JSON.stringify({ transactions: [parsedTransaction] });
   const res = await fetch("/api/simulate", {
     method: "POST",
@@ -66,16 +82,13 @@ export const useTransactionSimulation = (transaction) => {
   }, [fetchData]);
 
   if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
-    console.warn(
-      "Transaction type not supported for simulation",
-      transaction.type,
-    );
+    return null;
   }
 
   return {
     fetching: isFetching,
-    result: simulation?.result,
+    success: simulation?.status,
     error: simulation?.error_message,
-    raw: simulation,
+    id: simulation?.id,
   };
 };

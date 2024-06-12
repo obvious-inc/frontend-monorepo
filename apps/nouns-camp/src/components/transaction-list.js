@@ -344,26 +344,39 @@ const SimulationBadge = ({ simulation }) => (
     {simulation.fetching ? (
       <Spinner size="1.2rem" />
     ) : simulation.error ? (
-      <div title={simulation?.error ?? "Simulation failed"}>
-        <Link
-          component="a"
-          href={`https://www.tdly.co/shared/simulation/${simulation.raw.id}`}
-          rel="noreferrer"
-          target="_blank"
-        >
+      simulation.id ? (
+        <div title={simulation?.error ?? "Simulation failed"}>
+          <Link
+            component="a"
+            href={`https://www.tdly.co/shared/simulation/${simulation.id}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            <CrossCircleIcon
+              aria-hidden="true"
+              css={(t) =>
+                css({ width: "1.3rem", color: t.colors.textNegative })
+              }
+            />
+          </Link>
+        </div>
+      ) : (
+        <div title={simulation?.error ?? "Simulation failed"}>
           <CrossCircleIcon
             aria-hidden="true"
             css={(t) => css({ width: "1.3rem", color: t.colors.textNegative })}
           />
-        </Link>
-      </div>
-    ) : (
+        </div>
+      )
+    ) : simulation.success ? (
       <div title="Simulation passed">
         <CheckmarkIcon
           aria-hidden="true"
           css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
         />
       </div>
+    ) : (
+      <></>
     )}
   </span>
 );
@@ -437,7 +450,7 @@ export const FunctionCallCodeBlock = ({
         })}
       </>
     )}
-    ){simulation && <SimulationBadge simulation={simulation} />}
+    )
     {value > 0 && (
       <>
         <br />
@@ -449,10 +462,14 @@ export const FunctionCallCodeBlock = ({
         </span>
       </>
     )}
+    {simulation && <SimulationBadge simulation={simulation} />}
   </Code>
 );
 
-export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
+export const UnparsedFunctionCallCodeBlock = ({
+  transaction: t,
+  simulation: s,
+}) => (
   <Code block>
     <span data-identifier>target</span>:{" "}
     <span data-argument>
@@ -485,6 +502,7 @@ export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
         </span>
       </>
     )}
+    {s && <SimulationBadge simulation={s} />}
   </Code>
 );
 
