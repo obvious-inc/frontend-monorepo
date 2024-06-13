@@ -340,7 +340,7 @@ const ListItem = ({ transaction }) => {
 };
 
 const SimulationBadge = ({ simulation }) => (
-  <span css={css({ float: "right" })}>
+  <div css={css({ position: "absolute", bottom: "1.1rem", right: "1.1rem" })}>
     {simulation.fetching ? (
       <Spinner size="1.2rem" />
     ) : simulation.error ? (
@@ -378,7 +378,7 @@ const SimulationBadge = ({ simulation }) => (
     ) : (
       <></>
     )}
-  </span>
+  </div>
 );
 
 export const FunctionCallCodeBlock = ({
