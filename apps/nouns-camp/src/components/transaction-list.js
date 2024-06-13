@@ -450,21 +450,19 @@ export const FunctionCallCodeBlock = ({
         })}
       </>
     )}
-    <div>
-      )
-      {value > 0 && (
-        <>
-          <br />
-          <span data-identifier>value</span>:{" "}
-          <span data-argument>{value.toString()}</span>
-          <span data-comment>
-            {" // "}
-            <FormattedEthWithConditionalTooltip value={value} />
-          </span>
-        </>
-      )}
-      {simulation && <SimulationBadge simulation={simulation} />}
-    </div>
+    )
+    {value > 0 && (
+      <>
+        <br />
+        <span data-identifier>value</span>:{" "}
+        <span data-argument>{value.toString()}</span>
+        <span data-comment>
+          {" // "}
+          <FormattedEthWithConditionalTooltip value={value} />
+        </span>
+      </>
+    )}
+    {simulation && <SimulationBadge simulation={simulation} />}
   </Code>
 );
 
