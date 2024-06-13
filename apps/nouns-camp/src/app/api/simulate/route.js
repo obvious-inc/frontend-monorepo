@@ -105,7 +105,7 @@ export async function POST(request) {
   const simulation = data.simulation;
 
   // (async) share simulation
-  if (simulation) shareSimulation(simulation);
+  if (simulation) await shareSimulation(simulation);
 
   return new Response(JSON.stringify({ ...simulation }), {
     status: 200,
