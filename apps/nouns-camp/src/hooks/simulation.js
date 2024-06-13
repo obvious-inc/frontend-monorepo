@@ -45,7 +45,7 @@ export const fetchSimulation = async (transaction) => {
 
   const parsedTransaction = {
     to: transaction.target,
-    value: Number(transactionValue(transaction)),
+    value: transactionValue(transaction).toString(),
     input: encodedData(transaction),
   };
 
