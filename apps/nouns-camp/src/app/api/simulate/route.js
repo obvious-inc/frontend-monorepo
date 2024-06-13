@@ -11,7 +11,7 @@ const TENDERLY_SIMULATION_OPTIONS = {
 const shareSimulation = async (simulation) => {
   if (simulation.status) return;
 
-  fetch(`${TENDERLY_API_ENDPOINT}/simulations/${simulation.id}/share`, {
+  await fetch(`${TENDERLY_API_ENDPOINT}/simulations/${simulation.id}/share`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -21,19 +21,15 @@ const shareSimulation = async (simulation) => {
   })
     .then((response) => {
       if (!response.ok) {
-        return new Response(
-          JSON.stringify({ error: "simulation-share-error" }),
-          {
-            status: 400,
-            headers: {
-              "Content-Type": "application/json",
-            },
-          },
+        console.error(
+          "simulation api share error",
+          response.status,
+          response.statusText,
         );
       }
     })
     .catch((error) => {
-      console.error("simulation share error", error);
+      console.error("unexpected error", error);
     });
 };
 
