@@ -8,10 +8,13 @@ const SIMULATE_TRANSACTION_TYPES = [
   "proxied-payable-function-call",
   "treasury-noun-transfer",
   "escrow-noun-transfer",
-  "transfer",
 ];
 
 export const fetchSimulation = async (transaction) => {
+  if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
+    return null;
+  }
+
   const transactionValue = (transaction) => {
     switch (transaction.type) {
       case "payable-function-call":
@@ -24,7 +27,7 @@ export const fetchSimulation = async (transaction) => {
 
   const encodedData = (transaction) => {
     if (!transaction.functionName) {
-      return "0x";
+      return "";
     }
 
     return encodeFunctionData({
@@ -46,7 +49,7 @@ export const fetchSimulation = async (transaction) => {
     input: encodedData(transaction),
   };
 
-  const body = JSON.stringify({ transactions: [parsedTransaction] });
+  const body = JSON.stringify(parsedTransaction);
   const res = await fetch("/api/simulate", {
     method: "POST",
     headers: {
@@ -80,10 +83,6 @@ export const useTransactionSimulation = (transaction) => {
   React.useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
-    return null;
-  }
 
   return {
     fetching: isFetching,

@@ -672,12 +672,7 @@ const TransactionCodeBlock = ({ transaction }) => {
     case "payer-top-up":
     case "unparsed-function-call":
     case "unparsed-payable-function-call":
-      return (
-        <UnparsedFunctionCallCodeBlock
-          transaction={t}
-          simulation={simulation}
-        />
-      );
+      return <UnparsedFunctionCallCodeBlock transaction={t} />;
 
     default: {
       if (

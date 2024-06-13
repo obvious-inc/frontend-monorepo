@@ -450,26 +450,25 @@ export const FunctionCallCodeBlock = ({
         })}
       </>
     )}
-    )
-    {value > 0 && (
-      <>
-        <br />
-        <span data-identifier>value</span>:{" "}
-        <span data-argument>{value.toString()}</span>
-        <span data-comment>
-          {" // "}
-          <FormattedEthWithConditionalTooltip value={value} />
-        </span>
-      </>
-    )}
-    {simulation && <SimulationBadge simulation={simulation} />}
+    <div>
+      )
+      {value > 0 && (
+        <>
+          <br />
+          <span data-identifier>value</span>:{" "}
+          <span data-argument>{value.toString()}</span>
+          <span data-comment>
+            {" // "}
+            <FormattedEthWithConditionalTooltip value={value} />
+          </span>
+        </>
+      )}
+      {simulation && <SimulationBadge simulation={simulation} />}
+    </div>
   </Code>
 );
 
-export const UnparsedFunctionCallCodeBlock = ({
-  transaction: t,
-  simulation: s,
-}) => (
+export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
   <Code block>
     <span data-identifier>target</span>:{" "}
     <span data-argument>
@@ -502,7 +501,6 @@ export const UnparsedFunctionCallCodeBlock = ({
         </span>
       </>
     )}
-    {s && <SimulationBadge simulation={s} />}
   </Code>
 );
 
