@@ -8,6 +8,8 @@ const SIMULATE_TRANSACTION_TYPES = [
   "proxied-payable-function-call",
   "treasury-noun-transfer",
   "escrow-noun-transfer",
+  "transfer",
+  "usdc-transfer-via-payer",
 ];
 
 export const fetchSimulation = async (transaction) => {
@@ -19,6 +21,7 @@ export const fetchSimulation = async (transaction) => {
     switch (transaction.type) {
       case "payable-function-call":
       case "proxied-payable-function-call":
+      case "transfer":
         return transaction.value;
       default:
         return 0;

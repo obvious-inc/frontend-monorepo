@@ -466,7 +466,10 @@ export const FunctionCallCodeBlock = ({
   </Code>
 );
 
-export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
+export const UnparsedFunctionCallCodeBlock = ({
+  transaction: t,
+  simulation: s,
+}) => (
   <Code block>
     <span data-identifier>target</span>:{" "}
     <span data-argument>
@@ -499,6 +502,7 @@ export const UnparsedFunctionCallCodeBlock = ({ transaction: t }) => (
         </span>
       </>
     )}
+    {s && <SimulationBadge simulation={s} />}
   </Code>
 );
 
