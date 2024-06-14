@@ -129,6 +129,9 @@ const groupConfigByKey = {
     title: "Stale",
     description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
+  "candidates:canceled": {
+    title: "Canceled",
+  },
 };
 
 let hasFetchedBrowseDataOnce = false;
@@ -150,7 +153,7 @@ const BrowseScreen = () => {
 
   const proposals = useProposals({ state: true });
   const candidates = useProposalCandidates({
-    includeCanceled: false,
+    includeCanceled: true,
     includePromoted: false,
     includeProposalUpdates: false,
   });
@@ -348,6 +351,9 @@ const BrowseScreen = () => {
           (p) => p.createdTimestamp > candidateActiveThreshold,
         ));
 
+    const isCanceled = c.canceledTimestamp != null;
+
+    if (isCanceled) return "candidates:canceled";
     if (!isActive) return "candidates:inactive";
 
     if (candidateSortStrategy === "popularity") return "candidates:popular";
@@ -461,7 +467,8 @@ const BrowseScreen = () => {
         case "candidates:popular":
         case "candidates:authored-proposal-update":
         case "candidates:inactive":
-        case "proposals:sponsored-proposal-update-awaiting-signature": {
+        case "proposals:sponsored-proposal-update-awaiting-signature":
+        case "candidates:canceled": {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
@@ -544,6 +551,12 @@ const BrowseScreen = () => {
       { replace: true },
     );
   });
+
+  const allInactiveCandidatesShown =
+    page == null ||
+    (sectionsByName["candidates:inactive"] != null &&
+      BROWSE_LIST_PAGE_ITEM_COUNT * page >
+        sectionsByName["candidates:inactive"].count);
 
   return (
     <>
@@ -876,6 +889,27 @@ const BrowseScreen = () => {
                               showAll={() => setPage(null)}
                             />
                           )}
+
+                        {allInactiveCandidatesShown && (
+                          <SectionedList
+                            css={css({
+                              marginTop: "1.6rem",
+                              "@media(min-width: 600px)": {
+                                marginTop: "2.8rem",
+                              },
+                            })}
+                            showPlaceholder={!hasFetchedOnce}
+                            sections={["candidates:canceled"]
+                              .map(
+                                (sectionName) =>
+                                  sectionsByName[sectionName] ?? {},
+                              )
+                              .filter(
+                                ({ items }) =>
+                                  items != null && items.length !== 0,
+                              )}
+                          />
+                        )}
                       </div>
                     </Tabs.Item>
                     <Tabs.Item key="drafts" title="My drafts">
