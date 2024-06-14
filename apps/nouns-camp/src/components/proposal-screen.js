@@ -14,6 +14,7 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
@@ -45,6 +46,7 @@ import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitProposalCast } from "../hooks/farcaster.js";
+import useFeatureFlag from "../hooks/feature-flag.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -147,37 +149,75 @@ const ProposalMainSection = ({
       ? formActionOverride
       : defaultFormAction;
 
-  const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const [pendingComment, setPendingComment] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(() => {
     if (isFinalOrSucceededState) return 2; // No signal
     return null;
   });
-  const [quotedFeedItemIds, setQuotedFeedItemIds] = React.useState([]);
 
-  const quotedFeedItems = React.useMemo(() => {
+  const isRepliesEnabled = useFeatureFlag("replies");
+  const [
+    pendingRepliesByTargetFeedItemId,
+    setPendingRepliesByTargetFeedItemId,
+  ] = React.useState({});
+  const setReply = React.useCallback((targetFeedItemId, reply) => {
+    setPendingRepliesByTargetFeedItemId((s) => ({
+      ...s,
+      [targetFeedItemId]: reply,
+    }));
+  }, []);
+  const [pendingReplyTargetFeedItemIds, setPendingReplyTargetFeedItemIds] =
+    React.useState([]);
+  const [pendingRepostTargetFeedItemIds, setPendingRepostTargetFeedItemIds] =
+    React.useState([]);
+
+  const replyTargetFeedItems = React.useMemo(() => {
     if (currentFormAction === "farcaster-comment") return [];
-    return quotedFeedItemIds.map((id) => feedItems.find((i) => i.id === id));
-  }, [currentFormAction, feedItems, quotedFeedItemIds]);
+    return pendingReplyTargetFeedItemIds.map((targetFeedItemId) =>
+      feedItems.find((i) => i.id === targetFeedItemId),
+    );
+  }, [currentFormAction, feedItems, pendingReplyTargetFeedItemIds]);
 
-  const reasonWithReposts = React.useMemo(() => {
-    const markedQuotes = quotedFeedItems.map((item) => {
-      const quotedBody = item.body
-        .trim()
-        .split("\n")
-        .map((l) => `> ${l}`)
-        .join("\n");
-      return `+1\n\n${quotedBody}`;
+  const repostTargetFeedItems = React.useMemo(() => {
+    if (currentFormAction === "farcaster-comment") return [];
+    return pendingRepostTargetFeedItemIds.map((id) =>
+      feedItems.find((i) => i.id === id),
+    );
+  }, [currentFormAction, feedItems, pendingRepostTargetFeedItemIds]);
+
+  const reasonWithRepostsAndReplies = React.useMemo(() => {
+    const replyMarkedQuotesAndReplyText = replyTargetFeedItems.map((item) => {
+      const replyText = pendingRepliesByTargetFeedItemId[item.id];
+      return formatReply({
+        body: replyText,
+        target: {
+          voterId: item.authorAccount,
+          reason: item.reason,
+        },
+      });
     });
-    return `${pendingFeedback.trim()}\n\n${markedQuotes.join("\n\n")}`.trim();
-  }, [pendingFeedback, quotedFeedItems]);
+    const repostMarkedQuotes = repostTargetFeedItems.map((item) =>
+      formatRepost(item.reason),
+    );
+    return [
+      replyMarkedQuotesAndReplyText.join("\n\n"),
+      pendingComment.trim(),
+      repostMarkedQuotes.join("\n\n"),
+    ].join("\n\n");
+  }, [
+    pendingComment,
+    repostTargetFeedItems,
+    replyTargetFeedItems,
+    pendingRepliesByTargetFeedItemId,
+  ]);
 
   const sendProposalFeedback = useSendProposalFeedback(proposalId, {
     support: pendingSupport,
-    reason: reasonWithReposts,
+    reason: reasonWithRepostsAndReplies,
   });
   const castProposalVote = useCastProposalVote(proposalId, {
     support: pendingSupport,
-    reason: reasonWithReposts,
+    reason: reasonWithRepostsAndReplies,
     enabled: isVotingOngoing,
   });
   const queueProposal = useQueueProposal(proposalId, {
@@ -190,15 +230,34 @@ const ProposalMainSection = ({
   const [hasPendingQueue, setPendingQueue] = React.useState(false);
   const [hasPendingExecute, setPendingExecute] = React.useState(false);
 
-  const onQuote = React.useCallback(
+  const onReply = React.useCallback((postId) => {
+    setPendingReplyTargetFeedItemIds((ids) =>
+      ids.includes(postId) ? ids : [...ids, postId],
+    );
+
+    const input = proposalActionInputRef.current;
+    input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    input.focus();
+    setTimeout(() => {
+      input.selectionStart = 0;
+      input.selectionEnd = 0;
+    }, 0);
+  }, []);
+
+  const cancelReply = React.useCallback((id) => {
+    setPendingReplyTargetFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
+    proposalActionInputRef.current.focus();
+  }, []);
+
+  const onRepost = React.useCallback(
     (postId) => {
-      setQuotedFeedItemIds((ids) =>
+      setPendingRepostTargetFeedItemIds((ids) =>
         ids.includes(postId) ? ids : [...ids, postId],
       );
 
-      const quotedPost = feedItems.find((i) => i.id === postId);
+      const targetPost = feedItems.find((i) => i.id === postId);
 
-      if (quotedPost != null) setPendingSupport(quotedPost.support);
+      if (targetPost != null) setPendingSupport(targetPost.support);
 
       const input = proposalActionInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -211,8 +270,8 @@ const ProposalMainSection = ({
     [feedItems],
   );
 
-  const cancelQuote = React.useCallback((id) => {
-    setQuotedFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
+  const cancelRepost = React.useCallback((id) => {
+    setPendingRepostTargetFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
     proposalActionInputRef.current.focus();
   }, []);
 
@@ -439,16 +498,37 @@ const ProposalMainSection = ({
         break;
 
       case "farcaster-comment":
-        await submitProposalCast({ fid: data.fid, text: pendingFeedback });
+        await submitProposalCast({ fid: data.fid, text: pendingComment });
         break;
 
       default:
         throw new Error();
     }
 
-    setPendingFeedback("");
+    setPendingComment("");
     setPendingSupport(null);
-    setQuotedFeedItemIds([]);
+    setPendingRepostTargetFeedItemIds([]);
+    setPendingReplyTargetFeedItemIds([]);
+    setPendingRepliesByTargetFeedItemId({});
+  };
+
+  const actionFormProps = {
+    inputRef: proposalActionInputRef,
+    proposalId,
+    mode: currentFormAction,
+    setMode: setFormActionOverride,
+    availableModes: possibleFormActions,
+    reason: pendingComment,
+    setReason: setPendingComment,
+    support: pendingSupport,
+    setSupport: setPendingSupport,
+    setReply,
+    onSubmit: handleFormSubmit,
+    cancelReply,
+    cancelRepost,
+    replyTargetFeedItems,
+    repostTargetFeedItems,
+    repliesByTargetFeedItemId: pendingRepliesByTargetFeedItemId,
   };
 
   return (
@@ -564,20 +644,7 @@ const ProposalMainSection = ({
                 >
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "3.2rem 0 4rem" }}>
-                      <ProposalActionForm
-                        inputRef={proposalActionInputRef}
-                        proposalId={proposalId}
-                        mode={currentFormAction}
-                        setMode={setFormActionOverride}
-                        availableModes={possibleFormActions}
-                        reason={pendingFeedback}
-                        setReason={setPendingFeedback}
-                        support={pendingSupport}
-                        setSupport={setPendingSupport}
-                        onSubmit={handleFormSubmit}
-                        cancelQuote={cancelQuote}
-                        quotedFeedItems={quotedFeedItems}
-                      />
+                      <ProposalActionForm {...actionFormProps} />
                     </div>
 
                     {feedItems.length !== 0 && (
@@ -585,10 +652,16 @@ const ProposalMainSection = ({
                         <ActivityFeed
                           context="proposal"
                           items={feedItems}
-                          onQuote={
+                          onReply={
+                            !isRepliesEnabled ||
                             currentFormAction === "farcaster-comment"
                               ? null
-                              : onQuote
+                              : onReply
+                          }
+                          onRepost={
+                            currentFormAction === "farcaster-comment"
+                              ? null
+                              : onRepost
                           }
                         />
                       </React.Suspense>
@@ -712,21 +785,7 @@ const ProposalMainSection = ({
                           </div>
                         ) : (
                           <>
-                            <ProposalActionForm
-                              inputRef={proposalActionInputRef}
-                              size="small"
-                              proposalId={proposalId}
-                              mode={currentFormAction}
-                              setMode={setFormActionOverride}
-                              availableModes={possibleFormActions}
-                              reason={pendingFeedback}
-                              setReason={setPendingFeedback}
-                              support={pendingSupport}
-                              setSupport={setPendingSupport}
-                              onSubmit={handleFormSubmit}
-                              cancelQuote={cancelQuote}
-                              quotedFeedItems={quotedFeedItems}
-                            />
+                            <ProposalActionForm {...actionFormProps} />
                           </>
                         )}
                       </div>
@@ -746,21 +805,7 @@ const ProposalMainSection = ({
                   </Tabs.Item>
                   <Tabs.Item key="activity" title="Activity">
                     <div style={{ padding: "2.4rem 0 6.4rem" }}>
-                      <ProposalActionForm
-                        inputRef={proposalActionInputRef}
-                        size="small"
-                        proposalId={proposalId}
-                        mode={currentFormAction}
-                        setMode={setFormActionOverride}
-                        availableModes={possibleFormActions}
-                        reason={pendingFeedback}
-                        setReason={setPendingFeedback}
-                        support={pendingSupport}
-                        setSupport={setPendingSupport}
-                        onSubmit={handleFormSubmit}
-                        cancelQuote={cancelQuote}
-                        quotedFeedItems={quotedFeedItems}
-                      />
+                      <ProposalActionForm size="small" {...actionFormProps} />
 
                       {feedItems.length !== 0 && (
                         <React.Suspense fallback={null}>
@@ -768,10 +813,10 @@ const ProposalMainSection = ({
                             <ActivityFeed
                               context="proposal"
                               items={feedItems}
-                              onQuote={
+                              onRepost={
                                 currentFormAction === "farcaster-comment"
                                   ? null
-                                  : onQuote
+                                  : onRepost
                               }
                             />
                           </div>

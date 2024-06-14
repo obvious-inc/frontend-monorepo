@@ -4,12 +4,8 @@ import NextLink from "next/link";
 import { css } from "@emotion/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
-import Button from "@shades/ui-web/button";
 import Avatar from "@shades/ui-web/avatar";
-import {
-  Retweet as RepostIcon,
-  FarcasterGate as FarcasterGateIcon,
-} from "@shades/ui-web/icons";
+import { FarcasterGate as FarcasterGateIcon } from "@shades/ui-web/icons";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -28,7 +24,14 @@ import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
-const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
+const ActivityFeed = ({
+  context,
+  items = [],
+  spacing = "2rem",
+  onReply,
+  onRepost,
+  onLike,
+}) => (
   <ul
     css={(t) =>
       css({
@@ -98,293 +101,428 @@ const ActivityFeed = ({ context, items = [], onQuote, spacing = "2rem" }) => (
     style={{ "--vertical-spacing": spacing }}
   >
     {items.map((item) => (
-      <FeedItem key={item.id} {...item} context={context} onQuote={onQuote} />
+      <FeedItem
+        key={item.id}
+        {...item}
+        context={context}
+        onReply={onReply}
+        onRepost={onRepost}
+        onLike={onLike}
+      />
     ))}
   </ul>
 );
 
-const FeedItem = React.memo(({ context, onQuote, ...item }) => {
-  const { address: connectedAccount } = useWallet();
-  const isIsolatedContext = ["proposal", "candidate"].includes(context);
-  const hasBody = item.body != null && item.body.trim() !== "";
-  const hasMultiParagraphBody =
-    hasBody && item.body.trim().split("\n").length > 1;
-  const showQuoteAction =
-    onQuote != null &&
-    ["vote", "feedback-post"].includes(item.type) &&
-    hasBody &&
-    connectedAccount != null &&
-    connectedAccount !== item.authorAccount;
+const FeedItem = React.memo(
+  ({ context, onReply, onRepost, onLike, ...item }) => {
+    const { address: connectedAccount } = useWallet();
+    const isIsolatedContext = ["proposal", "candidate"].includes(context);
+    const hasBody = item.body != null && item.body.trim() !== "";
+    const hasReason = item.reason != null && item.reason.trim() !== "";
+    // const hasMultiParagraphBody =
+    //   hasBody && item.body.trim().split("\n").length > 1;
 
-  return (
-    <div
-      key={item.id}
-      id={item.id}
-      role="listitem"
-      data-pending={item.isPending}
-    >
-      <div data-header>
-        <div>
-          {item.type === "farcaster-cast" ? (
-            <div style={{ position: "relative" }}>
-              {item.authorAccount == null ? (
-                <Avatar url={item.authorAvatarUrl} size="2rem" />
-              ) : (
-                <AccountPreviewPopoverTrigger
-                  accountAddress={item.authorAccount}
+    const hasReposts = item.reposts?.length > 0;
+
+    const showReplyAction =
+      onReply != null &&
+      connectedAccount != null &&
+      ["vote", "feedback-post"].includes(item.type) &&
+      hasReason;
+
+    const showRepostAction =
+      onRepost != null &&
+      connectedAccount != null &&
+      ["vote", "feedback-post"].includes(item.type) &&
+      hasReason;
+
+    const showLikeAction =
+      onLike != null &&
+      connectedAccount != null &&
+      ["vote", "feedback-post", "farcaster-cast"].includes(item.type);
+
+    const enableReplyAction = true;
+    const enableRepostAction = true;
+    // TODO: check if has liked, account status etc.
+    const enableLikeAction = true;
+
+    const showActionBar = showReplyAction || showRepostAction || showLikeAction;
+
+    return (
+      <div
+        key={item.id}
+        id={item.id}
+        role="listitem"
+        data-pending={item.isPending}
+      >
+        <div data-header>
+          <div>
+            {item.type === "farcaster-cast" ? (
+              <div style={{ position: "relative" }}>
+                {item.authorAccount == null ? (
+                  <Avatar url={item.authorAvatarUrl} size="2rem" />
+                ) : (
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={item.authorAccount}
+                  >
+                    <button data-avatar-button>
+                      <AccountAvatar
+                        address={item.authorAccount}
+                        fallbackImageUrl={item.authorAvatarUrl}
+                        size="2rem"
+                      />
+                    </button>
+                  </AccountPreviewPopoverTrigger>
+                )}
+                <span
+                  css={(t) =>
+                    css({
+                      position: "absolute",
+                      top: 0,
+                      right: 0,
+                      display: "flex",
+                      width: "1rem",
+                      height: "1rem",
+                      borderRadius: "50%",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "#855DCD", // Farcaster purple
+                      transform: "translateY(-35%) translateX(35%)",
+                      boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+                      svg: { width: "0.6rem", height: "auto", color: "white" },
+                    })
+                  }
                 >
-                  <button data-avatar-button>
-                    <AccountAvatar
-                      address={item.authorAccount}
-                      fallbackImageUrl={item.authorAvatarUrl}
-                      size="2rem"
-                    />
-                  </button>
-                </AccountPreviewPopoverTrigger>
-              )}
-              <span
+                  <FarcasterGateIcon />
+                </span>
+              </div>
+            ) : item.type === "event" || item.authorAccount == null ? (
+              <div data-timeline-symbol />
+            ) : (
+              <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+                <button data-avatar-button>
+                  <AccountAvatar address={item.authorAccount} size="2rem" />
+                </button>
+              </AccountPreviewPopoverTrigger>
+            )}
+          </div>
+          <div>
+            <div
+              css={css({
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "1rem",
+                cursor: "default",
+              })}
+            >
+              <div
                 css={(t) =>
                   css({
-                    position: "absolute",
-                    top: 0,
-                    right: 0,
-                    display: "flex",
-                    width: "1rem",
-                    height: "1rem",
-                    borderRadius: "50%",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#855DCD", // Farcaster purple
-                    transform: "translateY(-35%) translateX(35%)",
-                    boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
-                    svg: { width: "0.6rem", height: "auto", color: "white" },
+                    flex: 1,
+                    minWidth: 0,
+                    // display: "-webkit-box",
+                    // WebkitBoxOrient: "vertical",
+                    // WebkitLineClamp: 2,
+                    // overflow: "hidden",
+                    color: t.colors.textNormal,
                   })
                 }
               >
-                <FarcasterGateIcon />
-              </span>
-            </div>
-          ) : item.type === "event" || item.authorAccount == null ? (
-            <div data-timeline-symbol />
-          ) : (
-            <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
-              <button data-avatar-button>
-                <AccountAvatar address={item.authorAccount} size="2rem" />
-              </button>
-            </AccountPreviewPopoverTrigger>
-          )}
-        </div>
-        <div>
-          <div
-            css={css({
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "1rem",
-              cursor: "default",
-            })}
-          >
-            <div
-              css={(t) =>
-                css({
-                  flex: 1,
-                  minWidth: 0,
-                  // display: "-webkit-box",
-                  // WebkitBoxOrient: "vertical",
-                  // WebkitLineClamp: 2,
-                  // overflow: "hidden",
-                  color: t.colors.textNormal,
-                })
-              }
-            >
-              {/* <span css={(t) => css({ color: t.colors.textNormal })}> */}
-              <ItemTitle item={item} context={context} />
-              {/* </span> */}
-            </div>
-            <div>
-              {item.isPending ? (
-                <div style={{ padding: "0.5rem 0" }}>
-                  <Spinner size="1rem" />
-                </div>
-              ) : (
-                item.timestamp != null && (
-                  <span
-                    data-timestamp
-                    css={(t) =>
-                      css({
-                        fontSize: t.text.sizes.small,
-                        color: t.colors.textDimmed,
-                        padding: "0.15rem 0",
-                        display: "inline-block",
-                      })
-                    }
-                  >
-                    <FormattedDateWithTooltip
-                      tinyRelative
-                      relativeDayThreshold={7}
-                      month="short"
-                      day="numeric"
-                      year={
-                        getDateYear(item.timestamp) !== getDateYear(new Date())
-                          ? "numeric"
-                          : undefined
-                      }
-                      value={item.timestamp}
-                    />
-                  </span>
-                )
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-      <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-        {item.reposts?.length > 0 && (
-          <ul
-            css={(t) =>
-              css({
-                listStyle: "none",
-                fontSize: "0.875em",
-                marginBottom: "0.8rem",
-                li: {
-                  position: "relative",
-                  border: "0.1rem solid",
-                  borderRadius: "0.5rem",
-                  borderColor: t.colors.borderLighter,
-                  padding: "0.4rem 0.6rem",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                },
-                "li + li": { marginTop: "0.6rem" },
-              })
-            }
-            style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
-          >
-            {item.reposts.map((post) => (
-              <li key={post.id}>
-                <NextLink
-                  href={
-                    context !== "proposal"
-                      ? `/proposals/${item.proposalId}?tab=activity#${post.id}`
-                      : `#${post.id}`
-                  }
-                  style={{ display: "block", position: "absolute", inset: 0 }}
-                />
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={post.authorAccount}
-                  style={{ position: "relative" }}
-                />
-                {(() => {
-                  if (item.reposts.every((p) => p.support === item.support))
-                    return null;
-
-                  // Don’t render support for abstained non-vote reposts
-                  if (post.type !== "vote" && post.support === 2) return null;
-
-                  return (
+                {/* <span css={(t) => css({ color: t.colors.textNormal })}> */}
+                <ItemTitle item={item} context={context} />
+                {/* </span> */}
+              </div>
+              <div>
+                {item.isPending ? (
+                  <div style={{ padding: "0.5rem 0" }}>
+                    <Spinner size="1rem" />
+                  </div>
+                ) : (
+                  item.timestamp != null && (
                     <span
+                      data-timestamp
                       css={(t) =>
                         css({
-                          fontWeight: t.text.weights.emphasis,
-                          "[data-for]": { color: t.colors.textPositive },
-                          "[data-against]": { color: t.colors.textNegative },
-                          "[data-abstain]": { color: t.colors.textDimmed },
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                          padding: "0.15rem 0",
+                          display: "inline-block",
                         })
                       }
                     >
-                      {" "}
-                      {(() => {
-                        switch (post.support) {
-                          case 0:
-                            return <Signal negative>(against)</Signal>;
-                          case 1:
-                            return <Signal positive>(for)</Signal>;
-                          case 2:
-                            return <Signal>(abstained)</Signal>;
+                      <FormattedDateWithTooltip
+                        tinyRelative
+                        relativeDayThreshold={7}
+                        month="short"
+                        day="numeric"
+                        year={
+                          getDateYear(item.timestamp) !==
+                          getDateYear(new Date())
+                            ? "numeric"
+                            : undefined
                         }
-                      })()}
+                        value={item.timestamp}
+                      />
                     </span>
-                  );
-                })()}
-                :{" "}
-                <MarkdownRichText
-                  text={post.body}
-                  displayImages={false}
-                  inline
-                  css={css({
-                    // Make all headings small
-                    "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-                    "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-                    "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
-                      { marginBottom: "0.625em" },
-                  })}
-                />
-              </li>
-            ))}
-          </ul>
-        )}
-        {hasBody && (
-          <ItemBody
-            text={item.body}
-            displayImages={item.type === "event"}
-            truncateLines={!isIsolatedContext}
-          />
-        )}
-        {item.type === "candidate-signature-added" && (
-          <div
+                  )
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
+          {item.replies?.length > 0 && (
+            <ul
+              className="reply-list"
+              css={(t) =>
+                css({
+                  margin: "0",
+                  "& > li": {
+                    listStyle: "none",
+                    ".text-input": {
+                      margin: "0.4rem 0 0",
+                      padding: "0.3rem 0",
+                    },
+                  },
+                  "li + li": { marginTop: "1.6rem" },
+                  ".body-container": {
+                    padding: "0.4em 0 0 0.2em",
+                  },
+                  ".reply-area": {
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0,1fr)",
+                    gap: "0.3rem",
+                  },
+                  ".reply-line-container": {
+                    width: "2.2rem",
+                    position: "relative",
+                  },
+                  ".reply-line": {
+                    position: "absolute",
+                    top: 0,
+                    right: "0.2rem",
+                    width: "0.6rem",
+                    height: "1.9rem",
+                    borderLeft: "0.1rem solid",
+                    borderBottom: "0.1rem solid",
+                    borderColor: t.colors.borderLight,
+                    borderBottomLeftRadius: "0.3rem",
+                  },
+                })
+              }
+              style={{
+                marginTop: "0.8rem",
+                marginBottom: hasReposts || hasBody ? "1.6rem" : 0,
+              }}
+            >
+              {item.replies.map(({ body, target }) => (
+                <li key={target.id}>
+                  <QuotedVoteOrFeedbackPost
+                    item={target}
+                    href={
+                      context !== "proposal"
+                        ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
+                        : `#${item.id}`
+                    }
+                    showSignal
+                  />
+                  <div className="reply-area">
+                    <div className="reply-line-container">
+                      <div className="reply-line" />
+                    </div>
+                    <div className="body-container">
+                      <MarkdownRichText
+                        text={body}
+                        // displayImages={displayImages}
+                        compact
+                        css={css({
+                          // Make all headings small
+                          "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+                          "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": {
+                            marginTop: "1.5em",
+                          },
+                          "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                            {
+                              marginBottom: "0.625em",
+                            },
+                        })}
+                      />
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {item.reposts?.length > 0 && (
+            <ul
+              css={css({
+                listStyle: "none",
+                fontSize: "0.875em",
+                marginBottom: "0.8rem",
+                "li + li": { marginTop: "0.6rem" },
+              })}
+              // style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
+              style={{ marginTop: "0.8rem" }}
+            >
+              {item.reposts.map((voteOrFeedbackPost) => (
+                <li key={voteOrFeedbackPost.id}>
+                  <QuotedVoteOrFeedbackPost
+                    item={voteOrFeedbackPost}
+                    href={
+                      context !== "proposal"
+                        ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
+                        : `#${item.id}`
+                    }
+                    showSignal={
+                      // Don’t render support for abstained feedback reposts
+                      !(item.type === "feedback-post" && item.support === 2) ||
+                      item.reposts.some(
+                        (repost) => repost.support !== item.support,
+                      )
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+          {hasBody && (
+            <ItemBody
+              text={item.body}
+              displayImages={item.type === "event"}
+              truncateLines={!isIsolatedContext}
+            />
+          )}
+          {item.type === "candidate-signature-added" && (
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                })
+              }
+            >
+              {item.isCanceled ? (
+                "Signature canceled"
+              ) : (
+                <>
+                  {item.expiresAt < new Date()
+                    ? "Signature expired"
+                    : "Signature expires"}{" "}
+                  <FormattedDateWithTooltip
+                    capitalize={false}
+                    value={item.expiresAt}
+                    month="short"
+                    day="numeric"
+                  />
+                </>
+              )}
+            </div>
+          )}
+
+          {showActionBar && (
+            <div
+              css={(t) =>
+                css({
+                  display: "flex",
+                  gap: "0.8rem",
+                  margin: "0.6rem -0.4rem 0",
+                  button: {
+                    padding: "0.4rem",
+                    color: t.colors.textDimmed,
+                    ":disabled": {
+                      color: t.colors.textMuted,
+                    },
+                    "@media(hover: hover)": {
+                      ":not(:disabled)": {
+                        cursor: "pointer",
+                        ":hover": { color: t.colors.textAccent },
+                      },
+                    },
+                  },
+                })
+              }
+            >
+              {showReplyAction && (
+                <button
+                  onClick={() => {
+                    onReply(item.id);
+                  }}
+                  disabled={!enableReplyAction}
+                >
+                  <svg
+                    aria-label="Reply"
+                    role="img"
+                    viewBox="0 0 18 18"
+                    stroke="currentColor"
+                    fill="transparent"
+                    style={{ width: "1.4rem", height: "auto" }}
+                  >
+                    <path
+                      d="M15.376 13.2177L16.2861 16.7955L12.7106 15.8848C12.6781 15.8848 12.6131 15.8848 12.5806 15.8848C11.3779 16.5678 9.94767 16.8931 8.41995 16.7955C4.94194 16.5353 2.08152 13.7381 1.72397 10.2578C1.2689 5.63919 5.13697 1.76863 9.75264 2.22399C13.2307 2.58177 16.0261 5.41151 16.2861 8.92429C16.4161 10.453 16.0586 11.8841 15.376 13.0876C15.376 13.1526 15.376 13.1852 15.376 13.2177Z"
+                      strokeLinejoin="round"
+                      strokeWidth="1.25"
+                    />
+                  </svg>
+                </button>
+              )}
+              {showRepostAction && (
+                <button
+                  onClick={() => {
+                    onRepost(item.id);
+                  }}
+                  disabled={!enableRepostAction}
+                >
+                  <svg
+                    aria-label="Repost"
+                    viewBox="0 0 18 18"
+                    fill="currentColor"
+                    style={{ width: "1.4rem", height: "auto" }}
+                  >
+                    <path d="M6.41256 1.23531C6.6349 0.971277 7.02918 0.937481 7.29321 1.15982L9.96509 3.40982C10.1022 3.52528 10.1831 3.69404 10.1873 3.87324C10.1915 4.05243 10.1186 4.2248 9.98706 4.34656L7.31518 6.81971C7.06186 7.05419 6.66643 7.03892 6.43196 6.7856C6.19748 6.53228 6.21275 6.13685 6.46607 5.90237L7.9672 4.51289H5.20312C3.68434 4.51289 2.45312 5.74411 2.45312 7.26289V9.51289V11.7629C2.45312 13.2817 3.68434 14.5129 5.20312 14.5129C5.5483 14.5129 5.82812 14.7927 5.82812 15.1379C5.82812 15.4831 5.5483 15.7629 5.20312 15.7629C2.99399 15.7629 1.20312 13.972 1.20312 11.7629V9.51289V7.26289C1.20312 5.05375 2.99399 3.26289 5.20312 3.26289H7.85002L6.48804 2.11596C6.22401 1.89362 6.19021 1.49934 6.41256 1.23531Z" />
+                    <path d="M11.5874 17.7904C11.3651 18.0545 10.9708 18.0883 10.7068 17.8659L8.03491 15.6159C7.89781 15.5005 7.81687 15.3317 7.81267 15.1525C7.80847 14.9733 7.8814 14.801 8.01294 14.6792L10.6848 12.206C10.9381 11.9716 11.3336 11.9868 11.568 12.2402C11.8025 12.4935 11.7872 12.8889 11.5339 13.1234L10.0328 14.5129H12.7969C14.3157 14.5129 15.5469 13.2816 15.5469 11.7629V9.51286V7.26286C15.5469 5.74408 14.3157 4.51286 12.7969 4.51286C12.4517 4.51286 12.1719 4.23304 12.1719 3.88786C12.1719 3.54269 12.4517 3.26286 12.7969 3.26286C15.006 3.26286 16.7969 5.05373 16.7969 7.26286V9.51286V11.7629C16.7969 13.972 15.006 15.7629 12.7969 15.7629H10.15L11.512 16.9098C11.776 17.1321 11.8098 17.5264 11.5874 17.7904Z" />
+                  </svg>
+                </button>
+              )}
+              {showLikeAction && (
+                <button
+                  onClick={() => {
+                    onLike(item.id);
+                  }}
+                  disabled={!enableLikeAction}
+                >
+                  <svg
+                    aria-label="Like"
+                    role="img"
+                    viewBox="0 0 18 18"
+                    fill="transparent"
+                    stroke="currentColor"
+                    style={{ width: "1.4rem", height: "auto" }}
+                  >
+                    <path
+                      d="M1.34375 7.53125L1.34375 7.54043C1.34374 8.04211 1.34372 8.76295 1.6611 9.65585C1.9795 10.5516 2.60026 11.5779 3.77681 12.7544C5.59273 14.5704 7.58105 16.0215 8.33387 16.5497C8.73525 16.8313 9.26573 16.8313 9.66705 16.5496C10.4197 16.0213 12.4074 14.5703 14.2232 12.7544C15.3997 11.5779 16.0205 10.5516 16.3389 9.65585C16.6563 8.76296 16.6563 8.04211 16.6562 7.54043V7.53125C16.6562 5.23466 15.0849 3.25 12.6562 3.25C11.5214 3.25 10.6433 3.78244 9.99228 4.45476C9.59009 4.87012 9.26356 5.3491 9 5.81533C8.73645 5.3491 8.40991 4.87012 8.00772 4.45476C7.35672 3.78244 6.47861 3.25 5.34375 3.25C2.9151 3.25 1.34375 5.23466 1.34375 7.53125Z"
+                      strokeWidth="1.25"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
+          {/* <div
             css={(t) =>
               css({
-                fontSize: t.text.sizes.small,
+                marginTop: "0.6rem",
                 color: t.colors.textDimmed,
+                fontSize: t.text.sizes.small,
               })
             }
           >
-            {item.isCanceled ? (
-              "Signature canceled"
-            ) : (
-              <>
-                {item.expiresAt < new Date()
-                  ? "Signature expired"
-                  : "Signature expires"}{" "}
-                <FormattedDateWithTooltip
-                  capitalize={false}
-                  value={item.expiresAt}
-                  month="short"
-                  day="numeric"
-                />
-              </>
-            )}
-          </div>
-        )}
-
-        {showQuoteAction && (
-          <div
-            css={css({ marginTop: "0.8rem", display: "flex", gap: "0.8rem" })}
-          >
-            <Button
-              size="tiny"
-              variant="opaque"
-              onClick={() => {
-                onQuote(item.id);
-              }}
-              icon={<RepostIcon style={{ width: "1.1rem", height: "auto" }} />}
-            />
-            {/* <Button
-              size="tiny"
-              variant="opaque"
-              icon={
-                <ReplyArrowIcon style={{ width: "1rem", height: "auto" }} />
-              }
-            >
-              Reply
-            </Button> */}
-          </div>
-        )}
+            2 revotes &middot; 12 likes
+          </div> */}
+        </div>
       </div>
-    </div>
-  );
-});
+    );
+  },
+);
 
 const ItemBody = React.memo(
   ({ text, displayImages, truncateLines: enableLineTruncation }) => {
@@ -778,8 +916,15 @@ const ItemTitle = ({ item, context }) => {
         switch (item.type) {
           case "vote":
             return "voted";
-          case "feedback-post":
-            return "signaled";
+          case "feedback-post": {
+            if (item.support !== 2) return "signaled";
+
+            const isReplyWithoutAdditionalComment =
+              item.replies?.length > 0 &&
+              (item.body == null || item.body.trim() === "");
+
+            return isReplyWithoutAdditionalComment ? "replied" : "commented";
+          }
           default:
             throw new Error();
         }
@@ -810,9 +955,9 @@ const ItemTitle = ({ item, context }) => {
                     {item.voteCount != null && <> ({item.voteCount})</>}
                   </Signal>
                 ) : isIsolatedContext ? (
-                  "commented"
+                  signalWord
                 ) : (
-                  "commented on"
+                  <>{signalWord} on</>
                 );
             }
           })()}
@@ -904,6 +1049,7 @@ const ItemTitle = ({ item, context }) => {
     }
 
     default:
+      console.log(item);
       throw new Error(`Unknown event type "${item.type}"`);
   }
 };
@@ -1049,6 +1195,71 @@ const Signal = ({ positive, negative, ...props }) => (
     }}
     {...props}
   />
+);
+
+const QuotedVoteOrFeedbackPost = ({ href, item, showSignal = false }) => (
+  <div
+    css={(t) =>
+      css({
+        position: "relative",
+        border: "0.1rem solid",
+        borderRadius: "0.5rem",
+        borderColor: t.colors.borderLighter,
+        padding: "0.4rem 0.6rem",
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+      })
+    }
+  >
+    <NextLink
+      href={href}
+      style={{ display: "block", position: "absolute", inset: 0 }}
+    />
+    <AccountPreviewPopoverTrigger
+      showAvatar
+      accountAddress={item.voterId}
+      style={{ position: "relative" }}
+    />
+    {showSignal && (
+      <span
+        css={(t) =>
+          css({
+            fontWeight: t.text.weights.emphasis,
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+            "[data-abstain]": { color: t.colors.textDimmed },
+          })
+        }
+      >
+        {" "}
+        {(() => {
+          switch (item.support) {
+            case 0:
+              return <Signal negative>(against)</Signal>;
+            case 1:
+              return <Signal positive>(for)</Signal>;
+            case 2:
+              return <Signal>(abstained)</Signal>;
+          }
+        })()}
+      </span>
+    )}
+    :{" "}
+    <MarkdownRichText
+      text={item.reason}
+      displayImages={false}
+      inline
+      css={css({
+        // Make all headings small
+        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
+          marginBottom: "0.625em",
+        },
+      })}
+    />
+  </div>
 );
 
 export default ActivityFeed;

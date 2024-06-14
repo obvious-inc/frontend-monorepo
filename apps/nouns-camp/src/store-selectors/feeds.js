@@ -2,38 +2,37 @@
 
 import { array as arrayUtils } from "@shades/common/utils";
 import { resolveIdentifier } from "../contracts.js";
-import { extractReposts } from "../utils/proposals.js";
+import {
+  createReplyExtractor,
+  createRepostExtractor,
+} from "../utils/votes-and-feedbacks.js";
 import { getSponsorSignatures as getCandidateSponsorSignatures } from "../utils/candidates.js";
 
 const buildVoteAndFeedbackPostFeedItems = ({
   proposalId,
-  votes: votes_,
-  feedbackPosts: feedbackPosts_,
+  votes = [],
+  feedbackPosts = [],
 }) => {
-  // Add a "type" since there’s no way to distinguis votes from feedback posts
-  const votes = (votes_ ?? []).map((v) => ({ ...v, type: "vote" }));
   // Hide proposal votes with 0 voting power account if no reason is given
   const filteredVotes = votes.filter(
     (v) => v.votes > 0 || (v.reason?.trim() ?? "") !== "",
   );
-  const feedbackPosts = (feedbackPosts_ ?? []).map((p) => ({
-    ...p,
-    type: "feedback-post",
-  }));
-  const ascendingPosts = arrayUtils.sortBy("createdBlock", [
+  const ascendingVotesAndFeedbackPosts = arrayUtils.sortBy("createdBlock", [
     ...filteredVotes,
     ...feedbackPosts,
   ]);
 
-  return ascendingPosts.map((p) => {
-    const postIndex = ascendingPosts.indexOf(p);
-    const [reposts, strippedReason] = extractReposts(
-      p.reason,
-      ascendingPosts.slice(0, postIndex),
+  return ascendingVotesAndFeedbackPosts.map((p, postIndex) => {
+    const previousItems = ascendingVotesAndFeedbackPosts.slice(0, postIndex);
+    const extractReplies = createReplyExtractor(previousItems);
+    const extractReposts = createRepostExtractor(previousItems);
+    const [reposts, reasonWithStrippedReposts] = extractReposts(p.reason);
+    const [replies, reasonWithStrippedRepliesAndReposts] = extractReplies(
+      reasonWithStrippedReposts,
     );
     return {
-      type: p.type,
       id: p.id,
+      type: p.type,
       support: p.support,
       authorAccount: p.voterId,
       blockNumber: p.createdBlock,
@@ -41,14 +40,10 @@ const buildVoteAndFeedbackPostFeedItems = ({
       voteCount: p.votes,
       proposalId,
       isPending: p.isPending,
-      body: strippedReason,
-      reposts: reposts.map((post) => ({
-        id: post.id,
-        authorAccount: post.voterId,
-        body: post.reason,
-        type: post.type,
-        support: post.support,
-      })),
+      body: reasonWithStrippedRepliesAndReposts,
+      replies,
+      reposts,
+      reason: p.reason,
     };
   });
 };
@@ -253,7 +248,7 @@ export const buildCandidateFeed = (
       authorAccount: p.voterId,
       body: p.reason == null || p.reason.trim() === "" ? null : p.reason,
       support: p.support,
-      voteCount: p.voter.nounsRepresented?.length,
+      voteCount: p.votes,
       timestamp: p.createdTimestamp,
       blockNumber: BigInt(p.createdBlock),
       isPending: p.isPending,

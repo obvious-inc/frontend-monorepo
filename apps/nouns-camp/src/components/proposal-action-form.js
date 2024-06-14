@@ -35,9 +35,13 @@ const ProposalActionForm = ({
   setReason,
   support,
   setSupport,
+  setReply,
   onSubmit,
-  quotedFeedItems,
-  cancelQuote,
+  repliesByTargetFeedItemId,
+  replyTargetFeedItems,
+  repostTargetFeedItems,
+  cancelReply,
+  cancelRepost,
   inputRef,
 }) => {
   const [isPending, setPending] = React.useState(false);
@@ -91,18 +95,28 @@ const ProposalActionForm = ({
   });
   const currentVoteCount = connectedDelegate?.nounsRepresented.length ?? 0;
 
+  const hasReplyTarget = replyTargetFeedItems?.length > 0;
+  const hasRepostTarget = repostTargetFeedItems?.length > 0;
+
   const hasRequiredInputs = (() => {
     switch (mode) {
       case "farcaster-comment":
         return (
           reason.trim().length > 0 && getByteLength(reason) <= 320 // Farcaster text limit is set in bytes
         );
-      default:
+      default: {
+        if (hasReplyTarget) {
+          const hasMissingReply = replyTargetFeedItems.some(
+            (item) =>
+              repliesByTargetFeedItemId[item.id] == null ||
+              repliesByTargetFeedItemId[item.id].trim() === "",
+          );
+          return !hasMissingReply && support != null;
+        }
         return support != null;
+      }
     }
   })();
-
-  const hasQuote = quotedFeedItems?.length > 0;
 
   if (mode == null) throw new Error();
 
@@ -398,21 +412,7 @@ const ProposalActionForm = ({
               background: t.colors.backgroundModifierNormal,
               padding: "var(--padding, 1rem)",
               "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
-            })
-          }
-          style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
-        >
-          <AutoAdjustingHeightTextarea
-            ref={inputRef}
-            id="message-input"
-            rows={1}
-            placeholder={hasQuote ? "Optional comment" : "..."}
-            value={reason}
-            onChange={(e) => {
-              setReason(e.target.value);
-            }}
-            css={(t) =>
-              css({
+              ".text-input": {
                 background: "transparent",
                 fontSize: t.text.sizes.base,
                 display: "block",
@@ -422,7 +422,7 @@ const ProposalActionForm = ({
                 maxWidth: "100%",
                 outline: "none",
                 border: 0,
-                padding: "0.3rem 0.3rem",
+                padding: "0.3rem 0.2rem",
                 "::placeholder": { color: t.colors.inputPlaceholder },
                 "&:disabled": {
                   color: t.colors.textMuted,
@@ -432,78 +432,133 @@ const ProposalActionForm = ({
                 "@supports (-webkit-touch-callout: none)": {
                   fontSize: "1.6rem",
                 },
-              })
-            }
-            disabled={disableForm}
-          />
-          {quotedFeedItems?.length > 0 && (
+              },
+              ".reply-list + *": { marginTop: "1.2rem" },
+            })
+          }
+          style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
+        >
+          {hasReplyTarget && (
             <ul
+              className="reply-list"
               css={(t) =>
                 css({
-                  listStyle: "none",
-                  fontSize: "0.875em",
-                  margin: "0.8rem 0",
-                  li: {
-                    position: "relative",
-                    border: "0.1rem solid",
-                    borderRadius: "0.5rem",
-                    borderColor: t.colors.borderLighter,
-                    padding: "0.4rem 0.4rem 0.4rem 0.6rem",
-                    whiteSpace: "nowrap",
-                    display: "flex",
-                    alignItems: "center",
-                  },
-                  "li + li": { marginTop: "0.6rem" },
-                  button: { position: "relative" },
-                  "[data-cancel]": {
-                    padding: "0.3rem",
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": { color: t.colors.textAccent },
+                  margin: "0",
+                  "& > li": {
+                    listStyle: "none",
+                    ".text-input": {
+                      margin: "0.4rem 0 0",
+                      padding: "0.3rem 0",
                     },
+                  },
+                  "li + li": { marginTop: "1.6rem" },
+                  ".reply-area": {
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0,1fr)",
+                    gap: "0.3rem",
+                  },
+                  ".reply-line-container": {
+                    width: "2.2rem",
+                    position: "relative",
+                  },
+                  ".reply-line": {
+                    position: "absolute",
+                    top: 0,
+                    right: "0.2rem",
+                    width: "0.6rem",
+                    height: "1.9rem",
+                    borderLeft: "0.1rem solid",
+                    borderBottom: "0.1rem solid",
+                    borderColor: t.colors.borderLight,
+                    borderBottomLeftRadius: "0.3rem",
                   },
                 })
               }
             >
-              {quotedFeedItems.map((item) => (
+              {replyTargetFeedItems.map((item) => (
                 <li key={item.id}>
-                  <NextLink
-                    href={`#${item.id}`}
-                    style={{ display: "block", position: "absolute", inset: 0 }}
+                  <QuotedFeedItem
+                    item={item}
+                    onCancel={() => cancelReply(item.id)}
                   />
-                  <div
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    <AccountPreviewPopoverTrigger
-                      showAvatar
-                      accountAddress={item.authorAccount}
-                    />
-                    :{" "}
-                    <MarkdownRichText
-                      text={item.body}
-                      displayImages={false}
-                      inline
-                      css={css({
-                        // Make all headings small
-                        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-                        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-                        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
-                          { marginBottom: "0.625em" },
-                      })}
+                  <div className="reply-area">
+                    <div className="reply-line-container">
+                      <div className="reply-line" />
+                    </div>
+                    <AutoAdjustingHeightTextarea
+                      className="text-input"
+                      rows={1}
+                      placeholder="Your reply..."
+                      value={repliesByTargetFeedItemId[item.id]}
+                      onChange={(e) => {
+                        setReply(item.id, e.target.value);
+                      }}
+                      disabled={disableForm}
                     />
                   </div>
-                  <button data-cancel onClick={() => cancelQuote(item.id)}>
-                    <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
-                  </button>
                 </li>
               ))}
             </ul>
           )}
+          {hasRepostTarget && (
+            <>
+              <h3
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.small,
+                    fontWeight: t.text.weights.normal,
+                    color: t.colors.textDimmed,
+                    margin: "0 0 0.8rem",
+                    padding: "0 0.2rem",
+                  })
+                }
+              >
+                {(() => {
+                  const hasRevote = repostTargetFeedItems.some(
+                    (i) => i.type === "vote",
+                  );
+                  const hasMany = repostTargetFeedItems.length > 1;
+                  if (mode === "vote" && hasRevote)
+                    return hasMany ? "Revotes" : "Revote";
+                  return hasMany ? "Reposts" : "Repost";
+                })()}
+              </h3>
+              <ul
+                css={css({
+                  margin: "0.8rem 0",
+                  "& > li": { listStyle: "none" },
+                  "li + li": { marginTop: "0.6rem" },
+                })}
+              >
+                {repostTargetFeedItems.map((item) => (
+                  <QuotedFeedItem
+                    key={item.id}
+                    component="li"
+                    item={item}
+                    onCancel={() => cancelRepost(item.id)}
+                  />
+                ))}
+              </ul>
+            </>
+          )}
+          <AutoAdjustingHeightTextarea
+            ref={inputRef}
+            id="message-input"
+            className="text-input"
+            rows={1}
+            placeholder={
+              hasRepostTarget
+                ? "Optional comment..."
+                : hasReplyTarget
+                  ? "Optional additional comment..."
+                  : "..."
+            }
+            value={reason}
+            onChange={(e) => {
+              setReason(e.target.value);
+            }}
+            disabled={disableForm}
+          />
           {/* {error != null && (
             <div
               css={(t) =>
@@ -524,7 +579,7 @@ const ProposalActionForm = ({
               gridAutoFlow: "column",
               justifyContent: "flex-end",
               gridGap: "1rem",
-              marginTop: "1rem",
+              marginTop: "1.2rem",
             }}
           >
             {(() => {
@@ -581,15 +636,21 @@ const ProposalActionForm = ({
                           {(() => {
                             switch (mode) {
                               case "vote":
-                                return hasQuote
+                                return hasRepostTarget
                                   ? "Cast revote"
                                   : proposalVoteCount === 1
                                     ? "Cast vote"
                                     : `Cast ${proposalVoteCount ?? "..."} votes`;
-                              case "onchain-comment":
-                                return hasQuote
-                                  ? "Submit repost"
-                                  : "Submit comment";
+                              case "onchain-comment": {
+                                if (hasRepostTarget) return "Submit repost";
+                                const isReplyWithoutComment =
+                                  hasReplyTarget && reason.trim() === "";
+                                if (isReplyWithoutComment)
+                                  return replyTargetFeedItems.length === 1
+                                    ? "Submit reply"
+                                    : "Submit replies";
+                                return "Submit comment";
+                              }
                               default:
                                 throw new Error();
                             }
@@ -747,6 +808,74 @@ const SupportSelect = ({ mode, value, ...props }) => (
     }
     {...props}
   />
+);
+
+const QuotedFeedItem = ({ component: Component = "div", item, onCancel }) => (
+  <Component
+    css={(t) =>
+      css({
+        fontSize: "0.875em",
+        position: "relative",
+        border: "0.1rem solid",
+        borderRadius: "0.5rem",
+        borderColor: t.colors.borderLighter,
+        padding: "0.4rem 0.4rem 0.4rem 0.6rem",
+        whiteSpace: "nowrap",
+        display: "flex",
+        alignItems: "center",
+        "[data-cancel]": {
+          padding: "0.3rem",
+          position: "relative",
+          "@media(hover: hover)": {
+            cursor: "pointer",
+            ":hover": { color: t.colors.textAccent },
+          },
+        },
+      })
+    }
+  >
+    <React.Suspense fallback={<div>...</div>}>
+      <NextLink
+        href={`#${item.id}`}
+        style={{
+          display: "block",
+          position: "absolute",
+          inset: 0,
+        }}
+      />
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        <AccountPreviewPopoverTrigger
+          showAvatar
+          accountAddress={item.authorAccount}
+        />
+        :{" "}
+        <MarkdownRichText
+          text={item.body}
+          displayImages={false}
+          inline
+          css={css({
+            // Make all headings small
+            "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+            "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": {
+              marginTop: "1.5em",
+            },
+            "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+              { marginBottom: "0.625em" },
+          })}
+        />
+      </div>
+      <button data-cancel onClick={onCancel}>
+        <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
+      </button>
+    </React.Suspense>
+  </Component>
 );
 
 export default ProposalActionForm;

@@ -23,7 +23,7 @@ import {
   useEnsCache,
 } from "../store.js";
 import { subgraphFetch } from "../nouns-subgraph.js";
-import { getReposts } from "../utils/markdown.js";
+import { createRepostExtractor } from "../utils/votes-and-feedbacks.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -118,6 +118,8 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
 
   useFetch(async () => {
     const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
+      // TODO: the source set should ideally include all votes for relevant
+      // proposals or some revotes may be missed
       const { votes } = await subgraphFetch({
         query: `{
           votes (
@@ -151,29 +153,26 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
 
     const votes = await fetchVotes();
 
-    const revoteCountByAccountAddress = votes.reduce((acc, v, i) => {
+    const votesByProposalId = arrayUtils.groupBy((v) => v.proposal.id, votes);
+
+    const revoteCountByAccountAddress = votes.reduce((acc, v) => {
       if (v.votes === 0 || v.reason == null || v.reason.trim() === "")
         return acc;
-      const repostQuoteBodies = getReposts(v.reason);
-      if (repostQuoteBodies.length === 0) return acc;
 
-      const previousProposalVotes = votes
-        .slice(0, i)
-        .filter((v_) => v_.proposal.id === v.proposal.id);
-      const revoteTargetVotes = previousProposalVotes.filter((targetVote) => {
-        if (
-          targetVote.reason == null ||
-          repostQuoteBodies.every(
-            (quoteBody) => !targetVote.reason.includes(quoteBody),
-          )
-        )
-          return false;
+      const proposalVotes = votesByProposalId[v.proposal.id];
+      const proposalIndex = proposalVotes.indexOf(v);
+      const previousProposalVotes = proposalVotes.slice(0, proposalIndex);
 
-        return (
+      const extractReposts = createRepostExtractor(previousProposalVotes);
+
+      const [revoteTargetVotes_] = extractReposts(v.reason);
+
+      const revoteTargetVotes = revoteTargetVotes_.filter(
+        (targetVote) =>
+          // Don’t count revotes that disagree with the revoter
           targetVote.supportDetailed === 2 ||
-          targetVote.supportDetailed === v.supportDetailed
-        );
-      });
+          targetVote.supportDetailed === v.supportDetailed,
+      );
 
       if (revoteTargetVotes.length === 0) return acc;
       const nextAcc = { ...acc };
