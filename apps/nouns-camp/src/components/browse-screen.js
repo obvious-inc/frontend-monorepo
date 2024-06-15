@@ -356,7 +356,7 @@ const BrowseScreen = () => {
       const hasFeedback =
         c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.voter.id.toLowerCase() === connectedAccount,
+          (p) => p.voterId.toLowerCase() === connectedAccount,
         );
 
       if (

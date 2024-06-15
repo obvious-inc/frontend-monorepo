@@ -85,12 +85,14 @@ export const useSendProposalCandidateFeedback = (
     });
     addOptimitisicCandidateFeedbackPost(candidateId, {
       id: String(Math.random()),
+      type: "feedback-post",
       reason,
       support,
-      createdTimestamp: new Date(),
       createdBlock: blockNumber,
+      createdTimestamp: new Date(),
+      // votes
       voterId,
-      voter: { id: voterId },
+      candidateId,
     });
     return hash;
   };
@@ -132,12 +134,14 @@ export const useSendProposalFeedback = (proposalId, { support, reason }) => {
     });
     addOptimitisicProposalFeedbackPost(proposalId, {
       id: String(Math.random()),
+      type: "feedback-post",
       reason,
       support,
-      createdTimestamp: new Date(),
       createdBlock: blockNumber,
+      createdTimestamp: new Date(),
+      // votes
       voterId,
-      voter: { id: voterId },
+      proposalId,
     });
     return hash;
   };

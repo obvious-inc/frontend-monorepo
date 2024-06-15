@@ -72,15 +72,15 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
 
   const votesByAccountAddress = sortedFeedbackPosts.reduce(
     (votesByAccountAddress, post) => {
-      if (votesByAccountAddress[post.voter.id] != null)
+      if (votesByAccountAddress[post.voterId] != null)
         return votesByAccountAddress;
 
       return {
         ...votesByAccountAddress,
-        [post.voter.id]: {
-          voterId: post.voter.id,
+        [post.voterId]: {
+          voterId: post.voterId,
           support: post.support,
-          votes: post.voter.nounsRepresented?.length ?? 0,
+          votes: post.votes ?? 0,
         },
       };
     },
