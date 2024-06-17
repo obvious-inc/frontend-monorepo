@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import * as Sentry from "@sentry/nextjs";
+import { reportError } from "../utils/monitoring.js";
 import ClientAppProvider from "./client-app-provider.js";
 import ErrorScreen from "../components/error-screen.js";
 
@@ -10,7 +10,7 @@ export default function Error({
   // reset
 }) {
   React.useEffect(() => {
-    Sentry.captureException(error);
+    reportError(error);
   }, [error]);
 
   return (

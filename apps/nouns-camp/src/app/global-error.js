@@ -1,14 +1,14 @@
 "use client";
 
 import React from "react";
-import * as Sentry from "@sentry/nextjs";
+import { reportError } from "../utils/monitoring.js";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
 import ThemeProvider from "../theme-provider.js";
 import ErrorScreen from "../components/error-screen.js";
 
 export default function Error({ error }) {
   React.useEffect(() => {
-    Sentry.captureException(error);
+    reportError(error);
   }, [error]);
 
   return (
