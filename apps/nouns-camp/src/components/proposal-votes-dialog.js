@@ -9,7 +9,7 @@ import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { useProposal, useProposalCandidate } from "../store.js";
 import { useSearchParams } from "../hooks/navigation.js";
-import { extractReposts } from "../utils/proposals.js";
+import { createRepostExtractor } from "../utils/votes-and-feedbacks.js";
 import { useDynamicQuorum } from "../hooks/dao-contract.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
@@ -147,10 +147,10 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
       >
         {sortVotes(votes).map((v) => {
           const voteIndex = ascendingPosts.indexOf(v);
-          const [reposts, strippedReason] = extractReposts(
-            v.reason,
+          const extractReposts = createRepostExtractor(
             ascendingPosts.slice(0, voteIndex),
           );
+          const [reposts, strippedReason] = extractReposts(v.reason);
           const hasReason =
             strippedReason != null && strippedReason.trim() !== "";
           const isRevote =

@@ -287,12 +287,14 @@ export const useCastProposalVote = (
 
     addOptimitisicProposalVote(proposalId, {
       id: String(Math.random()),
+      type: "vote",
       reason,
       support,
       createdBlock: blockNumber,
       createdTimestamp: new Date(),
+      // votes
       voterId,
-      voter: { id: voterId },
+      proposalId,
     });
 
     registerEvent("Vote successfully cast", {

@@ -7,8 +7,12 @@ export const indexBy = (computeKey, list) =>
 export const groupBy = (computeKey, list) =>
   list.reduce((acc, item) => {
     const key = computeKey(item, list);
-    const group = acc[key] ?? [];
-    acc[key] = [...group, item];
+    if (acc[key] != null) {
+      acc[key].push(item);
+      return acc;
+    }
+    acc[key] = [];
+    acc[key].push(item);
     return acc;
   }, {});
 
