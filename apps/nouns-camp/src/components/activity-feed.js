@@ -141,10 +141,9 @@ const FeedItem = React.memo(
       connectedAccount != null &&
       ["vote", "feedback-post", "farcaster-cast"].includes(item.type);
 
-    const enableReplyAction = true;
-    const enableRepostAction = true;
-    // TODO: check if has liked, account status etc.
-    const enableLikeAction = true;
+    const enableReplyAction = !item.isPending;
+    const enableRepostAction = !item.isPending;
+    const enableLikeAction = !item.isPending;
 
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
 
