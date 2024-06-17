@@ -141,22 +141,24 @@ const parseMarkdownDescription = (string) => {
 
 const parseFeedbackPost = (post) => ({
   id: post.id,
-  reason: post.reason,
-  support: post.supportDetailed,
+  // Useful to differentiate feedbacks from votes
+  type: "feedback-post",
   createdBlock: BigInt(post.createdBlock),
   createdTimestamp: parseTimestamp(post.createdTimestamp),
-  votes: Number(post.votes),
+  reason: post.reason,
+  support: post.supportDetailed,
+  votes: post.votes == null ? undefined : Number(post.votes),
+  voterId: post.voter.id,
   proposalId: post.proposal?.id,
   candidateId: post.candidate?.id,
-  voterId: post.voter.id,
-  voter: post.voter,
 });
 
 const parseProposalVote = (v) => ({
   id: v.id,
+  // Useful to differentiate votes from feedbacks
+  type: "vote",
   createdBlock: BigInt(v.blockNumber),
-  createdTimestamp:
-    v.blockTimestamp == null ? undefined : parseTimestamp(v.blockTimestamp),
+  createdTimestamp: parseTimestamp(v.blockTimestamp),
   reason: v.reason,
   support: v.supportDetailed,
   votes: v.votes == null ? undefined : Number(v.votes),

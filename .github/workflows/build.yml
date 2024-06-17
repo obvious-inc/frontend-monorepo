@@ -45,7 +45,7 @@ jobs:
     steps:
       # The first step is to check out the repository code
       - name: Checking out repository code
-        uses: actions/checkout@v4.1.6 # Action for checking out a repo.
+        uses: actions/checkout@v4.1.7 # Action for checking out a repo.
         with:
           fetch-depth: 0 # Fetches all history for all branches and tags
 
@@ -79,7 +79,7 @@ jobs:
 
     steps: # The sequence of tasks that make up a job.
       - name: Checking out repository code
-        uses: actions/checkout@v4.1.6 # Action for checking out a repo.
+        uses: actions/checkout@v4.1.7 # Action for checking out a repo.
 
       - name: Setup Node.js ${{ matrix.node-version }} Environment
         uses: actions/setup-node@v4.0.2 # Action for setting up Node environment.
@@ -134,7 +134,7 @@ jobs:
     steps:
       # Checkout the repository code
       - name: Checkout code
-        uses: actions/checkout@v4.1.6
+        uses: actions/checkout@v4.1.7
         with:
           fetch-depth: 0 # Fetches all history for all branches and tags
 

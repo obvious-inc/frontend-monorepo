@@ -2,8 +2,8 @@ import React from "react";
 import { isAddress } from "viem";
 import { css } from "@emotion/react";
 import Input from "@shades/ui-web/input";
-import useEnsAddress from "../hooks/ens-address.js";
 import useEnsName from "../hooks/ens-name.js";
+import useEnsAddress from "../hooks/ens-address.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const AddressInput = ({
