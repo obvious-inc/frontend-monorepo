@@ -1,5 +1,6 @@
 import React from "react";
-import { encodeFunctionData } from "viem";
+import { decodeAbiParameters, encodeFunctionData, parseAbiItem } from "viem";
+import { unparse } from "../utils/transactions";
 
 const SIMULATE_TRANSACTION_TYPES = [
   "function-call",
@@ -12,44 +13,33 @@ const SIMULATE_TRANSACTION_TYPES = [
   "usdc-transfer-via-payer",
 ];
 
-export const fetchSimulation = async (transaction) => {
-  if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
-    return null;
-  }
+export const fetchSimulation = async ({
+  target,
+  value,
+  signature,
+  calldata,
+}) => {
+  if (!signature) signature = "transfer()";
 
-  const transactionValue = (transaction) => {
-    switch (transaction.type) {
-      case "payable-function-call":
-      case "proxied-payable-function-call":
-      case "transfer":
-        return transaction.value;
-      default:
-        return 0;
-    }
-  };
+  const { name, inputs } = parseAbiItem(`function ${signature}`);
+  const args = decodeAbiParameters(inputs, calldata);
 
-  const encodedData = (transaction) => {
-    if (!transaction.functionName) {
-      return "";
-    }
-
-    return encodeFunctionData({
-      abi: [
-        {
-          inputs: transaction.functionInputTypes,
-          name: transaction.functionName,
-          type: "function",
-        },
-      ],
-      functionName: transaction.functionName,
-      args: transaction.functionInputs,
-    });
-  };
+  const encodedData = encodeFunctionData({
+    abi: [
+      {
+        inputs: inputs,
+        name: name,
+        type: "function",
+      },
+    ],
+    functionName: name,
+    args: args,
+  });
 
   const parsedTransaction = {
-    to: transaction.target,
-    value: transactionValue(transaction).toString(),
-    input: encodedData(transaction),
+    to: target,
+    value: value || "0",
+    input: encodedData,
   };
 
   const body = JSON.stringify(parsedTransaction);
@@ -76,8 +66,25 @@ export const useTransactionSimulation = (transaction) => {
   const fetchData = React.useCallback(async () => {
     try {
       setIsFetching(true);
-      const sim = await fetchSimulation(transaction);
+      if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
+        setSimulation(null);
+        return;
+      }
+
+      const { targets, values, signatures, calldatas } = unparse([transaction]);
+
+      const tx = {
+        target: targets[0],
+        value: values[0],
+        signature: signatures[0],
+        calldata: calldatas[0],
+      };
+
+      const sim = await fetchSimulation(tx);
       setSimulation(sim);
+    } catch (e) {
+      console.error(e);
+      setSimulation(null);
     } finally {
       setIsFetching(false);
     }
