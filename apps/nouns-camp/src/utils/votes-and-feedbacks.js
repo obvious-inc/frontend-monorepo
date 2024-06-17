@@ -10,7 +10,7 @@ import {
 //     +1
 //
 //     > Voting against this prop for no good reason
-export const REPOST_REGEX = /^\+1$\n\n(?<quote>(?:^>.*?$\n?)+)/gms;
+export const REPOST_REGEX = /^\+1$(\n){2}(?<quote>(?:^>.*?$\n?)+)/gms;
 
 // Matches an @-prefixed truncated address like "@0xe3D7...A436", followed by
 // the reply content, and an end boundry consisting of the quoted reply target
@@ -24,7 +24,7 @@ export const REPOST_REGEX = /^\+1$\n\n(?<quote>(?:^>.*?$\n?)+)/gms;
 //
 //     > Why can’t we have nice things?
 export const REPLY_REGEX =
-  /^@(?<author>0x[a-zA-Z0-9]{4}\.\.\.[a-zA-Z0-p]{4})\n\n(?<reply>.+?)\n(?<quote>(?:^>.*?$\n?)+)/gms;
+  /^@(?<author>0x[a-zA-Z0-9]{4}(\.){3}[a-zA-Z0-p]{4})(\n){2}(?<reply>.+?)\n(?<quote>(?:^>.*?$\n?)+)/gms;
 
 const poormansUnquote = (markdownBlockquote) =>
   markdownBlockquote
