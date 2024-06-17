@@ -3,13 +3,31 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 
+// Matches a paragraph "+1", followed by the quoted repost target `reason`.
+//
+// Example:
+//
+//     +1
+//
+//     > Voting against this prop for no good reason
 export const REPOST_REGEX = /^\+1$\n\n(?<quote>(?:^>.*?$\n?)+)/gms;
-// Matches an @-prefixed truncated address like "@0xe3D7...A436"
+
+// Matches an @-prefixed truncated address like "@0xe3D7...A436", followed by
+// the reply content, and an end boundry consisting of the quoted reply target
+// `reason`.
+//
+// Example:
+//
+//     @0xe3D7...A436
+//
+//     I don’t know 😭
+//
+//     > Why can’t we have nice things?
 export const REPLY_REGEX =
   /^@(?<author>0x[a-zA-Z0-9]{4}\.\.\.[a-zA-Z0-p]{4})\n\n(?<reply>.+?)\n(?<quote>(?:^>.*?$\n?)+)/gms;
 
-const unquote = (markdown) =>
-  markdown
+const poormansUnquote = (markdownBlockquote) =>
+  markdownBlockquote
     .split("\n")
     .map((line) => {
       if (line[0] !== ">") throw new Error();
@@ -30,7 +48,7 @@ export const createReplyExtractor =
     const replies = [];
 
     for (const match of matches) {
-      const quoteBody = unquote(match.groups.quote.trim());
+      const quoteBody = poormansUnquote(match.groups.quote.trim());
       const truncatedReplyTargetAuthorAddress =
         match.groups.author.toLowerCase();
       const matchedReplyTarget = ascendingSourceVotesAndFeedbackPosts.find(
@@ -74,7 +92,7 @@ export const createRepostExtractor =
     const reposts = [];
 
     for (const match of matches) {
-      const quoteBody = unquote(match.groups.quote.trim()).trim();
+      const quoteBody = poormansUnquote(match.groups.quote.trim()).trim();
       const matchedPost = ascendingSourceVotesAndFeedbackPosts.find(
         ({ reason: originReason }) => {
           if (originReason == null) return false;
