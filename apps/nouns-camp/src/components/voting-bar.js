@@ -10,13 +10,14 @@ const VotingBar = ({
 }) => {
   const [forVoteCount, abstainVoteCount, againstVoteCount] = votes.reduce(
     ([for_, abstain, against], v) => {
+      const power = v.votes ?? 0;
       switch (v.support) {
         case 0:
-          return [for_, abstain, against + v.votes];
+          return [for_, abstain, against + power];
         case 1:
-          return [for_ + v.votes, abstain, against];
+          return [for_ + power, abstain, against];
         case 2:
-          return [for_, abstain + v.votes, against];
+          return [for_, abstain + power, against];
         default:
           throw new Error();
       }
@@ -30,7 +31,7 @@ const VotingBar = ({
     2: abstainVotes = [],
   } = arrayUtils.groupBy(
     (v) => v.support,
-    votes.filter((v) => v.votes > 0),
+    votes.filter((v) => v.votes != null && v.votes > 0),
   );
 
   // const totalVoteCount =
