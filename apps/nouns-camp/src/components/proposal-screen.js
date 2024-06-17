@@ -46,7 +46,6 @@ import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitProposalCast } from "../hooks/farcaster.js";
-import useFeatureFlag from "../hooks/feature-flag.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -155,7 +154,6 @@ const ProposalMainSection = ({
     return null;
   });
 
-  const isRepliesEnabled = useFeatureFlag("replies");
   const [
     pendingRepliesByTargetFeedItemId,
     setPendingRepliesByTargetFeedItemId,
@@ -531,6 +529,13 @@ const ProposalMainSection = ({
     repliesByTargetFeedItemId: pendingRepliesByTargetFeedItemId,
   };
 
+  const activityFeedProps = {
+    context: "proposal",
+    items: feedItems,
+    onReply: currentFormAction === "farcaster-comment" ? null : onReply,
+    onRepost: currentFormAction === "farcaster-comment" ? null : onRepost,
+  };
+
   return (
     <>
       <div css={css({ padding: "0 1.6rem" })}>
@@ -649,21 +654,7 @@ const ProposalMainSection = ({
 
                     {feedItems.length !== 0 && (
                       <React.Suspense fallback={null}>
-                        <ActivityFeed
-                          context="proposal"
-                          items={feedItems}
-                          onReply={
-                            !isRepliesEnabled ||
-                            currentFormAction === "farcaster-comment"
-                              ? null
-                              : onReply
-                          }
-                          onRepost={
-                            currentFormAction === "farcaster-comment"
-                              ? null
-                              : onRepost
-                          }
-                        />
+                        <ActivityFeed {...activityFeedProps} />
                       </React.Suspense>
                     )}
                   </Tabs.Item>
@@ -810,15 +801,7 @@ const ProposalMainSection = ({
                       {feedItems.length !== 0 && (
                         <React.Suspense fallback={null}>
                           <div style={{ marginTop: "3.2rem" }}>
-                            <ActivityFeed
-                              context="proposal"
-                              items={feedItems}
-                              onRepost={
-                                currentFormAction === "farcaster-comment"
-                                  ? null
-                                  : onRepost
-                              }
-                            />
+                            <ActivityFeed {...activityFeedProps} />
                           </div>
                         </React.Suspense>
                       )}
