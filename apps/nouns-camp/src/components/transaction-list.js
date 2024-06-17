@@ -782,28 +782,35 @@ export const AddressDisplayNameWithTooltip = ({
         sideOffset={6}
         css={(t) =>
           css({
-            userSelect: "text",
             fontFamily: t.text.fontStacks.monospace,
             fontSize: t.text.sizes.small,
             color: t.colors.textDimmed,
           })
         }
       >
-        {knownContract != null && (
-          <p
-            css={(t) =>
-              css({
-                fontFamily: t.text.fontStacks.default,
-                fontSize: t.text.sizes.small,
-                fontWeight: t.text.weights.header,
-                lineHeight: 1.5,
-              })
-            }
-          >
-            {knownContract.description ?? knownContract.name}
-          </p>
-        )}
-        {address}
+        <div
+          style={{
+            // This can’t be on `Tooltip.Content` for some reason I refuse to
+            // spend time investigating
+            userSelect: "text",
+          }}
+        >
+          {knownContract != null && (
+            <p
+              css={(t) =>
+                css({
+                  fontFamily: t.text.fontStacks.default,
+                  fontSize: t.text.sizes.small,
+                  fontWeight: t.text.weights.header,
+                  lineHeight: 1.5,
+                })
+              }
+            >
+              {knownContract.description ?? knownContract.name}
+            </p>
+          )}
+          {address}
+        </div>
       </Tooltip.Content>
     </Tooltip.Root>
   );
