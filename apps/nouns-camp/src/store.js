@@ -1054,10 +1054,8 @@ const createStore = ({ initialState, publicClient }) =>
             `,
           });
 
-        if (account == null) return Promise.reject(new Error("not-found"));
-
         const nounIds = arrayUtils.unique([
-          ...account.nouns.map((n) => n.id),
+          ...(account?.nouns.map((n) => n.id) ?? []),
           ...transferEvents.map((e) => e.nounId),
           ...delegationEvents.map((e) => e.nounId),
         ]);
