@@ -35,7 +35,6 @@ import {
   getSponsorSignatures as getCandidateSponsorSignatures,
 } from "../utils/candidates.js";
 import useBlockNumber from "../hooks/block-number.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -63,6 +62,7 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
 import Tag from "./tag.js";
 import ProposalStateTag from "./proposal-state-tag.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -963,12 +963,13 @@ export const SectionedList = ({
           "[data-group] li + li[data-placeholder]": {
             marginTop: "1rem",
           },
-          a: {
-            display: "block",
-            textDecoration: "none",
+          "[data-group-list] > li": {
+            position: "relative",
             padding: "0.8rem 0",
             color: t.colors.textNormal,
             borderRadius: "0.5rem",
+            ".link": { position: "absolute", inset: 0, display: "block" },
+            ".item-container": { position: "relative", pointerEvents: "none" },
           },
           "[data-title]": {
             fontSize: t.text.sizes.large,
@@ -1042,7 +1043,7 @@ export const SectionedList = ({
                   )}
                 </div>
               )}
-              <ul>
+              <ul data-group-list>
                 {items.map((i) => (
                   <li key={i.id}>
                     {i.type === "draft" ? (
@@ -1270,7 +1271,6 @@ const FeedTabContent = React.memo(() => {
 
 const ProposalItem = React.memo(({ proposalId }) => {
   const proposal = useProposal(proposalId, { watch: false });
-  const authorAccountDisplayName = useAccountDisplayName(proposal?.proposerId);
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
   const statusText = renderPropStatusText({
@@ -1284,8 +1284,15 @@ const ProposalItem = React.memo(({ proposalId }) => {
     proposal.state != null && ["canceled", "expired"].includes(proposal.state);
 
   return (
-    <NextLink prefetch href={`/proposals/${proposalId}`} data-dimmed={isDimmed}>
+    <>
+      <NextLink
+        className="link"
+        prefetch
+        href={`/proposals/${proposalId}`}
+        data-dimmed={isDimmed}
+      />
       <div
+        className="item-container"
         css={css({
           display: "grid",
           gridTemplateColumns: "minmax(0,auto) minmax(min-content,1fr)",
@@ -1299,12 +1306,19 @@ const ProposalItem = React.memo(({ proposalId }) => {
             <em
               css={(t) =>
                 css({
+                  pointerEvents: "all",
                   fontWeight: t.text.weights.emphasis,
                   fontStyle: "normal",
                 })
               }
             >
-              {authorAccountDisplayName ?? "..."}
+              {proposal.proposerId == null ? (
+                "..."
+              ) : (
+                <AccountPreviewPopoverTrigger
+                  accountAddress={proposal.proposerId}
+                />
+              )}
             </em>
           </div>
           <div data-title>
@@ -1362,7 +1376,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
           />
         </div>
       </div>
-    </NextLink>
+    </>
   );
 });
 
@@ -1463,7 +1477,7 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
 };
 
 export const VotesTagGroup = React.memo(
-  ({ for: for_, against, abstain, highlight }) => {
+  ({ for: for_, against, abstain, quorum, highlight }) => {
     return (
       <span
         css={(t) =>
@@ -1559,8 +1573,6 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
     { watch: false },
   );
 
-  const authorAccountDisplayName = useAccountDisplayName(candidate.proposerId);
-
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
   const proposalThreshold = useProposalThreshold();
 
@@ -1632,13 +1644,16 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
   };
 
   return (
-    <NextLink
-      prefetch
-      href={`/candidates/${encodeURIComponent(
-        makeCandidateUrlId(candidateId),
-      )}`}
-    >
+    <>
+      <NextLink
+        className="link"
+        prefetch
+        href={`/candidates/${encodeURIComponent(
+          makeCandidateUrlId(candidateId),
+        )}`}
+      />
       <div
+        className="item-container"
         css={css({
           display: "grid",
           gridTemplateColumns: "minmax(0,1fr) auto",
@@ -1666,12 +1681,19 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
               <em
                 css={(t) =>
                   css({
+                    pointerEvents: "all",
                     fontWeight: t.text.weights.emphasis,
                     fontStyle: "normal",
                   })
                 }
               >
-                {authorAccountDisplayName ?? "..."}
+                {candidate.proposerId == null ? (
+                  "..."
+                ) : (
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={candidate.proposerId}
+                  />
+                )}
               </em>
             </div>
             <div
@@ -1809,20 +1831,19 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
           {/* )} */}
         </div>
       </div>
-    </NextLink>
+    </>
   );
 });
 
 const ProposalDraftItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
-  const authorAccountDisplayName = useAccountDisplayName(
-    connectedAccountAddress,
-  );
 
   return (
-    <NextLink prefetch href={`/new/${draftId}`}>
+    <>
+      <NextLink className="link" prefetch href={`/new/${draftId}`} />
       <div
+        className="item-container"
         css={css({
           display: "grid",
           gridTemplateColumns: "minmax(0,1fr) auto",
@@ -1836,19 +1857,22 @@ const ProposalDraftItem = ({ draftId }) => {
             <em
               css={(t) =>
                 css({
+                  pointerEvents: "all",
                   fontWeight: t.text.weights.emphasis,
                   fontStyle: "normal",
                 })
               }
             >
-              {authorAccountDisplayName ?? "..."}
+              <AccountPreviewPopoverTrigger
+                accountAddress={connectedAccountAddress}
+              />
             </em>
           </div>
           <div data-title>{draft.name || "Untitled draft"}</div>
         </div>
         <Tag size="large">Draft</Tag>
       </div>
-    </NextLink>
+    </>
   );
 };
 
