@@ -9,4 +9,5 @@ Sentry.init({
   tracesSampleRate: 0,
   replaysOnErrorSampleRate: 0,
   replaysSessionSampleRate: 0,
+  enabled: process.env.NODE_ENV === "production",
 });
