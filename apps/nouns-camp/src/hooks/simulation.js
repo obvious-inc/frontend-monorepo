@@ -13,13 +13,14 @@ const SIMULATE_TRANSACTION_TYPES = [
   "usdc-transfer-via-payer",
 ];
 
-export const fetchSimulation = async ({
-  target,
-  value,
-  signature,
-  calldata,
-}) => {
-  if (!signature) signature = "transfer()";
+const parse = ({ target, value, signature, calldata }) => {
+  if (signature === "") {
+    return {
+      to: target,
+      input: calldata,
+      value,
+    };
+  }
 
   const { name, inputs } = parseAbiItem(`function ${signature}`);
   const args = decodeAbiParameters(inputs, calldata);
@@ -36,13 +37,22 @@ export const fetchSimulation = async ({
     args: args,
   });
 
-  const parsedTransaction = {
+  return {
     to: target,
     value: value || "0",
     input: encodedData,
   };
+};
 
-  const body = JSON.stringify(parsedTransaction);
+export const fetchSimulation = async ({
+  target,
+  value,
+  signature,
+  calldata,
+}) => {
+  console.log({ target, value, signature, calldata });
+  const parsedTx = parse({ target, value, signature, calldata });
+  const body = JSON.stringify(parsedTx);
   const res = await fetch("/api/simulate", {
     method: "POST",
     headers: {
