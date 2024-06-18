@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.25] - 2024-06-18
+
+### 🚀 Features
+
+- Migrate updates from upstream (#364)
+
 ## [1.1.0-beta.24] - 2024-06-18
 
 ### 🚀 Features
