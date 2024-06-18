@@ -22,7 +22,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
     ...feedbackPosts,
   ]);
 
-  return ascendingVotesAndFeedbackPosts.map((p, postIndex) => {
+  return ascendingVotesAndFeedbackPosts.reduce((acc, p, postIndex) => {
     const previousItems = ascendingVotesAndFeedbackPosts.slice(0, postIndex);
     const extractReplies = createReplyExtractor(previousItems);
     const extractReposts = createRepostExtractor(previousItems);
@@ -30,7 +30,11 @@ const buildVoteAndFeedbackPostFeedItems = ({
     const [replies, reasonWithStrippedRepliesAndReposts] = extractReplies(
       reasonWithStrippedReposts,
     );
-    return {
+
+    // Don’t include candidate items
+    if (p.candidateId != null) return acc;
+
+    acc.push({
       id: p.id,
       type: p.type,
       support: p.support,
@@ -44,8 +48,10 @@ const buildVoteAndFeedbackPostFeedItems = ({
       replies,
       reposts,
       reason: p.reason,
-    };
-  });
+    });
+
+    return acc;
+  }, []);
 };
 
 export const buildProposalFeed = (
@@ -348,11 +354,12 @@ export const buildCandidateFeed = (
 export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
   const accountAddress = accountAddress_.toLowerCase();
 
-  const buildProposalItems = () =>
+  const buildProposalItems = ({ includeCandidateItems = true } = {}) =>
     Object.keys(storeState.proposalsById)
       .flatMap((proposalId) =>
         buildProposalFeed(storeState, proposalId, {
           includePropdates: true,
+          includeCandidateItems,
           // TODO: inject Farcaster casts
         }),
       )
@@ -475,7 +482,7 @@ export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
         return buildDelegationAndTransferEventItems();
       default:
         return [
-          ...buildProposalItems(),
+          ...buildProposalItems({ includeCandidateItems: false }),
           ...buildCandidateItems(),
           ...buildDelegationAndTransferEventItems(),
         ];
