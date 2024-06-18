@@ -348,11 +348,12 @@ export const buildCandidateFeed = (
 export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
   const accountAddress = accountAddress_.toLowerCase();
 
-  const buildProposalItems = () =>
+  const buildProposalItems = ({ includeCandidateItems = true } = {}) =>
     Object.keys(storeState.proposalsById)
       .flatMap((proposalId) =>
         buildProposalFeed(storeState, proposalId, {
           includePropdates: true,
+          includeCandidateItems,
           // TODO: inject Farcaster casts
         }),
       )
@@ -475,7 +476,7 @@ export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
         return buildDelegationAndTransferEventItems();
       default:
         return [
-          ...buildProposalItems(),
+          ...buildProposalItems({ includeCandidateItems: false }),
           ...buildCandidateItems(),
           ...buildDelegationAndTransferEventItems(),
         ];
