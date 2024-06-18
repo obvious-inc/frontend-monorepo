@@ -1493,10 +1493,17 @@ export const VotesTagGroup = React.memo(
               borderTopRightRadius: "0.2rem",
               borderBottomRightRadius: "0.2rem",
             },
+            ".quorum": {
+              marginLeft: "0.3em",
+            },
             '[data-highlight="true"]': {
               color: t.colors.textNormal,
               fontWeight: t.text.weights.smallTextEmphasis,
               background: t.colors.backgroundModifierStrong,
+              ".quorum": {
+                color: t.colors.textDimmed,
+                fontWeight: t.text.weights.normal,
+              },
             },
             "[data-arrow]": {
               width: "0.9rem",
@@ -1512,6 +1519,7 @@ export const VotesTagGroup = React.memo(
         <span data-for={for_} data-highlight={highlight === "for"}>
           {for_}
           <ArrowDownSmallIcon data-arrow="up" />
+          {quorum != null && <span className="quorum"> / {quorum}</span>}
         </span>
         <span data-abstain={abstain} data-highlight={highlight === "abstain"}>
           {abstain}
@@ -1538,6 +1546,7 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
       for={proposal.forVotes}
       against={proposal.againstVotes}
       abstain={proposal.abstainVotes}
+      quorum={proposal.quorumVotes}
       highlight={{ 0: "against", 1: "for", 2: "abstain" }[vote?.support]}
     />
   );
