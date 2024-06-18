@@ -1,6 +1,6 @@
 import { CHAIN_ID } from "../../../constants/env.js";
 import { resolveIdentifier } from "../../../contracts";
-import * as Sentry from "@sentry/nextjs";
+import { reportError } from "../../../utils/monitoring.js";
 
 const TENDERLY_API_ENDPOINT = `https://api.tenderly.co/api/v1/account/me/project/${process.env.TENDERLY_PROJECT_SLUG}`;
 const TENDERLY_SIMULATION_OPTIONS = {
@@ -13,16 +13,27 @@ const shareSimulation = async (simulation) => {
   if (simulation.status) return;
 
   try {
-    await fetch(`${TENDERLY_API_ENDPOINT}/simulations/${simulation.id}/share`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Access-Key": process.env.TENDERLY_API_KEY,
+    const response = await fetch(
+      `${TENDERLY_API_ENDPOINT}/simulations/${simulation.id}/share`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-Access-Key": process.env.TENDERLY_API_KEY,
+        },
       },
-    });
+    );
+
+    if (!response.ok) {
+      reportError(
+        new Error(
+          `Failed to share simulation, API returned ${response.status}`,
+        ),
+      );
+    }
   } catch (error) {
-    Sentry.captureException(error);
+    reportError(error);
   }
 };
 
@@ -92,8 +103,6 @@ export async function POST(request) {
   }
 
   const simulation = data.simulation;
-
-  // (async) share simulation
   if (simulation) await shareSimulation(simulation);
 
   return new Response(JSON.stringify({ ...simulation }), {
