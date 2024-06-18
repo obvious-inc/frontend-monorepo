@@ -296,3 +296,9 @@ export const getFirstParagraph = (string) => {
   });
   return firstParagraph ?? blocks[0];
 };
+
+export const blockquote = (string) =>
+  string
+    .split("\n")
+    .map((l) => `> ${l}`)
+    .join("\n");

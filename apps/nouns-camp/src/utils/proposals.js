@@ -1,5 +1,3 @@
-import { getReposts, stripReposts } from "./markdown.js";
-
 export const EXECUTION_GRACE_PERIOD_IN_MILLIS = 1000 * 60 * 60 * 24 * 21; // 21 days
 
 const isDefeated = (proposal) =>
@@ -52,26 +50,6 @@ export const isVotableState = (state) =>
 
 export const isActiveState = (state) =>
   ["pending", "updatable", "active", "objection-period"].includes(state);
-
-export const extractReposts = (targetPostBody, ascendingPosts) => {
-  if (targetPostBody == null || targetPostBody.trim() === "")
-    return [[], targetPostBody];
-
-  const repostBodies = getReposts(targetPostBody);
-  const repostIndeciesToDrop = [];
-  const reposts = repostBodies.reduce((reposts, repostBody, i) => {
-    const post = ascendingPosts.find(
-      (post) =>
-        post.reason != null && post.reason.trim().includes(repostBody.trim()),
-    );
-    if (post == null) return reposts;
-    repostIndeciesToDrop.push(i);
-    if (post.type == null) throw new Error('"type" is required');
-    return [...reposts, post];
-  }, []);
-  const strippedReason = stripReposts(targetPostBody, repostIndeciesToDrop);
-  return [reposts, strippedReason];
-};
 
 export const getStateLabel = (state) => {
   switch (state) {

@@ -105,7 +105,7 @@ const parseNeynarUsers = async (users) => {
 export const fetchAccountsWithVerifiedAddress = async (address) => {
   const searchParams = new URLSearchParams({
     addresses: address,
-    address_types: "verified_addresss",
+    address_types: "verified_address",
   });
 
   const response = await fetch(
@@ -121,13 +121,14 @@ export const fetchAccountsWithVerifiedAddress = async (address) => {
   const body = await response.json();
 
   if (!response.ok) {
-    console.error(body);
-    return null;
+    if (body.code === "NotFound") return [];
+    console.error(`Error fetching farcaster accounts for "${address}"`, body);
+    return Promise.reject(new Error("unexpected-response"));
   }
 
   const neynarUsers = body[address] ?? [];
 
-  if (neynarUsers.length === 0) return 0;
+  if (neynarUsers.length === 0) return [];
 
   const sortedUsers = arrayUtils.sortBy(
     { value: (u) => u.follower_count, order: "desc" },
