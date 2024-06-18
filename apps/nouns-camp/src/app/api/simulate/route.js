@@ -58,16 +58,6 @@ export async function POST(request) {
       "X-Access-Key": process.env.TENDERLY_API_KEY,
     },
     body: JSON.stringify(parsedTransaction),
-  }).catch(() => {
-    return new Response(
-      JSON.stringify({ error: "simulation-unexpected-error" }),
-      {
-        status: 500,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      },
-    );
   });
 
   const data = await response.json();
