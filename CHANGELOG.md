@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.26] - 2024-06-19
+
+### 🚀 Features
+
+- Migrate updates from upstream (#365)
+
+### 🐛 Bug Fixes
+
+- *(action-dialog)* Remove usdc from currency options
+
+### 🚜 Refactor
+
+- *(browse-screen)* Comment out candidate functionality
+- Disable candidates and sponsored proposals in voter screen
+- Disable candidate and propdates filtering options
+- Comment out unused functions in action dialog
+
 ## [1.1.0-beta.25] - 2024-06-18
 
 ### 🚀 Features
