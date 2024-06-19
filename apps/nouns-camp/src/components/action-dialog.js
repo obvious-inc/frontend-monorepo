@@ -404,7 +404,7 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
         setCurrency={(currency) => setState({ currency })}
         currencyOptions={[
           { value: "weth", label: "WETH" },
-          { value: "usdc", label: "USDC" },
+          // { value: "usdc", label: "USDC" },
         ]}
       />
 
@@ -733,7 +733,7 @@ const formConfigByActionType = {
             setCurrency={(currency) => setState({ currency })}
             currencyOptions={[
               { value: "eth", label: "ETH" },
-              { value: "usdc", label: "USDC" },
+              // { value: "usdc", label: "USDC" },
             ]}
           />
 
