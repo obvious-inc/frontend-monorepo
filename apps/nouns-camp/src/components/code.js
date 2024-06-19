@@ -29,6 +29,7 @@ const Code = ({ block, ...props }) => {
           display: "block",
           padding: "0.8rem 1rem",
           overflow: "auto",
+          position: "relative",
           background: t.colors.backgroundModifierNormal,
           borderRadius: "0.3rem",
           userSelect: "text",

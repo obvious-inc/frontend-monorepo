@@ -44,6 +44,7 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
+import { useTransactionSimulation } from "../hooks/simulation.js";
 
 const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
@@ -664,13 +665,19 @@ const ActionSummary = ({ action: a }) => {
 
 const TransactionCodeBlock = ({ transaction }) => {
   const t = useEnhancedParsedTransaction(transaction);
+  const simulation = useTransactionSimulation(transaction);
 
   switch (t.type) {
     case "transfer":
     case "payer-top-up":
     case "unparsed-function-call":
     case "unparsed-payable-function-call":
-      return <UnparsedFunctionCallCodeBlock transaction={t} />;
+      return (
+        <UnparsedFunctionCallCodeBlock
+          transaction={t}
+          simulation={simulation}
+        />
+      );
 
     default: {
       if (
@@ -688,6 +695,7 @@ const TransactionCodeBlock = ({ transaction }) => {
           inputs={t.functionInputs}
           inputTypes={t.functionInputTypes}
           value={t.value}
+          simulation={simulation}
         />
       );
     }
@@ -761,7 +769,10 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
 );
 
 const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
-  const actionTransactions = resolveActionTransactions(a);
+  const actionTransactions = React.useMemo(
+    () => resolveActionTransactions(a),
+    [a],
+  );
 
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
