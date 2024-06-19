@@ -69,17 +69,17 @@ const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
 
-const getCandidateScore = (candidate) => {
-  const { votes } = getCandidateSignals({ candidate });
-  const {
-    0: againstVotes = [],
-    1: forVotes = [],
-    2: abstainVotes = [],
-  } = arrayUtils.groupBy((v) => v.support, votes);
-
-  if (forVotes.length === 0 && abstainVotes.length === 0) return null;
-  return forVotes.length - againstVotes.length;
-};
+// const getCandidateScore = (candidate) => {
+//   const { votes } = getCandidateSignals({ candidate });
+//   const {
+//     0: againstVotes = [],
+//     1: forVotes = [],
+//     2: abstainVotes = [],
+//   } = arrayUtils.groupBy((v) => v.support, votes);
+//
+//   if (forVotes.length === 0 && abstainVotes.length === 0) return null;
+//   return forVotes.length - againstVotes.length;
+// };
 
 const searchEns = (nameByAddress, rawQuery) => {
   const query = rawQuery.trim().toLowerCase();
@@ -165,25 +165,25 @@ const BrowseScreen = () => {
     "proposal-sorting-startegy",
     "activity",
   );
-  const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
-    "candidate-sorting-strategy",
-    "activity",
-  );
+  // const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
+  //   "candidate-sorting-strategy",
+  //   "activity",
+  // );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
     hasFetchedBrowseDataOnce,
   );
 
-  const candidateSortStrategies =
-    connectedWalletAccountAddress == null
-      ? ["activity", "popularity"]
-      : ["activity", "popularity", "connected-account-feedback"];
+  // const candidateSortStrategies =
+  //   connectedWalletAccountAddress == null
+  //     ? ["activity", "popularity"]
+  //     : ["activity", "popularity", "connected-account-feedback"];
 
-  const candidateSortStrategy = candidateSortStrategies.includes(
-    candidateSortStrategy_,
-  )
-    ? candidateSortStrategy_
-    : "popularity";
+  // const candidateSortStrategy = candidateSortStrategies.includes(
+  //   candidateSortStrategy_,
+  // )
+  //   ? candidateSortStrategy_
+  //   : "popularity";
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
@@ -350,24 +350,24 @@ const BrowseScreen = () => {
 
     if (!isActive) return "candidates:inactive";
 
-    if (candidateSortStrategy === "popularity") return "candidates:popular";
+    // if (candidateSortStrategy === "popularity") return "candidates:popular";
 
-    if (candidateSortStrategy === "connected-account-feedback") {
-      const hasFeedback =
-        c.feedbackPosts != null &&
-        c.feedbackPosts.some(
-          (p) => p.voterId.toLowerCase() === connectedAccount,
-        );
-
-      if (
-        // Include authored candidates here for now
-        c.proposerId.toLowerCase() === connectedAccount ||
-        hasFeedback
-      )
-        return "candidates:feedback-given";
-
-      return "candidates:feedback-missing";
-    }
+    // if (candidateSortStrategy === "connected-account-feedback") {
+    //   const hasFeedback =
+    //     c.feedbackPosts != null &&
+    //     c.feedbackPosts.some(
+    //       (p) => p.voterId.toLowerCase() === connectedAccount,
+    //     );
+    //
+    //   if (
+    //     // Include authored candidates here for now
+    //     c.proposerId.toLowerCase() === connectedAccount ||
+    //     hasFeedback
+    //   )
+    //     return "candidates:feedback-given";
+    //
+    //   return "candidates:feedback-missing";
+    // }
 
     if (c.proposerId.toLowerCase() === connectedAccount)
       return "candidates:authored";
@@ -465,12 +465,12 @@ const BrowseScreen = () => {
           const sortedItems = isSearch
             ? items
             : arrayUtils.sortBy(
-                candidateSortStrategy === "popularity"
+                /*candidateSortStrategy === "popularity"
                   ? {
                       value: (i) => getCandidateScore(i) ?? 0,
                       order: "desc",
                     }
-                  : {
+                  :*/ {
                       value: (i) =>
                         Math.max(
                           i.lastUpdatedTimestamp,
@@ -783,7 +783,7 @@ const BrowseScreen = () => {
                         })()}
                       </div>
                     </Tabs.Item>
-                    <Tabs.Item key="candidates" title="Candidates">
+                    {/*<Tabs.Item key="candidates" title="Candidates">
                       <div
                         css={css({
                           paddingTop: "2.4rem",
@@ -877,7 +877,7 @@ const BrowseScreen = () => {
                             />
                           )}
                       </div>
-                    </Tabs.Item>
+                    </Tabs.Item>*/}
                     <Tabs.Item key="drafts" title="My drafts">
                       <div
                         css={css({
