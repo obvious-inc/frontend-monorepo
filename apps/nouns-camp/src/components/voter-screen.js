@@ -155,7 +155,7 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
             options={[
               { value: "all", label: "Everything" },
               { value: "proposals", label: "Proposal activity only" },
-              { value: "candidates", label: "Candidate activity only" },
+              // { value: "candidates", label: "Candidate activity only" },
               { value: "representation", label: "Delegation activity only" },
             ]}
             onChange={(value) => {
@@ -175,7 +175,7 @@ const FeedSidebar = React.memo(({ voterAddress }) => {
               const filterLabel = {
                 all: "Everything",
                 proposals: "Proposal activity",
-                candidates: "Candidate activity",
+                // candidates: "Candidate activity",
                 representation: "Delegation activity",
               }[value];
               return (
@@ -220,7 +220,7 @@ const FeedTabContent = React.memo(({ voterAddress }) => {
             options={[
               { value: "all", label: "Everything" },
               { value: "proposals", label: "Proposal activity only" },
-              { value: "candidates", label: "Candidate activity only" },
+              // { value: "candidates", label: "Candidate activity only" },
               { value: "representation", label: "Delegation activity only" },
             ]}
             onChange={(value) => {
@@ -232,7 +232,7 @@ const FeedTabContent = React.memo(({ voterAddress }) => {
               const filterLabel = {
                 all: "Everything",
                 proposals: "Proposal activity",
-                candidates: "Candidate activity",
+                // candidates: "Candidate activity",
                 representation: "Delegation activity",
               }[value];
               return (
