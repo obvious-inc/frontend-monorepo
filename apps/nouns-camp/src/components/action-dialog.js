@@ -1,10 +1,10 @@
-import formatDate from "date-fns/format";
-import parseDate from "date-fns/parse";
+// import formatDate from "date-fns/format";
+// import parseDate from "date-fns/parse";
 import React from "react";
 import {
   isAddress,
   parseAbi,
-  parseUnits,
+  // parseUnits,
   parseEther,
   formatEther,
   encodeAbiParameters,
@@ -24,7 +24,7 @@ import Spinner from "@shades/ui-web/spinner";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
-import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
+// import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
 import usePublicClient from "../hooks/public-client.js";
 import { fetchContractInfo } from "../hooks/etherscan-contract-info.js";
 import useEthToUsdRate, {
@@ -34,11 +34,11 @@ import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
 import { formatAbiParameter } from "abitype";
 
-const decimalsByCurrency = {
-  eth: 18,
-  weth: 18,
-  usdc: 6,
-};
+// const decimalsByCurrency = {
+//   eth: 18,
+//   weth: 18,
+//   usdc: 6,
+// };
 
 const parseAbiString = (string) => {
   try {
@@ -191,16 +191,16 @@ const buildInitialInputState = (inputs = []) => {
   return inputs.map(buildInputState);
 };
 
-const parseAmount = (amount, currency) => {
-  switch (currency.toLowerCase()) {
-    case "eth":
-    case "weth":
-    case "usdc":
-      return parseUnits(amount.toString(), decimalsByCurrency[currency]);
-    default:
-      throw new Error();
-  }
-};
+// const parseAmount = (amount, currency) => {
+//   switch (currency.toLowerCase()) {
+//     case "eth":
+//     case "weth":
+//     case "usdc":
+//       return parseUnits(amount.toString(), decimalsByCurrency[currency]);
+//     default:
+//       throw new Error();
+//   }
+// };
 
 const ActionDialog = ({ isOpen, close, ...props }) => (
   <EnsCacheProvider>
@@ -247,183 +247,183 @@ const createSignature = (functionAbiItem) => {
   return `${functionAbiItem.name}(${formattedInputs.join(",")})`;
 };
 
-const StreamingPaymentActionForm = ({ state, setState }) => {
-  const fetchPredictedStreamContractAddress =
-    useFetchPredictedStreamContractAddress();
-
-  const canPredictStreamContractAddress =
-    isAddress(state.receiverAddress) &&
-    state.amount > 0 &&
-    state.dateRange?.start != null &&
-    state.dateRange?.end != null &&
-    state.dateRange.start < state.dateRange.end;
-
-  useFetch(
-    !canPredictStreamContractAddress
-      ? null
-      : ({ signal }) =>
-          fetchPredictedStreamContractAddress({
-            receiverAddress: state.receiverAddress,
-            amount: state.amount,
-            currency: state.currency,
-            startDate: state.dateRange?.start,
-            endDate: state.dateRange?.end,
-          }).then((address) => {
-            if (signal?.aborted) return;
-            setState({ predictedStreamContractAddress: address });
-          }),
-    [
-      state.receiverAddress,
-      state.amount,
-      state.currency,
-      state.dateRange?.start,
-      state.dateRange?.end,
-    ],
-  );
-
-  useCustomCacheEnsAddress(state.receiverQuery.trim(), {
-    enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
-  });
-
-  return (
-    <>
-      <div>
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-            gap: "1.6rem",
-          }}
-        >
-          <Input
-            label="Start vesting"
-            type="date"
-            max={
-              state.dateRange.end == null
-                ? undefined
-                : formatDate(state.dateRange.end, "yyyy-MM-dd")
-            }
-            value={
-              state.dateRange.start == null
-                ? "yyyy-MM-dd"
-                : formatDate(state.dateRange.start, "yyyy-MM-dd")
-            }
-            onChange={(e) => {
-              setState(({ dateRange }) => {
-                const { start, end } = dateRange;
-                if (isNaN(e.target.valueAsNumber))
-                  return { dateRange: { start: null, end } };
-
-                try {
-                  const selectedStart = parseDate(
-                    e.target.value,
-                    "yyyy-MM-dd",
-                    new Date(),
-                  );
-                  formatDate(selectedStart, "yyyy-MM-dd"); // Validation :shrug:
-                  return {
-                    dateRange: {
-                      start:
-                        end == null || selectedStart <= end
-                          ? selectedStart
-                          : start,
-                      end,
-                    },
-                  };
-                } catch (e) {
-                  return { dateRange: { start, end } };
-                }
-              });
-            }}
-          />
-          <Input
-            label="End vesting"
-            type="date"
-            min={
-              state.dateRange.state == null
-                ? undefined
-                : formatDate(state.dateRange.start, "yyyy-MM-dd")
-            }
-            value={
-              state.dateRange.end == null
-                ? "yyyy-MM-dd"
-                : formatDate(state.dateRange.end, "yyyy-MM-dd")
-            }
-            onChange={(e) => {
-              setState(({ dateRange }) => {
-                const { start, end } = dateRange;
-
-                if (isNaN(e.target.valueAsNumber))
-                  return { dateRange: { start, end: null } };
-
-                try {
-                  const selectedEnd = parseDate(
-                    e.target.value,
-                    "yyyy-MM-dd",
-                    new Date(),
-                  );
-                  formatDate(selectedEnd, "yyyy-MM-dd"); // Validation :shrug:
-
-                  return {
-                    dateRange: {
-                      start,
-                      end:
-                        start == null || selectedEnd >= start
-                          ? selectedEnd
-                          : end,
-                    },
-                  };
-                } catch (e) {
-                  return { dateRange: { start, end } };
-                }
-              });
-            }}
-          />
-        </div>
-        <div
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-              marginTop: "0.7rem",
-              em: {
-                fontWeight: t.text.weights.emphasis,
-                fontStyle: "normal",
-              },
-            })
-          }
-        >
-          Start date <em>can</em> be in the past.
-        </div>
-      </div>
-
-      <AmountWithCurrencyInput
-        amount={state.amount}
-        setAmount={(amount) => setState({ amount })}
-        currency={state.currency}
-        setCurrency={(currency) => setState({ currency })}
-        currencyOptions={[
-          { value: "weth", label: "WETH" },
-          { value: "usdc", label: "USDC" },
-        ]}
-      />
-
-      <AddressInput
-        label="Receiver account"
-        value={state.receiverQuery}
-        onChange={(maybeAddress) => {
-          setState({ receiverQuery: maybeAddress });
-        }}
-        placeholder="0x..., vitalik.eth"
-        hint={
-          !isAddress(state.receiverQuery)
-            ? "Specify an Ethereum account address or ENS name"
-            : null
-        }
-      />
-    </>
-  );
-};
+// const StreamingPaymentActionForm = ({ state, setState }) => {
+//   const fetchPredictedStreamContractAddress =
+//     useFetchPredictedStreamContractAddress();
+//
+//   const canPredictStreamContractAddress =
+//     isAddress(state.receiverAddress) &&
+//     state.amount > 0 &&
+//     state.dateRange?.start != null &&
+//     state.dateRange?.end != null &&
+//     state.dateRange.start < state.dateRange.end;
+//
+//   useFetch(
+//     !canPredictStreamContractAddress
+//       ? null
+//       : ({ signal }) =>
+//           fetchPredictedStreamContractAddress({
+//             receiverAddress: state.receiverAddress,
+//             amount: state.amount,
+//             currency: state.currency,
+//             startDate: state.dateRange?.start,
+//             endDate: state.dateRange?.end,
+//           }).then((address) => {
+//             if (signal?.aborted) return;
+//             setState({ predictedStreamContractAddress: address });
+//           }),
+//     [
+//       state.receiverAddress,
+//       state.amount,
+//       state.currency,
+//       state.dateRange?.start,
+//       state.dateRange?.end,
+//     ],
+//   );
+//
+//   useCustomCacheEnsAddress(state.receiverQuery.trim(), {
+//     enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
+//   });
+//
+//   return (
+//     <>
+//       <div>
+//         <div
+//           style={{
+//             display: "grid",
+//             gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+//             gap: "1.6rem",
+//           }}
+//         >
+//           <Input
+//             label="Start vesting"
+//             type="date"
+//             max={
+//               state.dateRange.end == null
+//                 ? undefined
+//                 : formatDate(state.dateRange.end, "yyyy-MM-dd")
+//             }
+//             value={
+//               state.dateRange.start == null
+//                 ? "yyyy-MM-dd"
+//                 : formatDate(state.dateRange.start, "yyyy-MM-dd")
+//             }
+//             onChange={(e) => {
+//               setState(({ dateRange }) => {
+//                 const { start, end } = dateRange;
+//                 if (isNaN(e.target.valueAsNumber))
+//                   return { dateRange: { start: null, end } };
+//
+//                 try {
+//                   const selectedStart = parseDate(
+//                     e.target.value,
+//                     "yyyy-MM-dd",
+//                     new Date(),
+//                   );
+//                   formatDate(selectedStart, "yyyy-MM-dd"); // Validation :shrug:
+//                   return {
+//                     dateRange: {
+//                       start:
+//                         end == null || selectedStart <= end
+//                           ? selectedStart
+//                           : start,
+//                       end,
+//                     },
+//                   };
+//                 } catch (e) {
+//                   return { dateRange: { start, end } };
+//                 }
+//               });
+//             }}
+//           />
+//           <Input
+//             label="End vesting"
+//             type="date"
+//             min={
+//               state.dateRange.state == null
+//                 ? undefined
+//                 : formatDate(state.dateRange.start, "yyyy-MM-dd")
+//             }
+//             value={
+//               state.dateRange.end == null
+//                 ? "yyyy-MM-dd"
+//                 : formatDate(state.dateRange.end, "yyyy-MM-dd")
+//             }
+//             onChange={(e) => {
+//               setState(({ dateRange }) => {
+//                 const { start, end } = dateRange;
+//
+//                 if (isNaN(e.target.valueAsNumber))
+//                   return { dateRange: { start, end: null } };
+//
+//                 try {
+//                   const selectedEnd = parseDate(
+//                     e.target.value,
+//                     "yyyy-MM-dd",
+//                     new Date(),
+//                   );
+//                   formatDate(selectedEnd, "yyyy-MM-dd"); // Validation :shrug:
+//
+//                   return {
+//                     dateRange: {
+//                       start,
+//                       end:
+//                         start == null || selectedEnd >= start
+//                           ? selectedEnd
+//                           : end,
+//                     },
+//                   };
+//                 } catch (e) {
+//                   return { dateRange: { start, end } };
+//                 }
+//               });
+//             }}
+//           />
+//         </div>
+//         <div
+//           css={(t) =>
+//             css({
+//               fontSize: t.text.sizes.small,
+//               color: t.colors.textDimmed,
+//               marginTop: "0.7rem",
+//               em: {
+//                 fontWeight: t.text.weights.emphasis,
+//                 fontStyle: "normal",
+//               },
+//             })
+//           }
+//         >
+//           Start date <em>can</em> be in the past.
+//         </div>
+//       </div>
+//
+//       <AmountWithCurrencyInput
+//         amount={state.amount}
+//         setAmount={(amount) => setState({ amount })}
+//         currency={state.currency}
+//         setCurrency={(currency) => setState({ currency })}
+//         currencyOptions={[
+//           { value: "weth", label: "WETH" },
+//           // { value: "usdc", label: "USDC" },
+//         ]}
+//       />
+//
+//       <AddressInput
+//         label="Receiver account"
+//         value={state.receiverQuery}
+//         onChange={(maybeAddress) => {
+//           setState({ receiverQuery: maybeAddress });
+//         }}
+//         placeholder="0x..., vitalik.eth"
+//         hint={
+//           !isAddress(state.receiverQuery)
+//             ? "Specify an Ethereum account address or ENS name"
+//             : null
+//         }
+//       />
+//     </>
+//   );
+// };
 
 const CustomTransactionActionForm = ({ state, setState }) => {
   const publicClient = usePublicClient();
@@ -733,7 +733,7 @@ const formConfigByActionType = {
             setCurrency={(currency) => setState({ currency })}
             currencyOptions={[
               { value: "eth", label: "ETH" },
-              { value: "usdc", label: "USDC" },
+              // { value: "usdc", label: "USDC" },
             ]}
           />
 
@@ -754,53 +754,53 @@ const formConfigByActionType = {
       );
     },
   },
-  "streaming-payment": {
-    title: "Streaming transfer",
-    description:
-      "Payment streams vest requested funds with each Ethereum block. Vested funds can be withdrawn at any time.",
-    initialState: ({ action }) => ({
-      amount: action?.amount ?? "",
-      currency: action?.currency ?? "weth",
-      receiverQuery: action?.target ?? "",
-      dateRange: {
-        start:
-          action?.startTimestamp == null
-            ? null
-            : new Date(action.startTimestamp),
-        end:
-          action?.endTimestamp == null ? null : new Date(action.endTimestamp),
-      },
-      predictedStreamContractAddress: null,
-    }),
-    useStateMiddleware: ({ state }) => {
-      const ensCache = useEnsCache();
-      const receiverQuery = state.receiverQuery?.trim();
-      const ensAddress = ensCache.resolve(receiverQuery);
-      const receiverAddress = isAddress(receiverQuery)
-        ? receiverQuery
-        : ensAddress ?? "";
-      return { ...state, receiverAddress };
-    },
-    hasRequiredInputs: ({ state }) =>
-      state.amount != null &&
-      parseFloat(state.amount) > 0 &&
-      state.receiverAddress != null &&
-      isAddress(state.receiverAddress) &&
-      state.dateRange.start != null &&
-      state.dateRange.end != null &&
-      state.dateRange.end > state.dateRange.start &&
-      state.predictedStreamContractAddress != null,
-    buildAction: ({ state }) => ({
-      type: "streaming-payment",
-      target: state.receiverAddress,
-      amount: state.amount,
-      currency: state.currency,
-      startTimestamp: state.dateRange.start?.getTime(),
-      endTimestamp: state.dateRange.end?.getTime(),
-      predictedStreamContractAddress: state.predictedStreamContractAddress,
-    }),
-    Component: StreamingPaymentActionForm,
-  },
+  // "streaming-payment": {
+  //   title: "Streaming transfer",
+  //   description:
+  //     "Payment streams vest requested funds with each Ethereum block. Vested funds can be withdrawn at any time.",
+  //   initialState: ({ action }) => ({
+  //     amount: action?.amount ?? "",
+  //     currency: action?.currency ?? "weth",
+  //     receiverQuery: action?.target ?? "",
+  //     dateRange: {
+  //       start:
+  //         action?.startTimestamp == null
+  //           ? null
+  //           : new Date(action.startTimestamp),
+  //       end:
+  //         action?.endTimestamp == null ? null : new Date(action.endTimestamp),
+  //     },
+  //     predictedStreamContractAddress: null,
+  //   }),
+  //   useStateMiddleware: ({ state }) => {
+  //     const ensCache = useEnsCache();
+  //     const receiverQuery = state.receiverQuery?.trim();
+  //     const ensAddress = ensCache.resolve(receiverQuery);
+  //     const receiverAddress = isAddress(receiverQuery)
+  //       ? receiverQuery
+  //       : ensAddress ?? "";
+  //     return { ...state, receiverAddress };
+  //   },
+  //   hasRequiredInputs: ({ state }) =>
+  //     state.amount != null &&
+  //     parseFloat(state.amount) > 0 &&
+  //     state.receiverAddress != null &&
+  //     isAddress(state.receiverAddress) &&
+  //     state.dateRange.start != null &&
+  //     state.dateRange.end != null &&
+  //     state.dateRange.end > state.dateRange.start &&
+  //     state.predictedStreamContractAddress != null,
+  //   buildAction: ({ state }) => ({
+  //     type: "streaming-payment",
+  //     target: state.receiverAddress,
+  //     amount: state.amount,
+  //     currency: state.currency,
+  //     startTimestamp: state.dateRange.start?.getTime(),
+  //     endTimestamp: state.dateRange.end?.getTime(),
+  //     predictedStreamContractAddress: state.predictedStreamContractAddress,
+  //   }),
+  //   Component: StreamingPaymentActionForm,
+  // },
   "custom-transaction": {
     title: "Custom transaction",
     initialState: ({ action }) => ({
@@ -1576,57 +1576,57 @@ const AmountWithCurrencyInput = ({
   );
 };
 
-const useFetchPredictedStreamContractAddress = () => {
-  const publicClient = usePublicClient();
-
-  return React.useCallback(
-    ({ amount: amount_, currency, receiverAddress, startDate, endDate }) => {
-      const executorContract = getContractWithIdentifier("executor");
-      const streamFactoryContract = getContractWithIdentifier("stream-factory");
-      const paymentTokenContract = getContractWithIdentifier(
-        `${currency}-token`,
-      );
-
-      let amount = 0;
-      try {
-        amount = BigInt(amount_);
-      } catch (e) {
-        //
-      }
-
-      return publicClient.readContract({
-        address: streamFactoryContract.address,
-        abi: [
-          {
-            name: "predictStreamAddress",
-            type: "function",
-            stateMutability: "view",
-            inputs: [
-              { type: "address" },
-              { type: "address" },
-              { type: "address" },
-              { type: "uint256" },
-              { type: "address" },
-              { type: "uint256" },
-              { type: "uint256" },
-            ],
-            outputs: [{ type: "address" }],
-          },
-        ],
-        functionName: "predictStreamAddress",
-        args: [
-          executorContract.address,
-          executorContract.address,
-          receiverAddress,
-          parseAmount(amount, currency),
-          paymentTokenContract.address,
-          (startDate?.getTime() ?? 0) / 1000,
-          (endDate?.getTime() ?? 0) / 1000,
-        ],
-      });
-    },
-    [publicClient],
-  );
-};
+// const useFetchPredictedStreamContractAddress = () => {
+//   const publicClient = usePublicClient();
+//
+//   return React.useCallback(
+//     ({ amount: amount_, currency, receiverAddress, startDate, endDate }) => {
+//       const executorContract = getContractWithIdentifier("executor");
+//       const streamFactoryContract = getContractWithIdentifier("stream-factory");
+//       const paymentTokenContract = getContractWithIdentifier(
+//         `${currency}-token`,
+//       );
+//
+//       let amount = 0;
+//       try {
+//         amount = BigInt(amount_);
+//       } catch (e) {
+//         //
+//       }
+//
+//       return publicClient.readContract({
+//         address: streamFactoryContract.address,
+//         abi: [
+//           {
+//             name: "predictStreamAddress",
+//             type: "function",
+//             stateMutability: "view",
+//             inputs: [
+//               { type: "address" },
+//               { type: "address" },
+//               { type: "address" },
+//               { type: "uint256" },
+//               { type: "address" },
+//               { type: "uint256" },
+//               { type: "uint256" },
+//             ],
+//             outputs: [{ type: "address" }],
+//           },
+//         ],
+//         functionName: "predictStreamAddress",
+//         args: [
+//           executorContract.address,
+//           executorContract.address,
+//           receiverAddress,
+//           parseAmount(amount, currency),
+//           paymentTokenContract.address,
+//           (startDate?.getTime() ?? 0) / 1000,
+//           (endDate?.getTime() ?? 0) / 1000,
+//         ],
+//       });
+//     },
+//     [publicClient],
+//   );
+// };
 
 export default ActionDialog;

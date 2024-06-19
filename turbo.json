@@ -15,6 +15,8 @@
         "FARCASTER_HUB_HTTP_ENDPOINT",
         "NEYNAR_API_KEY",
         "ETHERSCAN_API_KEY",
+        "TENDERLY_API_KEY",
+        "TENDERLY_PROJECT_SLUG",
         "EDGE_CONFIG",
         "KV_REST_API_READ_ONLY_TOKEN",
         "KV_REST_API_TOKEN",

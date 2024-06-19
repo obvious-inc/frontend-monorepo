@@ -35,6 +35,8 @@ env:
   SENTRY_ORG: ${{ vars.SENTRY_ORG }}
   SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
   SENTRY_LOG_LEVEL: ${{ vars.SENTRY_LOG_LEVEL }}
+  TENDERLY_API_KEY: ${{ secrets.TENDERLY_API_KEY }}
+  TENDERLY_PROJECT_SLUG: ${{ secrets.TENDERLY_PROJECT_SLUG }}
 
 jobs:
   check:
