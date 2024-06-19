@@ -50,7 +50,6 @@ export const fetchSimulation = async ({
   signature,
   calldata,
 }) => {
-  console.log({ target, value, signature, calldata });
   const parsedTx = parse({ target, value, signature, calldata });
   const body = JSON.stringify(parsedTx);
   const res = await fetch("/api/simulate", {
