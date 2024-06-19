@@ -2840,6 +2840,7 @@ packages:
 
   '@serwist/precaching@9.0.1':
     resolution: {integrity: sha512-0tEmLlAgSO/Yb7e26mKWZSTMw122L+kr2I2eQU/ClPTREAE0o+m1D8onWQQZ7EN8ivRU7tprUIxJptVSuYa1aA==}
+    deprecated: This package has been deprecated. Please use serwist instead.
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -2856,6 +2857,7 @@ packages:
 
   '@serwist/sw@9.0.1':
     resolution: {integrity: sha512-mH7XknVGlesXciyqw7PEKrpP9pyz7K84zEinLROEnVIofG01UqVbOXLK0eyqLoXV1ewl8i/zOxCTleCP4D5hlQ==}
+    deprecated: This package has been deprecated. Please use serwist instead.
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:

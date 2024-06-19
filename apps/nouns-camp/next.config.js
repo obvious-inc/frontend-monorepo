@@ -118,6 +118,7 @@ module.exports = withSentry(
           ignoredModules.map((n) => [n, "@shades/common"]),
         ),
       },
+      instrumentationHook: true,
     },
   }),
 );

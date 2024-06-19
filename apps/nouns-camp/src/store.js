@@ -106,6 +106,13 @@ const mergeProposalCandidates = (p1, p2) => {
       [...p2.feedbackPosts, ...p1.feedbackPosts],
     );
 
+  if (p1.versions != null && p2.versions != null)
+    mergedCandidate.versions = arrayUtils.unique(
+      (v1, v2) => v1.id === v2.id,
+      // p2 has to be first here to take precedence
+      [...p2.versions, ...p1.versions],
+    );
+
   if (p1?.latestVersion == null || p2?.latestVersion == null)
     return mergedCandidate;
 
