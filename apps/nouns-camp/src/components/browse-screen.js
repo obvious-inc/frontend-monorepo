@@ -1591,6 +1591,10 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
     (v) => v.voterId === connectedWalletAccountAddress,
   );
 
+  const [searchParams_] = useSearchParams();
+  const searchParams = new URLSearchParams(searchParams_);
+  searchParams.set("vote-overview", proposalId);
+
   return (
     <VotesTagGroup
       for={proposal.forVotes}
@@ -1599,7 +1603,7 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
       quorum={proposal.quorumVotes}
       highlight={{ 0: "against", 1: "for", 2: "abstain" }[vote?.support]}
       component={NextLink}
-      href={`?vote-overview=${proposalId}`}
+      href={`?${searchParams}`}
       replace
       scroll={false}
       css={(t) =>
