@@ -532,71 +532,72 @@ const createStore = ({ initialState, publicClient }) =>
       //     }`,
       // });
 
+    // eslint-disable-next-line no-unused-vars
     const fetchProposalCandidate = async (rawId) => {
-      // const [account, ...slugParts] = rawId.split("-");
-      // const id = [account.toLowerCase(), ...slugParts].join("-");
-      //
-      // const data = await subgraphFetch({
-      //   query: `
-      //     ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-      //     ${CANDIDATE_FEEDBACK_FIELDS}
-      //     query {
-      //       proposalCandidate(id: ${JSON.stringify(id)}) {
-      //         id
-      //         slug
-      //         proposer
-      //         canceledTimestamp
-      //         createdTimestamp
-      //         lastUpdatedTimestamp
-      //         createdBlock
-      //         canceledBlock
-      //         lastUpdatedBlock
-      //         latestVersion {
-      //           id
-      //           content {
-      //             title
-      //             description
-      //             targets
-      //             values
-      //             signatures
-      //             calldatas
-      //             matchingProposalIds
-      //             proposalIdToUpdate
-      //             contentSignatures {
-      //               ...CandidateContentSignatureFields
-      //             }
-      //           }
-      //         }
-      //         versions {
-      //           id
-      //           createdBlock
-      //           createdTimestamp
-      //           updateMessage
-      //           content {
-      //             title
-      //             description
-      //             targets
-      //             values
-      //             signatures
-      //             calldatas
-      //           }
-      //         }
-      //       }
-      //
-      //       candidateFeedbacks(
-      //         where: {
-      //           candidate_: { id: ${JSON.stringify(id)} }
-      //         }
-      //       ) {
-      //         ...CandidateFeedbackFields
-      //       }
-      //     }`,
-      // });
+      const [account, ...slugParts] = rawId.split("-");
+      const id = [account.toLowerCase(), ...slugParts].join("-");
+
+      const data = await subgraphFetch({
+        query: `
+          ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+          ${CANDIDATE_FEEDBACK_FIELDS}
+          query {
+            proposalCandidate(id: ${JSON.stringify(id)}) {
+              id
+              slug
+              proposer
+              canceledTimestamp
+              createdTimestamp
+              lastUpdatedTimestamp
+              createdBlock
+              canceledBlock
+              lastUpdatedBlock
+              latestVersion {
+                id
+                content {
+                  title
+                  description
+                  targets
+                  values
+                  signatures
+                  calldatas
+                  matchingProposalIds
+                  proposalIdToUpdate
+                  contentSignatures {
+                    ...CandidateContentSignatureFields
+                  }
+                }
+              }
+              versions {
+                id
+                createdBlock
+                createdTimestamp
+                updateMessage
+                content {
+                  title
+                  description
+                  targets
+                  values
+                  signatures
+                  calldatas
+                }
+              }
+            }
+
+            candidateFeedbacks(
+              where: {
+                candidate_: { id: ${JSON.stringify(id)} }
+              }
+            ) {
+              ...CandidateFeedbackFields
+            }
+          }`,
+      });
 
       if (data.proposalCandidate == null)
         return Promise.reject(new Error("not-found"));
 
-      // return data.proposalCandidate;
+      return data.proposalCandidate;
     };
 
     const fetchProposals = async (ids) => {
