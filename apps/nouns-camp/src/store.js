@@ -499,21 +499,22 @@ const createStore = ({ initialState, publicClient }) =>
       return subgraphEntities;
     };
 
-    const fetchProposalsVersions = async (proposalIds) =>
-      subgraphFetch({
-        query: `{
-        # proposalVersions(
-        #   where: {
-        #     proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
-        #   }
-        # ) {
-        #   createdAt
-        #   createdBlock
-        #   updateMessage
-        #   proposal { id }
-        # }
-        }`,
-      });
+    // eslint-disable-next-line no-unused-vars
+    const fetchProposalsVersions = async (proposalIds) => ({ proposalVersions: [], });
+    // subgraphFetch({
+    //   query: `{
+    //     proposalVersions(
+    //       where: {
+    //         proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
+    //       }
+    //     ) {
+    //       createdAt
+    //       createdBlock
+    //       updateMessage
+    //       proposal { id }
+    //     }
+    //   }`,
+    // });
 
     const fetchCandidatesFeedbackPosts = (candidateIds) =>
       subgraphFetch({
