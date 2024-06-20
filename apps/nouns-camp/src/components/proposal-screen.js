@@ -14,6 +14,7 @@ import {
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
@@ -36,7 +37,8 @@ import {
 import {
   useCancelProposal,
   useCastProposalVote,
-  useDynamicQuorum,
+  useProposalDynamicQuorum,
+  useDynamicQuorumParamsAt,
   useQueueProposal,
   useExecuteProposal,
 } from "../hooks/dao-contract.js";
@@ -609,7 +611,10 @@ const ProposalMainSection = ({
                       },
                     })}
                   >
-                    <ProposalVoteStatusBar proposalId={proposalId} />
+                    <ProposalVoteStatusBar
+                      proposalId={proposalId}
+                      hasVotingEnded={hasVotingEnded}
+                    />
                   </button>
                 ) : proposal.state != null ? (
                   <Callout
@@ -718,7 +723,10 @@ const ProposalMainSection = ({
                       cursor: "pointer",
                     }}
                   >
-                    <ProposalVoteStatusBar proposalId={proposalId} />
+                    <ProposalVoteStatusBar
+                      proposalId={proposalId}
+                      hasVotingEnded={hasVotingEnded}
+                    />
                   </button>
                 )}
 
@@ -1324,10 +1332,11 @@ export const VoteDistributionToolTipContent = ({ votes, delegates }) => {
   );
 };
 
-const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
+const ProposalVoteStatusBar = React.memo(({ proposalId, hasVotingEnded }) => {
   const proposal = useProposal(proposalId);
 
-  const quorumVotes = useDynamicQuorum(proposalId);
+  const quorumVotes = useProposalDynamicQuorum(proposalId);
+  const quorumParams = useDynamicQuorumParamsAt(proposal?.createdBlock);
 
   const { forVotes, againstVotes, abstainVotes } = proposal;
 
@@ -1398,7 +1407,118 @@ const ProposalVoteStatusBar = React.memo(({ proposalId }) => {
         }
       >
         <div>
-          {quorumVotes == null ? <>&nbsp;</> : <>Quorum {quorumVotes}</>}
+          {quorumVotes == null ? (
+            <>&nbsp;</>
+          ) : (
+            (() => {
+              if (proposal.adjustedTotalSupply == null || quorumVotes == null)
+                return <>Quorum {quorumVotes}</>;
+
+              const maxQuorumVotes = Math.floor(
+                (proposal.adjustedTotalSupply *
+                  quorumParams.maxQuorumVotesBPS) /
+                  10000,
+              );
+
+              const triggerContent = (
+                <>
+                  Quorum {quorumVotes}{" "}
+                  <span css={(t) => css({ color: t.colors.textDimmed })}>
+                    {maxQuorumVotes > quorumVotes ? (
+                      <>(max {maxQuorumVotes})</>
+                    ) : (
+                      "(max)"
+                    )}
+                  </span>
+                </>
+              );
+
+              const tooltipContent = (() => {
+                const {
+                  minQuorumVotesBPS,
+                  maxQuorumVotesBPS,
+                  quorumCoefficient,
+                } = quorumParams;
+
+                const againstVotesBPSRequiredForMaxQuorum =
+                  ((maxQuorumVotesBPS - minQuorumVotesBPS) * 1e6) /
+                  quorumCoefficient;
+                const againstVotesRequiredForMaxQuorum = Math.ceil(
+                  (againstVotesBPSRequiredForMaxQuorum *
+                    proposal.adjustedTotalSupply) /
+                    10000,
+                );
+                return (
+                  <>
+                    <p>
+                      The amount of for-votes required to pass a proposal is
+                      based on the amount of against-votes.
+                    </p>
+                    <p css={(t) => css({ color: t.colors.textDimmed })}>
+                      {quorumVotes < maxQuorumVotes ? (
+                        <>
+                          {hasVotingEnded ? (
+                            <>
+                              The quorum for this proposal could have risen to a
+                              maximum of <em>{maxQuorumVotes}</em>.{" "}
+                            </>
+                          ) : (
+                            <>
+                              The quorum for this proposal can rise to a maximum
+                              of <em>{maxQuorumVotes}</em> (reached at{" "}
+                              <em>{againstVotesRequiredForMaxQuorum}</em>{" "}
+                              against-votes).
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {hasVotingEnded ? (
+                            <>
+                              The quorum for this proposal reached its max limit
+                              of <em>{maxQuorumVotes}</em> (was reached at{" "}
+                              <em>{againstVotesRequiredForMaxQuorum}</em>{" "}
+                              against-votes).
+                            </>
+                          ) : (
+                            <>
+                              The quorum for this proposal has reached its max
+                              limit of <em>{maxQuorumVotes}</em>, and cannot
+                              rise any further.
+                            </>
+                          )}
+                        </>
+                      )}
+                    </p>
+                  </>
+                );
+              })();
+
+              return (
+                <Tooltip.Root>
+                  <Tooltip.Trigger>{triggerContent}</Tooltip.Trigger>
+                  <Tooltip.Content
+                    sideOffset={8}
+                    css={(t) =>
+                      css({
+                        width: "fit-content",
+                        maxWidth: "32rem",
+                        // color: t.colors.textDimmed,
+                        "p + p": { marginTop: "0.5em" },
+                        em: {
+                          fontStyle: "normal",
+                          fontWeight: t.text.weights.emphasis,
+                          color: t.colors.textNormal,
+                        },
+                      })
+                    }
+                  >
+                    {tooltipContent}
+                  </Tooltip.Content>
+                </Tooltip.Root>
+              );
+            })()
+          )}
         </div>
         <div className="vote-overview-toggle">Vote overview {"\u2197"}</div>
       </div>

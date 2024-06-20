@@ -65,7 +65,7 @@ const useLatestProposalId = (accountAddress) => {
   return data == null ? null : Number(data);
 };
 
-export const useDynamicQuorum = (proposalId) => {
+export const useProposalDynamicQuorum = (proposalId) => {
   const { data, isSuccess } = useRead({
     abi: [
       {
@@ -84,6 +84,34 @@ export const useDynamicQuorum = (proposalId) => {
   return Number(data);
 };
 
+export const useDynamicQuorumParamsAt = (blockNumber) => {
+  const { data: quorumParams } = useRead({
+    abi: [
+      {
+        inputs: [{ type: "uint256" }],
+        name: "getDynamicQuorumParamsAt",
+        outputs: [
+          { type: "uint16" }, // minQuorumVotesBPS
+          { type: "uint16" }, // maxQuorumVotesBPS
+          { type: "uint32" }, // quorumCoefficient
+        ],
+        type: "function",
+      },
+    ],
+    functionName: "getDynamicQuorumParamsAt",
+    args: [blockNumber],
+    enabled: blockNumber != null,
+  });
+
+  if (quorumParams == null) return null;
+
+  return {
+    minQuorumVotesBPS: quorumParams[0],
+    maxQuorumVotesBPS: quorumParams[1],
+    quorumCoefficient: quorumParams[2],
+  };
+};
+
 export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
   const latestQuorumRef = React.useRef();
 
@@ -100,19 +128,7 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
     ],
     functionName: "adjustedTotalSupply",
   });
-  const { data: quorumParams } = useRead({
-    abi: [
-      {
-        inputs: [{ type: "uint256" }],
-        name: "getDynamicQuorumParamsAt",
-        outputs: [{ type: "uint16" }, { type: "uint16" }, { type: "uint32" }],
-        type: "function",
-      },
-    ],
-    functionName: "getDynamicQuorumParamsAt",
-    args: [blockNumber],
-    enabled: blockNumber != null,
-  });
+  const quorumParams = useDynamicQuorumParamsAt(blockNumber);
 
   const { data, isSuccess } = useRead({
     abi: [
@@ -122,9 +138,10 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
           { type: "uint256" },
           {
             components: [
-              { type: "uint16" },
-              { type: "uint16" },
-              { type: "uint32" },
+              // Component names are required when passing tuples as objects
+              { type: "uint16", name: "minQuorumVotesBPS" },
+              { type: "uint16", name: "maxQuorumVotesBPS" },
+              { type: "uint32", name: "quorumCoefficient" },
             ],
             type: "tuple",
           },

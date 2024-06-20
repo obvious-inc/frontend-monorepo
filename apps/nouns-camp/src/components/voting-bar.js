@@ -57,6 +57,8 @@ const VotingBar = ({
     quorumVotes,
   );
 
+  const quorumTooltipContent = <>Quorum {quorumVotes}</>;
+
   return (
     <div css={css({ containerType: "inline-size" })}>
       <div
@@ -136,8 +138,11 @@ const VotingBar = ({
                         />
                       </div>
                     </Tooltip.Trigger>
-                    <Tooltip.Content sideOffset={8}>
-                      Quorum {quorumVotes}
+                    <Tooltip.Content
+                      sideOffset={8}
+                      css={css({ maxWidth: "38rem" })}
+                    >
+                      {quorumTooltipContent}
                     </Tooltip.Content>
                   </Tooltip.Root>
                 )}
@@ -161,8 +166,8 @@ const VotingBar = ({
               <Tooltip.Trigger asChild>
                 <div key="quorum" data-vote="quorum" style={{ flex: 1 }} />
               </Tooltip.Trigger>
-              <Tooltip.Content sideOffset={8}>
-                Quorum {quorumVotes}
+              <Tooltip.Content sideOffset={8} css={css({ maxWidth: "32rem" })}>
+                {quorumTooltipContent}
               </Tooltip.Content>
             </Tooltip.Root>
           </div>

@@ -370,10 +370,17 @@ const SimulationBadge = ({ simulation }) => (
       )
     ) : simulation.success ? (
       <div title="Simulation passed">
-        <CheckmarkIcon
-          aria-hidden="true"
-          css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
-        />
+        <Link
+          component="a"
+          href={`https://www.tdly.co/shared/simulation/${simulation.id}`}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <CheckmarkIcon
+            aria-hidden="true"
+            css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
+          />
+        </Link>
       </div>
     ) : (
       <></>

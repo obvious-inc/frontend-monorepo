@@ -87,6 +87,7 @@ export const FULL_PROPOSAL_FIELDS = `
     abstainVotes
     executionETA
     quorumVotes
+    adjustedTotalSupply
     proposer { id }
   # signers { id }
     votes { ...VoteFields }
@@ -218,6 +219,7 @@ export const parseProposal = (data) => {
     "againstVotes",
     "abstainVotes",
     "quorumVotes",
+    "adjustedTotalSupply",
   ]) {
     if (data[prop] != null) {
       parsedData[prop] = Number(data[prop]);
