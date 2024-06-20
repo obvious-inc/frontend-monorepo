@@ -87,7 +87,7 @@ export const FULL_PROPOSAL_FIELDS = `
     abstainVotes
     executionETA
     quorumVotes
-    adjustedTotalSupply
+  # adjustedTotalSupply
     proposer { id }
   # signers { id }
     votes { ...VoteFields }
