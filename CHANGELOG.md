@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.29] - 2024-06-20
+
+### ◀️ Revert
+
+- Comment out fetch operations in store
+
+## [1.1.0-beta.28] - 2024-06-20
+
+### 🚀 Features
+
+- Migrate updates from upstream (#368)
+
 ## [1.1.0-beta.27] - 2024-06-20
 
 ### 🚀 Features
