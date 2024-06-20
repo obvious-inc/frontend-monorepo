@@ -532,7 +532,6 @@ const createStore = ({ initialState, publicClient }) =>
           }`,
       });
 
-    // eslint-disable-next-line no-unused-vars
     const fetchProposalCandidate = async (rawId) => {
       const [account, ...slugParts] = rawId.split("-");
       const id = [account.toLowerCase(), ...slugParts].join("-");
