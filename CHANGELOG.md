@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.28] - 2024-06-20
+
+### 🚀 Features
+
+- Migrate updates from upstream (#368)
+
+## [1.1.0-beta.27] - 2024-06-20
+
+### 🚀 Features
+
+- Migrate updates from upstream (#367)
+
+### 🚜 Refactor
+
+- Remove candidate submissions from propose screen
+- Remove unused `clientId` from dao contract events
+- Comment out `adjustedTotalSupply` in nouns-subgraph
+- *(store)* Simplify `fetchProposalsVersions` function
+- *(store)* Disable `proposalCandidateSignatures` fetch
+- *(store)* Disable fetching `proposalCandidates`
+- Simplify `fetchCandidatesFeedbackPosts` in store
+- *(store)* Comment out `fetchProposalCandidate` function
+- *(store)* Enable `fetchProposalCandidate` functionality
+- *(store)* Enable `fetchCandidatesFeedbackPosts` function
+- Comment out fetch operations in store
+
+### 🎨 Styling
+
+- Remove unused eslint directive
+
 ## [1.1.0-beta.26] - 2024-06-19
 
 ### 🚀 Features
