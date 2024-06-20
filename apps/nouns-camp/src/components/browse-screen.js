@@ -6,7 +6,7 @@ import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useDebouncedCallback } from "use-debounce";
-import { useFetch } from "@shades/common/react";
+import { useFetch, ErrorBoundary } from "@shades/common/react";
 import { useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
@@ -65,6 +65,9 @@ import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
+const ProposalVotesDialog = React.lazy(
+  () => import("./proposal-votes-dialog.js"),
+);
 
 const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
@@ -143,6 +146,9 @@ const BrowseScreen = () => {
 
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
+
+  const votesOverviewDialogProposalId =
+    searchParams.get("vote-overview") || null;
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
@@ -899,6 +905,27 @@ const BrowseScreen = () => {
           </MainContentContainer>
         </div>
       </Layout>
+
+      {votesOverviewDialogProposalId != null && (
+        <ErrorBoundary fallback={null}>
+          <React.Suspense fallback={null}>
+            <ProposalVotesDialog
+              proposalId={votesOverviewDialogProposalId}
+              isOpen
+              close={() => {
+                setSearchParams(
+                  (p) => {
+                    const newParams = new URLSearchParams(p);
+                    newParams.delete("vote-overview");
+                    return newParams;
+                  },
+                  { replace: true },
+                );
+              }}
+            />
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
     </>
   );
 };
@@ -1477,9 +1504,17 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
 };
 
 export const VotesTagGroup = React.memo(
-  ({ for: for_, against, abstain, quorum, highlight }) => {
+  ({
+    for: for_,
+    against,
+    abstain,
+    quorum,
+    highlight,
+    component: Component = "span",
+    ...props
+  }) => {
     return (
-      <span
+      <Component
         css={(t) =>
           css({
             display: "inline-flex",
@@ -1529,6 +1564,7 @@ export const VotesTagGroup = React.memo(
             },
           })
         }
+        {...props}
       >
         <span data-for={for_} data-highlight={highlight === "for"}>
           {for_}
@@ -1542,7 +1578,7 @@ export const VotesTagGroup = React.memo(
           {against}
           <ArrowDownSmallIcon data-arrow="down" />
         </span>
-      </span>
+      </Component>
     );
   },
 );
@@ -1562,6 +1598,21 @@ const ProposalVotesTag = React.memo(({ proposalId }) => {
       abstain={proposal.abstainVotes}
       quorum={proposal.quorumVotes}
       highlight={{ 0: "against", 1: "for", 2: "abstain" }[vote?.support]}
+      component={NextLink}
+      href={`?vote-overview=${proposalId}`}
+      replace
+      scroll={false}
+      css={(t) =>
+        css({
+          pointerEvents: "all",
+          textDecoration: "none",
+          "@media(hover: hover)": {
+            ":hover": {
+              color: t.colors.textNormal,
+            },
+          },
+        })
+      }
     />
   );
 });
