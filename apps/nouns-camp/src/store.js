@@ -1451,16 +1451,16 @@ const createStore = ({ initialState, publicClient }) =>
 
           (async () => {
             // Fetch signatures, then content IDs, and finally the candidate versions
-            const { proposalCandidateSignatures } = await subgraphFetch({
+            const { proposalCandidateSignatures } = { proposalCandidateSignatures: [] } /*await subgraphFetch({
               query: `
                 query {
-                # proposalCandidateSignatures(
-                #   where: { signer: "${id.toLowerCase()}" }
-                # ) {
-                #   content { id }
-                # }
+                  proposalCandidateSignatures(
+                    where: { signer: "${id.toLowerCase()}" }
+                  ) {
+                    content { id }
+                  }
                 } `,
-            });
+            });*/
 
             const contentIds = arrayUtils.unique(
               proposalCandidateSignatures.map((s) => s.content.id),
