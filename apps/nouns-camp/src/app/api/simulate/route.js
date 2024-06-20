@@ -6,14 +6,12 @@ export const runtime = "edge";
 
 const TENDERLY_API_ENDPOINT = `https://api.tenderly.co/api/v1/account/me/project/${process.env.TENDERLY_PROJECT_SLUG}`;
 const TENDERLY_SIMULATION_OPTIONS = {
-  save: false,
+  save: true,
   save_if_fails: true,
   simulation_type: "full",
 };
 
 const shareSimulation = async (simulation) => {
-  if (simulation.status) return;
-
   try {
     const response = await fetch(
       `${TENDERLY_API_ENDPOINT}/simulations/${simulation.id}/share`,

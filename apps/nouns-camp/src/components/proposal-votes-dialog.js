@@ -10,7 +10,10 @@ import DialogHeader from "@shades/ui-web/dialog-header";
 import { useProposal, useProposalCandidate } from "../store.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { createRepostExtractor } from "../utils/votes-and-feedbacks.js";
-import { useDynamicQuorum } from "../hooks/dao-contract.js";
+import {
+  useProposalDynamicQuorum,
+  useDynamicQuorumParamsAt,
+} from "../hooks/dao-contract.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import MarkdownRichText from "./markdown-rich-text.js";
@@ -43,7 +46,8 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTab = searchParams.get("votes-dialog-tab") ?? "for";
 
-  const quorum = useDynamicQuorum(proposalId);
+  const quorum = useProposalDynamicQuorum(proposalId);
+  const quorumParams = useDynamicQuorumParamsAt(proposal?.createdBlock);
 
   const ascendingPosts = React.useMemo(() => {
     if (proposal == null) return [];
@@ -277,16 +281,28 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
       <DialogHeader
         title="Vote overview"
         titleProps={titleProps}
-        // subtitle={
-        //   <span css={(t) => css({ color: t.colors.textNormal })}>
-        //     <div>
-        //       {proposal.forVotes +
-        //         proposal.againstVotes +
-        //         proposal.abstainVotes}{" "}
-        //       nouns, {proposal.votes.length} voters
-        //     </div>
-        //   </span>
-        // }
+        subtitle={(() => {
+          const maxQuorumVotes = Math.floor(
+            (proposal.adjustedTotalSupply * quorumParams.maxQuorumVotesBPS) /
+              10000,
+          );
+          return (
+            <>
+              {proposal.forVotes +
+                proposal.againstVotes +
+                proposal.abstainVotes}{" "}
+              nouns &middot; {proposal.votes.length} voters &middot; Quorum{" "}
+              {quorum}{" "}
+              <span css={(t) => css({ color: t.colors.textDimmed })}>
+                {maxQuorumVotes > quorum ? (
+                  <>(max {maxQuorumVotes})</>
+                ) : (
+                  "(max)"
+                )}
+              </span>
+            </>
+          );
+        })()}
         dismiss={dismiss}
         css={css({
           margin: "0",

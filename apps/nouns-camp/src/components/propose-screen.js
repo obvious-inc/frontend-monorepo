@@ -299,19 +299,19 @@ const SubmitDialog = ({
 
   const renderInfo = () => {
     switch (submitTargetType) {
-      case "candidate":
-        return (
-          <>
-            <p>
-              Candidates can be created by anyone. If a candidate receives
-              enough signatures by voters, it can be promoted to a proposal.
-            </p>
-            <p>
-              Submissions are <em>free for accounts with voting power</em>.
-              Other accounts can submit for a small fee.
-            </p>
-          </>
-        );
+      // case "candidate":
+      //   return (
+      //     <>
+      //       <p>
+      //         Candidates can be created by anyone. If a candidate receives
+      //         enough signatures by voters, it can be promoted to a proposal.
+      //       </p>
+      //       <p>
+      //         Submissions are <em>free for accounts with voting power</em>.
+      //         Other accounts can submit for a small fee.
+      //       </p>
+      //     </>
+      //   );
 
       case "proposal":
         if (canCreateProposal)
@@ -353,7 +353,7 @@ const SubmitDialog = ({
             <p>
               Your voting power ({votingPower}) does not meet the required
               proposal threshold ({proposalThreshold + 1}
-              ). Consider{" "}
+              ). {/*Consider{" "}
               <Link
                 underline
                 component="button"
@@ -364,7 +364,7 @@ const SubmitDialog = ({
               >
                 submitting a candidate
               </Link>{" "}
-              instead.
+              instead.*/}
             </p>
           </>
         );
@@ -413,10 +413,10 @@ const SubmitDialog = ({
                   value: "proposal",
                   label: "Submit as proposal",
                 },
-                {
-                  value: "candidate",
-                  label: "Submit as candidate",
-                },
+                // {
+                //   value: "candidate",
+                //   label: "Submit as candidate",
+                // },
               ]}
               onChange={(value) => {
                 setSubmitTargetType(value);

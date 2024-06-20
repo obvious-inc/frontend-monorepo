@@ -499,35 +499,36 @@ const createStore = ({ initialState, publicClient }) =>
       return subgraphEntities;
     };
 
-    const fetchProposalsVersions = async (proposalIds) =>
-      subgraphFetch({
-        query: `{
-        # proposalVersions(
-        #   where: {
-        #     proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
-        #   }
-        # ) {
-        #   createdAt
-        #   createdBlock
-        #   updateMessage
-        #   proposal { id }
-        # }
-        }`,
-      });
+    // eslint-disable-next-line no-unused-vars
+    const fetchProposalsVersions = async (proposalIds) => ({ proposalVersions: [], });
+    // subgraphFetch({
+    //   query: `{
+    //     proposalVersions(
+    //       where: {
+    //         proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
+    //       }
+    //     ) {
+    //       createdAt
+    //       createdBlock
+    //       updateMessage
+    //       proposal { id }
+    //     }
+    //   }`,
+    // });
 
     const fetchCandidatesFeedbackPosts = (candidateIds) =>
       subgraphFetch({
         query: `
           ${CANDIDATE_FEEDBACK_FIELDS}
           query {
-        # candidateFeedbacks(
-        #   where: {
-        #     candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
-        #   },
-        #   first: 1000
-        # ) {
-        #   ...CandidateFeedbackFields
-        # }
+            candidateFeedbacks(
+              where: {
+                candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
+              },
+              first: 1000
+            ) {
+              ...CandidateFeedbackFields
+            }
           }`,
       });
 
@@ -540,55 +541,55 @@ const createStore = ({ initialState, publicClient }) =>
           ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
           ${CANDIDATE_FEEDBACK_FIELDS}
           query {
-          # proposalCandidate(id: ${JSON.stringify(id)}) {
-          #   id
-          #   slug
-          #   proposer
-          #   canceledTimestamp
-          #   createdTimestamp
-          #   lastUpdatedTimestamp
-          #   createdBlock
-          #   canceledBlock
-          #   lastUpdatedBlock
-          #   latestVersion {
-          #     id
-          #     content {
-          #       title
-          #       description
-          #       targets
-          #       values
-          #       signatures
-          #       calldatas
-          #       matchingProposalIds
-          #       proposalIdToUpdate
-          #       contentSignatures {
-          #         ...CandidateContentSignatureFields
-          #       }
-          #     }
-          #   }
-          #   versions {
-          #     id
-          #     createdBlock
-          #     createdTimestamp
-          #     updateMessage
-          #     content {
-          #       title
-          #       description
-          #       targets
-          #       values
-          #       signatures
-          #       calldatas
-          #     }
-          #   }
-          # }
-          #
-          # candidateFeedbacks(
-          #   where: {
-          #     candidate_: { id: ${JSON.stringify(id)} }
-          #   }
-          # ) {
-          #   ...CandidateFeedbackFields
-          # }
+            proposalCandidate(id: ${JSON.stringify(id)}) {
+              id
+              slug
+              proposer
+              canceledTimestamp
+              createdTimestamp
+              lastUpdatedTimestamp
+              createdBlock
+              canceledBlock
+              lastUpdatedBlock
+              latestVersion {
+                id
+                content {
+                  title
+                  description
+                  targets
+                  values
+                  signatures
+                  calldatas
+                  matchingProposalIds
+                  proposalIdToUpdate
+                  contentSignatures {
+                    ...CandidateContentSignatureFields
+                  }
+                }
+              }
+              versions {
+                id
+                createdBlock
+                createdTimestamp
+                updateMessage
+                content {
+                  title
+                  description
+                  targets
+                  values
+                  signatures
+                  calldatas
+                }
+              }
+            }
+
+            candidateFeedbacks(
+              where: {
+                candidate_: { id: ${JSON.stringify(id)} }
+              }
+            ) {
+              ...CandidateFeedbackFields
+            }
           }`,
       });
 
@@ -1450,72 +1451,74 @@ const createStore = ({ initialState, publicClient }) =>
 
           (async () => {
             // Fetch signatures, then content IDs, and finally the candidate versions
-            const { proposalCandidateSignatures } = await subgraphFetch({
-              query: `
-                query {
-                # proposalCandidateSignatures(
-                #   where: { signer: "${id.toLowerCase()}" }
-                # ) {
-                #   content { id }
-                # }
-                } `,
-            });
+            // const { proposalCandidateSignatures } = await subgraphFetch({
+            //   query: `
+            //     query {
+            //       proposalCandidateSignatures(
+            //         where: { signer: "${id.toLowerCase()}" }
+            //       ) {
+            //         content { id }
+            //       }
+            //     } `,
+            // });
 
-            const contentIds = arrayUtils.unique(
-              proposalCandidateSignatures.map((s) => s.content.id),
-            );
+            // const contentIds = arrayUtils.unique(
+            //   proposalCandidateSignatures.map((s) => s.content.id),
+            // );
 
-            const { proposalCandidateVersions } = await subgraphFetch({
-              query: `
-                query {
-                # proposalCandidateVersions(
-                #   where: {
-                #     content_in: [${contentIds.map((id) => `"${id}"`)}]
-                #   }
-                # ) {
-                #   id
-                # }
-                } `,
-            });
+            // const { proposalCandidateVersions } = await subgraphFetch({
+            //   query: `
+            //     query {
+            //       proposalCandidateVersions(
+            //         where: {
+            //           content_in: [${contentIds.map((id) => `"${id}"`)}]
+            //         }
+            //       ) {
+            //         id
+            //       }
+            //     } `,
+            // });
 
-            return subgraphFetch({
-              query: `
-                ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-                query {
-                # proposalCandidates(
-                #   where: {
-                #     latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
-                #   }
-                # ) {
-                #   id
-                #   slug
-                #   proposer
-                #   canceledTimestamp
-                #   createdTimestamp
-                #   lastUpdatedTimestamp
-                #   createdBlock
-                #   canceledBlock
-                #   lastUpdatedBlock
-                #   latestVersion {
-                #     id
-                #     content {
-                #       title
-                #       description
-                #       targets
-                #       values
-                #       signatures
-                #       calldatas
-                #       matchingProposalIds
-                #       proposalIdToUpdate
-                #       contentSignatures {
-                #         ...CandidateContentSignatureFields
-                #       }
-                #     }
-                #   }
-                #   versions { id }
-                # }
-                }`,
-            });
+            // return subgraphFetch({
+            //   query: `
+            //     ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+            //     query {
+            //       proposalCandidates(
+            //         where: {
+            //           latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
+            //         }
+            //       ) {
+            //         id
+            //         slug
+            //         proposer
+            //         canceledTimestamp
+            //         createdTimestamp
+            //         lastUpdatedTimestamp
+            //         createdBlock
+            //         canceledBlock
+            //         lastUpdatedBlock
+            //         latestVersion {
+            //           id
+            //           content {
+            //             title
+            //             description
+            //             targets
+            //             values
+            //             signatures
+            //             calldatas
+            //             matchingProposalIds
+            //             proposalIdToUpdate
+            //             contentSignatures {
+            //               ...CandidateContentSignatureFields
+            //             }
+            //           }
+            //         }
+            //         versions { id }
+            //       }
+            //     }`,
+            // });
+
+            return { proposalCandidates: [] }
           })(),
 
           PropdatesSubgraph.fetchPropdatesByAccount(id),
@@ -1524,13 +1527,13 @@ const createStore = ({ initialState, publicClient }) =>
         // TODO: Merge all below into a single request
 
         // Fetch all versions of created proposals
-        fetchProposalsVersions(proposals.map((p) => p.id));
+        // fetchProposalsVersions(proposals.map((p) => p.id));
         // Fetch feedback for voter's candies (candidates tab)
-        fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
+        // fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
         // Fetch Candidates the voter has commented on
-        fetchProposalCandidates(
-          arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
-        );
+        // fetchProposalCandidates(
+        //   arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
+        // );
         // Fetch relevant noun data
         fetchNounsByIds(
           arrayUtils.unique([
