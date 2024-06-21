@@ -44,7 +44,7 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
-import { useTransactionSimulation } from "../hooks/simulation.js";
+import { useBundleActionsSimulation } from "../hooks/simulation.js";
 
 const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
@@ -125,6 +125,9 @@ const ProposalEditor = ({
   );
 
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
+  const actionsSimulations = useBundleActionsSimulation(
+    actionsIncludingPayerTopUp,
+  );
 
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
@@ -156,6 +159,7 @@ const ProposalEditor = ({
           sidebar={
             <SidebarContent
               actions={actionsIncludingPayerTopUp}
+              simulations={actionsSimulations?.results}
               setActions={setActions}
               disabled={disabled}
             />
@@ -663,9 +667,8 @@ const ActionSummary = ({ action: a }) => {
   }
 };
 
-const TransactionCodeBlock = ({ transaction }) => {
+const TransactionCodeBlock = ({ transaction, simulation }) => {
   const t = useEnhancedParsedTransaction(transaction);
-  const simulation = useTransactionSimulation(transaction);
 
   switch (t.type) {
     case "transfer":
@@ -702,7 +705,12 @@ const TransactionCodeBlock = ({ transaction }) => {
   }
 };
 
-const ActionList = ({ actions, selectIndex, disabled = false }) => (
+const ActionList = ({
+  actions,
+  simulations,
+  selectIndex,
+  disabled = false,
+}) => (
   <ol
     css={(t) =>
       css({
@@ -754,6 +762,7 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
       <li key={`${a.type}-${i}`}>
         <ActionListItem
           action={a}
+          simulations={simulations?.[i]}
           openEditDialog={
             a.editable
               ? () => {
@@ -768,12 +777,16 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
   </ol>
 );
 
-const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
+const ActionListItem = ({
+  action: a,
+  simulations: txSims,
+  openEditDialog,
+  disabled = false,
+}) => {
   const actionTransactions = React.useMemo(
     () => resolveActionTransactions(a),
     [a],
   );
-
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
   const wethTokenContract = useContract("weth-token");
@@ -950,7 +963,10 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
             const comment = renderTransactionComment(t);
             return (
               <li key={i}>
-                <TransactionCodeBlock transaction={t} />
+                <TransactionCodeBlock
+                  transaction={t}
+                  simulation={txSims?.[i]}
+                />
 
                 {comment != null && (
                   <div
@@ -1340,7 +1356,7 @@ const ProposalContentEditor = ({
   );
 };
 
-const SidebarContent = ({ actions, setActions, disabled }) => {
+const SidebarContent = ({ actions, simulations, setActions, disabled }) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
@@ -1405,6 +1421,7 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
         {hasActions && (
           <ActionList
             actions={actions}
+            simulations={simulations}
             disabled={disabled}
             selectIndex={(i) => {
               setSelectedActionIndex(i);

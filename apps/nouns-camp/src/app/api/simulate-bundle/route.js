@@ -1,9 +1,9 @@
 import { CHAIN_ID } from "../../../constants/env.js";
-import { resolveIdentifier } from "../../../contracts";
+import { resolveIdentifier } from "../../../contracts.js";
 import {
   TENDERLY_API_ENDPOINT,
   TENDERLY_SIMULATION_OPTIONS,
-  shareSimulation,
+  shareSimulations,
 } from "../tenderly-utils.js";
 
 export async function POST(request) {
@@ -11,24 +11,27 @@ export async function POST(request) {
 
   const body = await request.json();
 
-  const parsedTransaction = {
-    ...body,
-    from: executorAddress,
-    estimate_gas: true,
-    network_id: CHAIN_ID,
-    ...TENDERLY_SIMULATION_OPTIONS,
-  };
+  const parsedTransactions = body.map((transaction) => {
+    return {
+      ...transaction,
+      from: executorAddress,
+      estimate_gas: true,
+      network_id: CHAIN_ID,
+      ...TENDERLY_SIMULATION_OPTIONS,
+    };
+  });
 
-  const response = await fetch(`${TENDERLY_API_ENDPOINT}/simulate`, {
+  const response = await fetch(`${TENDERLY_API_ENDPOINT}/simulate-bundle`, {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
       "X-Access-Key": process.env.TENDERLY_API_KEY,
     },
-    body: JSON.stringify(parsedTransaction),
+    body: JSON.stringify({ simulations: parsedTransactions }),
   });
 
+  // when a simulation fails, the other sims won't be executed
   const data = await response.json();
 
   if (!response.ok) {
@@ -61,10 +64,10 @@ export async function POST(request) {
     );
   }
 
-  const simulation = data.simulation;
-  if (simulation) await shareSimulation(simulation);
+  const simulations = data?.simulation_results?.map((sr) => sr?.simulation);
+  await shareSimulations(simulations);
 
-  return new Response(JSON.stringify({ ...simulation }), {
+  return new Response(JSON.stringify(simulations), {
     status: 200,
     headers: {
       "Content-Type": "application/json",
