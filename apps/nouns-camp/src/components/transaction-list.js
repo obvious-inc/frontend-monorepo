@@ -339,54 +339,56 @@ const ListItem = ({ transaction }) => {
   );
 };
 
-const SimulationBadge = ({ simulation }) => (
-  <div css={css({ position: "absolute", bottom: "1.1rem", right: "1.1rem" })}>
-    {simulation.fetching ? (
-      <Spinner size="1.2rem" />
-    ) : simulation.error ? (
-      simulation.id ? (
-        <div title={simulation?.error ?? "Simulation failed"}>
+const SimulationBadge = ({ simulation }) => {
+  const SimulationIcon = () => {
+    return simulation.error ? (
+      <CrossCircleIcon
+        aria-hidden="true"
+        css={(t) => css({ width: "1.3rem", color: t.colors.textNegative })}
+      />
+    ) : (
+      <CheckmarkIcon
+        aria-hidden="true"
+        css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
+      />
+    );
+  };
+
+  const SimulationStatus = () => {
+    const simulationTitle = simulation.error
+      ? simulation?.error ?? "Simulation failed"
+      : "Simulation passed";
+
+    return (
+      <div title={simulationTitle}>
+        {simulation.id ? (
           <Link
             component="a"
             href={`https://www.tdly.co/shared/simulation/${simulation.id}`}
             rel="noreferrer"
             target="_blank"
           >
-            <CrossCircleIcon
-              aria-hidden="true"
-              css={(t) =>
-                css({ width: "1.3rem", color: t.colors.textNegative })
-              }
-            />
+            <SimulationIcon />
           </Link>
-        </div>
-      ) : (
-        <div title={simulation?.error ?? "Simulation failed"}>
-          <CrossCircleIcon
-            aria-hidden="true"
-            css={(t) => css({ width: "1.3rem", color: t.colors.textNegative })}
-          />
-        </div>
-      )
-    ) : simulation.success ? (
-      <div title="Simulation passed">
-        <Link
-          component="a"
-          href={`https://www.tdly.co/shared/simulation/${simulation.id}`}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <CheckmarkIcon
-            aria-hidden="true"
-            css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
-          />
-        </Link>
+        ) : (
+          <SimulationIcon />
+        )}
       </div>
-    ) : (
-      <></>
-    )}
-  </div>
-);
+    );
+  };
+
+  const renderContent = () => {
+    if (simulation.fetching) return <Spinner size="1.2rem" />;
+    if (simulation.error || simulation.success) return <SimulationStatus />;
+    return null;
+  };
+
+  return (
+    <div css={css({ position: "absolute", bottom: "1.1rem", right: "1.1rem" })}>
+      {renderContent()}
+    </div>
+  );
+};
 
 export const FunctionCallCodeBlock = ({
   target,
