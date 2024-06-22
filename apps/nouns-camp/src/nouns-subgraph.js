@@ -92,8 +92,7 @@ export const FULL_PROPOSAL_FIELDS = `
   # signers { id }
     votes { ...VoteFields }
   # feedbackPosts { ...ProposalFeedbackFields }
-}
-`;
+  }`;
 
 export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
   fragment CandidateContentSignatureFields on ProposalCandidateSignature {
@@ -408,10 +407,12 @@ export const subgraphFetch = async ({
   query,
   variables,
 }) => {
+  const isServer = typeof window === "undefined";
+
   const url = (() => {
     if (endpoint != null) return endpoint;
     if (customSubgraphEndpoint != null) return customSubgraphEndpoint;
-    if (typeof window === "undefined") return SERVER_URL;
+    if (isServer) return SERVER_URL;
     return CLIENT_URL;
   })();
 
