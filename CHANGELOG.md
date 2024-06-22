@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.37] - 2024-06-22
+
+### 🐛 Bug Fixes
+
+- *(store)* Uncomment and implement `fetchProposalsVersions` function
+- *(store)* Activate `fetchCandidatesFeedbackPosts` function
+- *(store)* Uncomment `proposalCandidates` query
+- *(store)* Uncomment `proposalCandidates` query
+- *(store)* Enable fetching of proposal candidates from subgraph
+- *(store)* Enable fetching of proposal and candidate feedbacks
+- *(store)* Include proposal and candidate feedbacks in Id arrays
+- *(store)* Correct data fetching in browse screen
+- *(store)* Ensure safe navigation for `proposalCandidateVersions`
+- *(nouns-subgraph)* Remove server-side cache setting
+
+### 🚜 Refactor
+
+- *(store)* Simplify `candidateId` assignment
+- *(store)* Simplify loops in `accountAddresses` generation
+- *(store)* Streamline async function calls
+- *(store)* Consolidate variable declaration in `fetchBrowseScreenData` method
+- *(store)* Simplify array mapping in data fetch functions
+- *(nouns-subgraph)* Simplify conditionals and add cache control
+
 ## [1.1.0-beta.36] - 2024-06-22
 
 ### 🐛 Bug Fixes
