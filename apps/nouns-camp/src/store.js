@@ -1530,7 +1530,7 @@ const createStore = ({ initialState, publicClient }) =>
         // Fetch all versions of created proposals
         fetchProposalsVersions(proposals.map((p) => p.id));
         // Fetch feedback for voter's candies (candidates tab)
-        fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
+        fetchCandidatesFeedbackPosts((proposalCandidates || []).map(c => c.id));
         // Fetch Candidates the voter has commented on
         fetchProposalCandidates(
           arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
