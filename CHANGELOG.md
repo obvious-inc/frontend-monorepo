@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.32] - 2024-06-22
+
+### 🐛 Bug Fixes
+
+- *(store)* Ensure `proposalCandidates` are defined before mapping
+
 ## [1.1.0-beta.31] - 2024-06-22
 
 ### 🚜 Refactor
