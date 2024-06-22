@@ -515,22 +515,21 @@ const createStore = ({ initialState, publicClient }) =>
         }`,
       });
 
-    // eslint-disable-next-line no-unused-vars
-    const fetchCandidatesFeedbackPosts = (candidateIds) => ({ candidateFeedbacks: [] })
-      // subgraphFetch({
-      //   query: `
-      //     ${CANDIDATE_FEEDBACK_FIELDS}
-      //     query {
-      //       candidateFeedbacks(
-      //         where: {
-      //           candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
-      //         },
-      //         first: 1000
-      //       ) {
-      //         ...CandidateFeedbackFields
-      //       }
-      //     }`,
-      // });
+    const fetchCandidatesFeedbackPosts = (candidateIds) =>
+      subgraphFetch({
+        query: `
+          ${CANDIDATE_FEEDBACK_FIELDS}
+          query {
+            candidateFeedbacks(
+              where: {
+                candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
+              },
+              first: 1000
+            ) {
+              ...CandidateFeedbackFields
+            }
+          }`,
+      });
 
     const fetchProposalCandidate = async (rawId) => {
       const [account, ...slugParts] = rawId.split("-");
