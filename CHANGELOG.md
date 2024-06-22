@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.30] - 2024-06-22
+
+### 🚜 Refactor
+
+- *(store)* Simplify `fetchCandidatesFeedbackPosts` function
+
 ## [1.1.0-beta.29] - 2024-06-20
 
 ### ◀️ Revert
