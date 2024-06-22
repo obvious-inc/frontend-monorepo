@@ -1533,7 +1533,7 @@ const createStore = ({ initialState, publicClient }) =>
         fetchCandidatesFeedbackPosts((proposalCandidates || []).map(c => c.id));
         // Fetch Candidates the voter has commented on
         fetchProposalCandidates(
-          arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
+          arrayUtils.unique((candidateFeedbacks || []).map((p) => p.candidateId)),
         );
         // Fetch relevant noun data
         fetchNounsByIds(
