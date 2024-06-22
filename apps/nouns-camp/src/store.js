@@ -844,7 +844,7 @@ const createStore = ({ initialState, publicClient }) =>
         if (data.proposal == null)
           return Promise.reject(new Error("not-found"));
 
-        const candidateId = data.proposalCandidateVersions[0]?.proposal.id;
+        const candidateId = data?.proposalCandidateVersions?.[0]?.proposal?.id;
 
         // Fetch candidate async
         if (candidateId != null) fetchProposalCandidate(candidateId);
