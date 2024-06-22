@@ -1524,10 +1524,10 @@ const createStore = ({ initialState, publicClient }) =>
         // Fetch all versions of created proposals
         fetchProposalsVersions(proposals.map((p) => p.id));
         // Fetch feedback for voter's candies (candidates tab)
-        fetchCandidatesFeedbackPosts((proposalCandidates || []).map(c => c.id));
+        fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
         // Fetch Candidates the voter has commented on
         fetchProposalCandidates(
-          arrayUtils.unique((candidateFeedbacks || []).map((p) => p.candidateId)),
+          arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
         );
         // Fetch relevant noun data
         fetchNounsByIds(
@@ -1543,8 +1543,8 @@ const createStore = ({ initialState, publicClient }) =>
         fetchProposals(
           arrayUtils.unique([
             ...votes.map((p) => p.proposalId),
-            ...(proposalFeedbacks ?? []).map((p) => p.proposalId),
-            ...(sponsoredProposalCandidates ?? []).map(
+            ...proposalFeedbacks.map((p) => p.proposalId),
+            ...sponsoredProposalCandidates.map(
               (c) => c.latestVersion?.proposalId,
             ),
             ...propdates.map((p) => p.proposalId),
