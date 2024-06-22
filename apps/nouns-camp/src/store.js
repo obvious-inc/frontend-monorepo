@@ -1640,7 +1640,11 @@ const createStore = ({ initialState, publicClient }) =>
       },
       fetchVoterActivity: async (voterAddress_, { startBlock, endBlock }) => {
         const voterAddress = voterAddress_.toLowerCase();
-        const { votes/*, proposalFeedbacks, candidateFeedbacks*/ } =
+        const { proposalFeedbacks, candidateFeedbacks } = {
+          proposalFeedbacks: [],
+          candidateFeedbacks: [],
+        };
+        const { votes /*, proposalFeedbacks, candidateFeedbacks*/ } =
           await subgraphFetch({
             query: `
               ${CANDIDATE_FEEDBACK_FIELDS}
