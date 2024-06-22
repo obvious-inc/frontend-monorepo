@@ -28,7 +28,7 @@
     "@nouns/assets": "0.6.0",
     "@nouns/contracts": "0.3.0",
     "@nouns/sdk": "0.4.0",
-    "@radix-ui/react-toolbar": "1.0.3",
+    "@radix-ui/react-toolbar": "1.1.0",
     "@radix-ui/react-tooltip": "1.1.1",
     "@sentry/nextjs": "7.111.0",
     "@serwist/next": "8.4.4",
