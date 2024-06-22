@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.33] - 2024-06-22
+
+### 🐛 Bug Fixes
+
+- *(store)* Handle potential null value in `candidateFeedbacks`
+
 ## [1.1.0-beta.32] - 2024-06-22
 
 ### 🐛 Bug Fixes
