@@ -1171,20 +1171,19 @@ const createStore = ({ initialState, publicClient }) =>
 
         const accountAddresses = [];
 
-        for (const p of proposals) {
+        for (const p of proposals)
           accountAddresses.push(
             p.proposerId,
             ...(p.signers ?? []).map((s) => s ? s.id : undefined),
           );
-        }
 
-        // for (const c of proposalCandidates)
-        //   accountAddresses.push(
-        //     c.proposerId,
-        //     ...(c.latestVersion?.content.contentSignatures ?? []).map(
-        //       (s) => s.signer.id,
-        //     ),
-        //   );
+        for (const c of proposalCandidates)
+          accountAddresses.push(
+            c.proposerId,
+            ...(c.latestVersion?.content.contentSignatures ?? []).map(
+              (s) => s.signer.id,
+            ),
+          );
 
         // Populate ENS cache async
         await reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
