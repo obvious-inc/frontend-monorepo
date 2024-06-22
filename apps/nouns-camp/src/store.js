@@ -1732,10 +1732,10 @@ const createStore = ({ initialState, publicClient }) =>
           });
 
         const proposalIds = arrayUtils.unique(
-          [...votes/*, ...proposalFeedbacks*/].map((p) => p.proposalId),
+          [...votes, ...proposalFeedbacks].map((p) => p.proposalId),
         );
         const candidateIds = arrayUtils.unique(
-          [/*...candidateFeedbacks, */].map((p) => p.candidateId),
+          candidateFeedbacks.map((p) => p.candidateId),
         );
 
         // TODO: Merge into one request
