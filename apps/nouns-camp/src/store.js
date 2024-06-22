@@ -621,37 +621,37 @@ const createStore = ({ initialState, publicClient }) =>
         query: `
           ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
           query {
-          # proposalCandidates(
-          #   where: {
-          #     id_in: [${ids.map((id) => JSON.stringify(id))}]
-          #   }
-          # ) {
-          #   id
-          #   slug
-          #   proposer
-          #   canceledTimestamp
-          #   createdTimestamp
-          #   lastUpdatedTimestamp
-          #   createdBlock
-          #   canceledBlock
-          #   lastUpdatedBlock
-          #   latestVersion {
-          #     id
-          #     content {
-          #       title
-          #       description
-          #       targets
-          #       values
-          #       signatures
-          #       calldatas
-          #       matchingProposalIds
-          #       proposalIdToUpdate
-          #       contentSignatures {
-          #         ...CandidateContentSignatureFields
-          #       }
-          #     }
-          #   }
-          # }
+            proposalCandidates(
+              where: {
+                id_in: [${ids.map((id) => JSON.stringify(id))}]
+              }
+            ) {
+              id
+              slug
+              proposer
+              canceledTimestamp
+              createdTimestamp
+              lastUpdatedTimestamp
+              createdBlock
+              canceledBlock
+              lastUpdatedBlock
+              latestVersion {
+                id
+                content {
+                  title
+                  description
+                  targets
+                  values
+                  signatures
+                  calldatas
+                  matchingProposalIds
+                  proposalIdToUpdate
+                  contentSignatures {
+                    ...CandidateContentSignatureFields
+                  }
+                }
+              }
+            }
           }`,
       });
     };
