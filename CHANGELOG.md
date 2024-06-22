@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.31] - 2024-06-22
+
+### 🚜 Refactor
+
+- *(store)* Comment out redundant code for `proposalCandidates`
+
 ## [1.1.0-beta.30] - 2024-06-22
 
 ### 🚜 Refactor
