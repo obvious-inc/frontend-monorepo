@@ -1076,30 +1076,30 @@ const createStore = ({ initialState, publicClient }) =>
           query: `
             ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
             query {
-            # proposalCandidates(
-            #   where: { proposer: "${accountAddress}" }
-            # ) {
-            #   id
-            #   slug
-            #   proposer
-            #   createdBlock
-            #   canceledBlock
-            #   lastUpdatedBlock
-            #   canceledTimestamp
-            #   createdTimestamp
-            #   lastUpdatedTimestamp
-            #   latestVersion {
-            #     id
-            #     content {
-            #       title
-            #       matchingProposalIds
-            #       proposalIdToUpdate
-            #       contentSignatures {
-            #         ...CandidateContentSignatureFields
-            #       }
-            #     }
-            #   }
-            # }
+              proposalCandidates(
+                where: { proposer: "${accountAddress}" }
+              ) {
+                id
+                slug
+                proposer
+                createdBlock
+                canceledBlock
+                lastUpdatedBlock
+                canceledTimestamp
+                createdTimestamp
+                lastUpdatedTimestamp
+                latestVersion {
+                  id
+                  content {
+                    title
+                    matchingProposalIds
+                    proposalIdToUpdate
+                    contentSignatures {
+                      ...CandidateContentSignatureFields
+                    }
+                  }
+                }
+              }
             }`,
         }),
       fetchBrowseScreenData: async (client, { skip = 0, first = 1000 }) => {
