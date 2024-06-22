@@ -1103,8 +1103,7 @@ const createStore = ({ initialState, publicClient }) =>
             }`,
         }),
       fetchBrowseScreenData: async (client, { skip = 0, first = 1000 }) => {
-        const proposalCandidates = []
-        const { proposals } = await subgraphFetch({
+        const { proposals, proposalCandidates } = await subgraphFetch({
           query: `
             ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
             query {
