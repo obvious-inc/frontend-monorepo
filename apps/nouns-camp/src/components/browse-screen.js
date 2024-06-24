@@ -227,26 +227,33 @@ const BrowseScreen = () => {
     });
   }, [proposalUpdateCandidates, connectedWalletAccountAddress]);
 
-  const filteredItems = React.useMemo(() => {
-    const filteredProposalDrafts =
-      proposalDrafts == null
-        ? []
-        : proposalDrafts
-            .filter((d) => {
-              if (d.name.trim() !== "") return true;
-              return d.body.some(
-                (n) => !isRichTextNodeEmpty(n, { trim: true }),
-              );
-            })
-            .map((d) => ({ ...d, type: "draft" }));
+  const filteredProposalDrafts = React.useMemo(() => {
+    if (proposalDrafts == null) return [];
+    return proposalDrafts
+      .filter((d) => {
+        if (d.name.trim() !== "") return true;
+        return d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
+      })
+      .map((d) => ({ ...d, type: "draft" }));
+  }, [proposalDrafts]);
 
-    if (deferredQuery === "")
-      return [
-        ...filteredProposalDrafts,
-        ...filteredCandidates,
-        ...filteredProposals,
-        ...filteredProposalUpdateCandidates,
-      ];
+  const allItems = React.useMemo(
+    () => [
+      ...filteredProposalDrafts,
+      ...filteredCandidates,
+      ...filteredProposals,
+      ...filteredProposalUpdateCandidates,
+    ],
+    [
+      filteredProposalDrafts,
+      filteredCandidates,
+      filteredProposals,
+      filteredProposalUpdateCandidates,
+    ],
+  );
+
+  const searchResultItems = React.useMemo(() => {
+    if (deferredQuery === "") return [];
 
     const matchingAddresses = searchEns(primaryEnsNameByAddress, deferredQuery);
 
@@ -298,7 +305,7 @@ const BrowseScreen = () => {
     filteredProposals,
     filteredCandidates,
     filteredProposalUpdateCandidates,
-    proposalDrafts,
+    filteredProposalDrafts,
     primaryEnsNameByAddress,
   ]);
 
@@ -393,28 +400,23 @@ const BrowseScreen = () => {
   const sectionsByName = objectUtils.mapValues(
     // Sort and slice sections
     (items, groupKey) => {
-      const isSearch = deferredQuery !== "";
       const { title, description } = groupConfigByKey[groupKey];
 
       switch (groupKey) {
         case "drafts":
           return {
             title,
-            items: isSearch
-              ? items
-              : arrayUtils.sortBy(
-                  { value: (i) => Number(i.id), order: "desc" },
-                  items,
-                ),
+            items: arrayUtils.sortBy(
+              { value: (i) => Number(i.id), order: "desc" },
+              items,
+            ),
           };
 
         case "proposals:chronological": {
-          const sortedItems = isSearch
-            ? items
-            : arrayUtils.sortBy(
-                { value: (i) => Number(i.createdBlock), order: "desc" },
-                items,
-              );
+          const sortedItems = arrayUtils.sortBy(
+            { value: (i) => Number(i.createdBlock), order: "desc" },
+            items,
+          );
           const paginate = page != null;
           return {
             count: sortedItems.length,
@@ -427,27 +429,23 @@ const BrowseScreen = () => {
         case "proposals:awaiting-vote":
           return {
             title,
-            items: isSearch
-              ? items
-              : arrayUtils.sortBy(
-                  (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                  items,
-                ),
+            items: arrayUtils.sortBy(
+              (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
+              items,
+            ),
           };
 
         case "proposals:authored":
         case "proposals:ongoing":
         case "proposals:new":
         case "proposals:past": {
-          const sortedItems = isSearch
-            ? items
-            : arrayUtils.sortBy(
-                {
-                  value: (i) => Number(i.startBlock),
-                  order: "desc",
-                },
-                items,
-              );
+          const sortedItems = arrayUtils.sortBy(
+            {
+              value: (i) => Number(i.startBlock),
+              order: "desc",
+            },
+            items,
+          );
           const paginate = page != null && groupKey === "proposals:past";
           return {
             title,
@@ -468,25 +466,23 @@ const BrowseScreen = () => {
         case "candidates:authored-proposal-update":
         case "candidates:inactive":
         case "proposals:sponsored-proposal-update-awaiting-signature": {
-          const sortedItems = isSearch
-            ? items
-            : arrayUtils.sortBy(
-                candidateSortStrategy === "popularity"
-                  ? {
-                      value: (i) => getCandidateScore(i) ?? 0,
-                      order: "desc",
-                    }
-                  : {
-                      value: (i) =>
-                        Math.max(
-                          i.lastUpdatedTimestamp,
-                          ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
-                            []),
-                        ),
-                      order: "desc",
-                    },
-                items,
-              );
+          const sortedItems = arrayUtils.sortBy(
+            candidateSortStrategy === "popularity"
+              ? {
+                  value: (i) => getCandidateScore(i) ?? 0,
+                  order: "desc",
+                }
+              : {
+                  value: (i) =>
+                    Math.max(
+                      i.lastUpdatedTimestamp,
+                      ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
+                        []),
+                    ),
+                  order: "desc",
+                },
+            items,
+          );
 
           const paginate = page != null && groupKey === "candidates:inactive";
 
@@ -512,7 +508,7 @@ const BrowseScreen = () => {
       if (i.type === "draft") return "drafts";
       if (i.slug != null) return groupCandidate(i);
       return groupProposal(i);
-    }, filteredItems),
+    }, allItems),
   );
 
   const { fetchBrowseScreenData } = useActions();
@@ -551,6 +547,211 @@ const BrowseScreen = () => {
     );
   });
 
+  const listings = (
+    <>
+      <div ref={tabAnchorRef} />
+      <Tabs.Root
+        ref={tabContainerRef}
+        aria-label="Proposals and candidates"
+        selectedKey={
+          searchParams.get("tab") ??
+          (isDesktopLayout ? "proposals" : "activity")
+        }
+        onSelectionChange={(key) => {
+          const tabAnchorRect = tabAnchorRef.current?.getBoundingClientRect();
+          const tabContainerRect =
+            tabContainerRef.current?.getBoundingClientRect();
+
+          if (tabContainerRect?.top > tabAnchorRect?.top)
+            scrollContainerRef.current.scrollTo({
+              top: tabAnchorRef.current.offsetTop - 42,
+            });
+
+          setSearchParams(
+            (p) => {
+              const newParams = new URLSearchParams(p);
+              newParams.set("tab", key);
+              return newParams;
+            },
+            { replace: true },
+          );
+          setPage(1);
+        }}
+        css={(t) =>
+          css({
+            position: "sticky",
+            top: 0,
+            zIndex: 1,
+            paddingTop: "1rem",
+            background: t.colors.backgroundPrimary,
+            "[role=tab]": { fontSize: t.text.sizes.base },
+          })
+        }
+      >
+        {!isDesktopLayout && (
+          <Tabs.Item key="activity" title="Activity">
+            <FeedTabContent />
+          </Tabs.Item>
+        )}
+        <Tabs.Item key="proposals" title="Proposals">
+          <div css={css({ paddingTop: "2.4rem" })}>
+            <div css={css({ margin: "-0.4rem 0 2rem" })}>
+              <Select
+                size="small"
+                aria-label="Proposal sorting"
+                value={proposalSortStrategy}
+                options={[
+                  {
+                    value: "activity",
+                    label: "By proposal state",
+                  },
+                  {
+                    value: "chronological",
+                    label: "Chronological",
+                  },
+                ]}
+                onChange={(value) => {
+                  setProposalSortStrategy(value);
+                }}
+                fullWidth={false}
+                width="max-content"
+                renderTriggerContent={(value, options) => (
+                  <>
+                    Order:{" "}
+                    <em
+                      css={(t) =>
+                        css({
+                          fontStyle: "normal",
+                          fontWeight: t.text.weights.emphasis,
+                        })
+                      }
+                    >
+                      {options.find((o) => o.value === value)?.label}
+                    </em>
+                  </>
+                )}
+              />
+            </div>
+            <SectionedList
+              showPlaceholder={!hasFetchedOnce}
+              sections={[
+                "proposals:chronological",
+                "proposals:authored",
+                "proposals:sponsored-proposal-update-awaiting-signature",
+                "proposals:awaiting-vote",
+                "proposals:ongoing",
+                "proposals:new",
+                "proposals:past",
+              ]
+                .map((sectionName) => sectionsByName[sectionName] ?? {})
+                .filter(({ items }) => items != null && items.length !== 0)}
+            />
+            {(() => {
+              if (page == null) return null;
+
+              const truncatableItemCount =
+                proposalSortStrategy === "chronological"
+                  ? sectionsByName["proposals:chronological"]?.count
+                  : sectionsByName["proposals:past"]?.count;
+
+              const hasMoreItems =
+                truncatableItemCount > BROWSE_LIST_PAGE_ITEM_COUNT * page;
+
+              if (!hasMoreItems) return null;
+
+              return (
+                <Pagination
+                  showNext={() => setPage((p) => p + 1)}
+                  showAll={() => setPage(null)}
+                />
+              );
+            })()}
+          </div>
+        </Tabs.Item>
+        <Tabs.Item key="candidates" title="Candidates">
+          <div css={css({ paddingTop: "2.4rem" })}>
+            <div css={css({ margin: "-0.4rem 0 2rem" })}>
+              <Select
+                size="small"
+                aria-label="Candidate sorting"
+                value={candidateSortStrategy}
+                options={[
+                  {
+                    value: "popularity",
+                    label: "By popularity",
+                  },
+                  {
+                    value: "activity",
+                    label: "By recent activity",
+                  },
+                  {
+                    value: "connected-account-feedback",
+                    label: "By your feedback activity",
+                  },
+                ].filter(
+                  (o) =>
+                    // A connected wallet is required for feedback filter to work
+                    connectedWalletAccountAddress != null ||
+                    o.value !== "connected-account-feedback",
+                )}
+                onChange={(value) => {
+                  setCandidateSortStrategy(value);
+                }}
+                fullWidth={false}
+                width="max-content"
+                renderTriggerContent={(value, options) => (
+                  <>
+                    Order:{" "}
+                    <em
+                      css={(t) =>
+                        css({
+                          fontStyle: "normal",
+                          fontWeight: t.text.weights.emphasis,
+                        })
+                      }
+                    >
+                      {options.find((o) => o.value === value)?.label}
+                    </em>
+                  </>
+                )}
+              />
+            </div>
+
+            <SectionedList
+              showPlaceholder={!hasFetchedOnce}
+              sections={[
+                "candidates:authored",
+                "candidates:sponsored",
+                "candidates:feedback-missing",
+                "candidates:feedback-given",
+                "candidates:new",
+                "candidates:recently-active",
+                "candidates:popular",
+                "candidates:inactive",
+              ]
+                .map((sectionName) => sectionsByName[sectionName] ?? {})
+                .filter(({ items }) => items != null && items.length !== 0)}
+            />
+            {page != null &&
+              sectionsByName["candidates:inactive"] != null &&
+              sectionsByName["candidates:inactive"].count >
+                BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+                <Pagination
+                  showNext={() => setPage((p) => p + 1)}
+                  showAll={() => setPage(null)}
+                />
+              )}
+          </div>
+        </Tabs.Item>
+        <Tabs.Item key="drafts" title="My drafts">
+          <div css={css({ paddingTop: "2.4rem" })}>
+            <DraftTabContent items={sectionsByName["drafts"]?.items} />
+          </div>
+        </Tabs.Item>
+      </Tabs.Root>
+    </>
+  );
+
   return (
     <>
       <Layout
@@ -577,12 +778,20 @@ const BrowseScreen = () => {
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer
             sidebar={
-              isDesktopLayout ? (
-                <FeedSidebar
-                  // Hiding until the first fetch is done to avoid flickering
-                  visible={hasFetchedOnce}
-                />
-              ) : null
+              // No sidebar on small screens
+              !isDesktopLayout ? null : (
+                <div
+                  css={css({
+                    containerType: "inline-size",
+                    padding: "0 0 3.2rem",
+                    "@media (min-width: 600px)": {
+                      padding: "6rem 0 2.8rem",
+                    },
+                  })}
+                >
+                  {listings}
+                </div>
+              )
             }
           >
             <div
@@ -590,7 +799,7 @@ const BrowseScreen = () => {
                 containerType: "inline-size",
                 padding: "0 0 3.2rem",
                 "@media (min-width: 600px)": {
-                  padding: "6rem 0 8rem",
+                  padding: "6rem 0",
                 },
               })}
             >
@@ -607,7 +816,7 @@ const BrowseScreen = () => {
                     margin: "-0.3rem -1.6rem 0",
                     padding: "0.3rem 1.6rem 0", // Top padding to offset the focus box shadow
                     "@media (min-width: 600px)": {
-                      marginBottom: "2.8rem",
+                      marginBottom: "2.4rem",
                     },
                   })
                 }
@@ -631,8 +840,8 @@ const BrowseScreen = () => {
                       {
                         items:
                           page == null
-                            ? filteredItems
-                            : filteredItems.slice(
+                            ? searchResultItems
+                            : searchResultItems.slice(
                                 0,
                                 BROWSE_LIST_PAGE_ITEM_COUNT * page,
                               ),
@@ -641,7 +850,7 @@ const BrowseScreen = () => {
                     style={{ marginTop: "2rem" }}
                   />
                   {page != null &&
-                    filteredItems.length >
+                    searchResultItems.length >
                       BROWSE_LIST_PAGE_ITEM_COUNT * page && (
                       <Pagination
                         showNext={() => setPage((p) => p + 1)}
@@ -649,257 +858,18 @@ const BrowseScreen = () => {
                       />
                     )}
                 </>
+              ) : isDesktopLayout ? (
+                <div
+                  css={css({ transition: "0.2s ease-out opacity" })}
+                  style={{
+                    // Hiding until the first fetch is done to avoid flickering
+                    opacity: hasFetchedOnce ? 1 : 0,
+                  }}
+                >
+                  <Feed />
+                </div>
               ) : (
-                <>
-                  <div ref={tabAnchorRef} />
-                  <Tabs.Root
-                    ref={tabContainerRef}
-                    aria-label="Proposals and candidates"
-                    selectedKey={
-                      searchParams.get("tab") ??
-                      (isDesktopLayout ? "proposals" : "activity")
-                    }
-                    onSelectionChange={(key) => {
-                      const tabAnchorRect =
-                        tabAnchorRef.current?.getBoundingClientRect();
-                      const tabContainerRect =
-                        tabContainerRef.current?.getBoundingClientRect();
-
-                      if (tabContainerRect?.top > tabAnchorRect?.top)
-                        scrollContainerRef.current.scrollTo({
-                          top: tabAnchorRef.current.offsetTop - 42,
-                        });
-
-                      setSearchParams((p) => {
-                        const newParams = new URLSearchParams(p);
-                        newParams.set("tab", key);
-                        return newParams;
-                      });
-                      setPage(1);
-                    }}
-                    css={(t) =>
-                      css({
-                        position: "sticky",
-                        top: "4.2rem",
-                        zIndex: 1,
-                        paddingTop: "1.6rem",
-                        background: t.colors.backgroundPrimary,
-                        "[role=tab]": { fontSize: t.text.sizes.base },
-                      })
-                    }
-                  >
-                    {!isDesktopLayout && (
-                      <Tabs.Item key="activity" title="Activity">
-                        <FeedTabContent />
-                      </Tabs.Item>
-                    )}
-                    <Tabs.Item key="proposals" title="Proposals">
-                      <div
-                        css={css({
-                          paddingTop: "2.4rem",
-                          "@media (min-width: 600px)": {
-                            paddingTop: "2.8rem",
-                          },
-                        })}
-                      >
-                        <div
-                          css={css({
-                            margin: "-0.4rem 0 2.4rem",
-                            "@media (min-width: 600px)": {
-                              margin: "-0.8rem 0 2.4rem",
-                            },
-                          })}
-                        >
-                          <Select
-                            size="small"
-                            aria-label="Proposal sorting"
-                            value={proposalSortStrategy}
-                            options={[
-                              { value: "activity", label: "By proposal state" },
-                              {
-                                value: "chronological",
-                                label: "Chronological",
-                              },
-                            ]}
-                            onChange={(value) => {
-                              setProposalSortStrategy(value);
-                            }}
-                            fullWidth={false}
-                            width="max-content"
-                            renderTriggerContent={(value, options) => (
-                              <>
-                                Order:{" "}
-                                <em
-                                  css={(t) =>
-                                    css({
-                                      fontStyle: "normal",
-                                      fontWeight: t.text.weights.emphasis,
-                                    })
-                                  }
-                                >
-                                  {
-                                    options.find((o) => o.value === value)
-                                      ?.label
-                                  }
-                                </em>
-                              </>
-                            )}
-                          />
-                        </div>
-                        <SectionedList
-                          showPlaceholder={!hasFetchedOnce}
-                          sections={[
-                            "proposals:chronological",
-                            "proposals:authored",
-                            "proposals:sponsored-proposal-update-awaiting-signature",
-                            "proposals:awaiting-vote",
-                            "proposals:ongoing",
-                            "proposals:new",
-                            "proposals:past",
-                          ]
-                            .map(
-                              (sectionName) =>
-                                sectionsByName[sectionName] ?? {},
-                            )
-                            .filter(
-                              ({ items }) =>
-                                items != null && items.length !== 0,
-                            )}
-                        />
-                        {(() => {
-                          if (page == null) return null;
-
-                          const truncatableItemCount =
-                            proposalSortStrategy === "chronological"
-                              ? sectionsByName["proposals:chronological"]?.count
-                              : sectionsByName["proposals:past"]?.count;
-
-                          const hasMoreItems =
-                            truncatableItemCount >
-                            BROWSE_LIST_PAGE_ITEM_COUNT * page;
-
-                          if (!hasMoreItems) return null;
-
-                          return (
-                            <Pagination
-                              showNext={() => setPage((p) => p + 1)}
-                              showAll={() => setPage(null)}
-                            />
-                          );
-                        })()}
-                      </div>
-                    </Tabs.Item>
-                    <Tabs.Item key="candidates" title="Candidates">
-                      <div
-                        css={css({
-                          paddingTop: "2.4rem",
-                          "@media (min-width: 600px)": {
-                            paddingTop: "2.8rem",
-                          },
-                        })}
-                      >
-                        <div
-                          css={css({
-                            margin: "-0.4rem 0 2.4rem",
-                            "@media (min-width: 600px)": {
-                              margin: "-0.8rem 0 2.4rem",
-                            },
-                          })}
-                        >
-                          <Select
-                            size="small"
-                            aria-label="Candidate sorting"
-                            value={candidateSortStrategy}
-                            options={[
-                              { value: "popularity", label: "By popularity" },
-                              {
-                                value: "activity",
-                                label: "By recent activity",
-                              },
-                              {
-                                value: "connected-account-feedback",
-                                label: "By your feedback activity",
-                              },
-                            ].filter(
-                              (o) =>
-                                // A connected wallet is required for feedback filter to work
-                                connectedWalletAccountAddress != null ||
-                                o.value !== "connected-account-feedback",
-                            )}
-                            onChange={(value) => {
-                              setCandidateSortStrategy(value);
-                            }}
-                            fullWidth={false}
-                            width="max-content"
-                            renderTriggerContent={(value, options) => (
-                              <>
-                                Order:{" "}
-                                <em
-                                  css={(t) =>
-                                    css({
-                                      fontStyle: "normal",
-                                      fontWeight: t.text.weights.emphasis,
-                                    })
-                                  }
-                                >
-                                  {
-                                    options.find((o) => o.value === value)
-                                      ?.label
-                                  }
-                                </em>
-                              </>
-                            )}
-                          />
-                        </div>
-
-                        <SectionedList
-                          showPlaceholder={!hasFetchedOnce}
-                          sections={[
-                            "candidates:authored",
-                            "candidates:sponsored",
-                            "candidates:feedback-missing",
-                            "candidates:feedback-given",
-                            "candidates:new",
-                            "candidates:recently-active",
-                            "candidates:popular",
-                            "candidates:inactive",
-                          ]
-                            .map(
-                              (sectionName) =>
-                                sectionsByName[sectionName] ?? {},
-                            )
-                            .filter(
-                              ({ items }) =>
-                                items != null && items.length !== 0,
-                            )}
-                        />
-                        {page != null &&
-                          sectionsByName["candidates:inactive"] != null &&
-                          sectionsByName["candidates:inactive"].count >
-                            BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                            <Pagination
-                              showNext={() => setPage((p) => p + 1)}
-                              showAll={() => setPage(null)}
-                            />
-                          )}
-                      </div>
-                    </Tabs.Item>
-                    <Tabs.Item key="drafts" title="My drafts">
-                      <div
-                        css={css({
-                          paddingTop: "2.4rem",
-                          "@media (min-width: 600px)": {
-                            paddingTop: "2.8rem",
-                          },
-                        })}
-                      >
-                        <DraftTabContent
-                          items={sectionsByName["drafts"]?.items}
-                        />
-                      </div>
-                    </Tabs.Item>
-                  </Tabs.Root>
-                </>
+                listings
               )}
             </div>
           </MainContentContainer>
@@ -943,31 +913,16 @@ export const SectionedList = ({
         return css({
           listStyle: "none",
           containerType: "inline-size",
-          "li + li": {
-            marginTop: "1.6rem",
-            "@media(min-width: 600px)": {
-              marginTop: "2.8rem",
-            },
-          },
           ul: { listStyle: "none" },
-          "[data-group] li + li": {
-            marginTop: "0.4rem",
-            "@media(min-width: 600px)": {
-              marginTop: "1rem",
-            },
-          },
+          "li + li": { marginTop: "1.6rem" },
+          "[data-group] li + li": { marginTop: 0 },
           "[data-group-title]": {
-            // position: "sticky",
-            // top: "8.4rem",
-            padding: "0.8rem 0",
+            padding: "0.4rem 0",
             background: t.colors.backgroundPrimary,
             textTransform: "uppercase",
             fontSize: t.text.sizes.small,
             fontWeight: t.text.weights.emphasis,
             color: t.colors.textDimmed,
-            "@media(min-width: 600px)": {
-              padding: "1.1rem 0",
-            },
           },
           "[data-group-description]": {
             textTransform: "none",
@@ -999,15 +954,9 @@ export const SectionedList = ({
             ".item-container": { position: "relative", pointerEvents: "none" },
           },
           "[data-title]": {
-            fontSize: t.text.sizes.large,
-            fontWeight: t.text.weights.emphasis,
-            lineHeight: 1.25,
-            // whiteSpace: "nowrap",
-            // overflow: "hidden",
-            // textOverflow: "ellipsis",
-            "@media(max-width: 600px)": {
-              fontSize: t.text.sizes.base,
-            },
+            fontSize: t.text.sizes.base,
+            fontWeight: t.text.weights.smallHeader,
+            lineHeight: 1.35,
           },
           "[data-small]": {
             color: t.colors.textDimmed,
@@ -1025,19 +974,6 @@ export const SectionedList = ({
             "[data-small]": {
               color: t.colors.textMuted,
             },
-          },
-          // Mobile-only
-          "@container(max-width: 580px)": {
-            "[data-desktop-only]": {
-              display: "none",
-            },
-          },
-          // Desktop-only
-          "@container(min-width: 580px)": {
-            "[data-mobile-only]": {
-              display: "none",
-            },
-            "[data-group] li + li": { marginTop: "0.4rem" },
           },
           // Hover enhancement
           "@media(hover: hover)": {
@@ -1161,7 +1097,7 @@ const TruncatedActivityFeed = ({ items }) => {
   );
 };
 
-const FeedSidebar = React.memo(({ visible }) => {
+const Feed = React.memo(() => {
   const [filter, setFilter] = useCachedState(
     "browse-screen:activity-filter",
     "all",
@@ -1170,22 +1106,16 @@ const FeedSidebar = React.memo(({ visible }) => {
 
   return (
     <div
-      css={css({
-        transition: "0.2s ease-out opacity",
-        padding: "1rem 0 3.2rem",
-        "@media (min-width: 600px)": {
-          padding: "6rem 0 8rem",
-        },
-      })}
-      style={{ opacity: visible && feedItems.length > 0 ? 1 : 0 }}
+      css={css({ transition: "0.2s ease-out opacity" })}
+      style={{ opacity: feedItems.length > 0 ? 1 : 0 }}
     >
       <React.Suspense fallback={null}>
         <div
           css={css({
-            height: "4.05rem",
+            // height: "4.05rem",
             display: "flex",
             alignItems: "center",
-            justifyContent: "flex-end",
+            // justifyContent: "flex-end",
             margin: "0 0 2rem",
           })}
         >
@@ -1353,7 +1283,6 @@ const ProposalItem = React.memo(({ proposalId }) => {
           </div>
           <div
             data-small
-            data-mobile-only
             css={css({
               marginTop: "0.3rem",
               display: "flex",
@@ -1370,37 +1299,6 @@ const ProposalItem = React.memo(({ proposalId }) => {
               </div>
             )}
           </div>
-          {showVoteStatus && statusText != null && (
-            <div
-              data-small
-              data-desktop-only
-              css={css({ marginTop: "0.2rem" })}
-            >
-              {statusText}
-            </div>
-          )}
-        </div>
-        <div
-          data-desktop-only
-          css={css({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-end",
-            gap: "1.2rem",
-            textAlign: "right",
-          })}
-        >
-          {showVoteStatus ? (
-            <ProposalVotesTag proposalId={proposalId} />
-          ) : (
-            <span data-small data-nowrap>
-              {statusText}
-            </span>
-          )}
-          <ProposalStateTag
-            proposalId={proposalId}
-            style={{ minWidth: "7.6rem" }}
-          />
         </div>
       </div>
     </>
@@ -1524,12 +1422,12 @@ export const VotesTagGroup = React.memo(
             lineHeight: 1.2,
             color: t.colors.textDimmed,
             borderRadius: "0.2rem",
-            "@media(min-width: 600px)": {
-              fontSize: t.text.sizes.tiny,
-            },
+            // "@media(min-width: 600px)": {
+            //   fontSize: t.text.sizes.tiny,
+            // },
             "& > *": {
               display: "flex",
-              padding: "0.3rem 0.5rem",
+              padding: "0.3em 0.5em",
               background: t.colors.backgroundModifierNormal,
               minWidth: "1.86rem",
               justifyContent: "center",
@@ -2040,7 +1938,7 @@ const DraftTabContent = ({ items = [] }) => {
         {
           title: "Drafts",
           description:
-            "Drafts are stored in your browser, and can’t be seen by anyone else",
+            "Drafts are stored in your browser, not accessible to others",
           items,
         },
       ]}
@@ -2061,7 +1959,7 @@ const Pagination = ({ showNext, showAll }) => (
     <Button size="small" onClick={showNext}>
       Show more
     </Button>
-    <div style={{ marginTop: "1.6rem" }}>
+    <div style={{ marginTop: "1.2rem" }}>
       <Link
         size="small"
         component="button"

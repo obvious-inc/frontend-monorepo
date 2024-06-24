@@ -569,12 +569,12 @@ export const MainContentContainer = ({
         width: "var(--width)",
         padding: "0 4rem",
       },
-      "@media (min-width: 996px)": {
-        padding: "0 6rem",
+      "@media (min-width: 1152px)": {
+        padding: "0 8rem",
       },
     })}
     style={{
-      "--width": narrow ? "92rem" : "132rem",
+      "--width": narrow ? "92rem" : "134rem",
     }}
     {...props}
   >
@@ -584,10 +584,10 @@ export const MainContentContainer = ({
       <div
         css={(t) =>
           css({
-            "@media (min-width: 996px)": {
+            "@media (min-width: 1152px)": {
               display: "grid",
               gridTemplateColumns: `minmax(0, 1fr) ${t.sidebarWidth} `,
-              gridGap: "8rem",
+              gridGap: "10rem",
               "[data-sidebar-content]": {
                 position: "sticky",
                 top: 0,

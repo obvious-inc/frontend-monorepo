@@ -72,7 +72,7 @@ const useTheme = () => {
 
     return {
       ...theme,
-      sidebarWidth: "38rem",
+      sidebarWidth: "43rem",
       navBarHeight: "4.7rem",
     };
   }, [themePreference, systemPrefersDarkColorScheme]);

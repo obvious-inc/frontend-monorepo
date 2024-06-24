@@ -14,13 +14,13 @@ const Tag = ({ variant, size = "normal", active, ...props }) => (
         fontSize: t.text.sizes.micro,
         fontWeight: t.text.weights.smallTextEmphasis,
         textTransform: "uppercase",
-        padding: "0.1rem 0.3rem",
+        padding: "0.1em 0.3em",
         borderRadius: "0.2rem",
         lineHeight: 1.2,
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
-        '&[data-size="large"]': { padding: "0.3rem 0.5rem" },
+        '&[data-size="large"]': { padding: "0.3em 0.5em" },
         '&[data-variant="active"]': {
           color: t.colors.textPrimary,
           background: t.colors.textPrimaryBackgroundLight,
@@ -41,7 +41,9 @@ const Tag = ({ variant, size = "normal", active, ...props }) => (
           boxShadow: t.shadows.focusSmall,
         },
         "@media(min-width: 600px)": {
-          fontSize: t.text.sizes.tiny,
+          '&[data-size="large"])': {
+            fontSize: t.text.sizes.tiny,
+          },
         },
       })
     }
