@@ -35,6 +35,7 @@ import AddressInput from "./address-input.js";
 import { formatAbiParameter } from "abitype";
 import { useTotalSupply } from "../hooks/token-contract.js";
 import NounAvatar from "./noun-avatar.js";
+import { subgraphFetch } from "../nouns-subgraph.js";
 
 const decimalsByCurrency = {
   eth: 18,
@@ -247,6 +248,25 @@ const createSignature = (functionAbiItem) => {
   const formattedInputs =
     functionAbiItem.inputs?.map((p) => formatAbiParameter(p)) ?? [];
   return `${functionAbiItem.name}(${formattedInputs.join(",")})`;
+};
+
+const useNounIdsByOwner = ({ owner } = {}) => {
+  const [nouns, setNouns] = React.useState(null);
+
+  useFetch(async () => {
+    const query = `{
+      nouns(first: 1000, where: { owner: "${owner.toLowerCase()}" }) {
+        id
+      }
+    }`;
+    const { nouns } = await subgraphFetch({ query });
+    const nounIds = nouns.map((n) => n.id);
+    setNouns(nounIds);
+  }, [owner]);
+
+  if (!owner) return [];
+
+  return nouns;
 };
 
 const StreamingPaymentActionForm = ({ state, setState }) => {
@@ -816,15 +836,25 @@ const formConfigByActionType = {
       const receiverAddress = isAddress(receiverQuery)
         ? receiverQuery
         : ensAddress ?? "";
+      const { address: treasuryAddress } =
+        getContractWithIdentifier("executor");
       const totalSupply = useTotalSupply();
       const maxNounId = totalSupply ? totalSupply - 2 : 0;
-      // todo: check available nouns in treasury
-      return { ...state, receiverAddress, maxNounId };
+      const treasuryNouns = useNounIdsByOwner({ owner: treasuryAddress });
+      return {
+        ...state,
+        receiverAddress,
+        treasuryAddress,
+        maxNounId,
+        treasuryNouns,
+      };
     },
     hasRequiredInputs: ({ state }) =>
       state.nounId != null &&
       state.receiverAddress != null &&
-      isAddress(state.receiverAddress),
+      isAddress(state.receiverAddress) &&
+      state.treasuryNouns != null &&
+      state.treasuryNouns.includes(state.nounId),
     buildAction: ({ state }) => ({
       type: "treasury-noun-transfer",
       target: state.receiverAddress,
@@ -863,6 +893,36 @@ const formConfigByActionType = {
                 placeholder="0"
               />
               <NounAvatar id={state.nounId} size="6rem" />
+            </div>
+            <div
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color:
+                    state.nounId &&
+                    state.receiverAddress &&
+                    state.treasuryNouns &&
+                    !state.treasuryNouns.includes(state.nounId)
+                      ? t.colors.textHighlight
+                      : t.colors.textDimmed,
+                  marginTop: "0.7rem",
+                  a: {
+                    color: "inherit",
+                    textDecoration: "underline",
+                  },
+                  "p + p": { marginTop: "0.7em" },
+                })
+              }
+            >
+              Check the{" "}
+              <a
+                href={`/voters/${state.treasuryAddress}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Treasury
+              </a>{" "}
+              for a list of available nouns.
             </div>
           </div>
 
