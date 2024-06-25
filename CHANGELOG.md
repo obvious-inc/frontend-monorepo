@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.39] - 2024-06-25
+
+### 🚀 Features
+
+- *(proposal-votes-dialog)* Add proposal fetch function
+- *(browse-screen)* Add vote overview dialog
+
+### 🚜 Refactor
+
+- *(dao-contract)* Comment out unused variables and arguments
+
 ## [1.1.0-beta.38] - 2024-06-25
 
 ### 🚀 Features
