@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.38] - 2024-06-25
+
+### 🚀 Features
+
+- Migrate updates from upstream (#377)
+
+### ⚙️ Miscellaneous Tasks
+
+- Add log to fetch Etherscan request URL
+- Add console log to contract-info route
+
+### ◀️ Revert
+
+- Add console log to contract-info route
+- Add log to fetch Etherscan request URL
+
 ## [1.1.0-beta.37] - 2024-06-22
 
 ### 🐛 Bug Fixes
