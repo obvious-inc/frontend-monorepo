@@ -915,15 +915,15 @@ const formConfigByActionType = {
                 })
               }
             >
-              Check the{" "}
+              See list of Nouns available in the{" "}
               <a
                 href={`/voters/${state.treasuryAddress}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                Treasury
-              </a>{" "}
-              for a list of available nouns.
+                treasury
+              </a>
+              .
             </div>
           </div>
 
