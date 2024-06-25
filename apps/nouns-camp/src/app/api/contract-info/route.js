@@ -20,7 +20,6 @@ const getEtherscanEndpointUrl = (chainId) => {
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
   const url = getEtherscanEndpointUrl(CHAIN_ID);
-  console.log(url);
   return new Request(`${url}&${searchParams}`);
 };
 
