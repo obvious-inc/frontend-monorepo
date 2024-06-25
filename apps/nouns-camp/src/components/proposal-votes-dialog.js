@@ -7,7 +7,11 @@ import Switch from "@shades/ui-web/switch";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
-import { useProposal, useProposalCandidate } from "../store.js";
+import {
+  useProposal,
+  useProposalCandidate,
+  useProposalFetch,
+} from "../store.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { createRepostExtractor } from "../utils/votes-and-feedbacks.js";
 import {
@@ -66,6 +70,8 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
   }, [proposal, candidate]);
 
   useScrollToHash({ behavior: "smooth" });
+
+  useProposalFetch(proposalId);
 
   if (proposal == null) return null;
 
@@ -282,10 +288,14 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
         title="Vote overview"
         titleProps={titleProps}
         subtitle={(() => {
+          if (quorumParams == null || proposal.adjustedTotalSupply == null)
+            return <>&nbsp;</>;
+
           const maxQuorumVotes = Math.floor(
             (proposal.adjustedTotalSupply * quorumParams.maxQuorumVotesBPS) /
               10000,
           );
+
           return (
             <>
               {proposal.forVotes +
