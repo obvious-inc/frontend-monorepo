@@ -184,7 +184,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
         },
       ],
       functionName: "createProposalCandidate",
-      value: votingPower > 0 ? 0 : createCost,
+      value: votingPower > 0 || targetProposalId > 0 ? 0 : createCost,
       args: [
         targets,
         values,
