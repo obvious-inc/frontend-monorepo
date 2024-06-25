@@ -272,6 +272,7 @@ export const useCastProposalVote = (
           { type: "uint256" },
           { type: "uint8" },
           { type: "string" },
+          // { type: "uint32" },
         ],
         name: "castRefundableVoteWithReason",
         outputs: [],
@@ -279,7 +280,7 @@ export const useCastProposalVote = (
       },
     ],
     functionName: "castRefundableVoteWithReason",
-    args: [Number(proposalId), support, reason],
+    args: [Number(proposalId), support, reason/*, CAMP_CLIENT_ID*/],
     enabled: enabled && support != null && hasReason,
   });
 
@@ -347,6 +348,7 @@ export const useCreateProposal = () => {
             { name: "signatures", type: "string[]" },
             { name: "calldatas", type: "bytes[]" },
             { name: "description", type: "string" },
+            // { name: "clientId", type: "uint32" },
           ],
           name: "propose",
           outputs: [{ type: "uint256" }],
@@ -360,6 +362,7 @@ export const useCreateProposal = () => {
         signatures,
         calldatas,
         description,
+        // CAMP_CLIENT_ID,
       ],
     });
     registerEvent("Proposal successfully created", {
@@ -378,6 +381,7 @@ export const useCreateProposal = () => {
             { name: "updatePeriodEndBlock", type: "uint256" },
             { name: "proposalThreshold", type: "uint256" },
             { name: "quorumVotes", type: "uint256" },
+            // { indexed: true, name: "clientId", type: "uint32" },
           ],
           name: "ProposalCreatedWithRequirements",
           type: "event",
@@ -422,6 +426,7 @@ export const useCreateProposalWithSignatures = () => {
             { name: "signatures", type: "string[]" },
             { name: "calldatas", type: "bytes[]" },
             { name: "description", type: "string" },
+            // { name: "clientId", type: "uint32" },
           ],
           name: "proposeBySigs",
           outputs: [{ type: "uint256" }],
@@ -454,10 +459,11 @@ export const useCreateProposalWithSignatures = () => {
             {
               inputs: [
                 { name: "id", type: "uint256" },
-                { name: "signers", type: "address[]" },
-                { name: "updatePeriodEndBlock", type: "uint256" },
+                // { name: "signers", type: "address[]" },
+                // { name: "updatePeriodEndBlock", type: "uint256" },
                 { name: "proposalThreshold", type: "uint256" },
                 { name: "quorumVotes", type: "uint256" },
+                // { indexed: true, name: "clientId", type: "uint32" },
               ],
               name: "ProposalCreatedWithRequirements",
               type: "event",
