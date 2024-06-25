@@ -872,7 +872,8 @@ const formConfigByActionType = {
               style={{
                 display: "grid",
                 gridTemplateColumns: "minmax(0,1fr) auto",
-                gap: "2rem",
+                gap: "1rem",
+                alignItems: "center",
               }}
             >
               <Input
@@ -892,7 +893,7 @@ const formConfigByActionType = {
                 }}
                 placeholder="0"
               />
-              <NounAvatar id={state.nounId} size="6rem" />
+              <NounAvatar id={state.nounId} size="3.5rem" />
             </div>
             <div
               css={(t) =>
