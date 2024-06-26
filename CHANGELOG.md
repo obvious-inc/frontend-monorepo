@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.41] - 2024-06-26
+
+### 🚀 Features
+
+- Migrate updates from upstream (#382)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(nouns-camp)* Ignore local environment files
+
 ## [1.1.0-beta.40] - 2024-06-26
 
 ### ⚙️ Miscellaneous Tasks
