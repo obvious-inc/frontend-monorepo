@@ -377,8 +377,8 @@ export const useCreateProposal = () => {
         {
           inputs: [
             { name: "id", type: "uint256" },
-            { name: "signers", type: "address[]" },
-            { name: "updatePeriodEndBlock", type: "uint256" },
+            // { name: "signers", type: "address[]" },
+            // { name: "updatePeriodEndBlock", type: "uint256" },
             { name: "proposalThreshold", type: "uint256" },
             { name: "quorumVotes", type: "uint256" },
             // { indexed: true, name: "clientId", type: "uint32" },
