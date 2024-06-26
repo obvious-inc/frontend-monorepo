@@ -2,7 +2,7 @@ import React from "react";
 import NextLink from "next/link";
 import { formatEther, parseUnits } from "viem";
 import { css, useTheme } from "@emotion/react";
-import { useFetch, useLatestCallback } from "@shades/common/react";
+import { /*useFetch,*/ useLatestCallback } from "@shades/common/react";
 import {
   message as messageUtils,
   function as functionUtils,
@@ -23,11 +23,11 @@ import {
   useProposalThreshold,
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
-import { useActions, useAccountProposalCandidates } from "../store.js";
+import { useActions/*, useAccountProposalCandidates*/ } from "../store.js";
 import { useNavigate, useSearchParams } from "../hooks/navigation.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import {
-  useCreateProposalCandidate,
+  // useCreateProposalCandidate,
   useProposalCandidateCreateCost,
 } from "../hooks/data-contract.js";
 import { useCurrentVotes } from "../hooks/token-contract.js";
@@ -57,31 +57,31 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
 
   const {
     fetchProposal,
-    fetchProposalCandidate,
-    fetchProposalCandidatesByAccount,
+    // fetchProposalCandidate,
+    // fetchProposalCandidatesByAccount,
   } = useActions();
 
-  useFetch(
-    () => fetchProposalCandidatesByAccount(connectedAccountAddress),
-    [connectedAccountAddress],
-  );
+  // useFetch(
+  //   () => fetchProposalCandidatesByAccount(connectedAccountAddress),
+  //   [connectedAccountAddress],
+  // );
 
-  const accountProposalCandidates = useAccountProposalCandidates(
-    connectedAccountAddress,
-  );
+  // const accountProposalCandidates = useAccountProposalCandidates(
+  //   connectedAccountAddress,
+  // );
 
-  const isTitleEmpty = draft.name.trim() === "";
-  const isBodyEmpty =
-    typeof draft.body === "string"
-      ? draft.body.trim() === ""
-      : draft.body.every(isRichTextEditorNodeEmpty);
+  // const isTitleEmpty = draft.name.trim() === "";
+  // const isBodyEmpty =
+  //   typeof draft.body === "string"
+  //     ? draft.body.trim() === ""
+  //     : draft.body.every(isRichTextEditorNodeEmpty);
 
-  const hasRequiredInput =
-    !isTitleEmpty && !isBodyEmpty && draft.actions.length > 0;
+  // const hasRequiredInput =
+  //   !isTitleEmpty && !isBodyEmpty && draft.actions.length > 0;
 
-  const createCandidate = useCreateProposalCandidate({
-    enabled: hasRequiredInput && submitTargetType === "candidate",
-  });
+  // const createCandidate = useCreateProposalCandidate({
+  //   enabled: hasRequiredInput && submitTargetType === "candidate",
+  // });
 
   const createProposal = useCreateProposal();
 
@@ -99,16 +99,16 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
 
   const submit = async () => {
-    const buildCandidateSlug = (title) => {
-      const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
-      let index = 0;
-      while (slugifiedTitle) {
-        const slug = [slugifiedTitle, index].filter(Boolean).join("-");
-        if (accountProposalCandidates.find((c) => c.slug === slug) == null)
-          return slug;
-        index += 1;
-      }
-    };
+    // const buildCandidateSlug = (title) => {
+    //   const slugifiedTitle = title.toLowerCase().replace(/\s+/g, "-");
+    //   let index = 0;
+    //   while (slugifiedTitle) {
+    //     const slug = [slugifiedTitle, index].filter(Boolean).join("-");
+    //     if (accountProposalCandidates.find((c) => c.slug === slug) == null)
+    //       return slug;
+    //     index += 1;
+    //   }
+    // };
 
     try {
       const bodyMarkdown =
@@ -142,14 +142,14 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
           switch (submitTargetType) {
             case "proposal":
               return createProposal({ description, transactions });
-            case "candidate": {
-              const slug = buildCandidateSlug(draft.name.trim());
-              return createCandidate({
-                slug,
-                description,
-                transactions,
-              });
-            }
+            // case "candidate": {
+            //   const slug = buildCandidateSlug(draft.name.trim());
+            //   return createCandidate({
+            //     slug,
+            //     description,
+            //     transactions,
+            //   });
+            // }
           }
         })
         .then(
@@ -168,24 +168,24 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
                   break;
                 }
 
-                case "candidate": {
-                  const candidateId = [
-                    connectedAccountAddress.toLowerCase(),
-                    res.slug,
-                  ].join("-");
-
-                  await functionUtils.retryAsync(
-                    () => fetchProposalCandidate(candidateId),
-                    { retries: 100 },
-                  );
-
-                  startNavigationTransition(() => {
-                    navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
-                      replace: true,
-                    });
-                  });
-                  break;
-                }
+                // case "candidate": {
+                //   const candidateId = [
+                //     connectedAccountAddress.toLowerCase(),
+                //     res.slug,
+                //   ].join("-");
+                //
+                //   await functionUtils.retryAsync(
+                //     () => fetchProposalCandidate(candidateId),
+                //     { retries: 100 },
+                //   );
+                //
+                //   startNavigationTransition(() => {
+                //     navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
+                //       replace: true,
+                //     });
+                //   });
+                //   break;
+                // }
               }
             } finally {
               deleteDraft(draftId);
