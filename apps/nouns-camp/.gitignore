@@ -5,3 +5,6 @@ public/service-worker.js.map
 # Sentry Config File
 .sentryclirc
 .vercel
+
+# local env files
+.env*.local
