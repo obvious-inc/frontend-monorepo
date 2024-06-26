@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.42] - 2024-06-26
+
+### 🚀 Features
+
+- *(token-contract)* Add `useTotalSupply` hook
+
+### 🐛 Bug Fixes
+
+- *(dao-contract)* Update `ProposalCreatedWithRequirements` event inputs
+
+### 🚜 Refactor
+
+- Comment out `signers` and `updatePeriodEndBlock` from dao contract inputs
+- *(dao-contract)* Replace `adjustedTotalSupply` function with `useTotalSupply` hook
+- *(propose-screen)* Disable proposal candidate functionality
+
 ## [1.1.0-beta.41] - 2024-06-26
 
 ### 🚀 Features
