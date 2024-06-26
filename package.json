@@ -1,17 +1,16 @@
 {
-  "version": "1.1.0-beta.39",
+  "version": "1.1.0-beta.40",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "preinstall": "npx -y only-allow pnpm",
-    "predev": "pnpm run build",
-    "dev": "pnpm -r run --if-present dev",
+    "dev": "pnpm run --recursive --parallel --if-present dev",
     "prestart": "pnpm run build",
-    "start": "pnpm -r run --if-present start",
+    "start": "pnpm run --recursive --parallel --if-present start",
     "build": "turbo build --filter='./packages/*'",
-    "postbuild": "cd apps/nouns-camp && pnpx @cloudflare/next-on-pages",
+    "postbuild": "[ \"$CF_PAGES\" ] && cd apps/nouns-camp && pnpx @cloudflare/next-on-pages || true",
     "lint": "turbo lint",
-    "format": "pnpm -r run --if-present format",
-    "test": "pnpm -r run --if-present test"
+    "format": "pnpm run --recursive --if-present format",
+    "test": "pnpm run --recursive --if-present test"
   },
   "resolutions": {
     "@babel/traverse": ">=7.23.2",

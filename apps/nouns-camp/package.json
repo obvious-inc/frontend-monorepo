@@ -3,24 +3,25 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "pnpm wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
+    "prestart": "pnpx @cloudflare/next-on-pages",
+    "start": "wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
     "format": "prettier . --write",
     "lint": "next lint && prettier . --check"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "1.11.3",
+    "@cloudflare/next-on-pages": "1.12.0",
     "dotenv": "16.4.5",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.4",
     "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-next-on-pages": "1.11.3",
-    "vercel": "34.2.7",
-    "wrangler": "3.61.0"
+    "eslint-plugin-next-on-pages": "1.12.0",
+    "vercel": "34.2.8",
+    "wrangler": "3.62.0"
   },
   "dependencies": {
     "@emotion/cache": "11.11.0",
     "@emotion/react": "11.11.4",
-    "@farcaster/core": "0.14.16",
+    "@farcaster/core": "0.14.17",
     "@lilnounsdao/assets": "0.5.15",
     "@lilnounsdao/contracts": "0.3.5",
     "@lilnounsdao/sdk": "0.3.15",
@@ -44,7 +45,7 @@
     "diff": "5.2.0",
     "is-hotkey": "0.2.0",
     "lodash.throttle": "4.1.1",
-    "marked": "13.0.0",
+    "marked": "13.0.1",
     "next": "14.2.4",
     "react": "18.3.1",
     "react-aria": "3.33.1",
@@ -53,11 +54,11 @@
     "react-stately": "3.31.1",
     "slate": "0.103.0",
     "slate-history": "0.100.0",
-    "slate-react": "0.105.0",
+    "slate-react": "0.106.0",
     "tinykeys": "2.1.0",
     "use-debounce": "10.0.1",
-    "viem": "2.16.1",
-    "wagmi": "2.10.4",
-    "zustand": "4.5.2"
+    "viem": "2.16.2",
+    "wagmi": "2.10.7",
+    "zustand": "4.5.3"
   }
 }
