@@ -5,7 +5,7 @@
     "preinstall": "npx -y only-allow pnpm",
     "dev": "pnpm run --recursive --parallel --if-present dev",
     "prestart": "pnpm run build",
-    "start": "pnpm run --recursive --if-present start",
+    "start": "pnpm run --recursive --parallel --if-present start",
     "build": "turbo build --filter='./packages/*'",
     "postbuild": "[ \"$CF_PAGES\" ] && cd apps/nouns-camp && pnpx @cloudflare/next-on-pages || true",
     "lint": "turbo lint",

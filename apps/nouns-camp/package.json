@@ -3,7 +3,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "pnpm wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
+    "prestart": "pnpx @cloudflare/next-on-pages",
+    "start": "wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
     "format": "prettier . --write",
     "lint": "next lint && prettier . --check"
   },
