@@ -234,7 +234,12 @@ const useShallowMergeState = (initialState) => {
 };
 
 const isFunctionAbiItem = (item) => {
-  if (item.type !== "function" || item.inputs == null || item.name == null)
+  if (
+    item.type !== "function" ||
+    !Array.isArray(item.inputs) ||
+    typeof item.name !== "string" ||
+    item.name.trim() === ""
+  )
     return false;
   if (item.stateMutability != null)
     return ["payable", "nonpayable"].includes(item.stateMutability);
