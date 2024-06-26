@@ -377,11 +377,16 @@ export const useCreateProposal = () => {
         {
           inputs: [
             { name: "id", type: "uint256" },
-            // { name: "signers", type: "address[]" },
-            // { name: "updatePeriodEndBlock", type: "uint256" },
+            { name: "proposer", type: "address" },
+            { name: "targets", type: "address[]" },
+            { name: "values", type: "uint256[]" },
+            { name: "signatures", type: "string[]" },
+            { name: "calldatas", type: "bytes[]" },
+            { name: "startBlock", type: "uint256" },
+            { name: "endBlock", type: "uint256" },
             { name: "proposalThreshold", type: "uint256" },
             { name: "quorumVotes", type: "uint256" },
-            // { indexed: true, name: "clientId", type: "uint32" },
+            { name: "description", type: "string" }
           ],
           name: "ProposalCreatedWithRequirements",
           type: "event",
