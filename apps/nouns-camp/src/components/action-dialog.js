@@ -595,7 +595,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
             })}
           >
             <Label htmlFor="custom-abi">ABI</Label>
-            {!fetchedAbi != null && (
+            {fetchedAbi != null && (
               <Link
                 component="button"
                 type="button"
