@@ -58,6 +58,7 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 import ProposalActionForm from "./proposal-action-form.js";
+import { useProposalSimulation } from "../hooks/simulation.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -98,6 +99,13 @@ const ProposalMainSection = ({
 
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
+
+  const proposalSimulations = useProposalSimulation({
+    proposalId: proposal.id,
+    enabled: proposal?.state && !isFinalProposalState(proposal.state),
+    version: proposal.lastUpdatedBlock - proposal.createdBlock,
+  });
+  const simulationError = proposalSimulations?.results?.some((s) => !s.success);
 
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
@@ -661,7 +669,10 @@ const ProposalMainSection = ({
                   <Tabs.Item key="transactions" title="Transactions">
                     <div style={{ paddingTop: "3.2rem" }}>
                       {proposal.transactions != null && (
-                        <TransactionList transactions={proposal.transactions} />
+                        <TransactionList
+                          transactions={proposal.transactions}
+                          simulations={proposalSimulations?.results}
+                        />
                       )}
                     </div>
                   </Tabs.Item>
@@ -678,6 +689,25 @@ const ProposalMainSection = ({
               },
             })}
           >
+            {simulationError && (
+              <Callout
+                compact
+                variant="info"
+                css={() =>
+                  css({
+                    marginBottom: "4.8rem",
+                  })
+                }
+              >
+                <p>This proposal will fail to execute.</p>
+
+                <p>
+                  One or more transactions failed to simulate. Check the
+                  transactions tab for more details.
+                </p>
+              </Callout>
+            )}
+
             {/* Display state callout for "important" states on mobile */}
             {!isDesktopLayout &&
               ["active", "objection-period", "succeeded", "queued"].includes(
@@ -790,7 +820,10 @@ const ProposalMainSection = ({
                       }}
                     >
                       {proposal.transactions != null && (
-                        <TransactionList transactions={proposal.transactions} />
+                        <TransactionList
+                          transactions={proposal.transactions}
+                          simulations={proposalSimulations?.results}
+                        />
                       )}
                     </div>
                   </Tabs.Item>

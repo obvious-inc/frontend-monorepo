@@ -64,7 +64,7 @@ export const useEnhancedParsedTransaction = (transaction) => {
   };
 };
 
-const TransactionList = ({ transactions }) => (
+const TransactionList = ({ transactions, simulations }) => (
   <ol
     data-count={transactions.length}
     css={(t) =>
@@ -89,13 +89,13 @@ const TransactionList = ({ transactions }) => (
   >
     {transactions.map((t, i) => (
       <li key={i}>
-        <ListItem transaction={t} />
+        <ListItem transaction={t} simulation={simulations?.[i]} />
       </li>
     ))}
   </ol>
 );
 
-const ListItem = ({ transaction }) => {
+const ListItem = ({ transaction, simulation }) => {
   const daoPayerContract = useContract("payer");
   const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
@@ -113,12 +113,18 @@ const ListItem = ({ transaction }) => {
             inputs={t.functionInputs}
             inputTypes={t.functionInputTypes}
             value={t.value}
+            simulation={simulation}
           />
         );
 
       case "unparsed-function-call":
       case "unparsed-payable-function-call":
-        return <UnparsedFunctionCallCodeBlock transaction={t} />;
+        return (
+          <UnparsedFunctionCallCodeBlock
+            transaction={t}
+            simulation={simulation}
+          />
+        );
 
       case "transfer":
       case "usdc-approval":
@@ -251,12 +257,18 @@ const ListItem = ({ transaction }) => {
             inputs={t.functionInputs}
             inputTypes={t.functionInputTypes}
             value={t.value}
+            simulation={simulation}
           />
         );
 
       case "transfer":
       case "payer-top-up":
-        return <UnparsedFunctionCallCodeBlock transaction={t} />;
+        return (
+          <UnparsedFunctionCallCodeBlock
+            transaction={t}
+            simulation={simulation}
+          />
+        );
 
       case "unparsed-function-call":
       case "proxied-function-call":

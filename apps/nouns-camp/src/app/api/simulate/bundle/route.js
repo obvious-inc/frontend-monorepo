@@ -1,10 +1,10 @@
-import { CHAIN_ID } from "../../../constants/env.js";
-import { resolveIdentifier } from "../../../contracts.js";
+import { CHAIN_ID } from "../../../../constants/env";
+import { resolveIdentifier } from "../../../../contracts";
 import {
   TENDERLY_API_ENDPOINT,
   TENDERLY_SIMULATION_OPTIONS,
   shareSimulations,
-} from "../tenderly-utils.js";
+} from "../../tenderly-utils";
 
 export async function POST(request) {
   const { address: executorAddress } = resolveIdentifier("executor");

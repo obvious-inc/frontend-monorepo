@@ -1,3 +1,4 @@
+import { decodeAbiParameters, encodeFunctionData, parseAbiItem } from "viem";
 import { reportError } from "../../utils/monitoring.js";
 
 export const TENDERLY_API_ENDPOINT = `https://api.tenderly.co/api/v1/account/me/project/${process.env.TENDERLY_PROJECT_SLUG}`;
@@ -37,4 +38,35 @@ export const shareSimulations = async (simulations) => {
   for (const simulation of simulations) {
     await shareSimulation(simulation);
   }
+};
+
+export const parseProposalAction = ({ target, value, signature, calldata }) => {
+  if (signature === "") {
+    return {
+      to: target,
+      input: calldata,
+      value,
+    };
+  }
+
+  const { name, inputs } = parseAbiItem(`function ${signature}`);
+  const args = decodeAbiParameters(inputs, calldata);
+
+  const encodedData = encodeFunctionData({
+    abi: [
+      {
+        inputs: inputs,
+        name: name,
+        type: "function",
+      },
+    ],
+    functionName: name,
+    args: args,
+  });
+
+  return {
+    to: target,
+    value: value || "0",
+    input: encodedData,
+  };
 };

@@ -44,7 +44,7 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
-import { useBundleActionsSimulation } from "../hooks/simulation.js";
+import { useProposalSimulation } from "../hooks/simulation.js";
 
 const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
@@ -125,9 +125,12 @@ const ProposalEditor = ({
   );
 
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
-  const actionsSimulations = useBundleActionsSimulation(
-    actionsIncludingPayerTopUp,
-  );
+
+  // this is the same as simulating a proposal
+  const actionsSimulations = useProposalSimulation({
+    actions: actionsIncludingPayerTopUp,
+    enabled: true,
+  });
 
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
