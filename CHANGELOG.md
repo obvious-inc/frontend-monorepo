@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.40] - 2024-06-26
+
+### ⚙️ Miscellaneous Tasks
+
+- *(scripts)* Adjust pnpm commands for parallel execution
+- *(nouns-camp)* Update start scripts for better compatibility
+
 ## [1.1.0-beta.39] - 2024-06-25
 
 ### 🚀 Features
