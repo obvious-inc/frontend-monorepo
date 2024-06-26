@@ -80,3 +80,7 @@ export const getStateLabel = (state) => {
       throw new Error(`Unknown state "${state}"`);
   }
 };
+
+export const getLatestVersionBlock = (proposal) => {
+  return proposal.versions?.[0].createdBlock;
+};

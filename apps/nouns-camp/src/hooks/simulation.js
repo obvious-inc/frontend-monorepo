@@ -103,6 +103,12 @@ export const useProposalSimulation = ({
       }
 
       setSimulationResults(null);
+
+      if (!version) {
+        setSimulationResults(null);
+        return;
+      }
+
       const res = await fetch(
         `/api/simulate/proposal/${proposalId}?version=${version}`,
       );

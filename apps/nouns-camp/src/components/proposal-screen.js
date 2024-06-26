@@ -21,6 +21,7 @@ import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
+  getLatestVersionBlock,
 } from "../utils/proposals.js";
 import {
   useProposal,
@@ -103,7 +104,7 @@ const ProposalMainSection = ({
   const proposalSimulations = useProposalSimulation({
     proposalId: proposal.id,
     enabled: proposal?.state && !isFinalProposalState(proposal.state),
-    version: proposal.lastUpdatedBlock - proposal.createdBlock,
+    version: getLatestVersionBlock(proposal),
   });
   const simulationError = proposalSimulations?.results?.some((s) => !s.success);
 

@@ -824,6 +824,9 @@ const createStore = ({ initialState, publicClient }) =>
                 createdAt
                 createdBlock
                 updateMessage
+                proposal {
+                  id
+                }
               }
               proposalCandidateVersions(
                 where: {
@@ -858,6 +861,7 @@ const createStore = ({ initialState, publicClient }) =>
           set((storeState) =>
             mergeSubgraphEntitiesIntoStore(storeState, {
               proposals: proposalsWithTimestamps,
+              proposalVersions: data.proposalVersions,
             }),
           );
         })();
