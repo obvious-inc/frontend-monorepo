@@ -9,7 +9,7 @@ import useBlockNumber from "./block-number.js";
 import usePublicClient from "./public-client.js";
 import { useWallet } from "./wallet.js";
 import useRegisterEvent from "./register-event.js";
-import { useCurrentVotes } from "./token-contract.js";
+import { useCurrentVotes, useTotalSupply } from "./token-contract.js";
 
 const { address: contractAddress } = resolveIdentifier("dao");
 
@@ -117,17 +117,18 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
 
   const blockNumber = useBlockNumber({ watch: true, cache: 20_000 });
 
-  const { data: adjustedTotalSupply } = useRead({
-    abi: [
-      {
-        inputs: [],
-        name: "adjustedTotalSupply",
-        outputs: [{ type: "uint256" }],
-        type: "function",
-      },
-    ],
-    functionName: "adjustedTotalSupply",
-  });
+  const adjustedTotalSupply = useTotalSupply()
+  // const { data: adjustedTotalSupply } = useRead({
+  //   abi: [
+  //     {
+  //       inputs: [],
+  //       name: "adjustedTotalSupply",
+  //       outputs: [{ type: "uint256" }],
+  //       type: "function",
+  //     },
+  //   ],
+  //   functionName: "adjustedTotalSupply",
+  // });
   const quorumParams = useDynamicQuorumParamsAt(blockNumber);
 
   const { data, isSuccess } = useRead({
