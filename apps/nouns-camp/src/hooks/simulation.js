@@ -34,86 +34,41 @@ const fetchSimulationBundle = async ({
   return simulations;
 };
 
-export const useProposalSimulation = ({
-  proposalId,
-  version,
-  actions,
-  enabled,
-}) => {
-  const [isFetching, setIsFetching] = React.useState(false);
-  const [simulationResults, setSimulationResults] = React.useState(null);
-
-  const handleBundleSimulation = async ({ actions }) => {
-    const transactions = actions.map((action) => resolveAction(action));
-    setSimulationResults(
-      actions.map((_, i) => transactions[i].map(() => ({ fetching: true }))),
-    );
-
-    const flatTxs = transactions.flat();
-    const txs = unparse(flatTxs);
-    const sims = await fetchSimulationBundle(txs);
-
-    // if sims is not an array, then something went wrong
-    if (!Array.isArray(sims)) {
-      const reason =
-        "One or more transactions failed to simulate due to insufficient balance.";
-
-      const errorSim = {
-        success: false,
-        error: reason,
-      };
-
-      // set all sims to the error sim
-      setSimulationResults(
-        actions.map((_, i) => transactions[i].map(() => errorSim)),
-      );
-      return;
-    }
-
-    const returnSims = sims?.map((s) => {
-      return {
-        success: s?.status,
-        error: s?.error_message,
-        id: s?.id,
-      };
-    });
-
-    let lastSlicePos = 0;
-    const finalSims = actions.map((_, i) => {
-      const sliceStart = lastSlicePos;
-      lastSlicePos += transactions[i].length;
-      return returnSims.slice(sliceStart, lastSlicePos);
-    });
-
-    setSimulationResults(finalSims);
-  };
+export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
+  const [error, setError] = React.useState(null);
+  const [data, setData] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(null);
 
   const fetchData = React.useCallback(async () => {
     try {
       if (!enabled) {
-        setSimulationResults(null);
         return;
       }
 
       setIsFetching(true);
 
-      if (!proposalId) {
-        // if there's no proposal id, then we're simulating a draft
-        return handleBundleSimulation({ actions });
-      }
+      const transactions = actions.map((action) => resolveAction(action));
 
-      setSimulationResults(null);
+      const flatTxs = transactions.flat();
+      const txs = unparse(flatTxs);
+      const sims = await fetchSimulationBundle(txs);
 
-      if (!version) {
-        setSimulationResults(null);
+      // if sims is not an array, then something went wrong
+      if (!Array.isArray(sims)) {
+        const reason =
+          "One or more transactions failed to simulate due to insufficient balance.";
+
+        const errorSim = {
+          success: false,
+          error: reason,
+        };
+
+        // set all sims to the error sim
+        setData(actions.map((_, i) => transactions[i].map(() => errorSim)));
         return;
       }
 
-      const res = await fetch(
-        `/api/simulate/proposal/${proposalId}?version=${version}`,
-      );
-      const sims = await res.json();
-      const returnSims = sims.simulations?.map((s) => {
+      const returnSims = sims?.map((s) => {
         return {
           success: s?.status,
           error: s?.error_message,
@@ -121,25 +76,83 @@ export const useProposalSimulation = ({
         };
       });
 
-      setSimulationResults(returnSims);
+      let lastSlicePos = 0;
+      const finalSims = actions.map((_, i) => {
+        const sliceStart = lastSlicePos;
+        lastSlicePos += transactions[i].length;
+        return returnSims.slice(sliceStart, lastSlicePos);
+      });
+
+      setData(finalSims);
     } catch (e) {
       console.error(e);
-      setSimulationResults(null);
+      setError(e);
+      setData(null);
     } finally {
       setIsFetching(false);
     }
-  }, [proposalId, version, actions, enabled]);
+  }, [actions, enabled]);
 
   React.useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  return {
-    results: simulationResults?.map((s) => {
-      return {
-        fetching: isFetching,
-        ...s,
-      };
-    }),
-  };
+  return { data, error, isFetching };
+};
+
+export const useProposalSimulation = (
+  proposalId,
+  { version, enabled } = {},
+) => {
+  const [error, setError] = React.useState(null);
+  const [data, setData] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(null);
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      if (!enabled) {
+        return;
+      }
+
+      setIsFetching(true);
+
+      if (!version) {
+        // setSimulationResults(null);
+        return;
+      }
+
+      const res = await fetch(
+        `/api/simulate/proposal/${proposalId}?version=${version}`,
+      );
+      const data = await res.json();
+      const simulations = data?.simulations;
+
+      setData(
+        simulations?.map((s) => {
+          return {
+            success: s?.status,
+            error: s?.error_message,
+            id: s?.id,
+          };
+        }),
+      );
+
+      if (simulations.some((s) => !s.status)) {
+        // todo: handle other possible errors
+        setError("One or more transactions failed to simulate.");
+      }
+    } catch (e) {
+      console.error(e);
+      setError(e);
+      setData(null);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [proposalId, version, enabled]);
+
+  React.useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return { data, error, isFetching };
 };

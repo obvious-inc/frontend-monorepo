@@ -101,12 +101,14 @@ const ProposalMainSection = ({
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
 
-  const proposalSimulations = useProposalSimulation({
-    proposalId: proposal.id,
+  const {
+    data: simulationResults,
+    error: simulationError,
+    isFetching: simulationIsFetching,
+  } = useProposalSimulation(proposal?.id, {
     enabled: proposal?.state && !isFinalProposalState(proposal.state),
     version: getLatestVersionBlock(proposal),
   });
-  const simulationError = proposalSimulations?.results?.some((s) => !s.success);
 
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
@@ -671,8 +673,11 @@ const ProposalMainSection = ({
                     <div style={{ paddingTop: "3.2rem" }}>
                       {proposal.transactions != null && (
                         <TransactionList
-                          transactions={proposal.transactions}
-                          simulations={proposalSimulations?.results}
+                          transactions={proposal.transactions.map((t, i) => ({
+                            ...t,
+                            simulation: simulationResults?.[i],
+                          }))}
+                          isSimulationRunning={simulationIsFetching}
                         />
                       )}
                     </div>
@@ -822,8 +827,11 @@ const ProposalMainSection = ({
                     >
                       {proposal.transactions != null && (
                         <TransactionList
-                          transactions={proposal.transactions}
-                          simulations={proposalSimulations?.results}
+                          transactions={proposal.transactions.map((t, i) => ({
+                            ...t,
+                            simulation: simulationResults?.[i],
+                          }))}
+                          isSimulationRunning={simulationIsFetching}
                         />
                       )}
                     </div>

@@ -64,7 +64,7 @@ export const useEnhancedParsedTransaction = (transaction) => {
   };
 };
 
-const TransactionList = ({ transactions, simulations }) => (
+const TransactionList = ({ transactions, isSimulationRunning }) => (
   <ol
     data-count={transactions.length}
     css={(t) =>
@@ -89,13 +89,13 @@ const TransactionList = ({ transactions, simulations }) => (
   >
     {transactions.map((t, i) => (
       <li key={i}>
-        <ListItem transaction={t} simulation={simulations?.[i]} />
+        <ListItem transaction={t} isSimulationRunning={isSimulationRunning} />
       </li>
     ))}
   </ol>
 );
 
-const ListItem = ({ transaction, simulation }) => {
+const ListItem = ({ transaction, isSimulationRunning }) => {
   const daoPayerContract = useContract("payer");
   const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
@@ -113,7 +113,8 @@ const ListItem = ({ transaction, simulation }) => {
             inputs={t.functionInputs}
             inputTypes={t.functionInputTypes}
             value={t.value}
-            simulation={simulation}
+            simulation={t.simulation}
+            isSimulationRunning={isSimulationRunning}
           />
         );
 
@@ -122,7 +123,7 @@ const ListItem = ({ transaction, simulation }) => {
         return (
           <UnparsedFunctionCallCodeBlock
             transaction={t}
-            simulation={simulation}
+            isSimulationRunning={isSimulationRunning}
           />
         );
 
@@ -257,7 +258,8 @@ const ListItem = ({ transaction, simulation }) => {
             inputs={t.functionInputs}
             inputTypes={t.functionInputTypes}
             value={t.value}
-            simulation={simulation}
+            simulation={t.simulation}
+            isSimulationRunning={isSimulationRunning}
           />
         );
 
@@ -266,7 +268,7 @@ const ListItem = ({ transaction, simulation }) => {
         return (
           <UnparsedFunctionCallCodeBlock
             transaction={t}
-            simulation={simulation}
+            isSimulationRunning={isSimulationRunning}
           />
         );
 
@@ -351,7 +353,7 @@ const ListItem = ({ transaction, simulation }) => {
   );
 };
 
-const SimulationBadge = ({ simulation }) => {
+const SimulationBadge = ({ simulation, isSimulationRunning }) => {
   const SimulationIcon = () => {
     return simulation.error ? (
       <CrossCircleIcon
@@ -390,8 +392,8 @@ const SimulationBadge = ({ simulation }) => {
   };
 
   const renderContent = () => {
-    if (simulation.fetching) return <Spinner size="1.2rem" />;
-    if (simulation.error || simulation.success) return <SimulationStatus />;
+    if (isSimulationRunning) return <Spinner size="1.2rem" />;
+    if (simulation?.error || simulation?.success) return <SimulationStatus />;
     return null;
   };
 
@@ -409,6 +411,7 @@ export const FunctionCallCodeBlock = ({
   value,
   inputTypes,
   simulation,
+  isSimulationRunning,
 }) => (
   <Code block>
     <AddressDisplayNameWithTooltip address={target} data-identifier>
@@ -483,13 +486,16 @@ export const FunctionCallCodeBlock = ({
         </span>
       </>
     )}
-    {simulation && <SimulationBadge simulation={simulation} />}
+    <SimulationBadge
+      simulation={simulation}
+      isSimulationRunning={isSimulationRunning}
+    />
   </Code>
 );
 
 export const UnparsedFunctionCallCodeBlock = ({
   transaction: t,
-  simulation: s,
+  isSimulationRunning,
 }) => (
   <Code block>
     <span data-identifier>target</span>:{" "}
@@ -523,7 +529,10 @@ export const UnparsedFunctionCallCodeBlock = ({
         </span>
       </>
     )}
-    {s && <SimulationBadge simulation={s} />}
+    <SimulationBadge
+      simulation={t.simulation}
+      isSimulationRunning={isSimulationRunning}
+    />
   </Code>
 );
 

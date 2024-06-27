@@ -44,7 +44,7 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
-import { useProposalSimulation } from "../hooks/simulation.js";
+import { useActionBundleSimulation } from "../hooks/simulation.js";
 
 const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
@@ -126,11 +126,8 @@ const ProposalEditor = ({
 
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
 
-  // this is the same as simulating a proposal
-  const actionsSimulations = useProposalSimulation({
-    actions: actionsIncludingPayerTopUp,
-    enabled: true,
-  });
+  const { data: simulationResults, isFetching: simulationIsFetching } =
+    useActionBundleSimulation(actionsIncludingPayerTopUp);
 
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
@@ -161,8 +158,11 @@ const ProposalEditor = ({
           background={background}
           sidebar={
             <SidebarContent
-              actions={actionsIncludingPayerTopUp}
-              simulations={actionsSimulations?.results}
+              actions={actionsIncludingPayerTopUp.map((a, i) => ({
+                ...a,
+                simulations: simulationResults?.[i],
+              }))}
+              isSimulationRunning={simulationIsFetching}
               setActions={setActions}
               disabled={disabled}
             />
@@ -670,7 +670,7 @@ const ActionSummary = ({ action: a }) => {
   }
 };
 
-const TransactionCodeBlock = ({ transaction, simulation }) => {
+const TransactionCodeBlock = ({ transaction, isSimulationRunning }) => {
   const t = useEnhancedParsedTransaction(transaction);
 
   switch (t.type) {
@@ -681,7 +681,7 @@ const TransactionCodeBlock = ({ transaction, simulation }) => {
       return (
         <UnparsedFunctionCallCodeBlock
           transaction={t}
-          simulation={simulation}
+          isSimulationRunning={isSimulationRunning}
         />
       );
 
@@ -701,7 +701,8 @@ const TransactionCodeBlock = ({ transaction, simulation }) => {
           inputs={t.functionInputs}
           inputTypes={t.functionInputTypes}
           value={t.value}
-          simulation={simulation}
+          simulation={t.simulation}
+          isSimulationRunning={isSimulationRunning}
         />
       );
     }
@@ -710,9 +711,9 @@ const TransactionCodeBlock = ({ transaction, simulation }) => {
 
 const ActionList = ({
   actions,
-  simulations,
   selectIndex,
   disabled = false,
+  isSimulationRunning,
 }) => (
   <ol
     css={(t) =>
@@ -765,7 +766,7 @@ const ActionList = ({
       <li key={`${a.type}-${i}`}>
         <ActionListItem
           action={a}
-          simulations={simulations?.[i]}
+          isSimulationRunning={isSimulationRunning}
           openEditDialog={
             a.editable
               ? () => {
@@ -782,7 +783,7 @@ const ActionList = ({
 
 const ActionListItem = ({
   action: a,
-  simulations: txSims,
+  isSimulationRunning,
   openEditDialog,
   disabled = false,
 }) => {
@@ -790,6 +791,7 @@ const ActionListItem = ({
     () => resolveActionTransactions(a),
     [a],
   );
+
   const daoTokenBuyerContract = useContract("token-buyer");
   const daoPayerContract = useContract("payer");
   const wethTokenContract = useContract("weth-token");
@@ -967,8 +969,8 @@ const ActionListItem = ({
             return (
               <li key={i}>
                 <TransactionCodeBlock
-                  transaction={t}
-                  simulation={txSims?.[i]}
+                  transaction={{ ...t, simulation: a.simulations?.[i] }}
+                  isSimulationRunning={isSimulationRunning}
                 />
 
                 {comment != null && (
@@ -1359,7 +1361,12 @@ const ProposalContentEditor = ({
   );
 };
 
-const SidebarContent = ({ actions, simulations, setActions, disabled }) => {
+const SidebarContent = ({
+  actions,
+  setActions,
+  disabled,
+  isSimulationRunning,
+}) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
@@ -1424,7 +1431,7 @@ const SidebarContent = ({ actions, simulations, setActions, disabled }) => {
         {hasActions && (
           <ActionList
             actions={actions}
-            simulations={simulations}
+            isSimulationRunning={isSimulationRunning}
             disabled={disabled}
             selectIndex={(i) => {
               setSelectedActionIndex(i);
