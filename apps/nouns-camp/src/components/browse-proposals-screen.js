@@ -141,12 +141,15 @@ const BrowseProposalsScreen = () => {
           );
         case "for-votes":
           return arrayUtils.sortBy(
-            { value: (p) => p.forVotes + 1 / p.againstVotes, order },
+            { value: (p) => p.forVotes + 1 / (p.againstVotes + 1), order },
             proposals,
           );
         case "against-votes":
           return arrayUtils.sortBy(
-            { value: (p) => p.againstVotes + 1 / p.forVotes, order },
+            {
+              value: (p) => p.againstVotes + 1 / (p.forVotes + 1),
+              order,
+            },
             proposals,
           );
         default:
