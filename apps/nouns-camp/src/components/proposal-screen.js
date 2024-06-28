@@ -101,13 +101,18 @@ const ProposalMainSection = ({
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
 
+  const proposalVersion = getLatestVersionBlock(proposal);
+
   const {
     data: simulationResults,
     error: simulationError,
     isFetching: simulationIsFetching,
   } = useProposalSimulation(proposal?.id, {
-    enabled: proposal?.state && !isFinalProposalState(proposal.state),
-    version: getLatestVersionBlock(proposal),
+    enabled:
+      proposalVersion &&
+      proposal?.state &&
+      !isFinalProposalState(proposal.state),
+    version: proposalVersion,
   });
 
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
@@ -714,7 +719,7 @@ const ProposalMainSection = ({
 
                 <p>
                   One or more transactions didn&apos;t pass the simulation.
-                  Check the transactions tab to see which ones failed and why.
+                  Check the Transactions tab to see which ones failed and why.
                 </p>
               </Callout>
             )}

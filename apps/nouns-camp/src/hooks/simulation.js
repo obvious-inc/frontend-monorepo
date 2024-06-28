@@ -42,6 +42,7 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
   const fetchData = React.useCallback(async () => {
     try {
       setIsFetching(true);
+      setError(null);
 
       const transactions = actions.map((action) => resolveAction(action));
 
@@ -111,11 +112,7 @@ export const useProposalSimulation = (
   const fetchData = React.useCallback(async () => {
     try {
       setIsFetching(true);
-
-      if (!version) {
-        // setSimulationResults(null);
-        return;
-      }
+      setError(null);
 
       const res = await fetch(
         `/api/simulate/proposal/${proposalId}?version=${version}`,

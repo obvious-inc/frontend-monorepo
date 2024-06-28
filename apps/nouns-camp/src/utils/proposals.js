@@ -82,5 +82,12 @@ export const getStateLabel = (state) => {
 };
 
 export const getLatestVersionBlock = (proposal) => {
-  return proposal.versions?.[0].createdBlock;
+  if (!proposal.versions) return null;
+
+  // sort prop versions by createdBlock descending
+  const sortedVersions = proposal.versions.sort(
+    (a, b) => Number(b.createdBlock) - Number(a.createdBlock),
+  );
+
+  return sortedVersions[0].createdBlock;
 };
