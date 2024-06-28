@@ -20,7 +20,7 @@ import { isFinalState as isFinalProposalState } from "../utils/proposals.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import Layout, { MainContentContainer } from "./layout.js";
-import DateRangePicker, { toLocalDate } from "./date-range-picker.js";
+import DateRangePicker from "./date-range-picker.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedNumber from "./formatted-number.js";
@@ -29,8 +29,6 @@ import { ProposalVotesTag, renderPropStatusText } from "./browse-screen.js";
 const ProposalVotesDialog = React.lazy(
   () => import("./proposal-votes-dialog.js"),
 );
-
-const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 
 const BrowseProposalsScreen = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -367,13 +365,6 @@ const BrowseProposalsScreen = () => {
                     onChange={(value) => {
                       setSortStrategy(value);
                       setSortOrder("desc");
-                      const now = new Date();
-                      setLocalDateRange({
-                        start: toLocalDate(
-                          new Date(now.getTime() - 30 * ONE_DAY_MILLIS),
-                        ),
-                        end: toLocalDate(now),
-                      });
                     }}
                     fullWidth={false}
                     width="max-content"
