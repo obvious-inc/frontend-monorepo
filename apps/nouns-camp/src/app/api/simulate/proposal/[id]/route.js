@@ -74,7 +74,7 @@ export async function GET(_, context) {
 
   const data = await response.json();
 
-  const propCacheHeader = "max-age=3600, stale-while-revalidate=600";
+  const propCacheHeader = "max-age=3600";
 
   if (!response.ok) {
     const errorSlug = data?.error?.slug;
