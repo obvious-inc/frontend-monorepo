@@ -701,15 +701,20 @@ const ProposalMainSection = ({
                 variant="info"
                 css={() =>
                   css({
-                    marginBottom: "4.8rem",
+                    marginBottom: "2.4rem",
+                    "@media (min-width: 600px)": {
+                      marginBottom: "4.8rem",
+                    },
                   })
                 }
               >
-                <p>This proposal will fail to execute.</p>
+                <p>
+                  <b>This proposal will fail to execute.</b>
+                </p>
 
                 <p>
-                  One or more transactions failed to simulate. Check the
-                  transactions tab for more details.
+                  One or more transactions didn&apos;t pass the simulation.
+                  Check the transactions tab to see which ones failed and why.
                 </p>
               </Callout>
             )}

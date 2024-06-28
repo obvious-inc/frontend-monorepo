@@ -41,10 +41,6 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
 
   const fetchData = React.useCallback(async () => {
     try {
-      if (!enabled) {
-        return;
-      }
-
       setIsFetching(true);
 
       const transactions = actions.map((action) => resolveAction(action));
@@ -60,8 +56,10 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
 
         const errorSim = {
           success: false,
-          error: reason,
+          error: transactions.length > 1 ? reason : sims.error_message,
         };
+
+        setError(reason);
 
         // set all sims to the error sim
         setData(actions.map((_, i) => transactions[i].map(() => errorSim)));
@@ -91,12 +89,14 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
     } finally {
       setIsFetching(false);
     }
-  }, [actions, enabled]);
+  }, [actions]);
 
   React.useEffect(() => {
+    if (!enabled) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, enabled]);
 
+  if (!enabled) return { data: null, error: null, isFetching: false };
   return { data, error, isFetching };
 };
 
@@ -110,10 +110,6 @@ export const useProposalSimulation = (
 
   const fetchData = React.useCallback(async () => {
     try {
-      if (!enabled) {
-        return;
-      }
-
       setIsFetching(true);
 
       if (!version) {
@@ -148,11 +144,13 @@ export const useProposalSimulation = (
     } finally {
       setIsFetching(false);
     }
-  }, [proposalId, version, enabled]);
+  }, [proposalId, version]);
 
   React.useEffect(() => {
+    if (!enabled) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, enabled]);
 
+  if (!enabled) return { data: null, error: null, isFetching: false };
   return { data, error, isFetching };
 };

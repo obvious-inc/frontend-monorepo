@@ -8,7 +8,7 @@ export const TENDERLY_SIMULATION_OPTIONS = {
   simulation_type: "full",
 };
 
-export const shareSimulation = async (simulation) => {
+const shareSimulation = async (simulation) => {
   try {
     const response = await fetch(
       `${TENDERLY_API_ENDPOINT}/simulations/${simulation.id}/share`,
@@ -35,6 +35,8 @@ export const shareSimulation = async (simulation) => {
 };
 
 export const shareSimulations = async (simulations) => {
+  if (!simulations) return;
+
   for (const simulation of simulations) {
     await shareSimulation(simulation);
   }

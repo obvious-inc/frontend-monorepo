@@ -127,7 +127,9 @@ const ProposalEditor = ({
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
 
   const { data: simulationResults, isFetching: simulationIsFetching } =
-    useActionBundleSimulation(actionsIncludingPayerTopUp);
+    useActionBundleSimulation(actionsIncludingPayerTopUp, {
+      enabled: actionsIncludingPayerTopUp.length > 0,
+    });
 
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
