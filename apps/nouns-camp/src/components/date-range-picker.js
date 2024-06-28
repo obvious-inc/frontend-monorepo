@@ -1,3 +1,4 @@
+import React from "react";
 import { css } from "@emotion/react";
 import { fromDate, getLocalTimeZone } from "@internationalized/date";
 import {
@@ -13,9 +14,13 @@ import {
   Label,
   // Popover,
   RangeCalendar,
+  DateRangePickerStateContext,
 } from "react-aria-components";
 import * as Popover from "@shades/ui-web/popover";
-import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
+import {
+  CaretDown as CaretDownIcon,
+  CrossCircleSolid as CrossIcon,
+} from "@shades/ui-web/icons";
 
 export const toLocalDate = (date) => fromDate(date, getLocalTimeZone());
 
@@ -50,6 +55,7 @@ const DateRangePicker = ({
               paddingRight: "0.6rem",
               lineHeight: 1.2,
               "--caret-size": "0.9rem",
+              "--clear-cross-size": "1.2rem",
             },
 
             '&[data-variant="default"]': {
@@ -75,10 +81,19 @@ const DateRangePicker = ({
               justifyContent: "center",
               svg: { width: "var(--caret-size)", height: "auto" },
             },
+            ".clear-button": {
+              padding: "0.2rem",
+              marginRight: "-0.2rem",
+              svg: { width: "var(--clear-cross-size)", height: "auto" },
+            },
             "@media(hover: hover)": {
               ".trigger": {
                 cursor: "pointer",
                 ":hover": { background: t.colors.backgroundModifierNormal },
+              },
+              ".clear-button": {
+                cursor: "pointer",
+                ":hover": { color: t.colors.textDimmed },
               },
             },
           })
@@ -92,6 +107,7 @@ const DateRangePicker = ({
         <DateInput slot="end">
           {(segment) => <DateSegment segment={segment} />}
         </DateInput>
+        <ClearButton />
         <Popover.Trigger className="trigger">
           <CaretDownIcon />
         </Popover.Trigger>
@@ -182,5 +198,21 @@ const DateRangePicker = ({
     </DateRangePicker_>
   </Popover.Root>
 );
+
+const ClearButton = () => {
+  const state = React.useContext(DateRangePickerStateContext);
+  if (state.dateRange == null) return null;
+  return (
+    <Button
+      // Don't inherit default Button behavior from DateRangePicker.
+      slot={null}
+      className="clear-button"
+      aria-label="Clear"
+      onPress={() => state.setValue(null)}
+    >
+      <CrossIcon />
+    </Button>
+  );
+};
 
 export default DateRangePicker;

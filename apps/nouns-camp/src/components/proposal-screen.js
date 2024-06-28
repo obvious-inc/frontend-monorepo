@@ -1114,7 +1114,7 @@ const ProposalScreen = ({ proposalId }) => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
-          { to: "/?tab=proposals", label: "Proposals", desktopOnly: true },
+          { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
             to: `/proposals/${proposalId}`,
             label: (

@@ -22,6 +22,7 @@ import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-edi
 import {
   ArrowDownSmall as ArrowDownSmallIcon,
   Plus as PlusIcon,
+  Fullscreen as FullscreenIcon,
 } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import {
@@ -29,6 +30,7 @@ import {
   isSucceededState as isSucceededProposalState,
   isVotableState as isVotableProposalState,
 } from "../utils/proposals.js";
+import { search as searchEns } from "../utils/ens.js";
 import {
   getSignals as getCandidateSignals,
   makeUrlId as makeCandidateUrlId,
@@ -82,21 +84,6 @@ const getCandidateScore = (candidate) => {
 
   if (forVotes.length === 0 && abstainVotes.length === 0) return null;
   return forVotes.length - againstVotes.length;
-};
-
-const searchEns = (nameByAddress, rawQuery) => {
-  const query = rawQuery.trim().toLowerCase();
-  const ensEntries = Object.entries(nameByAddress);
-
-  const matchingRecords = ensEntries.reduce((matches, [address, name]) => {
-    const index = name.toLowerCase().indexOf(query);
-    if (index === -1) return matches;
-    return [...matches, { address, index }];
-  }, []);
-
-  return arrayUtils
-    .sortBy({ value: (r) => r.index, type: "index" }, matchingRecords)
-    .map((r) => r.address);
 };
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
@@ -595,7 +582,13 @@ const BrowseScreen = () => {
         )}
         <Tabs.Item key="proposals" title="Proposals">
           <div css={css({ paddingTop: "2.4rem" })}>
-            <div css={css({ margin: "-0.4rem 0 2rem" })}>
+            <div
+              css={css({
+                display: "flex",
+                justifyContent: "space-between",
+                margin: "-0.4rem 0 2rem",
+              })}
+            >
               <Select
                 size="small"
                 aria-label="Proposal sorting"
@@ -630,6 +623,22 @@ const BrowseScreen = () => {
                     </em>
                   </>
                 )}
+              />
+              <Button
+                component={NextLink}
+                href="/proposals"
+                prefetch
+                size="small"
+                variant="transparent"
+                icon={
+                  <FullscreenIcon
+                    style={{
+                      width: "1.4rem",
+                      height: "auto",
+                      transform: "scaleX(-1)",
+                    }}
+                  />
+                }
               />
             </div>
             <SectionedList
@@ -1288,6 +1297,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
               display: "flex",
               alignItems: "center",
               justifyContent: "flex-start",
+              flexWrap: "wrap",
               gap: "0.5rem",
             })}
           >
@@ -1305,7 +1315,7 @@ const ProposalItem = React.memo(({ proposalId }) => {
   );
 });
 
-const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
+export const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   switch (proposal.state) {
     case "updatable": {
       const updatePeriodEndDate = calculateBlockTimestamp(
@@ -1385,15 +1395,84 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
       return <>Ends in {Math.round(hours / 24)} days</>;
     }
 
+    case "succeeded":
+    case "defeated": {
+      const endDate = calculateBlockTimestamp(
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock,
+      );
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        new Date(),
+        endDate,
+      );
+
+      if (minutes < 1) return <>Voting just ended</>;
+
+      if (hours <= 1)
+        return (
+          <>
+            Voting ended {Math.max(minutes, 0)}{" "}
+            {minutes === 1 ? "minute" : "minutes"} ago
+          </>
+        );
+
+      if (days <= 1)
+        return <>Voting ended {Math.round(minutes / 60)} hours ago</>;
+
+      return (
+        <>
+          Created{" "}
+          <span css={css({ pointerEvents: "all" })}>
+            <FormattedDateWithTooltip
+              value={proposal.createdTimestamp}
+              relativeDayThreshold={5}
+              capitalize={false}
+              day="numeric"
+              month="long"
+            />
+          </span>
+        </>
+      );
+    }
+
     case "queued":
       return "Queued for execution";
 
     case "canceled":
-    case "expired":
-    case "defeated":
-    case "vetoed":
-    case "succeeded":
+      if (proposal.canceledTimestamp == null) return null;
+      return (
+        <>
+          Canceled{" "}
+          <span css={css({ pointerEvents: "all" })}>
+            <FormattedDateWithTooltip
+              value={proposal.canceledTimestamp}
+              relativeDayThreshold={5}
+              capitalize={false}
+              day="numeric"
+              month="short"
+            />
+          </span>
+        </>
+      );
+
     case "executed":
+      if (proposal.executedTimestamp == null) return null;
+      return (
+        <>
+          Executed{" "}
+          <span css={css({ pointerEvents: "all" })}>
+            <FormattedDateWithTooltip
+              value={proposal.executedTimestamp}
+              relativeDayThreshold={5}
+              capitalize={false}
+              day="numeric"
+              month="short"
+            />
+          </span>
+        </>
+      );
+
+    case "expired":
+    case "vetoed":
       return null;
 
     default:
@@ -1481,7 +1560,7 @@ export const VotesTagGroup = React.memo(
   },
 );
 
-const ProposalVotesTag = React.memo(({ proposalId }) => {
+export const ProposalVotesTag = React.memo(({ proposalId }) => {
   const { address: connectedWalletAccountAddress } = useWallet();
   const proposal = useProposal(proposalId, { watch: false });
 
@@ -1618,7 +1697,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
           css={css({
             display: "grid",
             gridTemplateColumns: "minmax(0,1fr)",
-            gridGap: "1.2rem",
+            gridGap: "1rem",
             alignItems: "center",
           })}
           style={{
@@ -1648,6 +1727,24 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
                   />
                 )}
               </em>
+              {isProposalThresholdMet && (
+                <span>
+                  <span
+                    role="separator"
+                    aria-orientation="vertical"
+                    css={(t) =>
+                      css({
+                        ":before": {
+                          content: '"–"',
+                          color: t.colors.textMuted,
+                          margin: "0 0.5rem",
+                        },
+                      })
+                    }
+                  />
+                  Sponsor threshold met
+                </span>
+              )}
             </div>
             <div
               data-title
@@ -1658,7 +1755,7 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
                 <div
                   css={css({
                     position: "absolute",
-                    right: "calc(100% + 1.2rem)",
+                    right: "calc(100% + 1rem)",
                     top: "50%",
                     transform: "translateY(-50%)",
                   })}
@@ -1670,99 +1767,85 @@ const ProposalCandidateItem = React.memo(({ candidateId }) => {
                 </div>
               )}
             </div>
-            <div data-small>
-              {isProposalUpdate ? (
-                renderProposalUpdateStatusText()
-              ) : (
-                <>
-                  {mostRecentActivity === "update" ? (
-                    <>
-                      Last updated{" "}
-                      <FormattedDateWithTooltip
-                        relativeDayThreshold={5}
-                        capitalize={false}
-                        value={candidate.lastUpdatedTimestamp}
-                        day="numeric"
-                        month="short"
-                      />
-                    </>
-                  ) : mostRecentActivity === "feedback" ? (
-                    <>
-                      Last comment{" "}
-                      <FormattedDateWithTooltip
-                        relativeDayThreshold={5}
-                        capitalize={false}
-                        value={mostRecentFeedbackPost.createdTimestamp}
-                        day="numeric"
-                        month="short"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      Created{" "}
-                      <FormattedDateWithTooltip
-                        relativeDayThreshold={5}
-                        capitalize={false}
-                        value={candidate.createdTimestamp}
-                        day="numeric"
-                        month="short"
-                      />
-                    </>
-                  )}
-                  {isProposalThresholdMet && (
-                    <span>
-                      <span
-                        role="separator"
-                        aria-orientation="vertical"
-                        css={(t) =>
-                          css({
-                            ":before": {
-                              content: '"–"',
-                              color: t.colors.textMuted,
-                              margin: "0 0.5rem",
-                            },
-                          })
-                        }
-                      />
-                      Sponsor threshold met
-                    </span>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        <div
-          data-small
-          css={css({
-            display: "flex",
-            gap: "1.6rem",
-            alignItems: "center",
-          })}
-        >
-          {/* <span data-desktop-only> */}
-          {/*   {commentCount > 0 ? ( */}
-          {/*     <> */}
-          {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
-          {/*         {commentCount} comments */}
-          {/*       </span> */}
-          {/*     </> */}
-          {/*   ) : null} */}
-          {/* </span> */}
-          <div
-            css={css({
-              display: "none",
-              "@container(min-width: 540px)": {
+            <div
+              css={css({
                 display: "flex",
-                gap: "0.3rem",
+                gap: "0.4rem",
                 alignItems: "center",
-              },
-            })}
-          >
-            {feedbackAuthorAccounts.slice(0, 10).map((a) => (
-              <AccountAvatar key={a} address={a} size="2rem" />
-            ))}
-            {feedbackAuthorAccounts.length > 10 && <>...</>}
+              })}
+            >
+              {/* <span data-desktop-only> */}
+              {/*   {commentCount > 0 ? ( */}
+              {/*     <> */}
+              {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
+              {/*         {commentCount} comments */}
+              {/*       </span> */}
+              {/*     </> */}
+              {/*   ) : null} */}
+              {/* </span> */}
+              <div data-small>
+                {isProposalUpdate ? (
+                  renderProposalUpdateStatusText()
+                ) : (
+                  <>
+                    {mostRecentActivity === "update" ? (
+                      <>
+                        Last updated{" "}
+                        <FormattedDateWithTooltip
+                          relativeDayThreshold={5}
+                          capitalize={false}
+                          value={candidate.lastUpdatedTimestamp}
+                          day="numeric"
+                          month="short"
+                        />
+                      </>
+                    ) : mostRecentActivity === "feedback" ? (
+                      <>
+                        Last comment{" "}
+                        <FormattedDateWithTooltip
+                          relativeDayThreshold={5}
+                          capitalize={false}
+                          value={mostRecentFeedbackPost.createdTimestamp}
+                          day="numeric"
+                          month="short"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        Created{" "}
+                        <FormattedDateWithTooltip
+                          relativeDayThreshold={5}
+                          capitalize={false}
+                          value={candidate.createdTimestamp}
+                          day="numeric"
+                          month="short"
+                        />
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+              <div
+                css={css({
+                  // display: "none",
+                  // "@container(min-width: 540px)": {
+                  display: "flex",
+                  gap: "0.3rem",
+                  alignItems: "center",
+                  // },
+                })}
+              >
+                {feedbackAuthorAccounts.slice(0, 10).map((a) => (
+                  <AccountAvatar
+                    key={a}
+                    address={a}
+                    size="1.4rem"
+                    borderRadius="0.2rem"
+                  />
+                ))}
+                {feedbackAuthorAccounts.length > 10 && <>...</>}
+              </div>
+            </div>
           </div>
 
           {isCanceled ? (

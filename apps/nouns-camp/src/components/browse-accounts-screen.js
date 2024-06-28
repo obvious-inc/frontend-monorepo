@@ -23,6 +23,7 @@ import {
   useEnsCache,
 } from "../store.js";
 import { subgraphFetch } from "../nouns-subgraph.js";
+import { search as searchEns } from "../utils/ens.js";
 import { createRepostExtractor } from "../utils/votes-and-feedbacks.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
@@ -40,62 +41,56 @@ const isDebugSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("debug") != null;
 
-const searchEns = (nameByAddress, rawQuery) => {
-  const query = rawQuery.trim().toLowerCase();
-  const ensEntries = Object.entries(nameByAddress);
-
-  const matchingRecords = ensEntries.reduce((matches, [address, name]) => {
-    const index = name.toLowerCase().indexOf(query);
-    if (index === -1) return matches;
-    return [...matches, { address, index }];
-  }, []);
-
-  return arrayUtils
-    .sortBy({ value: (r) => r.index, type: "index" }, matchingRecords)
-    .map((r) => r.address);
-};
-
-const useRecentVotes = ({ start, end } = {}) => {
+const useVotes = ({ start, end } = {}) => {
   const [votesByAccountAddress, setVotesByAccountAddress] =
     React.useState(null);
 
-  useFetch(async () => {
-    const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
-      const { votes } = await subgraphFetch({
-        query: `{
+  useFetch(
+    async ({ signal }) => {
+      const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
+        const { votes } = await subgraphFetch({
+          query: `{
           votes (
             orderBy: blockNumber,
             first: ${pageSize},
             skip: ${(page - 1) * pageSize}
             where: {
-              blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}",
-              blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
+              ${[
+                start == null
+                  ? null
+                  : `blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
+                end == null
+                  ? null
+                  : `blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
+              ].join(",")}
             }
           ) {
             supportDetailed
             reason
-            voter {
-              id
-            }
+            voter { id }
           }
         }`,
-      });
+        });
 
-      if (votes.length < pageSize) return votes;
+        if (votes.length < pageSize) return votes;
 
-      const remainingVotes = await fetchVotes({ page: page + 1, pageSize });
+        const remainingVotes = await fetchVotes({ page: page + 1, pageSize });
 
-      return [...votes, ...remainingVotes];
-    };
+        return [...votes, ...remainingVotes];
+      };
 
-    const votes = await fetchVotes();
+      const votes = await fetchVotes();
 
-    const votesByAccountAddress = votes.reduce((acc, v) => {
-      return { ...acc, [v.voter.id]: [...(acc[v.voter.id] ?? []), v] };
-    }, {});
+      if (signal?.aborted) return;
 
-    setVotesByAccountAddress(votesByAccountAddress);
-  }, [start, end]);
+      const votesByAccountAddress = votes.reduce((acc, v) => {
+        return { ...acc, [v.voter.id]: [...(acc[v.voter.id] ?? []), v] };
+      }, {});
+
+      setVotesByAccountAddress(votesByAccountAddress);
+    },
+    [start, end],
+  );
 
   const vwrCountByAccountAddress = React.useMemo(() => {
     if (votesByAccountAddress == null) return null;
@@ -112,77 +107,86 @@ const useRecentVotes = ({ start, end } = {}) => {
   return { votesByAccountAddress, vwrCountByAccountAddress };
 };
 
-const useRecentRevoteCount = ({ start, end } = {}) => {
+const useRevoteCount = ({ start, end } = {}) => {
   const [revoteCountByAccountAddress, setRevoteCountByAccountAddress] =
     React.useState(null);
 
-  useFetch(async () => {
-    const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
-      // TODO: the source set should ideally include all votes for relevant
-      // proposals or some revotes may be missed
-      const { votes } = await subgraphFetch({
-        query: `{
+  useFetch(
+    async ({ signal }) => {
+      const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
+        // TODO: the source set should ideally include all votes for relevant
+        // proposals or some revotes may be missed
+        const { votes } = await subgraphFetch({
+          query: `{
           votes (
             orderBy: blockNumber,
             first: ${pageSize},
             skip: ${(page - 1) * pageSize}
             where: {
-              reason_not: "",
-              blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}",
-              blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
+              ${[
+                'reason_not: ""',
+                start == null
+                  ? ""
+                  : `blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
+                end == null
+                  ? ""
+                  : `blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
+              ]
+                .filter(Boolean)
+                .join(",")}
             }
           ) {
             reason
             supportDetailed
-            voter {
-              id
-            }
-            proposal {
-              id
-            }
+            voter { id }
+            proposal { id }
           }
         }`,
-      });
+        });
 
-      if (votes.length < pageSize) return votes;
+        if (votes.length < pageSize) return votes;
 
-      const remainingVotes = await fetchVotes({ page: page + 1, pageSize });
+        const remainingVotes = await fetchVotes({ page: page + 1, pageSize });
 
-      return [...votes, ...remainingVotes];
-    };
+        return [...votes, ...remainingVotes];
+      };
 
-    const votes = await fetchVotes();
+      const votes = await fetchVotes();
 
-    const votesByProposalId = arrayUtils.groupBy((v) => v.proposal.id, votes);
+      if (signal?.aborted) return;
 
-    const revoteCountByAccountAddress = votes.reduce((acc, v) => {
-      if (v.votes === 0 || v.reason == null || v.reason.trim() === "")
-        return acc;
+      const votesByProposalId = arrayUtils.groupBy((v) => v.proposal.id, votes);
 
-      const proposalVotes = votesByProposalId[v.proposal.id];
-      const proposalIndex = proposalVotes.indexOf(v);
-      const previousProposalVotes = proposalVotes.slice(0, proposalIndex);
+      const revoteCountByAccountAddress = votes.reduce((acc, v) => {
+        if (v.votes === 0 || v.reason == null || v.reason.trim() === "")
+          return acc;
 
-      const extractReposts = createRepostExtractor(previousProposalVotes);
+        const proposalVotes = votesByProposalId[v.proposal.id];
+        const proposalIndex = proposalVotes.indexOf(v);
+        const previousProposalVotes = proposalVotes.slice(0, proposalIndex);
 
-      const [revoteTargetVotes_] = extractReposts(v.reason);
+        const extractReposts = createRepostExtractor(previousProposalVotes);
 
-      const revoteTargetVotes = revoteTargetVotes_.filter(
-        (targetVote) =>
-          // Don’t count revotes that disagree with the revoter
-          targetVote.supportDetailed === 2 ||
-          targetVote.supportDetailed === v.supportDetailed,
-      );
+        const [revoteTargetVotes_] = extractReposts(v.reason);
 
-      if (revoteTargetVotes.length === 0) return acc;
-      const nextAcc = { ...acc };
-      for (const v of revoteTargetVotes)
-        nextAcc[v.voter.id] = (nextAcc[v.voter.id] ?? 0) + 1;
-      return nextAcc;
-    }, {});
+        const revoteTargetVotes = revoteTargetVotes_.filter(
+          (targetVote) =>
+            // Don’t count revotes that disagree with the revoter
+            targetVote.supportDetailed === 2 ||
+            targetVote.supportDetailed === v.supportDetailed,
+        );
 
-    setRevoteCountByAccountAddress(revoteCountByAccountAddress);
-  }, [start, end]);
+        if (revoteTargetVotes.length === 0) return acc;
+        const nextAcc = { ...acc };
+        for (const v of revoteTargetVotes)
+          nextAcc[v.voter.id] = (nextAcc[v.voter.id] ?? 0) + 1;
+        return nextAcc;
+      }, {});
+
+      setRevoteCountByAccountAddress(revoteCountByAccountAddress);
+    },
+    [start, end],
+  );
 
   return revoteCountByAccountAddress;
 };
@@ -213,17 +217,19 @@ const BrowseAccountsScreen = () => {
 
   const dateRange = React.useMemo(
     () => ({
-      start: localDateRange.start.toDate(),
-      end: localDateRange.end.toDate(),
+      start: localDateRange?.start.toDate() ?? null,
+      end: localDateRange?.end.toDate() ?? null,
     }),
     [localDateRange],
   );
 
+  const deferredDateRange = React.useDeferredValue(dateRange);
+
   const {
     votesByAccountAddress: recentVotesByAccountAddress,
     vwrCountByAccountAddress: recentVwrCountByAccountAddress,
-  } = useRecentVotes(dateRange);
-  const recentRevoteCountByAccountAddress = useRecentRevoteCount(dateRange);
+  } = useVotes(dateRange);
+  const recentRevoteCountByAccountAddress = useRevoteCount(dateRange);
 
   const matchingAddresses = React.useMemo(() => {
     if (deferredQuery.trim() === "") return null;
@@ -452,8 +458,8 @@ const BrowseAccountsScreen = () => {
                   flexWrap: "wrap",
                   gap: "1rem",
                   margin: "2rem 0 1.6rem",
-                  "@media(min-width: 600px": {
-                    margin: "2.4rem 0 1.6rem",
+                  "@media(min-width: 600px)": {
+                    margin: "2.4rem 0",
                   },
                 })}
               >
@@ -580,7 +586,11 @@ const BrowseAccountsScreen = () => {
               </div>
               <div>
                 <ul
-                  data-loading={sortStrategy !== deferredSortStrategy}
+                  data-loading={
+                    sortStrategy !== deferredSortStrategy ||
+                    sortOrder !== deferredSortOrder ||
+                    dateRange !== deferredDateRange
+                  }
                   css={(t) => {
                     const hoverColor = t.colors.backgroundModifierNormal;
                     return css({
