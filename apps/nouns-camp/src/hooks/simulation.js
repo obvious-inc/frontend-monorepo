@@ -67,6 +67,11 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
         return;
       }
 
+      if (sims.some((s) => !s.status)) {
+        // todo: handle other possible errors
+        setError("One or more transactions failed to simulate.");
+      }
+
       const returnSims = sims?.map((s) => {
         return {
           success: s?.status,

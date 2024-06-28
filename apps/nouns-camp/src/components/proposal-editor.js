@@ -126,10 +126,13 @@ const ProposalEditor = ({
 
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
 
-  const { data: simulationResults, isFetching: simulationIsFetching } =
-    useActionBundleSimulation(actionsIncludingPayerTopUp, {
-      enabled: actionsIncludingPayerTopUp.length > 0,
-    });
+  const {
+    data: simulationResults,
+    isFetching: simulationIsFetching,
+    error: simulationError,
+  } = useActionBundleSimulation(actionsIncludingPayerTopUp, {
+    enabled: actionsIncludingPayerTopUp.length > 0,
+  });
 
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
@@ -165,6 +168,7 @@ const ProposalEditor = ({
                 simulations: simulationResults?.[i],
               }))}
               isSimulationRunning={simulationIsFetching}
+              simulationError={simulationError}
               setActions={setActions}
               disabled={disabled}
             />
@@ -1368,6 +1372,7 @@ const SidebarContent = ({
   setActions,
   disabled,
   isSimulationRunning,
+  simulationError,
 }) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
@@ -1381,6 +1386,33 @@ const SidebarContent = ({
 
   return (
     <>
+      {simulationError && (
+        <Callout
+          compact
+          variant="info"
+          css={() =>
+            css({
+              marginBottom: "2.4rem",
+            })
+          }
+        >
+          <p
+            css={(t) =>
+              css({
+                color: t.colors.textHighlight,
+              })
+            }
+          >
+            This proposal will fail to execute.
+          </p>
+
+          <p>
+            One or more transactions didn&apos;t pass the simulation. Expand all
+            transactions to see which ones failed and why.
+          </p>
+        </Callout>
+      )}
+
       {hasActions && (
         <h2
           css={(t) =>
