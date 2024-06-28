@@ -101,7 +101,7 @@ const ProposalMainSection = ({
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
 
-  const proposalVersion = getLatestVersionBlock(proposal);
+  const latestProposalVersionBlock = getLatestVersionBlock(proposal);
 
   const {
     data: simulationResults,
@@ -109,10 +109,10 @@ const ProposalMainSection = ({
     isFetching: simulationIsFetching,
   } = useProposalSimulation(proposal?.id, {
     enabled:
-      proposalVersion &&
+      latestProposalVersionBlock &&
       proposal?.state &&
       !isFinalProposalState(proposal.state),
-    version: proposalVersion,
+    version: latestProposalVersionBlock,
   });
 
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
