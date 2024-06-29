@@ -216,7 +216,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
         closeDialog();
       }
     } catch (e) {
-      console.log(e);
+      console.error(e);
       alert("Something went wrong");
     } finally {
       setPendingSubmit(false);

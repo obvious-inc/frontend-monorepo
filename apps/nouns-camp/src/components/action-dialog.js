@@ -234,7 +234,13 @@ const useShallowMergeState = (initialState) => {
 };
 
 const isFunctionAbiItem = (item) => {
-  if (item.type !== "function") return false;
+  if (
+    item.type !== "function" ||
+    !Array.isArray(item.inputs) ||
+    typeof item.name !== "string" ||
+    item.name.trim() === ""
+  )
+    return false;
   if (item.stateMutability != null)
     return ["payable", "nonpayable"].includes(item.stateMutability);
   if (item.constant != null) return !item.constant;
@@ -440,7 +446,9 @@ const CustomTransactionActionForm = ({ state, setState }) => {
           ...(state.contractData.implementationAbi ?? []),
         ];
 
-  const abi = contractNotFound ? state.customAbi : fetchedAbi;
+  const showCustomAbiInput = state.forceCustomAbi || contractNotFound;
+
+  const abi = showCustomAbiInput ? state.customAbi : fetchedAbi;
 
   const contractName = state.contractData?.name;
 
@@ -559,17 +567,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
               </Link>
             </>
           ) : fetchedAbi != null && contractCallAbiItemOptions?.length === 0 ? (
-            <>
-              No public write functions found on contract
-              {contractName != null && (
-                <>
-                  {" "}
-                  {'"'}
-                  {contractName}
-                  {'"'}
-                </>
-              )}
-            </>
+            <>No public write functions found on abi</>
           ) : contractName != null ? (
             <>
               Etherscan contract name:{" "}
@@ -591,41 +589,89 @@ const CustomTransactionActionForm = ({ state, setState }) => {
         }
       />
 
-      {contractNotFound && (
-        <Input
-          label="ABI"
-          component="textarea"
-          value={state.customAbiString}
-          onChange={(e) => {
-            setState({ customAbiString: e.target.value });
-          }}
-          onBlur={() => {
-            try {
-              const formattedAbi = JSON.stringify(
-                JSON.parse(state.customAbiString),
-                null,
-                2,
-              );
-              setState({ customAbiString: formattedAbi });
-            } catch (e) {
-              // Ignore
+      {showCustomAbiInput && (
+        <div>
+          <div
+            css={css({
+              display: "grid",
+              gridTemplateColumns: "minmax(0,1fr) auto",
+              gridGap: "0.8rem",
+              alignItems: "flex-start",
+            })}
+          >
+            <Label htmlFor="custom-abi">ABI</Label>
+            {fetchedAbi != null && (
+              <Link
+                component="button"
+                type="button"
+                underline
+                color={(t) => t.colors.textDimmed}
+                onClick={() => {
+                  setState({ forceCustomAbi: false });
+                }}
+              >
+                Use Etherscan ABI
+              </Link>
+            )}
+          </div>
+          <Input
+            id="custom-abi"
+            // label="ABI"
+            component="textarea"
+            value={state.customAbiString}
+            onChange={(e) => {
+              setState({ customAbiString: e.target.value });
+            }}
+            onBlur={() => {
+              try {
+                const formattedAbi = JSON.stringify(
+                  JSON.parse(state.customAbiString),
+                  null,
+                  2,
+                );
+                setState({ customAbiString: formattedAbi });
+              } catch (e) {
+                // Ignore
+              }
+            }}
+            rows={5}
+            placeholder="[]"
+            hint="Paste a JSON formatted ABI array"
+            css={(t) =>
+              css({
+                fontSize: t.text.sizes.small,
+                padding: "1rem",
+              })
             }
-          }}
-          rows={5}
-          placeholder="[]"
-          hint="Paste a JSON formatted ABI array"
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.small,
-              padding: "1rem",
-            })
-          }
-        />
+          />
+        </div>
       )}
 
       {contractCallAbiItemOptions?.length > 0 ? (
         <div>
-          <Label htmlFor="contract-function">Function to call</Label>
+          <div
+            css={css({
+              display: "grid",
+              gridTemplateColumns: "minmax(0,1fr) auto",
+              gridGap: "0.8rem",
+              alignItems: "flex-start",
+            })}
+          >
+            <Label htmlFor="contract-function">Function to call</Label>
+            {!showCustomAbiInput && (
+              <Link
+                component="button"
+                type="button"
+                underline
+                color={(t) => t.colors.textDimmed}
+                onClick={() => {
+                  setState({ forceCustomAbi: true });
+                }}
+              >
+                Specify custom ABI
+              </Link>
+            )}
+          </div>
           <Select
             id="contract-function"
             aria-label="Contract function"
@@ -803,13 +849,26 @@ const formConfigByActionType = {
   },
   "custom-transaction": {
     title: "Custom transaction",
-    initialState: ({ action }) => ({
-      target: action?.contractCallTarget ?? "",
-      signature: action?.contractCallSignature ?? "",
-      arguments: action?.contractCallArguments ?? [],
-      ethValue: formatEther(action?.contractCallValue ?? 0),
-      customAbiString: action?.contractCallCustomAbiString ?? "",
-    }),
+    initialState: ({ action }) => {
+      const customAbiString = action?.contractCallCustomAbiString ?? "";
+      const signature = action?.contractCallSignature ?? "";
+      return {
+        target: action?.contractCallTarget ?? "",
+        signature,
+        arguments: action?.contractCallArguments ?? [],
+        ethValue: formatEther(action?.contractCallValue ?? 0),
+        customAbiString,
+        forceCustomAbi: (() => {
+          if (customAbiString === "") return false;
+          const customAbi = parseAbiString(customAbiString);
+          return customAbi.some(
+            (abiItem) =>
+              isFunctionAbiItem(abiItem) &&
+              createSignature(abiItem) === signature,
+          );
+        })(),
+      };
+    },
     useStateMiddleware: ({ state }) => {
       const customAbi = useParsedAbi(state.customAbiString);
       const fetchedAbi =
@@ -822,7 +881,8 @@ const formConfigByActionType = {
       const contractNotFound = ["not-found", "not-contract-address"].includes(
         state.contractDataRequestError?.message,
       );
-      const abi = contractNotFound ? customAbi : fetchedAbi;
+      const abi =
+        state.forceCustomAbi || contractNotFound ? customAbi : fetchedAbi;
       return { ...state, customAbi, fetchedAbi, abi };
     },
     hasRequiredInputs: ({ state }) => {

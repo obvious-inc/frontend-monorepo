@@ -345,61 +345,59 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 {
                   id: "external",
                   children: [
-                    farcasterAccounts?.length > 0
-                      ? {
-                          id: "open-warpcast",
-                          label: (
-                            <div>
-                              Warpcast
-                              <div
-                                css={(t) =>
-                                  css({
-                                    marginTop: "0.2rem",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                    fontSize: t.text.sizes.small,
-                                    color: t.colors.textDimmed,
-                                  })
-                                }
-                              >
-                                {(() => {
-                                  const { fid, username, displayName, pfpUrl } =
-                                    farcasterAccounts[0];
-                                  return (
-                                    <span
-                                      title={[
-                                        displayName ?? username ?? `FID ${fid}`,
-                                        username != null &&
-                                          username !== displayName &&
-                                          `(@${username})`,
-                                      ]
-                                        .filter(Boolean)
-                                        .join(" ")}
-                                    >
-                                      {pfpUrl != null && (
-                                        <Avatar
-                                          url={pfpUrl}
-                                          size="1.2em"
-                                          css={css({
-                                            display: "inline-block",
-                                            marginRight: "0.3em",
-                                            verticalAlign: "sub",
-                                          })}
-                                        />
-                                      )}
-                                      {displayName ?? username ?? `FID ${fid}`}
-                                      {username != null &&
-                                        username !== displayName && (
-                                          <> (@{username})</>
-                                        )}
-                                    </span>
-                                  );
-                                })()}
-                              </div>
-                            </div>
-                          ),
-                        }
-                      : null,
+                    ...(farcasterAccounts ?? []).map((farcasterAccount) => ({
+                      id: `open-warpcast:${farcasterAccount.fid}`,
+                      label: (
+                        <div>
+                          Warpcast
+                          <div
+                            css={(t) =>
+                              css({
+                                marginTop: "0.2rem",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                fontSize: t.text.sizes.small,
+                                color: t.colors.textDimmed,
+                              })
+                            }
+                          >
+                            {(() => {
+                              const { fid, username, displayName, pfpUrl } =
+                                farcasterAccount;
+                              return (
+                                <span
+                                  title={[
+                                    displayName ?? username ?? `FID ${fid}`,
+                                    username != null &&
+                                      username !== displayName &&
+                                      `(@${username})`,
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                >
+                                  {pfpUrl != null && (
+                                    <Avatar
+                                      url={pfpUrl}
+                                      size="1.2em"
+                                      css={css({
+                                        display: "inline-block",
+                                        marginRight: "0.3em",
+                                        verticalAlign: "sub",
+                                      })}
+                                    />
+                                  )}
+                                  {displayName ?? username ?? `FID ${fid}`}
+                                  {username != null &&
+                                    username !== displayName && (
+                                      <> (@{username})</>
+                                    )}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        </div>
+                      ),
+                    })),
                     {
                       id: "open-etherscan",
                       label: "Etherscan",
@@ -424,6 +422,19 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                 },
               ]}
               onAction={(key) => {
+                if (key.startsWith("open-warpcast:")) {
+                  const fid = key.split(":")[1];
+                  const farcasterAccount = farcasterAccounts.find(
+                    (a) => String(a.fid) === fid,
+                  );
+                  if (farcasterAccount == null) throw new Error();
+                  window.open(
+                    `https://warpcast.com/${farcasterAccount.username}`,
+                    "_blank",
+                  );
+                  return;
+                }
+
                 switch (key) {
                   case "manage-delegation":
                     openDelegationDialog();
@@ -447,13 +458,6 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                     close();
                     break;
                   }
-
-                  case "open-warpcast":
-                    window.open(
-                      `https://warpcast.com/${farcasterAccounts[0].username}`,
-                      "_blank",
-                    );
-                    break;
 
                   case "open-etherscan":
                     window.open(
