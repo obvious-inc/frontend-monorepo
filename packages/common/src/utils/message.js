@@ -347,6 +347,10 @@ export const toMarkdown = (blockElements) => {
         return `### ${renderInlineChildren()}`;
       case "heading-4":
         return `#### ${renderInlineChildren()}`;
+      case "heading-5":
+        return `##### ${renderInlineChildren()}`;
+      case "heading-6":
+        return `###### ${renderInlineChildren()}`;
 
       case "quote":
       case "callout":
