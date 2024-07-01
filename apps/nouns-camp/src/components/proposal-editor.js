@@ -44,7 +44,7 @@ import {
   UnparsedFunctionCallCodeBlock,
   AddressDisplayNameWithTooltip,
 } from "./transaction-list.js";
-import { useTransactionSimulation } from "../hooks/simulation.js";
+import { useActionBundleSimulation } from "../hooks/simulation.js";
 
 const LazyActionDialog = React.lazy(() => import("./action-dialog.js"));
 
@@ -126,6 +126,14 @@ const ProposalEditor = ({
 
   const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
 
+  const {
+    data: simulationResults,
+    isFetching: simulationIsFetching,
+    error: simulationError,
+  } = useActionBundleSimulation(actionsIncludingPayerTopUp, {
+    enabled: actionsIncludingPayerTopUp.length > 0,
+  });
+
   const isTitleEmpty = title.trim() === "";
   const isBodyEmpty =
     typeof body === "string"
@@ -155,7 +163,12 @@ const ProposalEditor = ({
           background={background}
           sidebar={
             <SidebarContent
-              actions={actionsIncludingPayerTopUp}
+              actions={actionsIncludingPayerTopUp.map((a, i) => ({
+                ...a,
+                simulations: simulationResults?.[i],
+              }))}
+              isSimulationRunning={simulationIsFetching}
+              simulationError={simulationError}
               setActions={setActions}
               disabled={disabled}
             />
@@ -663,9 +676,8 @@ const ActionSummary = ({ action: a }) => {
   }
 };
 
-const TransactionCodeBlock = ({ transaction }) => {
+const TransactionCodeBlock = ({ transaction, isSimulationRunning }) => {
   const t = useEnhancedParsedTransaction(transaction);
-  const simulation = useTransactionSimulation(transaction);
 
   switch (t.type) {
     case "transfer":
@@ -675,7 +687,7 @@ const TransactionCodeBlock = ({ transaction }) => {
       return (
         <UnparsedFunctionCallCodeBlock
           transaction={t}
-          simulation={simulation}
+          isSimulationRunning={isSimulationRunning}
         />
       );
 
@@ -695,14 +707,20 @@ const TransactionCodeBlock = ({ transaction }) => {
           inputs={t.functionInputs}
           inputTypes={t.functionInputTypes}
           value={t.value}
-          simulation={simulation}
+          simulation={t.simulation}
+          isSimulationRunning={isSimulationRunning}
         />
       );
     }
   }
 };
 
-const ActionList = ({ actions, selectIndex, disabled = false }) => (
+const ActionList = ({
+  actions,
+  selectIndex,
+  disabled = false,
+  isSimulationRunning,
+}) => (
   <ol
     css={(t) =>
       css({
@@ -754,6 +772,7 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
       <li key={`${a.type}-${i}`}>
         <ActionListItem
           action={a}
+          isSimulationRunning={isSimulationRunning}
           openEditDialog={
             a.editable
               ? () => {
@@ -768,7 +787,12 @@ const ActionList = ({ actions, selectIndex, disabled = false }) => (
   </ol>
 );
 
-const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
+const ActionListItem = ({
+  action: a,
+  isSimulationRunning,
+  openEditDialog,
+  disabled = false,
+}) => {
   const actionTransactions = React.useMemo(
     () => resolveActionTransactions(a),
     [a],
@@ -950,7 +974,10 @@ const ActionListItem = ({ action: a, openEditDialog, disabled = false }) => {
             const comment = renderTransactionComment(t);
             return (
               <li key={i}>
-                <TransactionCodeBlock transaction={t} />
+                <TransactionCodeBlock
+                  transaction={{ ...t, simulation: a.simulations?.[i] }}
+                  isSimulationRunning={isSimulationRunning}
+                />
 
                 {comment != null && (
                   <div
@@ -1340,7 +1367,13 @@ const ProposalContentEditor = ({
   );
 };
 
-const SidebarContent = ({ actions, setActions, disabled }) => {
+const SidebarContent = ({
+  actions,
+  setActions,
+  disabled,
+  isSimulationRunning,
+  simulationError,
+}) => {
   const [selectedActionIndex, setSelectedActionIndex] = React.useState(null);
   const [showNewActionDialog, setShowNewActionDialog] = React.useState(false);
 
@@ -1353,6 +1386,33 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
 
   return (
     <>
+      {simulationError && (
+        <Callout
+          compact
+          variant="info"
+          css={() =>
+            css({
+              marginBottom: "2.4rem",
+            })
+          }
+        >
+          <p
+            css={(t) =>
+              css({
+                color: t.colors.textHighlight,
+              })
+            }
+          >
+            This proposal will fail to execute.
+          </p>
+
+          <p>
+            One or more transactions didn&apos;t pass the simulation. Show
+            transaction details to learn more.
+          </p>
+        </Callout>
+      )}
+
       {hasActions && (
         <h2
           css={(t) =>
@@ -1405,6 +1465,7 @@ const SidebarContent = ({ actions, setActions, disabled }) => {
         {hasActions && (
           <ActionList
             actions={actions}
+            isSimulationRunning={isSimulationRunning}
             disabled={disabled}
             selectIndex={(i) => {
               setSelectedActionIndex(i);

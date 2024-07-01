@@ -824,6 +824,9 @@ const createStore = ({ initialState, publicClient }) =>
             #   createdAt
             #   createdBlock
             #   updateMessage
+            #   proposal {
+            #     id
+            #   }
             # }
             # proposalCandidateVersions(
             #   where: {
