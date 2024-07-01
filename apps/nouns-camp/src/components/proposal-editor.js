@@ -1407,8 +1407,8 @@ const SidebarContent = ({
           </p>
 
           <p>
-            One or more transactions didn&apos;t pass the simulation. Expand all
-            transactions to see which ones failed and why.
+            One or more transactions didn&apos;t pass the simulation. Show
+            transaction details to learn more.
           </p>
         </Callout>
       )}
