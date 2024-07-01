@@ -1,5 +1,7 @@
 "use client";
 
+import startOfDay from "date-fns/startOfDay";
+import endOfDay from "date-fns/endOfDay";
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
@@ -118,11 +120,9 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
 
   useFetch(async () => {
     const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
-      // TODO: the source set should ideally include all votes for relevant
-      // proposals or some revotes may be missed
       const { votes } = await subgraphFetch({
         query: `{
-          votes (
+          votes(
             orderBy: blockNumber,
             first: ${pageSize},
             skip: ${(page - 1) * pageSize}
@@ -132,14 +132,8 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
               # blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"
             }
           ) {
-            reason
-            supportDetailed
-            voter {
-              id
-            }
-            proposal {
-              id
-            }
+            id
+            proposal { id }
           }
         }`,
       });
@@ -151,27 +145,77 @@ const useRecentRevoteCount = ({ start, end } = {}) => {
       return [...votes, ...remainingVotes];
     };
 
+    const fetchProposalsVotes = async (
+      proposalIds,
+      { page = 1, pageSize = 1000 } = {},
+    ) => {
+      const { votes } = await subgraphFetch({
+        query: `{
+          votes(
+            orderBy: blockNumber,
+            first: ${pageSize},
+            skip: ${(page - 1) * pageSize}
+            where: {
+              proposal_in: [${proposalIds.map((id) => `"${id}"`)}],
+              reason_not: "",
+            }
+          ) {
+            id
+            reason
+            supportDetailed
+            votes
+            voter { id }
+            proposal { id }
+          }
+        }`,
+      });
+
+      if (votes.length < pageSize) return votes;
+
+      const remainingVotes = await fetchProposalsVotes(proposalIds, {
+        page: page + 1,
+        pageSize,
+      });
+
+      return [...votes, ...remainingVotes];
+    };
+
+    // Potential revotes
     const votes = await fetchVotes();
+    // Potential revote targets
+    const sourceVotes = await fetchProposalsVotes(
+      arrayUtils.unique(votes.map((v) => v.proposal.id)),
+    );
 
-    const votesByProposalId = arrayUtils.groupBy((v) => v.proposal.id, votes);
+    const sourceVotesById = arrayUtils.indexBy((v) => v.id, sourceVotes);
+    const sourceVotesByProposalId = arrayUtils.groupBy(
+      (v) => v.proposal.id,
+      sourceVotes,
+    );
 
-    const revoteCountByAccountAddress = votes.reduce((acc, v) => {
-      if (v.votes === 0 || v.reason == null || v.reason.trim() === "")
+    const revoteCountByAccountAddress = votes.reduce((acc, { id: voteId }) => {
+      const vote = sourceVotesById[voteId];
+
+      if (
+        // vote.votes === 0 ||
+        vote.reason == null ||
+        vote.reason.trim() === ""
+      )
         return acc;
 
-      const proposalVotes = votesByProposalId[v.proposal.id];
-      const proposalIndex = proposalVotes.indexOf(v);
+      const proposalVotes = sourceVotesByProposalId[vote.proposal.id];
+      const proposalIndex = proposalVotes.indexOf(vote);
       const previousProposalVotes = proposalVotes.slice(0, proposalIndex);
 
       const extractReposts = createRepostExtractor(previousProposalVotes);
 
-      const [revoteTargetVotes_] = extractReposts(v.reason);
+      const [revoteTargetVotes_] = extractReposts(vote.reason);
 
       const revoteTargetVotes = revoteTargetVotes_.filter(
         (targetVote) =>
           // Don’t count revotes that disagree with the revoter
           targetVote.supportDetailed === 2 ||
-          targetVote.supportDetailed === v.supportDetailed,
+          targetVote.supportDetailed === vote.supportDetailed,
       );
 
       if (revoteTargetVotes.length === 0) return acc;
@@ -574,7 +618,12 @@ const BrowseAccountsScreen = () => {
                     granularity="day"
                     size="small"
                     value={localDateRange}
-                    onChange={setLocalDateRange}
+                    onChange={({ start, end }) => {
+                      setLocalDateRange({
+                        start: toLocalDate(startOfDay(start.toDate())),
+                        end: toLocalDate(endOfDay(end.toDate())),
+                      });
+                    }}
                   />
                 )}
               </div>
