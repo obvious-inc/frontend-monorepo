@@ -724,7 +724,7 @@ const ProposalMainSection = ({
 
                 <p>
                   One or more transactions didn&apos;t pass the simulation.
-                  Check the Transactions tab to see which ones failed and why.
+                  Check the Transactions tab to see which ones failed.
                 </p>
               </Callout>
             )}

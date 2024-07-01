@@ -861,7 +861,6 @@ const createStore = ({ initialState, publicClient }) =>
           set((storeState) =>
             mergeSubgraphEntitiesIntoStore(storeState, {
               proposals: proposalsWithTimestamps,
-              proposalVersions: data.proposalVersions,
             }),
           );
         })();
