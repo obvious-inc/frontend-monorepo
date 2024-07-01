@@ -80,3 +80,14 @@ export const getStateLabel = (state) => {
       throw new Error(`Unknown state "${state}"`);
   }
 };
+
+export const getLatestVersionBlock = (proposal) => {
+  if (!proposal.versions) return null;
+
+  // sort prop versions by createdBlock descending
+  const sortedVersions = proposal.versions.sort(
+    (a, b) => Number(b.createdBlock) - Number(a.createdBlock),
+  );
+
+  return sortedVersions[0].createdBlock;
+};
