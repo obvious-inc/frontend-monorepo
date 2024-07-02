@@ -7,6 +7,7 @@ const addressByIdentifierByChainId = {
     "eth-token": "0x0000000000000000000000000000000000000000",
     "weth-token": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     "wsteth-token": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
+    "oeth-token": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
     "reth-token": "0xae78736cd615f374d3085123a210448e74fc6393",
     "usdc-token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
     "steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",

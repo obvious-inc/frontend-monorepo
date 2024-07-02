@@ -160,6 +160,10 @@ const useBalances = () => {
     contract: "weth-token",
     account: treasuryAddress,
   });
+  const treasuryOeth = useBalanceOf({
+    contract: "oeth-token",
+    account: treasuryAddress,
+  });
   const treasuryReth = useBalanceOf({
     contract: "reth-token",
     account: treasuryAddress,
@@ -188,6 +192,7 @@ const useBalances = () => {
     treasuryUsdc,
     payerUsdc,
     treasuryWeth,
+    treasuryOeth,
     treasuryReth,
     treasurySteth,
     treasuryWsteth,
