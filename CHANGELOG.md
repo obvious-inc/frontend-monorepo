@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0-beta.46] - 2024-07-02
+
+### 🚀 Features
+
+- *(contracts)* Add oeth-token to token list
+- *(treasury-dialog)* Add support for oeth token balance
+
 ## [1.1.0-beta.45] - 2024-07-01
 
 ### 🚀 Features
