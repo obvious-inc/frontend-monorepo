@@ -160,3 +160,23 @@ export const useSetDelegate = (address) => {
     return publicClient.waitForTransactionReceipt({ hash });
   };
 };
+
+export const useTotalSupply = () => {
+  const { data, isSuccess } = useReadContract({
+    address: contractAddress,
+    chainId: CHAIN_ID,
+    abi: [
+      {
+        inputs: [],
+        name: "totalSupply",
+        outputs: [{ type: "uint256" }],
+        type: "function",
+      },
+    ],
+    functionName: "totalSupply",
+  });
+
+  if (!isSuccess) return undefined;
+
+  return Number(data);
+};

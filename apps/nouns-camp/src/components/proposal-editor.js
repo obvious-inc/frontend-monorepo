@@ -671,6 +671,17 @@ const ActionSummary = ({ action: a }) => {
         />
       );
 
+    case "treasury-noun-transfer":
+      return (
+        <TransactionExplanation
+          transaction={{
+            type: "treasury-noun-transfer",
+            nounId: a.nounId,
+            receiverAddress: a.target,
+          }}
+        />
+      );
+
     default:
       throw new Error(`Unknown action type: "${a.type}"`);
   }

@@ -770,6 +770,16 @@ export const resolveAction = (a) => {
         }
       }
 
+      case "treasury-noun-transfer":
+        return [
+          {
+            type: "treasury-noun-transfer",
+            nounId: a.nounId,
+            receiverAddress: a.target,
+            safe: true,
+          },
+        ];
+
       case "payer-top-up":
         return [
           {
