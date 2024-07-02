@@ -59,6 +59,6 @@
     "use-debounce": "10.0.1",
     "viem": "2.16.2",
     "wagmi": "2.10.7",
-    "zustand": "4.5.3"
+    "zustand": "4.5.4"
   }
 }

@@ -148,8 +148,8 @@ importers:
         specifier: 2.10.7
         version: 2.10.7(@tanstack/query-core@5.48.0)(@tanstack/react-query@5.48.0(react@18.3.1))(@upstash/redis@1.31.6)(@vercel/kv@2.0.0)(bufferutil@4.0.8)(immer@10.1.1)(react-dom@18.3.1(react@18.3.1))(react-i18next@13.5.0(i18next@22.5.1)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.2(@babel/core@7.24.7)(@babel/preset-env@7.24.7(@babel/core@7.24.7))(bufferutil@4.0.8)(react@18.3.1))(react@18.3.1))(react-native@0.74.2(@babel/core@7.24.7)(@babel/preset-env@7.24.7(@babel/core@7.24.7))(bufferutil@4.0.8)(react@18.3.1))(react@18.3.1)(rollup@2.78.0)(typescript@4.9.5)(viem@2.16.2(bufferutil@4.0.8)(typescript@4.9.5)(zod@3.23.8))(zod@3.23.8)
       zustand:
-        specifier: 4.5.3
-        version: 4.5.3(immer@10.1.1)(react@18.3.1)
+        specifier: 4.5.4
+        version: 4.5.4(immer@10.1.1)(react@18.3.1)
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.12.0
@@ -7912,8 +7912,8 @@ packages:
       react:
         optional: true
 
-  zustand@4.5.3:
-    resolution: {integrity: sha512-iH1gA/3uOMR0Gz260Fsklxo7wWEXJ008p1bO9O6gxwkbvBUaTDlcVChkDKGGSsvdbOyVce0nQfBitVH6sbYyew==}
+  zustand@4.5.4:
+    resolution: {integrity: sha512-/BPMyLKJPtFEvVL0E9E9BTUM63MNyhPGlvxk1XjrfWTUlV+BR8jufjsovHzrtR6YNcBEcL7cMHovL1n9xHawEg==}
     engines: {node: '>=12.7.0'}
     peerDependencies:
       '@types/react': '>=16.8'
@@ -17533,7 +17533,7 @@ snapshots:
       immer: 10.1.1
       react: 18.3.1
 
-  zustand@4.5.3(immer@10.1.1)(react@18.3.1):
+  zustand@4.5.4(immer@10.1.1)(react@18.3.1):
     dependencies:
       use-sync-external-store: 1.2.0(react@18.3.1)
     optionalDependencies:
