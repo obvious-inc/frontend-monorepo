@@ -222,6 +222,7 @@ const Content = ({ titleProps, dismiss }) => {
     treasuryEth,
     treasuryUsdc,
     treasuryWeth,
+    treasuryOeth,
     treasuryReth,
     treasurySteth,
     treasuryWsteth,
@@ -258,6 +259,7 @@ const Content = ({ titleProps, dismiss }) => {
   const ethTotal = [
     treasuryEth,
     treasuryWeth,
+    treasuryOeth,
     treasuryReth,
     treasurySteth,
     treasuryWsteth,
@@ -411,6 +413,15 @@ const Content = ({ titleProps, dismiss }) => {
                               false
                             )
                           }
+                        />
+                      </li>
+                    )}
+                    {treasuryOeth != null && (
+                      <li>
+                        <FormattedEth
+                          value={treasuryOeth}
+                          tokenSymbol="oETH"
+                          tooltip={false}
                         />
                       </li>
                     )}
