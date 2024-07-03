@@ -78,3 +78,5 @@ updates:
     ignore:
       - dependency-name: "eslint"
         update-types: [ "version-update:semver-major" ]
+      - dependency-name: "@serwist/next"
+        update-types: [ "version-update:semver-major" ]
