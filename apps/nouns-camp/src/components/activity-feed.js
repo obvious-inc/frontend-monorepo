@@ -316,15 +316,17 @@ const FeedItem = React.memo(
             >
               {item.replies.map(({ body, target }) => (
                 <li key={target.id}>
-                  <QuotedVoteOrFeedbackPost
-                    item={target}
-                    href={
-                      context !== "proposal"
-                        ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
-                        : `#${item.id}`
-                    }
-                    showSignal
-                  />
+                  <div css={css({ fontSize: "0.875em" })}>
+                    <QuotedVoteOrFeedbackPost
+                      item={target}
+                      href={
+                        context !== "proposal"
+                          ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
+                          : `#${item.id}`
+                      }
+                      showSignal
+                    />
+                  </div>
                   <div className="reply-area">
                     <div className="reply-line-container">
                       <div className="reply-line" />

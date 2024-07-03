@@ -1,3 +1,4 @@
+import React from "react";
 import { css } from "@emotion/react";
 import { fromDate, getLocalTimeZone } from "@internationalized/date";
 import {
@@ -13,26 +14,46 @@ import {
   Label,
   // Popover,
   RangeCalendar,
+  DateRangePickerStateContext,
 } from "react-aria-components";
 import * as Popover from "@shades/ui-web/popover";
-import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
+import {
+  CaretDown as CaretDownIcon,
+  CrossCircleSolid as CrossIcon,
+} from "@shades/ui-web/icons";
 
 export const toLocalDate = (date) => fromDate(date, getLocalTimeZone());
 
 const DateRangePicker = ({
   label,
   inlineLabel,
-  size = "medium",
+  fullWidth = false,
+  size = "default",
   variant = "default",
   ...props
 }) => (
   <Popover.Root>
     <DateRangePicker_ {...props}>
-      {label != null && <Label>{label}</Label>}
+      {label != null && (
+        <Label
+          css={(t) =>
+            css({
+              display: "inline-block",
+              color: t.colors.textDimmed,
+              fontSize: t.text.sizes.base,
+              lineHeight: 1.2,
+              margin: "0 0 0.8rem",
+            })
+          }
+        >
+          {label}
+        </Label>
+      )}
       <Group
+        data-full-width={fullWidth}
         data-size={size}
         data-variant={variant}
-        data-has-inline-label={inlineLabel != null ?? undefined}
+        data-has-inline-label={inlineLabel != null || undefined}
         css={(t) =>
           css({
             // Copied from button
@@ -50,6 +71,23 @@ const DateRangePicker = ({
               paddingRight: "0.6rem",
               lineHeight: 1.2,
               "--caret-size": "0.9rem",
+              "--clear-cross-size": "1.2rem",
+            },
+            '&[data-size="default"]': {
+              fontSize: t.text.sizes.base,
+              height: "3.2rem",
+              padding: "0 0.8rem",
+              paddingRight: "0.6rem",
+              "--caret-size": "1.1rem",
+              "--clear-cross-size": "1.2rem",
+            },
+            '&[data-size="medium"]': {
+              fontSize: t.text.sizes.base,
+              height: "3.6rem",
+              padding: "0 0.8rem",
+              paddingRight: "0.6rem",
+              "--caret-size": "1.1rem",
+              "--clear-cross-size": "1.2rem",
             },
 
             '&[data-variant="default"]': {
@@ -57,14 +95,33 @@ const DateRangePicker = ({
               borderColor: t.colors.borderLight,
             },
 
+            '&[data-full-width="true"]': { width: "100%" },
+
             // Date range specifics
             display: "flex",
             alignItems: "center",
             gap: "0.3em",
             width: "fit-content",
-            ".react-aria-DateInput": { display: "flex", gap: "0.1em" },
+            ".react-aria-DateInput": {
+              display: "flex",
+              gap: "0.1em",
+              "[data-placeholder]": {
+                fontWeight: t.text.weights.normal,
+                color: t.colors.textMuted,
+              },
+            },
             "&[data-has-inline-label] .react-aria-DateInput": {
               fontWeight: t.text.weights.emphasis,
+              '.react-aria-DateSegment[data-type="literal"]': {
+                fontWeight: t.text.weights.normal,
+              },
+            },
+            ".segments-container": {
+              flex: 1,
+              display: "flex",
+              alignItems: "center",
+              gap: "0.3em",
+              // marginRight: "0.3em",
             },
             ".trigger": {
               borderRadius: "0.3rem",
@@ -75,23 +132,35 @@ const DateRangePicker = ({
               justifyContent: "center",
               svg: { width: "var(--caret-size)", height: "auto" },
             },
+            ".clear-button": {
+              padding: "0.2rem",
+              marginRight: "-0.2rem",
+              svg: { width: "var(--clear-cross-size)", height: "auto" },
+            },
             "@media(hover: hover)": {
               ".trigger": {
                 cursor: "pointer",
                 ":hover": { background: t.colors.backgroundModifierNormal },
               },
+              ".clear-button": {
+                cursor: "pointer",
+                ":hover": { color: t.colors.textDimmed },
+              },
             },
           })
         }
       >
-        {inlineLabel != null && <Label>{inlineLabel}:</Label>}
-        <DateInput slot="start">
-          {(segment) => <DateSegment segment={segment} />}
-        </DateInput>
-        <span aria-hidden="true">–</span>
-        <DateInput slot="end">
-          {(segment) => <DateSegment segment={segment} />}
-        </DateInput>
+        <div className="segments-container">
+          {inlineLabel != null && <Label>{inlineLabel}:</Label>}
+          <DateInput slot="start">
+            {(segment) => <DateSegment segment={segment} />}
+          </DateInput>
+          <span aria-hidden="true">–</span>
+          <DateInput slot="end">
+            {(segment) => <DateSegment segment={segment} />}
+          </DateInput>
+        </div>
+        <ClearButton />
         <Popover.Trigger className="trigger">
           <CaretDownIcon />
         </Popover.Trigger>
@@ -182,5 +251,21 @@ const DateRangePicker = ({
     </DateRangePicker_>
   </Popover.Root>
 );
+
+const ClearButton = () => {
+  const state = React.useContext(DateRangePickerStateContext);
+  if (state.dateRange == null) return null;
+  return (
+    <Button
+      // Don't inherit default Button behavior from DateRangePicker.
+      slot={null}
+      className="clear-button"
+      aria-label="Clear"
+      onPress={() => state.setValue(null)}
+    >
+      <CrossIcon />
+    </Button>
+  );
+};
 
 export default DateRangePicker;

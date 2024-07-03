@@ -157,8 +157,9 @@ const parseProposalVote = (v) => ({
   id: v.id,
   // Useful to differentiate votes from feedbacks
   type: "vote",
-  createdBlock: BigInt(v.blockNumber),
-  createdTimestamp: parseTimestamp(v.blockTimestamp),
+  createdBlock: v.blockNumber == null ? undefined : BigInt(v.blockNumber),
+  createdTimestamp:
+    v.blockTimestamp == null ? undefined : parseTimestamp(v.blockTimestamp),
   reason: v.reason,
   support: v.supportDetailed,
   votes: v.votes == null ? undefined : Number(v.votes),
