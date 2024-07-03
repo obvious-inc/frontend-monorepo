@@ -32,7 +32,7 @@
     "@radix-ui/react-toolbar": "1.1.0",
     "@radix-ui/react-tooltip": "1.1.2",
     "@sentry/nextjs": "8.13.0",
-    "@serwist/next": "8.4.4",
+    "@serwist/next": "9.0.3",
     "@serwist/precaching": "9.0.3",
     "@serwist/sw": "9.0.3",
     "@shades/common": "workspace:0.0.0",
