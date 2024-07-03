@@ -74,3 +74,11 @@ updates:
           - 'react-dom'
           - '@types/react'
           - '@types/react-dom'
+    # List of packages to ignore for specific update types
+    ignore:
+      - dependency-name: "eslint"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "@serwist/next"
+        update-types: [ "version-update:semver-major" ]
+      - dependency-name: "@sentry/nextjs"
+        update-types: [ "version-update:semver-major" ]
