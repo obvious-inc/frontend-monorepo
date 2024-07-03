@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.1] - 2024-07-03
+
+### ⚙️ Miscellaneous Tasks
+
+- *(dependabot)* Ignore major version updates for eslint
+- *(dependabot)* Ignore major updates for @serwist/next
+- *(dependabot)* Ignore major updates for @sentry/nextjs
+
+### ◀️ Revert
+
+- *(deps-dev)* Bump eslint from 8.57.0 to 9.6.0 in the eslint group (#393)
+- *(deps)* Bump @sentry/nextjs from 7.111.0 to 8.13.0 (#396)
+- *(deps)* Bump @serwist/next from 8.4.4 to 9.0.3 (#401)
+
 ## [1.1.0] - 2024-07-02
 
 ### 🐛 Bug Fixes
