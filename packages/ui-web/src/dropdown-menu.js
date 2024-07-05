@@ -218,7 +218,11 @@ const MenuItem = ({ item, state }) => {
           '&[aria-checked="true"]:focys': {
             color: t.colors.textAccent,
           },
-          ".content-container": { flex: 1 },
+          ".content-container": {
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+          },
           ".icon-container": { padding: "0 0.4rem" },
           ".icon-container svg": { width: "1.1rem", height: "auto" },
         })

@@ -150,7 +150,8 @@ const Select = React.forwardRef(
                         })
                       }
                     >
-                      {state.selectedItem.value.label}
+                      {state.selectedItem.value.inlineLabel ??
+                        state.selectedItem.value.label}
                     </em>
                   </>
                 ) : (

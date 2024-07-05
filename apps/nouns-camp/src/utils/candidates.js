@@ -133,3 +133,71 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
     abstainVotes,
   };
 };
+
+export const hadRecentActivity = ({ threshold }, c) =>
+  c.createdTimestamp > threshold ||
+  c.lastUpdatedTimestamp > threshold ||
+  (c.feedbackPosts != null &&
+    c.feedbackPosts.some((p) => p.createdTimestamp > threshold));
+
+export const getForYouGroup = (
+  { connectedAccountAddress, activeThreshold, newThreshold },
+  c,
+) => {
+  const { content } = c.latestVersion;
+  const connectedAccount = connectedAccountAddress;
+
+  // Proposal updates
+  if (c.latestVersion.targetProposalId != null) {
+    if (c.proposerId.toLowerCase() === connectedAccount)
+      return "authored-proposal-update";
+
+    const hasSigned = (c) => {
+      const signatures = getSponsorSignatures(c, {
+        excludeInvalid: true,
+        activeProposerIds: [],
+      });
+      return signatures.some(
+        (s) => s.signer.id.toLowerCase() === connectedAccount,
+      );
+    };
+
+    const isSponsor =
+      c.targetProposal?.signers != null &&
+      c.targetProposal.signers.some(
+        (s) => s.id.toLowerCase() === connectedAccount,
+      );
+
+    if (isSponsor && !hasSigned(c))
+      return "sponsored-proposal-update-awaiting-signature";
+  }
+
+  const isActive = hadRecentActivity({ threshold: activeThreshold }, c);
+
+  if (c.proposerId.toLowerCase() === connectedAccount) return "authored";
+
+  if (!isActive) return "inactive";
+
+  if (
+    content.contentSignatures.some(
+      (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
+    )
+  )
+    return "sponsored";
+
+  if (c.createdTimestamp >= newThreshold) return "new";
+
+  return "active";
+};
+
+export const getScore = (candidate) => {
+  const { votes } = getSignals({ candidate });
+  const {
+    0: againstVotes = [],
+    1: forVotes = [],
+    2: abstainVotes = [],
+  } = arrayUtils.groupBy((v) => v.support, votes);
+
+  if (forVotes.length === 0 && abstainVotes.length === 0) return null;
+  return forVotes.length - againstVotes.length;
+};
