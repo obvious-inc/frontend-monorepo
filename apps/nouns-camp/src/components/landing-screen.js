@@ -18,27 +18,27 @@ import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
-import {
-  Plus as PlusIcon,
-  // Fullscreen as FullscreenIcon,
-} from "@shades/ui-web/icons";
+import { Fullscreen as FullscreenIcon } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { getForYouGroup as getProposalForYouGroup } from "../utils/proposals.js";
 import { search as searchEns } from "../utils/ens.js";
 import {
-  getSignals as getCandidateSignals,
   getSponsorSignatures as getCandidateSponsorSignatures,
+  getScore as getCandidateScore,
+  getForYouGroup as getCandidateForYouGroup,
+  hadRecentActivity as candidateHadRecentActivity,
 } from "../utils/candidates.js";
 import useBlockNumber from "../hooks/block-number.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import {
+  useSubgraphFetch,
   useActions,
+  useDelegates,
   useProposals,
   useProposalCandidates,
   useProposalUpdateCandidates,
-  // usePropdates,
   useEnsCache,
   useMainFeedItems,
 } from "../store.js";
@@ -46,23 +46,12 @@ import { useCollection as useDrafts } from "../hooks/drafts.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalList from "./proposal-list.js";
+import { useVotes, useRevoteCount } from "./browse-accounts-screen.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
 const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
 const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
-
-const getCandidateScore = (candidate) => {
-  const { votes } = getCandidateSignals({ candidate });
-  const {
-    0: againstVotes = [],
-    1: forVotes = [],
-    2: abstainVotes = [],
-  } = arrayUtils.groupBy((v) => v.support, votes);
-
-  if (forVotes.length === 0 && abstainVotes.length === 0) return null;
-  return forVotes.length - againstVotes.length;
-};
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
@@ -80,7 +69,7 @@ const groupConfigByKey = {
     title: "New",
     description: "Candidates created within the last 3 days",
   },
-  "candidates:recently-active": { title: "Recently active" },
+  "candidates:active": { title: "Recently active" },
   "candidates:feedback-given": { title: "Feedback given" },
   "candidates:feedback-missing": {
     title: "Missing feedback",
@@ -112,7 +101,7 @@ const BrowseScreen = () => {
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
 
-  const { address: connectedWalletAccountAddress } = useWallet();
+  const { address: connectedAccountAddress } = useWallet();
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
@@ -133,6 +122,10 @@ const BrowseScreen = () => {
     "proposal-sorting-startegy",
     "activity",
   );
+  const [voterSortStrategy, setVoterSortStrategy] = useCachedState(
+    "voter-sorting-strategy",
+    "recent-revotes",
+  );
   const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
     "candidate-sorting-strategy",
     "activity",
@@ -143,7 +136,7 @@ const BrowseScreen = () => {
   );
 
   const candidateSortStrategies =
-    connectedWalletAccountAddress == null
+    connectedAccountAddress == null
       ? ["activity", "popularity"]
       : ["activity", "popularity", "connected-account-feedback"];
 
@@ -168,7 +161,7 @@ const BrowseScreen = () => {
         activeProposerIds: [],
       });
       return signatures.some(
-        (s) => s.signer.id.toLowerCase() === connectedWalletAccountAddress,
+        (s) => s.signer.id.toLowerCase() === connectedAccountAddress,
       );
     };
 
@@ -176,18 +169,17 @@ const BrowseScreen = () => {
     return proposalUpdateCandidates.filter((c) => {
       if (c.latestVersion == null) return false;
 
-      if (c.proposerId.toLowerCase() === connectedWalletAccountAddress)
-        return true;
+      if (c.proposerId.toLowerCase() === connectedAccountAddress) return true;
 
       const isSponsor =
         c.targetProposal?.signers != null &&
         c.targetProposal.signers.some(
-          (s) => s.id.toLowerCase() === connectedWalletAccountAddress,
+          (s) => s.id.toLowerCase() === connectedAccountAddress,
         );
 
       return isSponsor && !hasSigned(c);
     });
-  }, [proposalUpdateCandidates, connectedWalletAccountAddress]);
+  }, [proposalUpdateCandidates, connectedAccountAddress]);
 
   const filteredProposalDrafts = React.useMemo(() => {
     if (proposalDrafts == null) return [];
@@ -277,10 +269,7 @@ const BrowseScreen = () => {
 
     return [
       "proposals",
-      getProposalForYouGroup(
-        { connectedAccountAddress: connectedWalletAccountAddress },
-        p,
-      ),
+      getProposalForYouGroup({ connectedAccountAddress }, p),
     ].join(":");
   };
 
@@ -292,22 +281,23 @@ const BrowseScreen = () => {
   );
 
   const groupCandidate = (c) => {
-    const { content } = c.latestVersion;
-    const connectedAccount = connectedWalletAccountAddress;
+    const forYouGroup = getCandidateForYouGroup(
+      {
+        connectedAccountAddress,
+        activeThreshold: candidateActiveThreshold,
+        newThreshold: candidateNewThreshold,
+      },
+      c,
+    );
 
-    // Non-authored/sponsored updates are already filtered out
-    if (c.latestVersion.targetProposalId != null)
-      return c.proposerId.toLowerCase() === connectedAccount
-        ? "proposals:authored"
-        : "proposals:sponsored-proposal-update-awaiting-signature";
+    if (forYouGroup === "authored-proposal-update") return "proposals:authored";
+    if (forYouGroup === "sponsored-proposal-update-awaiting-signature")
+      return ["proposals", forYouGroup].join(":");
 
-    const isActive =
-      c.createdTimestamp > candidateActiveThreshold ||
-      c.lastUpdatedTimestamp > candidateActiveThreshold ||
-      (c.feedbackPosts != null &&
-        c.feedbackPosts.some(
-          (p) => p.createdTimestamp > candidateActiveThreshold,
-        ));
+    const isActive = candidateHadRecentActivity(
+      { threshold: candidateActiveThreshold },
+      c,
+    );
 
     if (!isActive) return "candidates:inactive";
 
@@ -317,12 +307,12 @@ const BrowseScreen = () => {
       const hasFeedback =
         c.feedbackPosts != null &&
         c.feedbackPosts.some(
-          (p) => p.voterId.toLowerCase() === connectedAccount,
+          (p) => p.voterId.toLowerCase() === connectedAccountAddress,
         );
 
       if (
         // Include authored candidates here for now
-        c.proposerId.toLowerCase() === connectedAccount ||
+        c.proposerId.toLowerCase() === connectedAccountAddress ||
         hasFeedback
       )
         return "candidates:feedback-given";
@@ -330,19 +320,7 @@ const BrowseScreen = () => {
       return "candidates:feedback-missing";
     }
 
-    if (c.proposerId.toLowerCase() === connectedAccount)
-      return "candidates:authored";
-
-    if (
-      content.contentSignatures.some(
-        (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
-      )
-    )
-      return "candidates:sponsored";
-
-    if (c.createdTimestamp >= candidateNewThreshold) return "candidates:new";
-
-    return "candidates:recently-active";
+    return ["candidates", forYouGroup].join(":");
   };
 
   const sectionsByName = objectUtils.mapValues(
@@ -415,7 +393,7 @@ const BrowseScreen = () => {
         case "candidates:authored":
         case "candidates:sponsored":
         case "candidates:new":
-        case "candidates:recently-active":
+        case "candidates:active":
         case "candidates:feedback-given":
         case "candidates:feedback-missing":
         case "candidates:popular":
@@ -552,187 +530,240 @@ const BrowseScreen = () => {
           </Tabs.Item>
         )}
         <Tabs.Item key="proposals" title="Proposals">
-          <div css={css({ paddingTop: "2.4rem" })}>
-            <div
-              css={css({
-                display: "flex",
-                justifyContent: "space-between",
-                margin: "-0.4rem 0 2rem",
-              })}
-            >
-              <Select
-                size="small"
-                aria-label="Proposal sorting"
-                value={proposalSortStrategy}
-                options={[
-                  {
-                    value: "activity",
-                    label: "By proposal state",
-                  },
-                  {
-                    value: "chronological",
-                    label: "Chronological",
-                  },
-                ]}
-                onChange={(value) => {
-                  setProposalSortStrategy(value);
-                }}
-                fullWidth={false}
-                width="max-content"
-                renderTriggerContent={(value, options) => (
-                  <>
-                    Order:{" "}
-                    <em
-                      css={(t) =>
-                        css({
-                          fontStyle: "normal",
-                          fontWeight: t.text.weights.emphasis,
-                        })
-                      }
-                    >
-                      {options.find((o) => o.value === value)?.label}
-                    </em>
-                  </>
-                )}
-              />
-              {/* <Button
-                component={NextLink}
-                href="/proposals"
-                prefetch
-                size="small"
-                variant="transparent"
-                icon={
-                  <FullscreenIcon
-                    style={{
-                      width: "1.4rem",
-                      height: "auto",
-                      transform: "scaleX(-1)",
-                    }}
-                  />
-                }
-              /> */}
-            </div>
-            <ProposalList
-              forcePlaceholder={!hasFetchedOnce}
-              items={[
-                "proposals:chronological",
-                "proposals:authored",
-                "proposals:sponsored-proposal-update-awaiting-signature",
-                "proposals:awaiting-vote",
-                "proposals:ongoing",
-                "proposals:new",
-                "proposals:past",
-              ]
-                .map((sectionKey) => sectionsByName[sectionKey] ?? {})
-                .filter(
-                  ({ children }) => children != null && children.length !== 0,
-                )}
+          <div
+            css={css({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.8rem",
+              padding: "2rem 0",
+            })}
+          >
+            <Select
+              size="small"
+              aria-label="Proposal sorting"
+              value={proposalSortStrategy}
+              options={[
+                { value: "activity", label: "By voting state" },
+                { value: "chronological", label: "Chronological" },
+              ]}
+              onChange={(value) => {
+                setProposalSortStrategy(value);
+              }}
+              fullWidth={false}
+              width="max-content"
+              renderTriggerContent={(value, options) => (
+                <>
+                  Order:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {options.find((o) => o.value === value)?.label}
+                  </em>
+                </>
+              )}
             />
-            {(() => {
-              if (page == null) return null;
-
-              const truncatableItemCount =
-                proposalSortStrategy === "chronological"
-                  ? sectionsByName["proposals:chronological"]?.count
-                  : sectionsByName["proposals:past"]?.count;
-
-              const hasMoreItems =
-                truncatableItemCount > BROWSE_LIST_PAGE_ITEM_COUNT * page;
-
-              if (!hasMoreItems) return null;
-
-              return (
-                <Pagination
-                  showNext={() => setPage((p) => p + 1)}
-                  showAll={() => setPage(null)}
+            <Button
+              component={NextLink}
+              href="/proposals"
+              prefetch
+              size="small"
+              variant="transparent"
+              icon={
+                <FullscreenIcon
+                  style={{
+                    width: "1.4rem",
+                    height: "auto",
+                    transform: "scaleX(-1)",
+                  }}
                 />
-              );
-            })()}
+              }
+            />
           </div>
+          <ProposalList
+            forcePlaceholder={!hasFetchedOnce}
+            items={[
+              "proposals:chronological",
+              "proposals:authored",
+              "proposals:sponsored-proposal-update-awaiting-signature",
+              "proposals:awaiting-vote",
+              "proposals:ongoing",
+              "proposals:new",
+              "proposals:past",
+            ]
+              .map((sectionKey) => sectionsByName[sectionKey] ?? {})
+              .filter(
+                ({ children }) => children != null && children.length !== 0,
+              )}
+          />
+          {(() => {
+            if (page == null) return null;
+
+            const truncatableItemCount =
+              proposalSortStrategy === "chronological"
+                ? sectionsByName["proposals:chronological"]?.count
+                : sectionsByName["proposals:past"]?.count;
+
+            const hasMoreItems =
+              truncatableItemCount > BROWSE_LIST_PAGE_ITEM_COUNT * page;
+
+            if (!hasMoreItems) return null;
+
+            return (
+              <Pagination
+                showNext={() => setPage((p) => p + 1)}
+                showAll={() => setPage(null)}
+              />
+            );
+          })()}
         </Tabs.Item>
         <Tabs.Item key="candidates" title="Candidates">
-          <div css={css({ paddingTop: "2.4rem" })}>
-            <div css={css({ margin: "-0.4rem 0 2rem" })}>
-              <Select
-                size="small"
-                aria-label="Candidate sorting"
-                value={candidateSortStrategy}
-                options={[
-                  {
-                    value: "popularity",
-                    label: "By popularity",
-                  },
-                  {
-                    value: "activity",
-                    label: "By recent activity",
-                  },
-                  {
-                    value: "connected-account-feedback",
-                    label: "By your feedback activity",
-                  },
-                ].filter(
-                  (o) =>
-                    // A connected wallet is required for feedback filter to work
-                    connectedWalletAccountAddress != null ||
-                    o.value !== "connected-account-feedback",
-                )}
-                onChange={(value) => {
-                  setCandidateSortStrategy(value);
-                }}
-                fullWidth={false}
-                width="max-content"
-                renderTriggerContent={(value, options) => (
-                  <>
-                    Order:{" "}
-                    <em
-                      css={(t) =>
-                        css({
-                          fontStyle: "normal",
-                          fontWeight: t.text.weights.emphasis,
-                        })
-                      }
-                    >
-                      {options.find((o) => o.value === value)?.label}
-                    </em>
-                  </>
-                )}
-              />
-            </div>
-
-            <ProposalList
-              forcePlaceholder={!hasFetchedOnce}
-              showCandidateScore
-              items={[
-                "candidates:authored",
-                "candidates:sponsored",
-                "candidates:feedback-missing",
-                "candidates:feedback-given",
-                "candidates:new",
-                "candidates:recently-active",
-                "candidates:popular",
-                "candidates:inactive",
-              ]
-                .map((sectionKey) => sectionsByName[sectionKey] ?? {})
-                .filter(
-                  ({ children }) => children != null && children.length !== 0,
-                )}
-            />
-            {page != null &&
-              sectionsByName["candidates:inactive"] != null &&
-              sectionsByName["candidates:inactive"].count >
-                BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                <Pagination
-                  showNext={() => setPage((p) => p + 1)}
-                  showAll={() => setPage(null)}
-                />
+          <div
+            css={css({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.8rem",
+              padding: "2rem 0",
+            })}
+          >
+            <Select
+              size="small"
+              aria-label="Candidate sorting"
+              inlineLabel="Sort by"
+              value={candidateSortStrategy}
+              options={[
+                {
+                  value: "popularity",
+                  label: "Popularity",
+                },
+                {
+                  value: "activity",
+                  label: "Recent activity",
+                },
+                {
+                  value: "connected-account-feedback",
+                  label: "Your feedback activity",
+                },
+              ].filter(
+                (o) =>
+                  // A connected wallet is required for feedback filter to work
+                  connectedAccountAddress != null ||
+                  o.value !== "connected-account-feedback",
               )}
+              onChange={(value) => {
+                setCandidateSortStrategy(value);
+              }}
+              fullWidth={false}
+              width="max-content"
+            />
+            <Button
+              component={NextLink}
+              href="/candidates"
+              prefetch
+              size="small"
+              variant="transparent"
+              icon={
+                <FullscreenIcon
+                  style={{
+                    width: "1.4rem",
+                    height: "auto",
+                    transform: "scaleX(-1)",
+                  }}
+                />
+              }
+            />
           </div>
+
+          <ProposalList
+            forcePlaceholder={!hasFetchedOnce}
+            showCandidateScore
+            items={[
+              "candidates:authored",
+              "candidates:sponsored",
+              "candidates:feedback-missing",
+              "candidates:feedback-given",
+              "candidates:new",
+              "candidates:active",
+              "candidates:popular",
+              "candidates:inactive",
+            ]
+              .map((sectionKey) => sectionsByName[sectionKey] ?? {})
+              .filter(
+                ({ children }) => children != null && children.length !== 0,
+              )}
+          />
+          {page != null &&
+            sectionsByName["candidates:inactive"] != null &&
+            sectionsByName["candidates:inactive"].count >
+              BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+              <Pagination
+                showNext={() => setPage((p) => p + 1)}
+                showAll={() => setPage(null)}
+              />
+            )}
         </Tabs.Item>
-        <Tabs.Item key="drafts" title="My drafts">
+        <Tabs.Item key="voters" title="Voters">
+          <div
+            css={css({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.8rem",
+              padding: "2rem 0",
+            })}
+          >
+            <Select
+              size="small"
+              aria-label="Voter sorting"
+              inlineLabel="Sort by"
+              value={voterSortStrategy}
+              options={[
+                {
+                  value: "recent-revotes",
+                  label: "Most revoted (30 days)",
+                },
+                {
+                  value: "recent-votes",
+                  label: "Votes cast (30 days)",
+                },
+              ]}
+              onChange={(value) => {
+                setVoterSortStrategy(value);
+              }}
+              fullWidth={false}
+              width="max-content"
+            />
+            <Button
+              component={NextLink}
+              href="/voters"
+              prefetch
+              size="small"
+              variant="transparent"
+              icon={
+                <FullscreenIcon
+                  style={{
+                    width: "1.4rem",
+                    height: "auto",
+                    transform: "scaleX(-1)",
+                  }}
+                />
+              }
+            />
+          </div>
+
+          <VoterList sortStrategy={voterSortStrategy} />
+        </Tabs.Item>
+        {/* <Tabs.Item key="drafts" title="My drafts">
           <div css={css({ paddingTop: "2.4rem" })}>
             <DraftTabContent items={sectionsByName["drafts"]?.children} />
           </div>
-        </Tabs.Item>
+        </Tabs.Item> */}
       </Tabs.Root>
     </>
   );
@@ -742,14 +773,6 @@ const BrowseScreen = () => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
-          {
-            label: "Voters",
-            buttonProps: {
-              component: NextLink,
-              href: "/voters",
-              prefetch: true,
-            },
-          },
           {
             label: "Propose",
             buttonProps: {
@@ -771,7 +794,7 @@ const BrowseScreen = () => {
                     containerType: "inline-size",
                     padding: "0 0 3.2rem",
                     "@media (min-width: 600px)": {
-                      padding: "6rem 0 2.8rem",
+                      padding: "4rem 0 2.8rem",
                     },
                   })}
                 >
@@ -785,22 +808,20 @@ const BrowseScreen = () => {
                 containerType: "inline-size",
                 padding: "0 0 3.2rem",
                 "@media (min-width: 600px)": {
-                  padding: "6rem 0",
+                  padding: "4rem 0",
                 },
               })}
             >
               <div
                 css={(t) =>
                   css({
+                    // Background needed since the input is transparent
                     background: t.colors.backgroundPrimary,
                     position: "sticky",
                     top: 0,
                     zIndex: 2,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1.6rem",
-                    margin: "-0.3rem -1.6rem 0",
-                    padding: "0.3rem 1.6rem 0", // Top padding to offset the focus box shadow
+                    // Top offset to prevent hidden focus box shadow when sticky
+                    padding: "0.3rem 0 0",
                     "@media (min-width: 600px)": {
                       marginBottom: "2.4rem",
                     },
@@ -814,7 +835,6 @@ const BrowseScreen = () => {
                   onChange={(e) => {
                     handleSearchInputChange(e.target.value);
                   }}
-                  css={css({ flex: 1, minWidth: 0 })}
                 />
               </div>
 
@@ -858,125 +878,6 @@ const BrowseScreen = () => {
         </div>
       </Layout>
     </>
-  );
-};
-
-export const SectionedList = ({
-  sections,
-  showPlaceholder = false,
-  ...props
-}) => {
-  return (
-    <ul
-      role={showPlaceholder ? "presentation" : undefined}
-      css={(t) => {
-        const hoverColor = t.colors.backgroundModifierNormal;
-        return css({
-          listStyle: "none",
-          containerType: "inline-size",
-          ul: { listStyle: "none" },
-          "li + li": { marginTop: "1.6rem" },
-          "[data-group] li + li": { marginTop: 0 },
-          "[data-group-title]": {
-            padding: "0.4rem 0",
-            background: t.colors.backgroundPrimary,
-            textTransform: "uppercase",
-            fontSize: t.text.sizes.small,
-            fontWeight: t.text.weights.emphasis,
-            color: t.colors.textDimmed,
-          },
-          "[data-group-description]": {
-            textTransform: "none",
-            fontSize: t.text.sizes.small,
-            fontWeight: t.text.weights.normal,
-            color: t.colors.textDimmed,
-          },
-          "[data-placeholder]": {
-            background: hoverColor,
-            borderRadius: "0.3rem",
-          },
-          "[data-group-title][data-placeholder]": {
-            height: "2rem",
-            width: "12rem",
-            marginBottom: "1rem",
-          },
-          "[data-group] li[data-placeholder]": {
-            height: "6.2rem",
-          },
-          "[data-group] li + li[data-placeholder]": {
-            marginTop: "1rem",
-          },
-          "[data-group-list] > li": {
-            position: "relative",
-            padding: "0.8rem 0",
-            color: t.colors.textNormal,
-            borderRadius: "0.5rem",
-            ".link": { position: "absolute", inset: 0, display: "block" },
-            ".item-container": { position: "relative", pointerEvents: "none" },
-          },
-          "[data-title]": {
-            fontSize: t.text.sizes.base,
-            fontWeight: t.text.weights.smallHeader,
-            lineHeight: 1.35,
-          },
-          "[data-small]": {
-            color: t.colors.textDimmed,
-            fontSize: t.text.sizes.small,
-            lineHeight: 1.25,
-            padding: "0.1rem 0",
-          },
-          "[data-nowrap]": {
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          },
-          '[data-dimmed="true"]': {
-            color: t.colors.textMuted,
-            "[data-small]": {
-              color: t.colors.textMuted,
-            },
-          },
-          // Hover enhancement
-          "@media(hover: hover)": {
-            "a:hover": {
-              background: `linear-gradient(90deg, transparent 0%, ${hoverColor} 20%, ${hoverColor} 80%, transparent 100%)`,
-            },
-          },
-        });
-      }}
-      {...props}
-    >
-      {showPlaceholder ? (
-        <li data-group key="placeholder">
-          <div data-group-title data-placeholder />
-          <ul>
-            {Array.from({ length: 15 }).map((_, i) => (
-              <li key={i} data-placeholder />
-            ))}
-          </ul>
-        </li>
-      ) : (
-        sections.map(({ title, description, items }, i) => {
-          return (
-            <li data-group key={title ?? i}>
-              {title != null && (
-                <div data-group-title>
-                  {title}
-                  {description != null && (
-                    <span data-group-description> — {description}</span>
-                  )}
-                </div>
-              )}
-              <ul data-group-list>
-                {items.map((i) => (
-                  <li key={i.id}></li>
-                ))}
-              </ul>
-            </li>
-          );
-        })
-      )}
-    </ul>
   );
 };
 
@@ -1086,7 +987,6 @@ const Feed = React.memo(() => {
               setFilter(value);
             }}
             fullWidth={false}
-            align="right"
             width="max-content"
             renderTriggerContent={(value) => {
               const filterLabel = {
@@ -1179,36 +1079,152 @@ const FeedTabContent = React.memo(() => {
   );
 });
 
-const DraftTabContent = ({ items = [] }) => {
-  const hasDrafts = items.length > 0;
+const VoterList = ({ sortStrategy }) => {
+  const subgraphFetch = useSubgraphFetch();
+  const accounts = useDelegates();
 
-  if (!hasDrafts)
-    return (
-      <Tabs.EmptyPlaceholder
-        description="You have no drafts"
-        buttonLabel="New proposal"
-        buttonProps={{
-          component: NextLink,
-          href: "/new",
-          icon: <PlusIcon style={{ width: "1rem" }} />,
-        }}
-        css={css({ padding: "3.2rem 0" })}
-      />
-    );
+  const [page, setPage] = React.useState(1);
+  const [dateRange] = React.useState(() => {
+    const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
+    const now = new Date();
+    return {
+      start: new Date(now.getTime() - 30 * ONE_DAY_MILLIS),
+      end: now,
+    };
+  });
+
+  const { votesByAccountAddress, vwrCountByAccountAddress } =
+    useVotes(dateRange);
+  const revoteCountByAccountAddress = useRevoteCount(dateRange);
+
+  const filteredSortedAccounts = React.useMemo(() => {
+    switch (sortStrategy) {
+      default:
+      case "recent-revotes": {
+        const filteredAccounts = accounts.filter((a) => {
+          const revoteCount = revoteCountByAccountAddress?.[a.id] ?? 0;
+          return revoteCount > 0;
+        });
+        return arrayUtils.sortBy(
+          {
+            value: (a) => revoteCountByAccountAddress?.[a.id] ?? 0,
+            order: "desc",
+          },
+          {
+            value: (a) => {
+              const vwrCount = vwrCountByAccountAddress?.[a.id] ?? 0;
+              if (vwrCount === 0) return Infinity;
+              const voteCount = (votesByAccountAddress?.[a.id] ?? []).length;
+
+              // Non-vwrs are worth less than vwrs
+              return vwrCount + (voteCount - vwrCount) * 2;
+            },
+            order: "asc",
+          },
+          {
+            value: (a) => {
+              const voteCount = (votesByAccountAddress?.[a.id] ?? []).length;
+              return voteCount === 0 ? Infinity : voteCount;
+            },
+            order: "asc",
+          },
+          filteredAccounts,
+        );
+      }
+
+      case "recent-votes": {
+        const filteredAccounts = accounts.filter((a) => {
+          const votes = votesByAccountAddress?.[a.id] ?? [];
+          return votes.length > 0;
+        });
+        return arrayUtils.sortBy(
+          {
+            value: (a) => (votesByAccountAddress?.[a.id] ?? []).length,
+            order: "desc",
+          },
+          {
+            value: (a) => revoteCountByAccountAddress?.[a.id] ?? 0,
+            order: "desc",
+          },
+          {
+            value: (a) => vwrCountByAccountAddress?.[a.id] ?? 0,
+            order: "desc",
+          },
+          filteredAccounts,
+        );
+      }
+    }
+  }, [
+    accounts,
+    sortStrategy,
+    votesByAccountAddress,
+    revoteCountByAccountAddress,
+    vwrCountByAccountAddress,
+  ]);
+
+  useFetch(() => {
+    const dateRangeStart = Math.floor(dateRange.start.getTime() / 1000);
+    return subgraphFetch({
+      query: `{
+        delegates(
+          first: 1000,
+          where: {
+            votes_: {
+              blockTimestamp_gt: "${dateRangeStart}"
+            }
+          }
+        ) {
+          id
+          votes(first: 1000, orderBy: blockNumber, orderDirection: desc) {
+            id
+            blockNumber
+            supportDetailed
+            reason
+          }
+          nounsRepresented(first: 1000) {
+            id
+            seed {
+              head
+              glasses
+              body
+              background
+              accessory
+            }
+            owner {
+              id
+              delegate { id }
+            }
+          }
+        }
+      }`,
+    });
+  }, [subgraphFetch, dateRange]);
 
   return (
-    <ProposalList
-      items={[
-        {
-          key: "drafts",
-          type: "section",
-          title: "Drafts",
-          description:
-            "Drafts are stored in your browser, not accessible to others",
-          children: items,
-        },
-      ]}
-    />
+    <>
+      <ProposalList
+        forcePlaceholder={revoteCountByAccountAddress == null}
+        items={
+          page != null
+            ? filteredSortedAccounts.slice(
+                0,
+                BROWSE_LIST_PAGE_ITEM_COUNT * page,
+              )
+            : filteredSortedAccounts
+        }
+        getItemProps={(item) => ({
+          votes: votesByAccountAddress?.[item.id] ?? null,
+          revoteCount: revoteCountByAccountAddress?.[item.id] ?? null,
+        })}
+      />
+      {page != null &&
+        filteredSortedAccounts.length > BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+          <Pagination
+            showNext={() => setPage((p) => p + 1)}
+            showAll={() => setPage(null)}
+          />
+        )}
+    </>
   );
 };
 

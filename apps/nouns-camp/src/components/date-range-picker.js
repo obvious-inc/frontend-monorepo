@@ -107,7 +107,7 @@ const DateRangePicker = ({
               gap: "0.1em",
               "[data-placeholder]": {
                 fontWeight: t.text.weights.normal,
-                color: t.colors.textMuted,
+                color: t.colors.inputPlaceholder,
               },
             },
             "&[data-has-inline-label] .react-aria-DateInput": {

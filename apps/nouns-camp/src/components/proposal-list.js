@@ -1,10 +1,21 @@
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
-import { array as arrayUtils, date as dateUtils } from "@shades/common/utils";
-import { ErrorBoundary } from "@shades/common/react";
-import { ArrowDownSmall as ArrowDownSmallIcon } from "@shades/ui-web/icons";
 import {
+  array as arrayUtils,
+  date as dateUtils,
+  ethereum as ethereumUtils,
+} from "@shades/common/utils";
+import { ErrorBoundary, useIsOnScreen } from "@shades/common/react";
+import {
+  ArrowDownSmall as ArrowDownSmallIcon,
+  DotsHorizontal as DotsHorizontalIcon,
+} from "@shades/ui-web/icons";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import Button from "@shades/ui-web/button";
+import {
+  useDelegate,
+  useAccount,
   useProposal,
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -16,9 +27,14 @@ import {
 } from "../utils/candidates.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useProposalThreshold } from "../hooks/dao-contract.js";
-import { useSingleItem as useDraft } from "../hooks/drafts.js";
+import {
+  useSingleItem as useDraft,
+  useCollection as useDrafts,
+} from "../hooks/drafts.js";
+import useEnsName from "../hooks/ens-name.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import AccountAvatar from "./account-avatar.js";
@@ -31,12 +47,17 @@ const ProposalVotesDialog = React.lazy(
   () => import("./proposal-votes-dialog.js"),
 );
 
+const isDebugSession =
+  typeof location !== "undefined" &&
+  new URLSearchParams(location.search).get("debug") != null;
+
 const ProposalList = ({
   items,
   sortStrategy,
   showCandidateScore = false,
   isLoading,
   forcePlaceholder,
+  getItemProps,
 }) => {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -94,51 +115,161 @@ const ProposalList = ({
               ".item-container": {
                 pointerEvents: "none",
                 position: "relative",
-                padding: "0.8rem 0",
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.1rem",
               },
-              ".title-status-container": {
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.2rem",
-              },
-              ".header, .status-text": {
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.small,
+              ".small": { fontSize: t.text.sizes.small },
+              ".dimmed": { color: t.colors.textDimmed },
+              ".nowrap": {
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
               },
               ".title": {
                 fontWeight: t.text.weights.smallHeader,
                 lineHeight: 1.3,
               },
-              ".status-container": {
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "0.2rem 0.6rem",
-              },
-              ".tags-container": {
-                display: "flex",
-                alignItems: "center",
-                gap: "0 0.4rem",
-                padding: "0.1rem 0",
-              },
-              "@container(min-width: 540px)": {
+              ".proposal": {
+                "&.item-container": {
+                  padding: "0.8rem 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.1rem",
+                },
                 ".title-status-container": {
-                  flexDirection: "row",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.2rem",
+                },
+                ".status-container": {
+                  display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "0.8rem",
+                  flexWrap: "wrap",
+                  gap: "0.2rem 0.6rem",
                 },
                 ".tags-container": {
-                  flexDirection: "row-reverse",
-                  "[data-state-tag]": { minWidth: "7.2em" },
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0 0.4rem",
+                  padding: "0.1rem 0",
                 },
-                ".narrow-only": { display: "none" },
+                ".votes-tag-placeholder": { width: "10rem" },
+                "@container(min-width: 540px)": {
+                  ".title-status-container": {
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "0.8rem",
+                  },
+                  ".tags-container": {
+                    flexDirection: "row-reverse",
+                    "[data-state-tag]": { minWidth: "7.2em" },
+                  },
+                },
               },
-              "@container(max-width: 540px)": {
-                ".wide-only": { display: "none" },
+              ".proposal-candidate": {
+                "&.item-container": {
+                  padding: "0.8rem 0",
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1fr) auto",
+                  gridGap: "3.2rem",
+                  alignItems: "stretch",
+                },
+                ".left-container": {
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1fr)",
+                  gridGap: "1rem",
+                  alignItems: "center",
+                  '&[data-score="true"]': {
+                    gridTemplateColumns: "2.2rem minmax(0,1fr)",
+                  },
+                },
+                ".score-container": {
+                  position: "absolute",
+                  right: "calc(100% + 1rem)",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                },
+                ".avatar-container": {
+                  display: "flex",
+                  gap: "0.3rem",
+                  alignItems: "center",
+                  ".avatar-placeholder": {
+                    background: "red",
+                    '&[data-size="small"]': { width: "1.4rem" },
+                    '&[data-size="large"]': { width: "2rem" },
+                  },
+                },
+                ".status-container": {
+                  display: "flex",
+                  gap: "0.4rem",
+                  alignItems: "center",
+                  ".avatar-container": {
+                    flex: 1,
+                    minWidth: 0,
+                  },
+                },
+                ".tags-container": {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0 0.4rem",
+                  padding: "0.1rem 0",
+                },
+                ".proposal-link": {
+                  textDecoration: "none",
+                  color: "inherit",
+                  fontWeight: t.text.weights.emphasis,
+                  pointerEvents: "all",
+                  "@media(hover: hover)": {
+                    ":hover": { textDecoration: "underline" },
+                  },
+                },
+              },
+              ".account": {
+                "&.item-container": {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1.2rem",
+                  padding: "1.2rem 0",
+                },
+                ".avatar-placeholder": { width: "3.6rem", height: "3.6rem" },
+                ".content-container": {
+                  flex: 1,
+                  minWidth: 0,
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0,1fr) auto auto",
+                  alignItems: "center",
+                  gap: "1.2rem",
+                },
+                "@container(max-width: 540px)": {
+                  ".content-container": {
+                    gridTemplateColumns: "minmax(0,1fr) auto",
+                  },
+                  ".votes-tag-group-container": {
+                    display: "none",
+                  },
+                },
+              },
+              ".proposal-draft": {
+                "&.item-container": {
+                  padding: "0.8rem 0",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.8rem",
+                },
+                ".content-container": {
+                  flex: 1,
+                  minWidth: 0,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.1rem",
+                },
+                ".right-column": {
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.8rem",
+                  "@container(max-width: 540px)": {
+                    ".status-tag": { display: "none" },
+                  },
+                },
               },
             },
             // Placeholder
@@ -156,6 +287,19 @@ const ProposalList = ({
             },
             ".item-placeholder + .item-placeholder": {
               marginTop: "1rem",
+            },
+            "[data-show]": {
+              transition: "0.25s opacity ease-out",
+              opacity: 0,
+            },
+            '[data-show="true"]': {
+              opacity: 1,
+            },
+            "@container(min-width: 540px)": {
+              ".narrow-only": { display: "none !important" },
+            },
+            "@container(max-width: 540px)": {
+              ".wide-only": { display: "none !important" },
             },
             // Hover enhancement
             "@media(hover: hover)": {
@@ -180,23 +324,30 @@ const ProposalList = ({
           </li>
         ) : (
           items.map((item) => {
-            const renderItem = (item) => (
-              <li key={item.id}>
-                {item.type === "draft" ? (
-                  <ProposalDraftItem draftId={item.id} />
-                ) : item.slug != null ? (
-                  <CandidateItem
-                    candidateId={item.id}
-                    showScoreStack={showCandidateScore}
-                  />
-                ) : (
-                  <ProposalItem
-                    proposalId={item.id}
-                    sortStrategy={sortStrategy}
-                  />
-                )}
-              </li>
-            );
+            const renderItem = (item) => {
+              const props = getItemProps?.(item);
+              return (
+                <li key={item.id}>
+                  {item.type === "draft" ? (
+                    <ProposalDraftListItem draftId={item.id} {...props} />
+                  ) : item.slug != null ? (
+                    <CandidateListItem
+                      candidateId={item.id}
+                      showScoreStack={showCandidateScore}
+                      {...props}
+                    />
+                  ) : item.proposerId != null ? (
+                    <ProposalListItem
+                      proposalId={item.id}
+                      sortStrategy={sortStrategy}
+                      {...props}
+                    />
+                  ) : (
+                    <AccountListItem address={item.id} {...props} />
+                  )}
+                </li>
+              );
+            };
 
             if (item.type === "section")
               return (
@@ -245,9 +396,20 @@ const ProposalList = ({
   );
 };
 
-const ProposalItem = React.memo(({ proposalId, sortStrategy }) => {
+const ProposalListItem = React.memo(({ proposalId, sortStrategy }) => {
+  const containerRef = React.useRef();
+  const hasBeenOnScreenRef = React.useRef(false);
+
   const proposal = useProposal(proposalId, { watch: false });
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+
+  const isOnScreen = useIsOnScreen(containerRef);
+
+  React.useEffect(() => {
+    if (isOnScreen) hasBeenOnScreenRef.current = true;
+  });
+
+  const hasBeenOnScreen = hasBeenOnScreenRef.current ?? false;
 
   const statusText = (() => {
     const baseStatusText = renderPropStatusText({
@@ -326,65 +488,79 @@ const ProposalItem = React.memo(({ proposalId, sortStrategy }) => {
         href={`/proposals/${proposalId}`}
         data-dimmed={isDimmed}
       />
-      <div className="item-container">
-        <div className="header">
-          Prop {proposalId} by{" "}
-          <em
-            css={(t) =>
-              css({
-                pointerEvents: "all",
-                fontWeight: t.text.weights.emphasis,
-                fontStyle: "normal",
-              })
-            }
-          >
-            {proposal.proposerId == null ? (
-              "..."
-            ) : (
-              <AccountPreviewPopoverTrigger
-                accountAddress={proposal.proposerId}
-              />
+      <div ref={containerRef} className="item-container proposal">
+        <div className="small dimmed nowrap">
+          Prop {proposalId}{" "}
+          <span data-show={hasBeenOnScreen}>
+            {hasBeenOnScreen && (
+              <>
+                by{" "}
+                <em
+                  css={(t) =>
+                    css({
+                      pointerEvents: "all",
+                      fontWeight: t.text.weights.emphasis,
+                      fontStyle: "normal",
+                    })
+                  }
+                >
+                  {proposal.proposerId == null ? (
+                    "..."
+                  ) : (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={proposal.proposerId}
+                    />
+                  )}
+                </em>
+                {proposal.signers != null && proposal.signers.length > 0 && (
+                  <>
+                    , sponsored by{" "}
+                    {proposal.signers.map((signer, i) => (
+                      <React.Fragment key={signer.id}>
+                        {i > 0 && <>, </>}
+                        <em
+                          css={(t) =>
+                            css({
+                              pointerEvents: "all",
+                              fontWeight: t.text.weights.emphasis,
+                              fontStyle: "normal",
+                            })
+                          }
+                        >
+                          <AccountPreviewPopoverTrigger
+                            accountAddress={signer.id}
+                          />
+                        </em>
+                      </React.Fragment>
+                    ))}
+                  </>
+                )}
+              </>
             )}
-          </em>
-          {proposal.signers != null && proposal.signers.length > 0 && (
-            <>
-              , sponsored by{" "}
-              {proposal.signers.map((signer, i) => (
-                <React.Fragment key={signer.id}>
-                  {i > 0 && <>, </>}
-                  <em
-                    css={(t) =>
-                      css({
-                        pointerEvents: "all",
-                        fontWeight: t.text.weights.emphasis,
-                        fontStyle: "normal",
-                      })
-                    }
-                  >
-                    <AccountPreviewPopoverTrigger accountAddress={signer.id} />
-                  </em>
-                </React.Fragment>
-              ))}
-            </>
-          )}
+          </span>
         </div>
         <div className="title-status-container">
           <div className="title">
             {proposal.title === null ? "Untitled" : proposal.title}
           </div>
-          <div className="status-container">
+          <div data-show={hasBeenOnScreen} className="status-container">
             <div className="tags-container">
               <ProposalStateTag data-state-tag proposalId={proposalId} />
-              {showVoteStatus && <ProposalVotesTag proposalId={proposalId} />}
+              {showVoteStatus &&
+                (hasBeenOnScreen ? (
+                  <ProposalVotesTag proposalId={proposalId} />
+                ) : (
+                  <div className="votes-tag-placeholder" />
+                ))}
             </div>
             {statusText != null && (
-              <span className="status-text narrow-only">{statusText}</span>
+              <span className="small dimmed narrow-only">{statusText}</span>
             )}
           </div>
         </div>
         {statusText != null && (
           <div
-            className="status-text wide-only"
+            className="small dimmed wide-only"
             style={{ padding: "0 0.1rem" }}
           >
             {statusText}
@@ -395,275 +571,560 @@ const ProposalItem = React.memo(({ proposalId, sortStrategy }) => {
   );
 });
 
-const CandidateItem = React.memo(
-  ({ candidateId, showScoreStack: showScoreStack_ }) => {
-    const candidate = useProposalCandidate(candidateId);
-    const updateTargetProposal = useProposal(
-      candidate.latestVersion.targetProposalId,
-      { watch: false },
+const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
+  const containerRef = React.useRef();
+  const hasBeenOnScreenRef = React.useRef(false);
+
+  const candidate = useProposalCandidate(candidateId);
+  const updateTargetProposal = useProposal(
+    candidate.latestVersion.targetProposalId,
+    { watch: false },
+  );
+  const promotedProposal = useProposal(candidate.latestVersion.proposalId, {
+    watch: false,
+  });
+
+  const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
+  const proposalThreshold = useProposalThreshold();
+
+  const isOnScreen = useIsOnScreen(containerRef);
+
+  React.useEffect(() => {
+    if (isOnScreen) hasBeenOnScreenRef.current = true;
+  });
+
+  const hasBeenOnScreen = hasBeenOnScreenRef.current ?? false;
+
+  const { votes } = getCandidateSignals({ candidate });
+  const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
+    (v) => v.support,
+    votes,
+  );
+  // const commentCount =
+  //   signals.delegates.for +
+  //   signals.delegates.against +
+  //   signals.delegates.abstain;
+
+  const isCanceled = candidate.canceledTimestamp != null;
+  const isPromoted = candidate.latestVersion.proposalId != null;
+  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
+  const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
+
+  const hasUpdate =
+    candidate.lastUpdatedTimestamp != null &&
+    candidate.lastUpdatedTimestamp.getTime() !==
+      candidate.createdTimestamp.getTime();
+
+  const feedbackPostsAscending = arrayUtils.sortBy(
+    (p) => p.createdBlock,
+    candidate?.feedbackPosts ?? [],
+  );
+  const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
+
+  const hasFeedback = mostRecentFeedbackPost != null;
+
+  const mostRecentActivity =
+    hasFeedback &&
+    (!hasUpdate ||
+      mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
+      ? "feedback"
+      : hasUpdate
+        ? "update"
+        : "create";
+
+  const feedbackAuthorAccounts = arrayUtils.unique(
+    feedbackPostsAscending.map((p) => p.voterId),
+  );
+
+  const renderProposalUpdateStatusText = () => {
+    if (updateTargetProposal?.signers == null) return "...";
+
+    const validSignatures = getCandidateSponsorSignatures(candidate, {
+      excludeInvalid: true,
+      activeProposerIds: [],
+    });
+
+    const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+
+    const missingSigners = updateTargetProposal.signers.filter((s) => {
+      const signerId = s.id.toLowerCase();
+      return !signerIds.includes(signerId);
+    });
+
+    const sponsorCount =
+      updateTargetProposal.signers.length - missingSigners.length;
+
+    return (
+      <>
+        {sponsorCount} of {updateTargetProposal.signers.length}{" "}
+        {updateTargetProposal.signers.length === 1 ? "sponsor" : "sponsors"}{" "}
+        signed
+      </>
     );
+  };
 
-    const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
-    const proposalThreshold = useProposalThreshold();
+  return (
+    <>
+      <NextLink
+        className="link"
+        prefetch
+        href={`/candidates/${encodeURIComponent(
+          makeCandidateUrlId(candidateId),
+        )}`}
+      />
+      <div ref={containerRef} className="item-container proposal-candidate">
+        <div className="left-container" data-score={showScoreStack}>
+          {showScoreStack && <div />}
+          <div>
+            <div className="small dimmed nowrap">
+              {isProposalUpdate ? "Proposal update" : "Candidate"} by{" "}
+              <em
+                data-show={hasBeenOnScreen}
+                css={(t) =>
+                  css({
+                    pointerEvents: "all",
+                    fontWeight: t.text.weights.emphasis,
+                    fontStyle: "normal",
+                  })
+                }
+              >
+                {!hasBeenOnScreen ? null : candidate.proposerId == null ? (
+                  "..."
+                ) : (
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={candidate.proposerId}
+                  />
+                )}
+              </em>
+              {!isCanceled && !isPromoted && isProposalThresholdMet && (
+                <span>
+                  <span
+                    role="separator"
+                    aria-orientation="vertical"
+                    css={(t) =>
+                      css({
+                        ":before": {
+                          content: '"–"',
+                          color: t.colors.textMuted,
+                          margin: "0 0.5rem",
+                        },
+                      })
+                    }
+                  />
+                  <i>Sponsor threshold met</i>
+                </span>
+              )}
+            </div>
+            <div
+              className="title"
+              css={css({ margin: "0.1rem 0", position: "relative" })}
+            >
+              {candidate.latestVersion.content.title}
+              {showScoreStack && (
+                <div className="score-container">
+                  <ScoreStack
+                    for={forVotes.length}
+                    against={againstVotes.length}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="status-container">
+              {/* <span data-desktop-only> */}
+              {/*   {commentCount > 0 ? ( */}
+              {/*     <> */}
+              {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
+              {/*         {commentCount} comments */}
+              {/*       </span> */}
+              {/*     </> */}
+              {/*   ) : null} */}
+              {/* </span> */}
+              {(isProposalUpdate || isCanceled) && (
+                <div className="tags-container">
+                  {isProposalUpdate && (
+                    <Tag variant="special" size="large">
+                      Prop {candidate.latestVersion.targetProposalId} update
+                    </Tag>
+                  )}
+                  {isCanceled && (
+                    <Tag variant="error" size="large">
+                      Canceled
+                    </Tag>
+                  )}
+                </div>
+              )}
+              <div className="small dimmed">
+                {isProposalUpdate ? (
+                  renderProposalUpdateStatusText()
+                ) : promotedProposal?.createdTimestamp != null ? (
+                  <>
+                    Promoted to{" "}
+                    <NextLink
+                      className="proposal-link"
+                      href={`/proposals/${candidate.latestVersion.proposalId}`}
+                    >
+                      Prop {candidate.latestVersion.proposalId}
+                    </NextLink>{" "}
+                    <FormattedDateWithTooltip
+                      relativeDayThreshold={5}
+                      capitalize={false}
+                      value={promotedProposal.createdTimestamp}
+                      day="numeric"
+                      month="short"
+                    />{" "}
+                  </>
+                ) : (
+                  <>
+                    {mostRecentActivity === "update" ? (
+                      <>
+                        Last updated{" "}
+                        <FormattedDateWithTooltip
+                          relativeDayThreshold={5}
+                          capitalize={false}
+                          value={candidate.lastUpdatedTimestamp}
+                          day="numeric"
+                          month="short"
+                        />
+                      </>
+                    ) : mostRecentActivity === "feedback" ? (
+                      <>
+                        Last comment{" "}
+                        <FormattedDateWithTooltip
+                          relativeDayThreshold={5}
+                          capitalize={false}
+                          value={mostRecentFeedbackPost.createdTimestamp}
+                          day="numeric"
+                          month="short"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        Created{" "}
+                        <FormattedDateWithTooltip
+                          relativeDayThreshold={5}
+                          capitalize={false}
+                          value={candidate.createdTimestamp}
+                          day="numeric"
+                          month="short"
+                        />
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
+              <div
+                data-show={isOnScreen}
+                className="avatar-container narrow-only"
+              >
+                {feedbackAuthorAccounts
+                  .slice(0, 10)
+                  .map((a) =>
+                    isOnScreen ? (
+                      <AccountAvatar
+                        key={a}
+                        address={a}
+                        size="1.4rem"
+                        borderRadius="0.2rem"
+                        signature="?"
+                      />
+                    ) : (
+                      <div
+                        key={a}
+                        data-size="small"
+                        className="avatar-placeholder"
+                      />
+                    ),
+                  )}
+                {feedbackAuthorAccounts.length > 10 && <>...</>}
+              </div>
+            </div>
+          </div>
 
-    const { votes } = getCandidateSignals({ candidate });
-    const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
-      (v) => v.support,
-      votes,
+          {/* votingPower > proposalThreshold ? ( */}
+          {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
+          {/* ) : ( */}
+          {/*   <Tag> */}
+          {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
+          {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
+          {/*   </Tag> */}
+          {/* )} */}
+        </div>
+        <div data-show={isOnScreen} className="avatar-container wide-only">
+          {feedbackAuthorAccounts.slice(0, 10).map((a) =>
+            isOnScreen ? (
+              <AccountAvatar
+                key={a}
+                address={a}
+                size="2rem"
+                // borderRadius="0.2rem"
+                // signature="?"
+              />
+            ) : (
+              <div key={a} data-size="large" className="avatar-placeholder" />
+            ),
+          )}
+          {feedbackAuthorAccounts.length > 10 && <>...</>}
+        </div>
+      </div>
+    </>
+  );
+});
+
+const AccountListItem = React.memo(
+  ({ address: accountAddress, votes: votes_, revoteCount }) => {
+    const containerRef = React.useRef();
+    const hasBeenOnScreenRef = React.useRef(false);
+
+    const { address: connectedAccountAddress } = useWallet();
+    const connectedAccount = useAccount(connectedAccountAddress);
+    const isOnScreen = useIsOnScreen(containerRef);
+
+    React.useEffect(() => {
+      if (isOnScreen) hasBeenOnScreenRef.current = true;
+    });
+
+    const hasBeenOnScreen = hasBeenOnScreenRef.current ?? false;
+
+    const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
+    const enableImpersonation = !isMe && isDebugSession;
+    const enableDelegation = connectedAccount?.nouns?.length > 0;
+
+    const delegate = useDelegate(accountAddress);
+    const ensName = useEnsName(accountAddress, {
+      enabled: hasBeenOnScreen,
+    });
+    const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
+    const displayName = ensName ?? truncatedAddress;
+    const votingPower = delegate?.nounsRepresented.length;
+
+    const { open: openDelegationDialog } = useDialog("delegation");
+
+    const hasDisplayName = displayName !== truncatedAddress;
+
+    const votes = votes_ === undefined ? delegate?.votes : votes_;
+
+    const vwrCount = votes?.reduce(
+      (count, v) =>
+        v.reason == null || v.reason.trim() === "" ? count : count + 1,
+      0,
     );
-    // const commentCount =
-    //   signals.delegates.for +
-    //   signals.delegates.against +
-    //   signals.delegates.abstain;
-
-    const isCanceled = candidate.canceledTimestamp != null;
-    const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-    const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
-
-    const hasUpdate =
-      candidate.lastUpdatedTimestamp != null &&
-      candidate.lastUpdatedTimestamp.getTime() !==
-        candidate.createdTimestamp.getTime();
-
-    const feedbackPostsAscending = arrayUtils.sortBy(
-      (p) => p.createdBlock,
-      candidate?.feedbackPosts ?? [],
-    );
-    const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
-
-    const hasFeedback = mostRecentFeedbackPost != null;
-
-    const mostRecentActivity =
-      hasFeedback &&
-      (!hasUpdate ||
-        mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
-        ? "feedback"
-        : hasUpdate
-          ? "update"
-          : "create";
-
-    const feedbackAuthorAccounts = arrayUtils.unique(
-      feedbackPostsAscending.map((p) => p.voterId),
-    );
-
-    const showScoreStack = showScoreStack_ && !isProposalUpdate;
-
-    const renderProposalUpdateStatusText = () => {
-      if (updateTargetProposal?.signers == null) return "...";
-
-      const validSignatures = getCandidateSponsorSignatures(candidate, {
-        excludeInvalid: true,
-        activeProposerIds: [],
-      });
-
-      const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
-
-      const missingSigners = updateTargetProposal.signers.filter((s) => {
-        const signerId = s.id.toLowerCase();
-        return !signerIds.includes(signerId);
-      });
-
-      const sponsorCount =
-        updateTargetProposal.signers.length - missingSigners.length;
-
-      return (
-        <>
-          {sponsorCount} / {updateTargetProposal.signers.length} sponsors signed
-        </>
-      );
-    };
 
     return (
       <>
         <NextLink
           className="link"
-          prefetch
-          href={`/candidates/${encodeURIComponent(
-            makeCandidateUrlId(candidateId),
-          )}`}
+          href={`/voters/${ensName ?? accountAddress}`}
         />
-        <div
-          className="item-container"
-          css={css({
-            display: "grid",
-            gridTemplateColumns: "minmax(0,1fr) auto",
-            gridGap: "3.2rem",
-            alignItems: "stretch",
-          })}
-        >
-          <div
-            css={css({
-              display: "grid",
-              gridTemplateColumns: "minmax(0,1fr)",
-              gridGap: "1rem",
-              alignItems: "center",
-            })}
-            style={{
-              gridTemplateColumns: showScoreStack
-                ? "2.2rem minmax(0,1fr)"
-                : undefined,
-            }}
-          >
-            {showScoreStack && <div />}
+        <div className="item-container account" ref={containerRef}>
+          {isOnScreen ? (
+            <AccountAvatar size="3.6rem" address={accountAddress} />
+          ) : (
+            <div className="avatar-placeholder" />
+          )}
+          <div className="content-container">
             <div>
-              <div className="header">
-                {isProposalUpdate ? "Proposal update" : "Candidate"} by{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      pointerEvents: "all",
-                      fontWeight: t.text.weights.emphasis,
-                      fontStyle: "normal",
-                    })
-                  }
-                >
-                  {candidate.proposerId == null ? (
-                    "..."
-                  ) : (
-                    <AccountPreviewPopoverTrigger
-                      accountAddress={candidate.proposerId}
-                    />
-                  )}
-                </em>
-                {isProposalThresholdMet && (
-                  <span>
-                    <span
-                      role="separator"
-                      aria-orientation="vertical"
-                      css={(t) =>
-                        css({
-                          ":before": {
-                            content: '"–"',
-                            color: t.colors.textMuted,
-                            margin: "0 0.5rem",
-                          },
-                        })
-                      }
-                    />
-                    Sponsor threshold met
-                  </span>
-                )}
+              <div className="title">
+                {displayName} {votingPower != null && <>({votingPower})</>}
               </div>
-              <div
-                className="title"
-                css={css({ margin: "0.1rem 0", position: "relative" })}
-              >
-                {candidate.latestVersion.content.title}
-                {showScoreStack && (
-                  <div
-                    css={css({
-                      position: "absolute",
-                      right: "calc(100% + 1rem)",
-                      top: "50%",
-                      transform: "translateY(-50%)",
-                    })}
-                  >
-                    <ScoreStack
-                      for={forVotes.length}
-                      against={againstVotes.length}
-                    />
-                  </div>
-                )}
-              </div>
-              <div
-                css={css({
-                  display: "flex",
-                  gap: "0.4rem",
-                  alignItems: "center",
-                })}
-              >
-                {/* <span data-desktop-only> */}
-                {/*   {commentCount > 0 ? ( */}
-                {/*     <> */}
-                {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
-                {/*         {commentCount} comments */}
-                {/*       </span> */}
-                {/*     </> */}
-                {/*   ) : null} */}
-                {/* </span> */}
-                <div className="status-text">
-                  {isProposalUpdate ? (
-                    renderProposalUpdateStatusText()
-                  ) : (
-                    <>
-                      {mostRecentActivity === "update" ? (
+              <span className="small dimmed">
+                {hasDisplayName && truncatedAddress}
+                {[
+                  {
+                    key: "votes",
+                    element: (() => {
+                      if (votes == null) return null;
+                      return (
                         <>
-                          Last updated{" "}
-                          <FormattedDateWithTooltip
-                            relativeDayThreshold={5}
-                            capitalize={false}
-                            value={candidate.lastUpdatedTimestamp}
-                            day="numeric"
-                            month="short"
-                          />
+                          {votes.length} {votes.length === 1 ? "vote" : "votes"}{" "}
+                          <span className="nowrap">
+                            ({vwrCount} {vwrCount === 1 ? "vwr" : "vwrs"})
+                          </span>
                         </>
-                      ) : mostRecentActivity === "feedback" ? (
-                        <>
-                          Last comment{" "}
-                          <FormattedDateWithTooltip
-                            relativeDayThreshold={5}
-                            capitalize={false}
-                            value={mostRecentFeedbackPost.createdTimestamp}
-                            day="numeric"
-                            month="short"
-                          />
-                        </>
-                      ) : (
-                        <>
-                          Created{" "}
-                          <FormattedDateWithTooltip
-                            relativeDayThreshold={5}
-                            capitalize={false}
-                            value={candidate.createdTimestamp}
-                            day="numeric"
-                            month="short"
-                          />
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-                <div
-                  css={css({
-                    // display: "none",
-                    // "@container(min-width: 540px)": {
-                    display: "flex",
-                    gap: "0.3rem",
-                    alignItems: "center",
-                    // },
-                  })}
-                >
-                  {feedbackAuthorAccounts.slice(0, 10).map((a) => (
-                    <AccountAvatar
-                      key={a}
-                      address={a}
-                      size="1.4rem"
-                      borderRadius="0.2rem"
-                      signature="?"
-                    />
+                      );
+                    })(),
+                  },
+                  {
+                    key: "revotes",
+                    element: revoteCount != null && (
+                      <span className="nowrap">
+                        {revoteCount} {revoteCount === 1 ? "revote" : "revotes"}
+                      </span>
+                    ),
+                  },
+                ]
+                  .filter(({ element }) => Boolean(element))
+                  .map(({ key, element }, i) => (
+                    <React.Fragment key={key}>
+                      {i !== 0 ? (
+                        <>, </>
+                      ) : hasDisplayName ? (
+                        <> {"\u00B7"} </>
+                      ) : null}
+                      {element}
+                    </React.Fragment>
                   ))}
-                  {feedbackAuthorAccounts.length > 10 && <>...</>}
-                </div>
-              </div>
+              </span>
             </div>
+            {isOnScreen && (
+              <>
+                <div className="votes-tag-group-container">
+                  {votes == null ? (
+                    <div />
+                  ) : votes.length > 0 ? (
+                    <VotesTagGroupFromVotes votes={votes} />
+                  ) : (
+                    <div className="small dimmed">No votes</div>
+                  )}
+                </div>
+                <DropdownMenu.Root
+                  placement="bottom end"
+                  offset={18}
+                  crossOffset={5}
+                >
+                  <DropdownMenu.Trigger asChild>
+                    <Button
+                      variant="transparent"
+                      size="small"
+                      icon={
+                        <DotsHorizontalIcon
+                          style={{ width: "1.8rem", height: "auto" }}
+                        />
+                      }
+                      style={{ pointerEvents: "all" }}
+                    />
+                  </DropdownMenu.Trigger>
+                  <DropdownMenu.Content
+                    css={css({
+                      width: "min-content",
+                      minWidth: "min-content",
+                      maxWidth: "calc(100vw - 2rem)",
+                    })}
+                    items={[
+                      {
+                        id: "main",
+                        children: [
+                          !enableDelegation
+                            ? null
+                            : isMe
+                              ? {
+                                  id: "manage-delegation",
+                                  label: "Manage delegation",
+                                }
+                              : {
+                                  id: "delegate-to-account",
+                                  label: "Delegate to this account",
+                                },
+                          {
+                            id: "copy-account-address",
+                            label: "Copy account address",
+                          },
+                          enableImpersonation && {
+                            id: "impersonate-account",
+                            label: "Impersonate account",
+                          },
+                        ].filter(Boolean),
+                      },
+                      {
+                        id: "external",
+                        children: [
+                          {
+                            id: "open-etherscan",
+                            label: "Etherscan",
+                          },
+                          {
+                            id: "open-mogu",
+                            label: "Mogu",
+                          },
+                          {
+                            id: "open-agora",
+                            label: "Agora",
+                          },
+                          {
+                            id: "open-nounskarma",
+                            label: "NounsKarma",
+                          },
+                          {
+                            id: "open-rainbow",
+                            label: "Rainbow",
+                          },
+                        ],
+                      },
+                    ]}
+                    onAction={(key) => {
+                      switch (key) {
+                        case "manage-delegation":
+                          openDelegationDialog();
+                          break;
 
-            {isCanceled ? (
-              <Tag variant="error" size="large">
-                Canceled
-              </Tag>
-            ) : isProposalUpdate ? (
-              <Tag variant="special" size="large">
-                Prop {candidate.latestVersion.targetProposalId} update
-              </Tag>
-            ) : null}
-            {/* votingPower > proposalThreshold ? ( */}
-            {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
-            {/* ) : ( */}
-            {/*   <Tag> */}
-            {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
-            {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
-            {/*   </Tag> */}
-            {/* )} */}
+                        case "delegate-to-account":
+                          openDelegationDialog({ target: accountAddress });
+                          break;
+
+                        case "copy-account-address":
+                          navigator.clipboard.writeText(
+                            accountAddress.toLowerCase(),
+                          );
+                          break;
+
+                        case "impersonate-account": {
+                          const searchParams = new URLSearchParams(
+                            location.search,
+                          );
+                          searchParams.set("impersonate", accountAddress);
+                          location.replace(
+                            `${location.pathname}?${searchParams}`,
+                          );
+                          break;
+                        }
+
+                        case "open-etherscan":
+                          window.open(
+                            `https://etherscan.io/address/${accountAddress}`,
+                            "_blank",
+                          );
+                          break;
+
+                        case "open-mogu":
+                          window.open(
+                            `https://mmmogu.com/address/${accountAddress}`,
+                            "_blank",
+                          );
+                          break;
+
+                        case "open-agora":
+                          window.open(
+                            `https://nounsagora.com/delegate/${accountAddress}`,
+                            "_blank",
+                          );
+                          break;
+
+                        case "open-nounskarma":
+                          window.open(
+                            `https://nounskarma.xyz/player/${accountAddress}`,
+                            "_blank",
+                          );
+                          break;
+
+                        case "open-rainbow":
+                          window.open(
+                            `https://rainbow.me/${accountAddress}`,
+                            "_blank",
+                          );
+                          break;
+                      }
+                    }}
+                  >
+                    {(item) => (
+                      <DropdownMenu.Section items={item.children}>
+                        {(item) => (
+                          <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                        )}
+                      </DropdownMenu.Section>
+                    )}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Root>
+              </>
+            )}
           </div>
         </div>
       </>
@@ -671,43 +1132,77 @@ const CandidateItem = React.memo(
   },
 );
 
-const ProposalDraftItem = ({ draftId }) => {
+const ProposalDraftListItem = ({ draftId }) => {
+  const { deleteItem: deleteDraft } = useDrafts();
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
 
   return (
     <>
       <NextLink className="link" prefetch href={`/new/${draftId}`} />
-      <div
-        className="item-container"
-        // css={css({
-        //   display: "grid",
-        //   gridTemplateColumns: "minmax(0,1fr) auto",
-        //   gridGap: "1.6rem",
-        //   alignItems: "center",
-        // })}
-      >
-        <div className="header">
-          By{" "}
-          <em
-            css={(t) =>
-              css({
-                pointerEvents: "all",
-                fontWeight: t.text.weights.emphasis,
-                fontStyle: "normal",
-              })
-            }
-          >
-            <AccountPreviewPopoverTrigger
-              accountAddress={connectedAccountAddress}
-            />
-          </em>
-        </div>
-        <div className="title-status-container">
+      <div className="item-container proposal-draft">
+        <div className="content-container">
+          <div className="small dimmed">
+            Draft by{" "}
+            <em
+              css={(t) =>
+                css({
+                  pointerEvents: "all",
+                  fontWeight: t.text.weights.emphasis,
+                  fontStyle: "normal",
+                })
+              }
+            >
+              <AccountPreviewPopoverTrigger
+                accountAddress={connectedAccountAddress}
+              />
+            </em>
+          </div>
           <div className="title">{draft.name || "Untitled draft"}</div>
-          <div>
+        </div>
+        <div className="right-column">
+          <div className="status-tag">
             <Tag size="large">Draft</Tag>
           </div>
+          <DropdownMenu.Root placement="bottom end" offset={6} crossOffset={0}>
+            <DropdownMenu.Trigger asChild>
+              <Button
+                variant="transparent"
+                size="small"
+                icon={
+                  <DotsHorizontalIcon
+                    style={{ width: "1.8rem", height: "auto" }}
+                  />
+                }
+                style={{ pointerEvents: "all" }}
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              css={css({
+                width: "min-content",
+                minWidth: "min-content",
+                maxWidth: "calc(100vw - 2rem)",
+              })}
+              onAction={(key) => {
+                switch (key) {
+                  case "delete": {
+                    if (
+                      !confirm(
+                        "Are you sure you want to delete this proposal draft?",
+                      )
+                    )
+                      return;
+                    deleteDraft(draftId);
+                    break;
+                  }
+                }
+              }}
+            >
+              <DropdownMenu.Item key="delete" danger>
+                Delete
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
         </div>
       </div>
     </>
@@ -838,6 +1333,32 @@ const ScoreStack = React.memo(({ for: for_, against }) => {
   );
 });
 
+const VotesTagGroupFromVotes = ({ votes }) => {
+  const [forVotes, againstVotes, abstainVotes] = votes.reduce(
+    ([for_, against, abstain], vote) => {
+      switch (vote.support ?? vote.supportDetailed) {
+        case 0:
+          return [for_, against + 1, abstain];
+        case 1:
+          return [for_ + 1, against, abstain];
+        case 2:
+          return [for_, against, abstain + 1];
+        default:
+          return [for_, against, abstain];
+      }
+    },
+    [0, 0, 0],
+  );
+
+  return (
+    <VotesTagGroup
+      for={forVotes}
+      against={againstVotes}
+      abstain={abstainVotes}
+    />
+  );
+};
+
 const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   switch (proposal.state) {
     case "updatable": {
@@ -940,6 +1461,26 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
 
       if (days <= 1)
         return <>Voting ended {Math.round(minutes / 60)} hours ago</>;
+
+      const endTimestamp =
+        proposal.objectionPeriodEndTimestamp ?? proposal.endTimestamp;
+
+      if (endTimestamp != null) {
+        return (
+          <>
+            Voting ended{" "}
+            <span css={css({ pointerEvents: "all" })}>
+              <FormattedDateWithTooltip
+                value={proposal.endTimestamp}
+                relativeDayThreshold={5}
+                capitalize={false}
+                day="numeric"
+                month="long"
+              />
+            </span>
+          </>
+        );
+      }
 
       return (
         <>

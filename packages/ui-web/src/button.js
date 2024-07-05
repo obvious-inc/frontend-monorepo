@@ -8,7 +8,7 @@ const baseStyles = (t, { align }) => ({
   fontWeight: "400",
   lineHeight: 1.25,
   border: 0,
-  borderRadius: "0.3rem",
+  borderRadius: "0.4rem",
   cursor: "pointer",
   textAlign: align === "left" ? "left" : "center",
   display: "inline-flex",
@@ -63,6 +63,7 @@ const stylesByVariant = (t, { danger }) => ({
   primary: {
     color: "white",
     background: t.colors.primary,
+    border: "1px solid transparent",
     "&:focus-visible": {
       boxShadow: `0 0 0 0.3rem ${t.colors.primaryTransparent}`,
     },

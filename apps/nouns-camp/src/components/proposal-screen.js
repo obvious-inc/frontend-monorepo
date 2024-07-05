@@ -923,15 +923,21 @@ export const ProposalHeader = ({
         }
       >
         Proposed{" "}
-        <FormattedDateWithTooltip
-          capitalize={false}
-          value={createdAt}
-          day="numeric"
-          month="short"
-          year={
-            createdAt.getYear() !== new Date().getYear() ? "numeric" : undefined
-          }
-        />{" "}
+        {createdAt != null && (
+          <>
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={createdAt}
+              day="numeric"
+              month="short"
+              year={
+                createdAt.getYear() !== new Date().getYear()
+                  ? "numeric"
+                  : undefined
+              }
+            />{" "}
+          </>
+        )}
         by{" "}
         <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
         {sponsorIds.length !== 0 && (
@@ -1166,7 +1172,7 @@ const ProposalScreen = ({ proposalId }) => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
-          { to: "/", label: "Proposals", desktopOnly: true },
+          { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
             to: `/proposals/${proposalId}`,
             label: (

@@ -1,5 +1,7 @@
 "use client";
 
+import dateSubtractDays from "date-fns/subDays";
+import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
@@ -12,12 +14,16 @@ import Select from "@shades/ui-web/select";
 import * as Menu from "@shades/ui-web/dropdown-menu";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 // import Switch from "@shades/ui-web/switch";
-import { useSubgraphFetch, useEnsCache, useProposals } from "../store.js";
+import {
+  useSubgraphFetch,
+  useEnsCache,
+  useProposalCandidates,
+} from "../store.js";
 import { search as searchEns } from "../utils/ens.js";
 import {
-  // isFinalState as isFinalProposalState,
-  getForYouGroup as getProposalForYouGroup,
-} from "../utils/proposals.js";
+  getForYouGroup as getCandidateForYouGroup,
+  getScore as getCandidateScore,
+} from "../utils/candidates.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useSearchParams } from "../hooks/navigation.js";
@@ -25,89 +31,72 @@ import Layout, { MainContentContainer } from "./layout.js";
 import DateRangePicker from "./date-range-picker.js";
 import ProposalList from "./proposal-list.js";
 
-const capitalize = (string) =>
-  (string[0].toUpperCase() + string.slice(1)).replaceAll("-", " ");
+const NEW_THRESHOLD_IN_DAYS = 3;
+const ACTIVE_THRESHOLD_IN_DAYS = 5;
 
-const simplifiedProposalStates = [
-  "upcoming", // pending and updatable
-  "ongoing", // active and objection-period
-  "pending-execution", // succeeded and queued
-  "executed",
-  "defeated",
-  "canceled",
-  "vetoed",
-  "expired",
-];
-
-const simplifiedProposalStatesByCategory = arrayUtils.groupBy((s) => {
-  switch (s) {
-    case "upcoming":
-    case "ongoing":
-      return "undecided";
-    case "pending-execution":
-    case "executed":
-      return "passed";
-    case "defeated":
-    case "canceled":
-    case "vetoed":
-    case "expired":
-      return "failed";
-    default:
-      throw new Error();
-  }
-}, simplifiedProposalStates);
-
-const stateCategoryTitlesByKey = {
-  undecided: "Current",
-  passed: "Succeeded",
-  failed: "Failed",
-};
-
-const sectionTitleByKey = {
-  new: "Upcoming",
-  ongoing: "Ongoing",
-  "awaiting-vote": "Not yet voted",
-  authored: "Authored",
-  past: "Past",
+const sectionConfigByKey = {
+  authored: { title: "Authored" },
+  sponsored: { title: "Sponsored" },
+  "sponsored-proposal-update-awaiting-signature": {
+    title: "Missing your signature",
+  },
+  new: {
+    title: "New",
+    description: `Candidates created within the last ${NEW_THRESHOLD_IN_DAYS} days`,
+  },
+  active: { title: "Recently active" },
+  inactive: {
+    title: "Stale",
+    description: `No activity within the last ${ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
 };
 
 const sortOptions = [
+  { value: "chronological", label: "Latest" },
+  { value: "activity", label: "Recent activity" },
+  { value: "popularity", label: "Popularity" },
+];
+
+const filterOptions = [
   {
-    value: "chronological",
-    label: "Latest",
+    key: "non-canceled",
+    label: "Show non-canceled",
+    inlineLabel: "non-canceled",
   },
   {
-    value: "voting-state",
-    label: "Voting state",
+    key: "canceled",
+    label: "Show canceled",
+    inlineLabel: "canceled",
   },
   {
-    value: "token-turnout",
-    label: "Turnout",
+    key: "proposal-updates",
+    label: "Show proposal updates",
+    inlineLabel: "prop updates",
   },
   {
-    value: "for-votes",
-    label: "For votes",
-  },
-  {
-    value: "against-votes",
-    label: "Against votes",
-  },
-  {
-    value: "abstain-votes",
-    label: "Abstain votes",
+    key: "promoted",
+    label: "Show promoted",
+    inlineLabel: "promoted",
   },
 ];
 
-const BrowseProposalsScreen = () => {
+const BrowseCandidatesScreen = () => {
   const isDesktopLayout = useMatchDesktopLayout();
 
   const { address: connectedAccountAddress } = useWallet();
 
-  const proposals = useProposals({ state: true });
+  const candidates = useProposalCandidates({
+    includeCanceled: true,
+    includePromoted: true,
+    includeProposalUpdates: true,
+  });
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
-  const [visibleSimplifiedProposalStates, setVisibleSimlifiedProposalStates] =
-    React.useState(() => new Set(simplifiedProposalStates));
+  const [showRegular, setShowRegular] = React.useState(true);
+  const [showCanceled, setShowCanceled] = React.useState(false);
+  const [showProposalUpdates, setShowProposalUpdates] = React.useState(false);
+  const [showPromoted, setShowPromoted] = React.useState(false);
+
   const [localDateRange, setLocalDateRange] = React.useState(null);
 
   const [showFilters, setShowFilters] = React.useState(false);
@@ -129,26 +118,11 @@ const BrowseProposalsScreen = () => {
   const deferredSortStrategy = React.useDeferredValue(sortStrategy);
   const deferredSortOrder = React.useDeferredValue(sortOrder);
 
-  const visibleProposalStates = React.useMemo(
-    () =>
-      [...visibleSimplifiedProposalStates.keys()].flatMap((s) => {
-        switch (s) {
-          case "upcoming":
-            return ["pending", "updatable"];
-          case "ongoing":
-            return ["active", "objection-period"];
-          case "pending-execution":
-            return ["succeeded", "queued"];
-          default:
-            return [s];
-        }
-      }),
-    [visibleSimplifiedProposalStates],
-  );
-
-  const deferredVisibleProposalStates = React.useDeferredValue(
-    visibleProposalStates,
-  );
+  const deferredShowRegular = React.useDeferredValue(showRegular);
+  const deferredShowCanceled = React.useDeferredValue(showCanceled);
+  const deferredShowProposalUpdates =
+    React.useDeferredValue(showProposalUpdates);
+  const deferredShowPromoted = React.useDeferredValue(showPromoted);
 
   const dateRange = React.useMemo(
     () => ({
@@ -164,183 +138,153 @@ const BrowseProposalsScreen = () => {
     return searchEns(primaryEnsNameByAddress, deferredQuery);
   }, [primaryEnsNameByAddress, deferredQuery]);
 
-  const sortedFilteredProposals = React.useMemo(() => {
-    const filter = (proposals) => {
-      const proposalStateFilterPredicate = (p) =>
-        p.title != null && deferredVisibleProposalStates.includes(p.state);
+  const sortedFilteredCandidates = React.useMemo(() => {
+    const filter = (candidates) => {
+      const stateFilterPredicate = (c) => {
+        if (c.latestVersion == null) return false;
+        if (c.canceledTimestamp != null && !deferredShowCanceled) return false;
+        if (
+          c.latestVersion.targetProposalId != null &&
+          !deferredShowProposalUpdates
+        )
+          return false;
+        if (c.latestVersion.proposalId != null && !deferredShowPromoted)
+          return false;
+        if (c.canceledTimestamp == null && !deferredShowRegular) return false;
+        return true;
+      };
 
       const timeframePredicate = (() => {
         const { start, end } = deferredDateRange;
         if (start == null && end == null) return null;
-        return (p) => {
-          if (start == null) return p.createdTimestamp < end;
-          if (end == null) return p.createdTimestamp > start;
-          return p.createdTimestamp < end && p.createdTimestamp > start;
+        return (c) => {
+          if (start == null) return c.createdTimestamp < end;
+          if (end == null) return c.createdTimestamp > start;
+          return c.createdTimestamp < end && c.createdTimestamp > start;
         };
       })();
 
-      const sortStrategyPredicate = (() => {
-        switch (deferredSortStrategy) {
-          case "token-turnout":
-          case "for-votes":
-          case "against-votes":
-          case "abstain-votes":
-            return (p) => {
-              const voteCount = p.forVotes + p.againstVotes + p.abstainVotes;
-              return voteCount > 0;
-            };
-          case "voting-state":
-          case "chronological":
-          case "best-match":
-            return null;
-          default:
-            throw new Error(`Invalid sort strategy: ${deferredSortStrategy}`);
-        }
-      })();
+      const predicates = [stateFilterPredicate, timeframePredicate].filter(
+        Boolean,
+      );
 
-      const predicates = [
-        proposalStateFilterPredicate,
-        timeframePredicate,
-        sortStrategyPredicate,
-      ].filter(Boolean);
+      if (predicates.length === 0) return candidates;
 
-      if (predicates.length === 0) return proposals;
-
-      return proposals.filter((p) =>
+      return candidates.filter((p) =>
         predicates.every((predicate) => predicate(p)),
       );
     };
 
-    const group = (proposals) => {
+    const group = (candidates) => {
       switch (deferredSortStrategy) {
-        case "voting-state": {
-          const proposalsByGroupKey = arrayUtils.groupBy(
-            (p) => getProposalForYouGroup({ connectedAccountAddress }, p),
-            proposals,
+        case "activity": {
+          const activeThreshold = dateStartOfDay(
+            dateSubtractDays(new Date(), ACTIVE_THRESHOLD_IN_DAYS),
           );
+          const newThreshold = dateStartOfDay(
+            dateSubtractDays(new Date(), NEW_THRESHOLD_IN_DAYS),
+          );
+          const candidatesByGroupKey = arrayUtils.groupBy((p) => {
+            const groupKey = getCandidateForYouGroup(
+              { connectedAccountAddress, activeThreshold, newThreshold },
+              p,
+            );
+            if (groupKey === "authored-proposal-update") return "authored";
+            return groupKey;
+          }, candidates);
 
-          return ["new", "ongoing", "awaiting-vote", "authored", "past"].reduce(
-            (acc, groupKey) => {
-              const proposals = proposalsByGroupKey[groupKey];
-              if (proposals == null) return acc;
-              return [
-                ...acc,
-                {
-                  type: "section",
-                  key: groupKey,
-                  title: sectionTitleByKey[groupKey],
-                  children: proposals,
-                },
-              ];
-            },
-            [],
-          );
+          return [
+            "sponsored-proposal-update-awaiting-signature",
+            "authored",
+            "sponsored",
+            "new",
+            "active",
+            "inactive",
+          ].reduce((acc, groupKey) => {
+            const candidates = candidatesByGroupKey[groupKey];
+            if (candidates == null) return acc;
+            return [
+              ...acc,
+              {
+                type: "section",
+                key: groupKey,
+                title: sectionConfigByKey[groupKey]?.title,
+                description: sectionConfigByKey[groupKey]?.description,
+                children: candidates,
+              },
+            ];
+          }, []);
         }
-        case "best-match":
+        case "popularity":
         case "chronological":
-        case "token-turnout":
-        case "for-votes":
-        case "against-votes":
-        case "abstain-votes":
-          return proposals;
+        case "best-match":
+          return candidates;
         default:
           throw new Error(`Invalid sort strategy: ${deferredSortStrategy}`);
       }
     };
 
-    const sort = (proposals) => {
+    const sort = (candidates) => {
       const order = deferredSortOrder;
 
       switch (deferredSortStrategy) {
         case "best-match":
-          return proposals;
-        case "voting-state":
-          return proposals.map((section) => {
-            switch (section.key) {
-              case "awaiting-vote":
-                return {
-                  ...section,
-                  children: arrayUtils.sortBy(
-                    (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
-                    section.children,
-                  ),
-                };
-              case "authored":
-              case "new":
-              case "ongoing":
-              case "past":
-                return {
-                  ...section,
-                  children: arrayUtils.sortBy(
-                    {
-                      value: (i) => Number(i.startBlock),
-                      order: "desc",
-                    },
-                    section.children,
-                  ),
-                };
-              default:
-                throw new Error(`Invalid section key: ${section.key}`);
-            }
-          });
+          return candidates;
 
         case "chronological":
           return arrayUtils.sortBy(
             { value: (p) => Number(p.createdBlock), order },
-            proposals,
+            candidates,
           );
-        case "token-turnout":
+
+        case "popularity":
           return arrayUtils.sortBy(
-            {
-              value: (p) => {
-                const voteCount = p.forVotes + p.againstVotes + p.abstainVotes;
-                return voteCount / p.adjustedTotalSupply;
-              },
-              order,
-            },
-            proposals,
+            { value: (i) => getCandidateScore(i) ?? 0, order },
+            candidates,
           );
-        case "for-votes":
-          return arrayUtils.sortBy(
-            { value: (p) => p.forVotes + 1 / (p.againstVotes + 1), order },
-            proposals,
-          );
-        case "against-votes":
-          return arrayUtils.sortBy(
-            {
-              value: (p) => p.againstVotes + 1 / (p.forVotes + 1),
-              order,
-            },
-            proposals,
-          );
-        case "abstain-votes":
-          return arrayUtils.sortBy(
-            {
-              value: (p) => {
-                const nonAbstainVoteCount = p.forVotes + p.againstVotes;
-                return p.abstainVotes + 1 / (nonAbstainVoteCount + 1);
-              },
-              order,
-            },
-            proposals,
-          );
+
+        case "activity":
+          return candidates.map((section) => {
+            return {
+              ...section,
+              children: arrayUtils.sortBy(
+                {
+                  value: (i) => {
+                    const mostRecentActivtyTimestamp = Math.max(
+                      i.lastUpdatedTimestamp,
+                      ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
+                        []),
+                    );
+
+                    return mostRecentActivtyTimestamp;
+                  },
+                  order: "desc",
+                },
+                section.children,
+              ),
+            };
+          });
+
         default:
           throw new Error(`Invalid sort strategy: ${deferredSortStrategy}`);
       }
     };
 
-    if (deferredQuery.trim() === "") return sort(group(filter(proposals)));
+    if (deferredQuery.trim() === "") return sort(group(filter(candidates)));
 
     const matchingRecords = searchRecords(
-      filter(proposals).map((p) => ({
-        data: p,
+      filter(candidates).map((c) => ({
+        data: c,
         tokens: [
-          { value: p.id, exact: true },
-          { value: p.title },
-          { value: p.proposerId, exact: true },
-          ...(p.signers ?? []).map((s) => ({ value: s.id, exact: true })),
+          { value: c.id, exact: true },
+          { value: c.proposerId, exact: true },
+          { value: c.latestVersion?.content.title },
+          ...(c.latestVersion?.content.contentSignatures ?? []).map((s) => ({
+            value: s.signer.id,
+            exact: true,
+          })),
         ],
-        fallbackSortProperty: p.createdBlock,
+        fallbackSortProperty: c.createdBlock,
       })),
       [deferredQuery, ...matchingAddresses],
     );
@@ -350,11 +294,14 @@ const BrowseProposalsScreen = () => {
     connectedAccountAddress,
     matchingAddresses,
     deferredQuery,
-    deferredVisibleProposalStates,
+    deferredShowRegular,
+    deferredShowCanceled,
+    deferredShowProposalUpdates,
+    deferredShowPromoted,
     deferredSortStrategy,
     deferredSortOrder,
     deferredDateRange,
-    proposals,
+    candidates,
   ]);
 
   const handleSearchInputChange = useDebouncedCallback((query) => {
@@ -385,56 +332,94 @@ const BrowseProposalsScreen = () => {
     );
   });
 
+  const selectedFilters = (() => {
+    const toggledFilters = [];
+    if (showRegular) toggledFilters.push("non-canceled");
+    if (showCanceled) toggledFilters.push("canceled");
+    if (showProposalUpdates) toggledFilters.push("proposal-updates");
+    if (showPromoted) toggledFilters.push("promoted");
+    return new Set(toggledFilters);
+  })();
+
+  const setSelectedFilters = (filters) => {
+    setShowRegular(filters.has("non-canceled"));
+    setShowCanceled(filters.has("canceled"));
+    setShowProposalUpdates(filters.has("proposal-updates"));
+    setShowPromoted(filters.has("promoted"));
+  };
+
   const subgraphFetch = useSubgraphFetch();
 
   useFetch(
     ({ signal }) => {
       const pageSize = 50;
 
-      const fetchProposals = async (page = 1) => {
-        const { proposals } = await subgraphFetch({
+      const fetchCandidates = async (page = 1) => {
+        const { proposalCandidates } = await subgraphFetch({
           query: `{
-            proposals(
+            proposalCandidates(
               orderBy: createdBlock,
               orderDirection: desc,
               first: ${pageSize},
               skip: ${(page - 1) * pageSize},
             ) {
               id
-              title
-              status
+              slug
+              proposer
               createdBlock
-              createdTimestamp
-              lastUpdatedBlock
-              lastUpdatedTimestamp
-              startBlock
-              endBlock
-              updatePeriodEndBlock
-              objectionPeriodEndBlock
               canceledBlock
+              lastUpdatedBlock
               canceledTimestamp
-              queuedBlock
-              queuedTimestamp
-              executedBlock
-              executedTimestamp
-              forVotes
-              againstVotes
-              abstainVotes
-              quorumVotes
-              executionETA
-              adjustedTotalSupply
-              proposer { id }
-              signers { id }
+              createdTimestamp
+              lastUpdatedTimestamp
+              latestVersion {
+                id
+                content {
+                  title
+                  matchingProposalIds
+                  proposalIdToUpdate
+                  contentSignatures {
+                    canceled
+                    createdBlock
+                    createdTimestamp
+                    expirationTimestamp
+                    signer {
+                      id
+                      nounsRepresented { id }
+                    }
+                  }
+                }
+              }
             }
           }`,
         });
+        const matchingProposalIds = proposalCandidates
+          .map((c) => c.latestVersion.proposalId)
+          .filter(Boolean);
+
+        // Props required to show signers state on updates
+        if (matchingProposalIds.length > 0)
+          await subgraphFetch({
+            query: `{
+              proposals(
+                first: 1000,
+                where: { id_in: [${matchingProposalIds.map((id) => `"${id}"`)}] }
+              ) {
+                id
+                createdTimestamp
+                signers { id }
+              }
+            }`,
+          });
+
         if (signal?.aborted) return [];
-        if (proposals.length < pageSize) return proposals;
-        const remainingProposals = await fetchProposals(page + 1);
-        return [...proposals, ...remainingProposals];
+        if (proposalCandidates.length < pageSize) return proposalCandidates;
+        // Recursively fetch the rest
+        const rest = await fetchCandidates(page + 1);
+        return [...proposalCandidates, ...rest];
       };
 
-      return fetchProposals();
+      return fetchCandidates();
     },
     [subgraphFetch],
   );
@@ -443,43 +428,44 @@ const BrowseProposalsScreen = () => {
     ({ signal }) => {
       const pageSize = 1000;
 
-      const fetchAccountVotes = async (page = 1) => {
-        const { votes } = await subgraphFetch({
+      const fetchCandidateFeedbacks = async (page = 1) => {
+        const { candidateFeedbacks } = await subgraphFetch({
           query: `{
-            votes(
-              orderBy: blockNumber,
+            candidateFeedbacks(
+              orderBy: createdBlock,
               orderDirection: desc,
               first: ${pageSize},
               skip: ${(page - 1) * pageSize},
-              where: {
-                voter: "${connectedAccountAddress}"
-              }
             ) {
               id
               supportDetailed
-              voter { id }
-              proposal { id }
+              createdBlock
+              createdTimestamp
+              votes
+              voter {
+                id
+                nounsRepresented { id }
+              }
+              candidate { id }
             }
           }`,
         });
         if (signal?.aborted) return [];
-        if (votes.length < pageSize) return votes;
-        const remainingVotes = await fetchAccountVotes(page + 1);
-        return [...votes, ...remainingVotes];
+        if (candidateFeedbacks.length < pageSize) return candidateFeedbacks;
+        // Recursively fetch the rest
+        const rest = await fetchCandidateFeedbacks(page + 1);
+        return [...candidateFeedbacks, ...rest];
       };
 
-      return fetchAccountVotes();
+      return fetchCandidateFeedbacks();
     },
-    {
-      enabled: connectedAccountAddress != null,
-    },
-    [subgraphFetch, connectedAccountAddress],
+    [subgraphFetch],
   );
 
   return (
     <>
       <Layout
-        navigationStack={[{ to: "/proposals", label: "Proposals" }]}
+        navigationStack={[{ to: "/candidates", label: "Candidates" }]}
         actions={[
           {
             label: "Propose",
@@ -509,19 +495,16 @@ const BrowseProposalsScreen = () => {
                     })}
                   >
                     <div>
-                      <Label style={{ display: "block" }}>
-                        Proposal states
-                      </Label>
-                      <ProposalStateFilterMenu
+                      <Label style={{ display: "block" }}>Filters</Label>
+                      <FilterMenu
                         size="default"
                         fullWidth
                         widthFollowTrigger
-                        selectedStates={visibleSimplifiedProposalStates}
-                        setSelectedStates={setVisibleSimlifiedProposalStates}
+                        selectedFilters={selectedFilters}
+                        setSelectedFilters={setSelectedFilters}
                       />
                     </div>
                     <DateRangePicker
-                      // inlineLabel="Timeframe"
                       label="Timeframe"
                       fullWidth
                       granularity="day"
@@ -580,6 +563,11 @@ const BrowseProposalsScreen = () => {
                     <Select
                       size="small"
                       aria-label="Sort by"
+                      inlineLabel={
+                        !isDesktopLayout && sortStrategy === "popularity"
+                          ? null
+                          : "Sort by"
+                      }
                       value={sortStrategy}
                       options={[
                         query.trim() !== "" && {
@@ -601,10 +589,9 @@ const BrowseProposalsScreen = () => {
                       }}
                       fullWidth={false}
                       width="max-content"
-                      inlineLabel="Sort by"
                     />
                   </div>
-                  {!["voting-state", "best-match"].includes(sortStrategy) && (
+                  {!["activity", "best-match"].includes(sortStrategy) && (
                     <div>
                       <Select
                         size="small"
@@ -681,13 +668,12 @@ const BrowseProposalsScreen = () => {
                       marginTop: "1.6rem",
                     })}
                   >
-                    <ProposalStateFilterMenu
-                      inlineLabel="Proposal states"
+                    <FilterMenu
                       size="small"
                       fullWidth
                       widthFollowTrigger
-                      selectedStates={visibleSimplifiedProposalStates}
-                      setSelectedStates={setVisibleSimlifiedProposalStates}
+                      selectedFilters={selectedFilters}
+                      setSelectedFilters={setSelectedFilters}
                     />
                     <DateRangePicker
                       inlineLabel="Timeframe"
@@ -702,13 +688,16 @@ const BrowseProposalsScreen = () => {
               </div>
               <ProposalList
                 isLoading={
-                  proposals.length === 0 ||
+                  candidates.length === 0 ||
                   sortStrategy !== deferredSortStrategy ||
                   sortOrder !== deferredSortOrder ||
                   dateRange !== deferredDateRange
                 }
                 sortStrategy={deferredSortStrategy}
-                items={sortedFilteredProposals}
+                items={sortedFilteredCandidates}
+                getItemProps={() => ({
+                  showScoreStack: deferredSortStrategy === "popularity",
+                })}
               />
             </div>
           </MainContentContainer>
@@ -718,13 +707,13 @@ const BrowseProposalsScreen = () => {
   );
 };
 
-const ProposalStateFilterMenu = ({
+const FilterMenu = ({
   size,
   fullWidth,
   widthFollowTrigger,
   inlineLabel,
-  selectedStates,
-  setSelectedStates,
+  selectedFilters,
+  setSelectedFilters,
 }) => (
   <Menu.Root>
     <Menu.Trigger asChild>
@@ -757,38 +746,28 @@ const ProposalStateFilterMenu = ({
             <span className="inline-label">{inlineLabel}: </span>
           )}
           {(() => {
-            if (selectedStates.size === 0) return "Hide all";
-
-            if (selectedStates.size === simplifiedProposalStates.length)
+            if (selectedFilters.size === filterOptions.length)
               return "Show all";
 
-            const { hidden, visible } = arrayUtils.groupBy(
-              (g) => (selectedStates.has(g) ? "visible" : "hidden"),
-              simplifiedProposalStates,
-            );
+            if (selectedFilters.size === 0) return "Hide all";
 
-            if (hidden.length === 1)
-              return (
-                <>
-                  Hide <em>{hidden[0]}</em>
-                </>
-              );
-            if (hidden.length === 2)
-              return (
-                <>
-                  Hide <em>{hidden[0]}</em> and <em>{hidden[1]}</em>
-                </>
-              );
+            const { visible = [] } = arrayUtils.groupBy(
+              (o) => (selectedFilters.has(o.key) ? "visible" : "hidden"),
+              filterOptions,
+            );
 
             return (
               <>
-                Show{" "}
-                {visible.map((state, i) => (
-                  <React.Fragment key={state}>
-                    {i > 0 && <>, </>}
-                    <em>{state}</em>
-                  </React.Fragment>
-                ))}
+                {inlineLabel == null && <>Show </>}
+                {visible.map((o, i, os) => {
+                  const isLast = i === os.length - 1;
+                  return (
+                    <React.Fragment key={o.key}>
+                      {i > 0 && (isLast ? <>, and </> : <>, </>)}
+                      <em>{o.inlineLabel}</em>
+                    </React.Fragment>
+                  );
+                })}
               </>
             );
           })()}
@@ -798,26 +777,16 @@ const ProposalStateFilterMenu = ({
     <Menu.Content
       widthFollowTrigger={widthFollowTrigger}
       selectionMode="multiple"
-      selectedKeys={selectedStates}
-      onSelectionChange={(states) => {
-        setSelectedStates(states);
+      selectedKeys={selectedFilters}
+      onSelectionChange={(filters) => {
+        setSelectedFilters(filters);
       }}
     >
-      {["undecided", "passed", "failed"].map((category) => {
-        const simplifiedStates = simplifiedProposalStatesByCategory[category];
-        return (
-          <Menu.Section
-            key={category}
-            title={stateCategoryTitlesByKey[category]}
-          >
-            {simplifiedStates.map((state) => (
-              <Menu.Item key={state}>{capitalize(state)}</Menu.Item>
-            ))}
-          </Menu.Section>
-        );
-      })}
+      {filterOptions.map((o) => (
+        <Menu.Item key={o.key}>{o.label}</Menu.Item>
+      ))}
     </Menu.Content>
   </Menu.Root>
 );
 
-export default BrowseProposalsScreen;
+export default BrowseCandidatesScreen;

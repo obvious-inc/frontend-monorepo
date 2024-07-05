@@ -92,15 +92,6 @@ const Layout = ({
 
 const defaultActions = [
   {
-    label: "Voters",
-    buttonProps: {
-      component: NextLink,
-      href: "/voters",
-      prefetch: true,
-    },
-    desktopOnly: true,
-  },
-  {
     label: "Propose",
     buttonProps: {
       component: NextLink,
@@ -120,6 +111,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
   const { open: openAccountDialog } = useDialog("account");
+  const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
   const { open: openSettingsDialog } = useDialog("settings");
   const [isTreasuryDialogOpen, toggleTreasuryDialog] =
@@ -158,6 +150,9 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       case "open-account-dialog":
         openAccountDialog();
         break;
+      case "open-proposal-drafts-dialog":
+        openProposalDraftsDialog();
+        break;
       case "open-delegation-dialog":
         openDelegationDialog();
         break;
@@ -167,7 +162,19 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       case "open-auction":
         window.open("https://nouns.wtf", "_blank");
         break;
-      case "navigate-to-accounts-listing":
+      case "open-warpcast":
+        window.open("https://warpcast.com/~/channel/nouns", "_blank");
+        break;
+      case "open-changelog":
+        window.open("https://warpcast.com/~/channel/camp", "_blank");
+        break;
+      case "navigate-to-proposal-listing":
+        navigate("/proposals");
+        break;
+      case "navigate-to-candidate-listing":
+        navigate("/candidates");
+        break;
+      case "navigate-to-account-listing":
         navigate("/voters");
         break;
       case "open-settings-dialog":
@@ -355,137 +362,151 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       label: `Switch to ${CHAIN_ID === 1 ? "Mainnet" : chain.name}`,
                     }
                   : null,
-              connectedWalletAccountAddress == null
-                ? {
+              (() => {
+                const daoSection = {
+                  id: "dao",
+                  title: "DAO",
+                  children: [
+                    {
+                      id: "navigate-to-proposal-listing",
+                      label: "Proposals",
+                    },
+                    {
+                      id: "navigate-to-candidate-listing",
+                      label: "Candidates",
+                    },
+                    {
+                      id: "navigate-to-account-listing",
+                      label: "Voters",
+                    },
+                    { id: "open-treasury-dialog", label: "Treasury" },
+                  ],
+                };
+                const externalSection = {
+                  id: "external",
+                  title: "External",
+                  children: [
+                    {
+                      id: "open-auction",
+                      label: (
+                        <>
+                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
+                            Nouns auction
+                          </span>
+                          {"\u2197"}
+                        </>
+                      ),
+                      textValue: "Nouns auction",
+                    },
+                    {
+                      id: "open-warpcast",
+                      label: (
+                        <>
+                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
+                            Farcaster
+                          </span>
+                          {"\u2197"}
+                        </>
+                      ),
+                    },
+                  ],
+                };
+                const settingsSection = {
+                  id: "settings",
+                  title: "Camp",
+                  children: [
+                    { id: "open-settings-dialog", label: "Settings" },
+                    {
+                      id: "open-changelog",
+                      label: (
+                        <>
+                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
+                            Changelog
+                          </span>
+                          {"\u2197"}
+                        </>
+                      ),
+                    },
+                  ],
+                };
+
+                if (connectedWalletAccountAddress == null)
+                  return {
                     type: "dropdown",
-                    items: [
-                      {
-                        id: "dao",
-                        children: [
-                          {
-                            id: "open-auction",
-                            label: (
-                              <>
-                                <span
-                                  style={{ flex: 1, marginRight: "0.8rem" }}
-                                >
-                                  Auction
-                                </span>{" "}
-                                {"\u2197"}
-                              </>
-                            ),
-                            textValue: "Auction",
-                          },
-                          {
-                            id: "navigate-to-accounts-listing",
-                            label: "Voters",
-                          },
-                          { id: "open-treasury-dialog", label: "Treasury" },
-                        ],
-                      },
-                      {
-                        id: "settings",
-                        children: [
-                          { id: "open-settings-dialog", label: "Settings" },
-                        ],
-                      },
-                    ],
+                    items: [daoSection, externalSection, settingsSection],
                     buttonProps: {
                       icon: (
                         <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
                       ),
                     },
-                  }
-                : {
-                    type: "dropdown",
-                    items: [
-                      {
-                        id: "main",
-                        children: [
-                          {
-                            id: "open-account-dialog",
-                            label: "Account",
-                          },
-                          (hasNouns || hasVotingPower) && {
-                            id: "open-delegation-dialog",
-                            label: "Manage delegation",
-                          },
-                        ].filter(Boolean),
-                      },
-                      {
-                        id: "dao",
-                        children: [
-                          {
-                            id: "open-auction",
-                            label: (
-                              <>
-                                <span
-                                  style={{ flex: 1, marginRight: "0.8rem" }}
-                                >
-                                  Auction
-                                </span>{" "}
-                                {"\u2197"}
-                              </>
-                            ),
-                            textValue: "Auction",
-                          },
-                          {
-                            id: "navigate-to-accounts-listing",
-                            label: "Voters",
-                          },
-                          { id: "open-treasury-dialog", label: "Treasury" },
-                        ],
-                      },
-                      {
-                        id: "settings",
-                        children: [
-                          {
-                            id: "open-settings-dialog",
-                            label: "Settings",
-                          },
-                        ],
-                      },
-                      {
-                        id: "disconnect",
-                        children: [
-                          {
-                            id: "disconnect-wallet",
-                            label: "Disconnect wallet",
-                          },
-                        ],
-                      },
-                    ],
-                    buttonProps: {
-                      iconRight: (
-                        <CaretDownIcon
-                          style={{ width: "0.9rem", height: "auto" }}
-                        />
-                      ),
+                  };
+
+                return {
+                  type: "dropdown",
+                  items: [
+                    {
+                      id: "connected-account",
+                      title: "You",
+                      children: [
+                        {
+                          id: "open-account-dialog",
+                          label: "Account",
+                        },
+                        (hasNouns || hasVotingPower) && {
+                          id: "open-delegation-dialog",
+                          label: "Manage delegation",
+                        },
+                        {
+                          id: "open-proposal-drafts-dialog",
+                          label: "Proposal drafts",
+                        },
+                      ].filter(Boolean),
                     },
-                    label: (
-                      <div
-                        css={css({
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.8rem",
-                        })}
-                      >
-                        {pathname === "/" && (
-                          <div
-                            css={css({
-                              "@media(max-width: 600px)": { display: "none" },
-                            })}
-                          >
-                            {connectedAccountDisplayName}
-                          </div>
-                        )}
-                        <AccountAvatar
-                          address={connectedWalletAccountAddress}
-                          size="2rem"
-                        />
-                      </div>
+                    daoSection,
+                    externalSection,
+                    settingsSection,
+                    {
+                      id: "disconnect",
+                      children: [
+                        {
+                          id: "disconnect-wallet",
+                          label: "Disconnect wallet",
+                        },
+                      ],
+                    },
+                  ],
+                  buttonProps: {
+                    iconRight: (
+                      <CaretDownIcon
+                        style={{ width: "0.9rem", height: "auto" }}
+                      />
                     ),
                   },
+                  label: (
+                    <div
+                      css={css({
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.8rem",
+                      })}
+                    >
+                      {pathname === "/" && (
+                        <div
+                          css={css({
+                            "@media(max-width: 600px)": { display: "none" },
+                          })}
+                        >
+                          {connectedAccountDisplayName}
+                        </div>
+                      )}
+                      <AccountAvatar
+                        address={connectedWalletAccountAddress}
+                        size="2rem"
+                      />
+                    </div>
+                  ),
+                };
+              })(),
             ]
               .filter(Boolean)
               .map((a, i) =>
@@ -512,7 +533,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       onAction={handleDropDownAction}
                     >
                       {(item) => (
-                        <DropdownMenu.Section items={item.children}>
+                        <DropdownMenu.Section
+                          title={item.title}
+                          items={item.children}
+                        >
                           {(item) => (
                             <DropdownMenu.Item
                               primary={item.primary}

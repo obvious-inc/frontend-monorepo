@@ -67,7 +67,7 @@ export const createReplyExtractor =
         },
       );
       if (matchedReplyTarget == null) {
-        console.warn(`No match found for reply target "${match.groups.quote}"`);
+        // console.warn(`No match found for reply target "${match.groups.quote}"`);
         continue;
       }
       strippedText = strippedText.replace(match[0], "");
@@ -108,7 +108,7 @@ export const createRepostExtractor =
         },
       );
       if (matchedPost == null) {
-        console.warn(`No match found for repost quote body "${quoteBody}"`);
+        // console.warn(`No match found for repost quote body "${quoteBody}"`);
         continue;
       }
       strippedText = strippedText.replace(match[0], "");
