@@ -4,6 +4,7 @@ import { Item, useSelectState } from "react-stately";
 import { HiddenSelect, useSelect, useListBox, useOption } from "react-aria";
 import { isTouchDevice } from "@shades/common/utils";
 import Button from "./button.js";
+import { Label } from "./input.js";
 import * as Popover from "./popover.js";
 import {
   CaretDown as CaretDownIcon,
@@ -25,6 +26,7 @@ const Select = React.forwardRef(
   (
     {
       placeholder = "Select an item",
+      inlineLabel,
       renderTriggerContent,
       value,
       options,
@@ -100,20 +102,7 @@ const Select = React.forwardRef(
     return (
       <>
         {props.label != null && (
-          <label
-            htmlFor={triggerProps.id}
-            css={(t) =>
-              css({
-                display: "inline-block",
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.base,
-                lineHeight: 1.2,
-                margin: "0 0 0.8rem",
-              })
-            }
-          >
-            {props.label}
-          </label>
+          <Label htmlFor={triggerProps.id}>{props.label}</Label>
         )}
 
         <HiddenSelect
@@ -150,6 +139,20 @@ const Select = React.forwardRef(
                   renderTriggerContent(state.selectedItem?.key, options)
                 ) : state.selectedItem == null ? (
                   placeholder
+                ) : inlineLabel != null ? (
+                  <>
+                    {inlineLabel}:{" "}
+                    <em
+                      css={(t) =>
+                        css({
+                          fontStyle: "normal",
+                          fontWeight: t.text.weights.emphasis,
+                        })
+                      }
+                    >
+                      {state.selectedItem.value.label}
+                    </em>
+                  </>
                 ) : (
                   <>
                     <div>{state.selectedItem.value.label}</div>
@@ -236,6 +239,9 @@ const Option = ({ item, state }) => {
           outline: "none",
           cursor: isDisabled ? "not-allowed" : "pointer",
           ":focus": { background: t.colors.backgroundModifierHover },
+          '&[aria-selected="true"]': {
+            background: t.colors.backgroundModifierSelected,
+          },
         })
       }
       // style={{

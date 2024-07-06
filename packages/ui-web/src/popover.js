@@ -104,10 +104,7 @@ export const Trigger = React.forwardRef(
 );
 
 const ContentInner = React.forwardRef(
-  (
-    { width = "auto", widthFollowTrigger, children, ...props },
-    forwardedRef,
-  ) => {
+  ({ width, widthFollowTrigger, children, ...props }, forwardedRef) => {
     const {
       isDialog,
       state,
@@ -168,16 +165,17 @@ const ContentInner = React.forwardRef(
         )}
         <div
           ref={ref}
+          data-width-behavior={
+            widthFollowTrigger ? "follow-trigger" : undefined
+          }
           css={(t) =>
             css({
               // Since Emotion’s <Global /> doesn’t work yet in Next we have
               // to specify this on anything that’s outside the root div
               colorScheme: t.name === "dark" ? "dark" : "light",
 
-              minWidth: widthFollowTrigger ? 0 : "min-content",
-              width: widthFollowTrigger
-                ? anchorRef.current?.offsetWidth ?? "auto"
-                : width,
+              minWidth: "min-content",
+              width: "var(--custom-width, auto)",
               maxWidth: "calc(100vw - 2rem)",
               color: t.colors.textNormal,
               background: t.colors.popoverBackground,
@@ -185,10 +183,23 @@ const ContentInner = React.forwardRef(
               boxShadow: t.shadows.elevationHigh,
               outline: "none", // TODO
               overflow: "auto",
+              '&[data-width-behavior="follow-trigger"]': {
+                minWidth: 0,
+                width: "var(--trigger-width, auto)",
+              },
             })
           }
           {...containerProps}
-          style={{ ...containerProps.style, zIndex: 10, ...props.style }}
+          style={{
+            ...containerProps.style,
+            zIndex: 10,
+            "--custom-width": width ?? undefined,
+            "--trigger-width":
+              anchorRef.current == null
+                ? undefined
+                : `${anchorRef.current.offsetWidth}px`,
+            ...props.style,
+          }}
         >
           {dismissButtonElement}
           {isDialog ? (

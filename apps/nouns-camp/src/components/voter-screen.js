@@ -40,12 +40,12 @@ import Callout from "./callout.js";
 import * as Tabs from "./tabs.js";
 import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
-import { SectionedList } from "./browse-screen.js";
 import VotingBar from "./voting-bar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger, {
   DelegationStatusDot,
 } from "./noun-preview-popover-trigger.js";
+import ProposalList from "./proposal-list.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -852,23 +852,22 @@ const VoterMainSection = ({ voterAddress }) => {
                       css={css({ padding: "6.4rem 0" })}
                     />
                   )}
-                  <SectionedList
-                    showPlaceholder={!hasFetchedData && proposals.length === 0}
-                    sections={[
-                      {
-                        items: arrayUtils
-                          .sortBy(
-                            {
-                              value: (p) => Number(p.id),
-                              order: "desc",
-                            },
-                            proposals,
-                          )
-                          .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
-                      },
-                    ]}
-                    style={{ marginTop: "2rem" }}
-                  />
+                  <div style={{ marginTop: "2rem" }}>
+                    <ProposalList
+                      forcePlaceholder={
+                        !hasFetchedData && proposals.length === 0
+                      }
+                      items={arrayUtils
+                        .sortBy(
+                          {
+                            value: (p) => Number(p.id),
+                            order: "desc",
+                          },
+                          proposals,
+                        )
+                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                    />
+                  </div>
                   {proposals.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
@@ -892,23 +891,22 @@ const VoterMainSection = ({ voterAddress }) => {
                       css={css({ padding: "6.4rem 0" })}
                     />
                   )}
-                  <SectionedList
-                    showPlaceholder={!hasFetchedData && candidates.length === 0}
-                    sections={[
-                      {
-                        items: arrayUtils
-                          .sortBy(
-                            {
-                              value: (p) => p.lastUpdatedTimestamp,
-                              order: "desc",
-                            },
-                            candidates,
-                          )
-                          .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
-                      },
-                    ]}
-                    style={{ marginTop: "2rem" }}
-                  />
+                  <div style={{ marginTop: "2rem" }}>
+                    <ProposalList
+                      forcePlaceholder={
+                        !hasFetchedData && candidates.length === 0
+                      }
+                      items={arrayUtils
+                        .sortBy(
+                          {
+                            value: (p) => p.lastUpdatedTimestamp,
+                            order: "desc",
+                          },
+                          candidates,
+                        )
+                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                    />
+                  </div>
                   {candidates.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
@@ -932,25 +930,22 @@ const VoterMainSection = ({ voterAddress }) => {
                       css={css({ padding: "6.4rem 0" })}
                     />
                   )}
-                  <SectionedList
-                    showPlaceholder={
-                      !hasFetchedData && sponsoredProposals.length === 0
-                    }
-                    sections={[
-                      {
-                        items: arrayUtils
-                          .sortBy(
-                            {
-                              value: (p) => p.lastUpdatedTimestamp,
-                              order: "desc",
-                            },
-                            sponsoredProposals,
-                          )
-                          .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page),
-                      },
-                    ]}
-                    style={{ marginTop: "2rem" }}
-                  />
+                  <div style={{ marginTop: "2rem" }}>
+                    <ProposalList
+                      forcePlaceholder={
+                        !hasFetchedData && sponsoredProposals.length === 0
+                      }
+                      items={arrayUtils
+                        .sortBy(
+                          {
+                            value: (p) => p.lastUpdatedTimestamp,
+                            order: "desc",
+                          },
+                          sponsoredProposals,
+                        )
+                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                    />
+                  </div>
                   {sponsoredProposals.length >
                     VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>

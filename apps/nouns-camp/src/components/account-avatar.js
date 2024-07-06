@@ -38,6 +38,7 @@ const NounsAccountAvatar = React.forwardRef(
       maxStackCount = 2,
       ensOnly = false,
       fallbackImageUrl,
+      borderRadius = "0.3rem",
       ...props
     },
     ref,
@@ -87,7 +88,7 @@ const NounsAccountAvatar = React.forwardRef(
       <Avatar
         ref={ref}
         url={imageUrl}
-        borderRadius={imageUrl === nounAvatarUrl ? undefined : "0.3rem"}
+        borderRadius={imageUrl === nounAvatarUrl ? undefined : borderRadius}
         signature={ensName ?? accountAddress?.slice(2)}
         signatureLength={2}
         signatureFontSize="0.95rem"

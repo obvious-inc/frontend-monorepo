@@ -15,6 +15,7 @@ import {
   useTreeState,
 } from "react-stately";
 import { isTouchDevice } from "@shades/common/utils";
+import { Checkmark as CheckmarkIcon } from "./icons";
 import * as Popover from "./popover.js";
 
 const Context = React.createContext();
@@ -94,13 +95,18 @@ export const Trigger = ({ children, asChild }) => {
 export const Content = ({
   items,
   onAction,
+  selectionMode,
+  selectedKeys,
   disabledKeys,
+  onSelectionChange,
+  widthFollowTrigger = false,
   children,
   ...props
 }) => {
   const { menuProps } = React.useContext(Context);
   return (
     <Popover.Content
+      widthFollowTrigger={widthFollowTrigger}
       css={(theme) =>
         css({
           width: theme.dropdownMenus.width,
@@ -116,8 +122,11 @@ export const Content = ({
     >
       <Menu
         items={items}
-        onAction={onAction}
+        selectionMode={selectionMode}
+        selectedKeys={selectedKeys}
         disabledKeys={disabledKeys}
+        onAction={onAction}
+        onSelectionChange={onSelectionChange}
         {...menuProps}
       >
         {children}
@@ -136,7 +145,19 @@ const Menu = (props) => {
   return (
     <ul
       ref={ref}
-      css={css({ listStyle: "none", outline: "none" })}
+      css={(t) =>
+        css({
+          listStyle: "none",
+          outline: "none",
+          ".section-heading": {
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.micro,
+            fontWeight: t.text.weights.smallTextEmphasis,
+            textTransform: "uppercase",
+            padding: "0 0.8rem",
+          },
+        })
+      }
       {...menuProps}
     >
       {[...state.collection].map((item) =>
@@ -155,7 +176,7 @@ const MenuItem = ({ item, state }) => {
   const {
     menuItemProps,
     // isFocused,
-    // isSelected,
+    isSelected,
     // isDisabled,
   } = useMenuItem({ key: item.key }, state, ref);
 
@@ -170,8 +191,9 @@ const MenuItem = ({ item, state }) => {
           color: `var(--color, ${t.colors.textNormal})`,
           width: "100%",
           minHeight: t.dropdownMenus.itemHeight,
-          padding: "0.4rem 0.8rem",
+          padding: "0.3rem 0.8rem",
           display: "inline-flex",
+          gap: "1.2rem",
           alignItems: "center",
           justifyContent: "flex-start",
           lineHeight: 1.4,
@@ -180,6 +202,7 @@ const MenuItem = ({ item, state }) => {
           cursor: "pointer",
           borderRadius: "0.3rem",
           whiteSpace: "nowrap",
+          margin: "0.1rem 0",
           ":focus": {
             background: t.colors.backgroundModifierHover,
             outline: "none",
@@ -188,6 +211,16 @@ const MenuItem = ({ item, state }) => {
             cursor: "default",
             color: t.colors.textMuted,
           },
+          '&[aria-checked="true"]': {
+            background: t.colors.backgroundModifierSelected,
+            color: t.colors.textNormal,
+          },
+          '&[aria-checked="true"]:focys': {
+            color: t.colors.textAccent,
+          },
+          ".content-container": { flex: 1 },
+          ".icon-container": { padding: "0 0.4rem" },
+          ".icon-container svg": { width: "1.1rem", height: "auto" },
         })
       }
       style={{
@@ -198,13 +231,18 @@ const MenuItem = ({ item, state }) => {
             : undefined,
       }}
     >
-      {item.rendered}
+      <div className="content-container">{item.rendered}</div>
+      {isSelected && (
+        <div className="icon-container">
+          <CheckmarkIcon style={{ width: "1.1rem" }} />
+        </div>
+      )}
     </li>
   );
 };
 
 const MenuSection = ({ section, state, onAction, onClose }) => {
-  const { itemProps, groupProps } = useMenuSection({
+  const { itemProps, headingProps, groupProps } = useMenuSection({
     heading: section.rendered,
     "aria-label": section["aria-label"],
   });
@@ -228,6 +266,11 @@ const MenuSection = ({ section, state, onAction, onClose }) => {
         />
       )}
       <li {...itemProps}>
+        {section.rendered && (
+          <span {...headingProps} className="section-heading">
+            {section.rendered}
+          </span>
+        )}
         <ul {...groupProps}>
           {[...section.childNodes].map((node) => (
             <MenuItem
