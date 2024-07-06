@@ -409,7 +409,7 @@ const ProposalListItem = React.memo(({ proposalId, sortStrategy }) => {
     if (isOnScreen) hasBeenOnScreenRef.current = true;
   });
 
-  const hasBeenOnScreen = hasBeenOnScreenRef.current ?? false;
+  const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
 
   const statusText = (() => {
     const baseStatusText = renderPropStatusText({
@@ -593,7 +593,7 @@ const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
     if (isOnScreen) hasBeenOnScreenRef.current = true;
   });
 
-  const hasBeenOnScreen = hasBeenOnScreenRef.current ?? false;
+  const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
 
   const { votes } = getCandidateSignals({ candidate });
   const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
@@ -883,7 +883,7 @@ const AccountListItem = React.memo(
       if (isOnScreen) hasBeenOnScreenRef.current = true;
     });
 
-    const hasBeenOnScreen = hasBeenOnScreenRef.current ?? false;
+    const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
 
     const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
     const enableImpersonation = !isMe && isDebugSession;
