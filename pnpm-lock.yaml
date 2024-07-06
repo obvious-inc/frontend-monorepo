@@ -153,7 +153,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.12.0
-        version: 1.12.0(bufferutil@4.0.8)(vercel@34.3.0(@swc/core@1.6.7))(wrangler@3.63.0(bufferutil@4.0.8))
+        version: 1.12.0(bufferutil@4.0.8)(vercel@34.3.0(@swc/core@1.6.7))(wrangler@3.63.1(bufferutil@4.0.8))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -173,8 +173,8 @@ importers:
         specifier: 34.3.0
         version: 34.3.0(@swc/core@1.6.7)
       wrangler:
-        specifier: 3.63.0
-        version: 3.63.0(bufferutil@4.0.8)
+        specifier: 3.63.1
+        version: 3.63.1(bufferutil@4.0.8)
 
   packages/common:
     dependencies:
@@ -7768,8 +7768,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@3.63.0:
-    resolution: {integrity: sha512-FMIGorXhYN161S1qotoIlg9EqpfRsPqtB/fd9J+qXTJ5xpctq4meaQAmRKfLI87cQDdkjUXpQBJyNgBXw4i81Q==}
+  wrangler@3.63.1:
+    resolution: {integrity: sha512-fxMPNEyDc9pZNtQOuYqRikzv6lL5eP4S1zv7L/kw24uu1cCEmJ39j8bfJGzrAEqKDNsiFXVjEka0RjlpgEVWPg==}
     engines: {node: '>=16.17.0'}
     hasBin: true
     peerDependencies:
@@ -8922,7 +8922,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.12.0(bufferutil@4.0.8)(vercel@34.3.0(@swc/core@1.6.7))(wrangler@3.63.0(bufferutil@4.0.8))':
+  '@cloudflare/next-on-pages@1.12.0(bufferutil@4.0.8)(vercel@34.3.0(@swc/core@1.6.7))(wrangler@3.63.1(bufferutil@4.0.8))':
     dependencies:
       acorn: 8.12.0
       ast-types: 0.14.2
@@ -8937,7 +8937,7 @@ snapshots:
       pcre-to-regexp: 1.1.0
       semver: 7.6.2
       vercel: 34.3.0(@swc/core@1.6.7)
-      wrangler: 3.63.0(bufferutil@4.0.8)
+      wrangler: 3.63.1(bufferutil@4.0.8)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -17457,7 +17457,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20240701.0
       '@cloudflare/workerd-windows-64': 1.20240701.0
 
-  wrangler@3.63.0(bufferutil@4.0.8):
+  wrangler@3.63.1(bufferutil@4.0.8):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.3.4
       '@esbuild-plugins/node-globals-polyfill': 0.2.3(esbuild@0.17.19)
