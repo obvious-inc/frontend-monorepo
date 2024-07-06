@@ -141,16 +141,20 @@ const BrowseCandidatesScreen = () => {
   const sortedFilteredCandidates = React.useMemo(() => {
     const filter = (candidates) => {
       const stateFilterPredicate = (c) => {
+        // Incomplete data
         if (c.latestVersion == null) return false;
+
+        // Canceled filter trumps everything
         if (c.canceledTimestamp != null && !deferredShowCanceled) return false;
-        if (
-          c.latestVersion.targetProposalId != null &&
-          !deferredShowProposalUpdates
-        )
-          return false;
-        if (c.latestVersion.proposalId != null && !deferredShowPromoted)
-          return false;
+
+        // Updates & promoted candies override the "regular" filter
+        if (c.latestVersion.targetProposalId != null)
+          return deferredShowProposalUpdates;
+        if (c.latestVersion.proposalId != null) return deferredShowPromoted;
+
+        // Filtering by non-canceled last to not mess with other filters
         if (c.canceledTimestamp == null && !deferredShowRegular) return false;
+
         return true;
       };
 
