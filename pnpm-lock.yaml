@@ -49,8 +49,8 @@ importers:
         specifier: 2.1.0
         version: 2.1.0
       '@nouns/assets':
-        specifier: 0.6.0
-        version: 0.6.0
+        specifier: 0.7.0
+        version: 0.7.0
       '@nouns/contracts':
         specifier: 0.3.0
         version: 0.3.0(bufferutil@4.0.8)
@@ -1712,8 +1712,8 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@nouns/assets@0.6.0':
-    resolution: {integrity: sha512-EYsX+IqlsoBVmqIJ/Hc5eD7o75vBwVKvQdqz3Mb5wwCRK7TCze+ir6h67PiC3T/X53TdCcY3D20en8D0LLlyjA==}
+  '@nouns/assets@0.7.0':
+    resolution: {integrity: sha512-V1CA/ert+lSsoGzreU2rniadlFYPfjQNsIewaOxN+5JxZYafSRySXPe7XCMU/wQ5yJzGeljiKVX9aDoxtEwrjg==}
 
   '@nouns/contracts@0.3.0':
     resolution: {integrity: sha512-l619EP77QqX0gPGw3gPfh9tgBlz5lFwK8EzB+orLJx3JrfHSUqfjjYCfZih+I++bhJuK78ro2FgFx6U0kZnXEw==}
@@ -9920,7 +9920,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
 
-  '@nouns/assets@0.6.0':
+  '@nouns/assets@0.7.0':
     dependencies:
       '@ethersproject/bignumber': 5.7.0
       '@ethersproject/solidity': 5.7.0
