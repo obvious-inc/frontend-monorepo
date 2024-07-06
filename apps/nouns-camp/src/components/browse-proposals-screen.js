@@ -4,7 +4,11 @@ import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
-import { array as arrayUtils, searchRecords } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  object as objectUtils,
+  searchRecords,
+} from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import Input, { Label } from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
@@ -762,9 +766,13 @@ const ProposalStateFilterMenu = ({
             if (selectedStates.size === simplifiedProposalStates.length)
               return "Show all";
 
-            const { hidden, visible } = arrayUtils.groupBy(
-              (g) => (selectedStates.has(g) ? "visible" : "hidden"),
-              simplifiedProposalStates,
+            const { hidden, visible } = objectUtils.mapValues(
+              // Beautiful solution
+              (states) => states.map((s) => s.replaceAll("-", " ")),
+              arrayUtils.groupBy(
+                (g) => (selectedStates.has(g) ? "visible" : "hidden"),
+                simplifiedProposalStates,
+              ),
             );
 
             if (hidden.length === 1)
