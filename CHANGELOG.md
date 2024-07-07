@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.1] - 2024-07-07
+
+### 🐛 Bug Fixes
+
+- *(landing-screen)* Remove candidate-related filter options
+
 ## [1.2.0-alpha.0] - 2024-07-07
 
 ### 🚀 Features
