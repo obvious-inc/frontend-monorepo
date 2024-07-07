@@ -980,8 +980,8 @@ const Feed = React.memo(() => {
             options={[
               { value: "all", label: "Everything" },
               { value: "proposals", label: "Proposal activity only" },
-              { value: "candidates", label: "Candidate activity only" },
-              { value: "propdates", label: "Propdates only" },
+              // { value: "candidates", label: "Candidate activity only" },
+              // { value: "propdates", label: "Propdates only" },
             ]}
             onChange={(value) => {
               setFilter(value);
@@ -992,8 +992,8 @@ const Feed = React.memo(() => {
               const filterLabel = {
                 all: "Everything",
                 proposals: "Proposal activity",
-                candidates: "Candidate activity",
-                propdates: "Propdates",
+                // candidates: "Candidate activity",
+                // propdates: "Propdates",
               }[value];
               return (
                 <>
@@ -1041,7 +1041,7 @@ const FeedTabContent = React.memo(() => {
             options={[
               { value: "all", label: "Everything" },
               { value: "proposals", label: "Proposal activity only" },
-              { value: "candidates", label: "Candidate activity only" },
+              // { value: "candidates", label: "Candidate activity only" },
             ]}
             onChange={(value) => {
               setFilter(value);
@@ -1052,7 +1052,7 @@ const FeedTabContent = React.memo(() => {
               const filterLabel = {
                 all: "Everything",
                 proposals: "Proposal activity",
-                candidates: "Candidate activity",
+                // candidates: "Candidate activity",
               }[value];
               return (
                 <>
