@@ -73,8 +73,9 @@ export const getStateLabel = (state) => {
     case "defeated":
     case "vetoed":
     case "succeeded":
-    case "executed":
-      return state;
+    case "executed": {
+      return state[0].toUpperCase() + state.slice(1);
+    }
 
     default:
       throw new Error(`Unknown state "${state}"`);
@@ -90,4 +91,26 @@ export const getLatestVersionBlock = (proposal) => {
   );
 
   return sortedVersions[0].createdBlock;
+};
+
+export const getForYouGroup = ({ connectedAccountAddress }, p) => {
+  if (["pending", "updatable"].includes(p.state)) return "new";
+  if (isFinalState(p.state) || isSucceededState(p.state)) return "past";
+
+  if (connectedAccountAddress == null) return "ongoing";
+
+  if (
+    p.proposerId === connectedAccountAddress ||
+    p.signers?.some((s) => s.id === connectedAccountAddress)
+  )
+    return "authored";
+
+  if (
+    isVotableState(p.state) &&
+    p.votes != null &&
+    !p.votes.some((v) => v.voterId === connectedAccountAddress)
+  )
+    return "awaiting-vote";
+
+  return "ongoing";
 };
