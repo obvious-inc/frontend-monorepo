@@ -1,9 +1,11 @@
 import { css } from "@emotion/react";
 import { Switch as ReactAriaSwitch } from "react-aria-components";
 
-const Switch = ({ label, ...props }) => (
+const Switch = ({ label, size, align, ...props }) => (
   <ReactAriaSwitch
     {...props}
+    data-size={size}
+    data-align={align}
     css={(t) =>
       css({
         display: "flex",
@@ -40,6 +42,12 @@ const Switch = ({ label, ...props }) => (
         // },
         "&[data-focus-visible] .indicator": {
           boxShadow: t.shadows.focus,
+        },
+        '&[data-size="small"]': {
+          fontSize: t.text.sizes.small,
+        },
+        '&[data-align="right"]': {
+          flexDirection: "row-reverse",
         },
       })
     }

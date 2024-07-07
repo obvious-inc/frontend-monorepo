@@ -2,6 +2,7 @@ import { css, useTheme } from "@emotion/react";
 
 const Link = ({
   underline = false,
+  variant,
   color,
   hoverColor,
   component: Component = "button",
@@ -14,12 +15,14 @@ const Link = ({
   return (
     <Component
       data-size={size}
+      data-variant={variant}
       css={(t) =>
         css({
           color: `var(--color, ${t.colors.link})`,
           textDecoration: "var(--text-decoration, none)",
           outline: "none",
           '&[data-size="small"]': { fontSize: t.text.sizes.small },
+          '&[data-variant="dimmed"]': { color: t.colors.textDimmed },
           ":focus-visible": {
             textDecoration: "underline",
             color: `var(--color, ${t.colors.linkModifierHover})`,

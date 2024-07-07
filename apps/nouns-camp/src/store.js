@@ -77,7 +77,7 @@ const mergeProposals = (p1, p2) => {
       (v1, v2) => {
         if (v1.id === v2.id) return true;
         if (!v1.isPending) return false;
-        return v1.voterId.toLowerCase() === v2.voterId.toLowerCase();
+        return v1.voterId === v2.voterId;
       },
       // p2 has to be first here to take precedence
       [...p2.votes, ...p1.votes],
@@ -811,6 +811,7 @@ const createStore = ({ initialState, publicClient }) =>
       reverseResolveEnsAddresses,
 
       // Subgraph reads
+      subgraphFetch,
       fetchProposals,
       fetchProposal: async (id) => {
         const data = await subgraphFetch({
@@ -1833,9 +1834,14 @@ const useStore = (selector) => {
   return useZustandStore(store, selector);
 };
 
+export const useSubgraphFetch = () => {
+  return useStore((s) => s.subgraphFetch);
+};
+
 export const useActions = () => {
   const publicClient = usePublicClient();
 
+  const subgraphFetch = useStore((s) => s.subgraphFetch);
   const fetchProposal = useStore((s) => s.fetchProposal);
   const fetchProposals = useStore((s) => s.fetchProposals);
   const fetchActiveProposals = useStore((s) => s.fetchActiveProposals);
@@ -1869,6 +1875,7 @@ export const useActions = () => {
   );
 
   return {
+    subgraphFetch,
     fetchProposal,
     fetchProposals,
     fetchActiveProposals,

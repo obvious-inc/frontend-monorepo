@@ -28,6 +28,12 @@ const dialogs = [
     component: React.lazy(() => import("../components/delegation-dialog.js")),
   },
   {
+    key: "proposal-drafts",
+    component: React.lazy(
+      () => import("../components/proposal-drafts-dialog.js"),
+    ),
+  },
+  {
     key: "settings",
     component: React.lazy(() => import("../components/settings-dialog.js")),
   },

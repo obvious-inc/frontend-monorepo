@@ -301,8 +301,8 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
               {proposal.forVotes +
                 proposal.againstVotes +
                 proposal.abstainVotes}{" "}
-              nouns &middot; {proposal.votes.length} voters &middot; Quorum{" "}
-              {quorum}{" "}
+              nouns &middot; {proposal.votes?.length ?? "..."} voters &middot;
+              Quorum {quorum}{" "}
               <span css={(t) => css({ color: t.colors.textDimmed })}>
                 {maxQuorumVotes > quorum ? (
                   <>(max {maxQuorumVotes})</>
