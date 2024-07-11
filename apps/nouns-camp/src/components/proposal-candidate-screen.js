@@ -139,7 +139,9 @@ const ProposalCandidateScreenContent = ({
   } = useProposalCandidateSimulation(candidate?.id, {
     version: candidate?.latestVersion?.id,
     enabled:
-      candidate?.latestVersion?.id && candidate?.canceledTimestamp == null,
+      candidate?.latestVersion?.id &&
+      candidate?.canceledTimestamp == null &&
+      candidate?.latestVersion.targetProposalId == null,
   });
 
   useProposalCandidateFetch(candidateId);
