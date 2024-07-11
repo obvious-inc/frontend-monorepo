@@ -156,3 +156,54 @@ export const useProposalSimulation = (
   if (!enabled) return { data: null, error: null, isFetching: false };
   return { data, error, isFetching };
 };
+
+export const useProposalCandidateSimulation = (
+  candidateId,
+  { version, enabled } = {},
+) => {
+  const [error, setError] = React.useState(null);
+  const [data, setData] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(null);
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setIsFetching(true);
+      setError(null);
+
+      const res = await fetch(
+        `/api/simulate/candidate/${candidateId}?version=${version}`,
+      );
+      const data = await res.json();
+      const simulations = data?.simulations;
+
+      setData(
+        simulations?.map((s) => {
+          return {
+            success: s?.status,
+            error: s?.error_message,
+            id: s?.id,
+          };
+        }),
+      );
+
+      if (simulations.some((s) => !s.status)) {
+        // todo: handle other possible errors
+        setError("One or more transactions failed to simulate.");
+      }
+    } catch (e) {
+      console.error(e);
+      setError(e);
+      setData(null);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [candidateId, version]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    fetchData();
+  }, [fetchData, enabled]);
+
+  if (!enabled) return { data: null, error: null, isFetching: false };
+  return { data, error, isFetching };
+};

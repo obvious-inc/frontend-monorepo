@@ -63,6 +63,7 @@ import Tag from "./tag.js";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 import DiffBlock from "./diff-block.js";
+import { useProposalCandidateSimulation } from "../hooks/simulation.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -130,6 +131,16 @@ const ProposalCandidateScreenContent = ({
   const activeProposerIds = useProposals({ filter: "active" }).map(
     (p) => p.proposerId,
   );
+
+  const {
+    data: simulationResults,
+    error: simulationError,
+    isFetching: simulationIsFetching,
+  } = useProposalCandidateSimulation(candidate?.id, {
+    version: candidate?.latestVersion?.id,
+    enabled:
+      candidate?.latestVersion?.id && candidate?.canceledTimestamp == null,
+  });
 
   useProposalCandidateFetch(candidateId);
   useProposalFetch(candidate.latestVersion.targetProposalId);
@@ -372,9 +383,13 @@ const ProposalCandidateScreenContent = ({
                   <div style={{ paddingTop: "3.2rem" }}>
                     {candidate.latestVersion.content.transactions != null && (
                       <TransactionList
-                        transactions={
-                          candidate.latestVersion.content.transactions
-                        }
+                        transactions={candidate.latestVersion.content.transactions.map(
+                          (t, i) => ({
+                            ...t,
+                            simulation: simulationResults?.[i],
+                          }),
+                        )}
+                        isSimulationRunning={simulationIsFetching}
                       />
                     )}
                   </div>
@@ -402,6 +417,35 @@ const ProposalCandidateScreenContent = ({
             },
           })}
         >
+          {simulationError && (
+            <Callout
+              compact
+              variant="info"
+              css={() =>
+                css({
+                  marginBottom: "2.4rem",
+                  "@media (min-width: 600px)": {
+                    marginBottom: "4.8rem",
+                  },
+                })
+              }
+            >
+              <p
+                css={(t) =>
+                  css({
+                    color: t.colors.textHighlight,
+                  })
+                }
+              >
+                This proposal candidate will fail to execute if promoted.
+              </p>
+
+              <p>
+                One or more transactions didn&apos;t pass the simulation. Check
+                the Transactions tab to see which ones failed.
+              </p>
+            </Callout>
+          )}
           {candidate.latestVersion.proposalId != null ? (
             <Callout
               compact
@@ -611,9 +655,13 @@ const ProposalCandidateScreenContent = ({
                   >
                     {candidate.latestVersion.content.transactions != null && (
                       <TransactionList
-                        transactions={
-                          candidate.latestVersion.content.transactions
-                        }
+                        transactions={candidate.latestVersion.content.transactions.map(
+                          (t, i) => ({
+                            ...t,
+                            simulation: simulationResults?.[i],
+                          }),
+                        )}
+                        isSimulationRunning={simulationIsFetching}
                       />
                     )}
                   </div>
