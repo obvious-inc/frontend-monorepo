@@ -36,7 +36,7 @@ const shareSimulation = async (simulation) => {
   }
 };
 
-const shareSimulations = async (simulations) => {
+export const shareSimulations = async (simulations) => {
   if (!simulations) return;
 
   for (const simulation of simulations) {
