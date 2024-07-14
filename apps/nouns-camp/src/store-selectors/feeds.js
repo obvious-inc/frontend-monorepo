@@ -31,9 +31,6 @@ const buildVoteAndFeedbackPostFeedItems = ({
       reasonWithStrippedReposts,
     );
 
-    // Don’t include candidate items
-    if (p.candidateId != null) return acc;
-
     acc.push({
       id: p.id,
       type: p.type,
@@ -105,7 +102,7 @@ export const buildProposalFeed = (
     votes: proposal.votes,
     feedbackPosts: [
       ...(proposal?.feedbackPosts ?? []),
-      ...(candidate?.feedbackPosts ?? []),
+      ...(includeCandidateItems ? candidate?.feedbackPosts ?? [] : []),
     ],
   });
 
