@@ -930,6 +930,12 @@ const ItemTitle = ({ item, context }) => {
             throw new Error();
         }
       })();
+
+      const voteCountSection = (() => {
+        if (item.voteCount == null || item.voteCount === 0) return null;
+        return <> ({item.voteCount})</>;
+      })();
+
       return (
         <span>
           {accountName}{" "}
@@ -938,23 +944,18 @@ const ItemTitle = ({ item, context }) => {
               case 0:
                 return (
                   <Signal negative>
-                    {signalWord} against
-                    {item.voteCount != null && <> ({item.voteCount})</>}
+                    {signalWord} against{voteCountSection}
                   </Signal>
                 );
               case 1:
                 return (
                   <Signal positive>
-                    {signalWord} for
-                    {item.voteCount != null && <> ({item.voteCount})</>}
+                    {signalWord} for{voteCountSection}
                   </Signal>
                 );
               case 2:
                 return item.type === "vote" ? (
-                  <Signal>
-                    abstained
-                    {item.voteCount != null && <> ({item.voteCount})</>}
-                  </Signal>
+                  <Signal>abstained{voteCountSection}</Signal>
                 ) : isIsolatedContext ? (
                   signalWord
                 ) : (
