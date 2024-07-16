@@ -1002,7 +1002,11 @@ export const ProposalBody = React.memo(({ markdownText }) => {
       >
         {markdownText != null && (
           <React.Suspense fallback={null}>
-            <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+            <MarkdownRichText
+              text={markdownText}
+              imagesMaxHeight={680}
+              imagesMaxWidth={null}
+            />
           </React.Suspense>
         )}
       </div>
