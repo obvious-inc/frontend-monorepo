@@ -20,7 +20,7 @@
     "undici": ">=6.11.1"
   },
   "devDependencies": {
-    "prettier": "3.3.2",
+    "prettier": "3.3.3",
     "turbo": "1.13.3",
     "typescript": "5.5.3"
   },
