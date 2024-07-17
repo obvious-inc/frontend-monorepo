@@ -70,8 +70,8 @@ importers:
         specifier: 8.4.4
         version: 8.4.4(next@14.2.5(@babel/core@7.24.7)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(webpack@5.92.1(@swc/core@1.6.13)(esbuild@0.17.19))
       '@serwist/precaching':
-        specifier: 9.0.3
-        version: 9.0.3(typescript@4.9.5)
+        specifier: 9.0.4
+        version: 9.0.4(typescript@4.9.5)
       '@serwist/sw':
         specifier: 9.0.4
         version: 9.0.4(typescript@4.9.5)
@@ -3002,9 +3002,8 @@ packages:
     resolution: {integrity: sha512-2HUiDKRpHxNirH37UnIuLx6Zc6HaIAgpTE2qWT6BfzqX1Fbmn2Zk67tvBTfCITWemCw1/dUH8VzI1k6vC3XmtA==}
     deprecated: This package has been deprecated. Please use serwist instead.
 
-  '@serwist/precaching@9.0.3':
-    resolution: {integrity: sha512-0sSUXrsWFHTze1llOxnhkyJCQ/MhUmTL2TFRjDnRqdg5TIiJqTqGnBU6FHgWxlMyiPb9jLbmsZcGaLIlwTOQWg==}
-    deprecated: This package has been deprecated. Please use serwist instead.
+  '@serwist/precaching@9.0.4':
+    resolution: {integrity: sha512-nODsiWqd2ET9OXPoOtR4SL4hwHNBMcffNuomVK3sUlgbqpaoC+AGv1GOe1yMdgJyd0qX2p5QbFJXTb90em28Kw==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -6963,14 +6962,6 @@ packages:
 
   server-only@0.0.1:
     resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
-
-  serwist@9.0.3:
-    resolution: {integrity: sha512-WNan/+oethHd0YKyEVIETk9z7BWNnhbrhKWD5iE/n9eAIGUMUS4a3Ff5E6QHltxEVo+X3Dc3HtSIqXkSoEK9YA==}
-    peerDependencies:
-      typescript: '>=5.0.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   serwist@9.0.4:
     resolution: {integrity: sha512-lix5Hz5OFQjUqWeAIMLCOh7rYtcmQhz7v97zxfiXgONTVqImyGk5w+yaZrQiXZqABZD/i1uY1Ieb1h969lkLNw==}
@@ -11766,9 +11757,9 @@ snapshots:
       '@serwist/routing': 8.4.4
       '@serwist/strategies': 8.4.4
 
-  '@serwist/precaching@9.0.3(typescript@4.9.5)':
+  '@serwist/precaching@9.0.4(typescript@4.9.5)':
     dependencies:
-      serwist: 9.0.3(typescript@4.9.5)
+      serwist: 9.0.4(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
 
@@ -16601,12 +16592,6 @@ snapshots:
       - supports-color
 
   server-only@0.0.1: {}
-
-  serwist@9.0.3(typescript@4.9.5):
-    dependencies:
-      idb: 8.0.0
-    optionalDependencies:
-      typescript: 4.9.5
 
   serwist@9.0.4(typescript@4.9.5):
     dependencies:
