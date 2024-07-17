@@ -1006,6 +1006,14 @@ export const ProposalBody = React.memo(({ markdownText }) => {
               text={markdownText}
               imagesMaxHeight={680}
               imagesMaxWidth={null}
+              css={(t) =>
+                css({
+                  // better for displaying transparent assets
+                  ".image > img": {
+                    background: "unset",
+                  },
+                })
+              }
             />
           </React.Suspense>
         )}
