@@ -994,6 +994,7 @@ const createStore = ({ initialState, publicClient }) =>
                   quorumVotes
                   executionETA
                   proposer { id }
+                  signers { id }
                 }
               }
           }`,
