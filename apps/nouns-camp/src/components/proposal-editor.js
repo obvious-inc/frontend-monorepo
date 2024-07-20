@@ -1285,6 +1285,11 @@ const ProposalContentEditor = ({
             css={(t) =>
               css({
                 "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
+
+                // better for displaying transparent assets
+                ".image > img": {
+                  background: "unset",
+                },
               })
             }
             style={{ flex: 1, minHeight: "12rem" }}

@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0-alpha.2",
+  "version": "1.2.0-alpha.3",
   "name": "@lilnouns/lilnouns-camp",
   "scripts": {
     "preinstall": "npx -y only-allow pnpm",
@@ -7,7 +7,7 @@
     "prestart": "pnpm run build",
     "start": "pnpm run --recursive --parallel --if-present start",
     "build": "turbo build --filter='./packages/*'",
-    "postbuild": "[ \"$CF_PAGES\" ] && cd apps/nouns-camp && pnpx @cloudflare/next-on-pages || true",
+    "postbuild": "cd apps/nouns-camp && ([ \"$CF_PAGES\" ] && pnpx @cloudflare/next-on-pages) || pnpm run build",
     "lint": "turbo lint",
     "format": "pnpm run --recursive --if-present format",
     "test": "pnpm run --recursive --if-present test"
@@ -20,7 +20,7 @@
     "undici": ">=6.11.1"
   },
   "devDependencies": {
-    "prettier": "3.3.2",
+    "prettier": "3.3.3",
     "turbo": "1.13.3",
     "typescript": "5.5.3"
   },

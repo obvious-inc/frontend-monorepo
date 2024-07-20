@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.3] - 2024-07-20
+
+### 🚀 Features
+
+- Migrate updates from upstream (#435)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(package)* Modify `postbuild` script command
+
 ## [1.2.0-alpha.2] - 2024-07-14
 
 ### 🚀 Features
