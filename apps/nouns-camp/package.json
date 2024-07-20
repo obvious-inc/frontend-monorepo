@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@emotion/cache": "11.11.0",
-    "@emotion/react": "11.11.4",
+    "@emotion/react": "11.13.0",
     "@farcaster/core": "0.14.18",
     "@lilnounsdao/assets": "0.5.15",
     "@lilnounsdao/contracts": "0.3.5",
