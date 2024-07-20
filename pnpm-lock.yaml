@@ -34,8 +34,8 @@ importers:
         specifier: 11.13.0
         version: 11.13.0(react@18.3.1)
       '@farcaster/core':
-        specifier: 0.14.18
-        version: 0.14.18(bufferutil@4.0.8)(typescript@4.9.5)(zod@3.23.8)
+        specifier: 0.14.19
+        version: 0.14.19(bufferutil@4.0.8)(typescript@4.9.5)(zod@3.23.8)
       '@lilnounsdao/assets':
         specifier: 0.5.15
         version: 0.5.15
@@ -1384,8 +1384,8 @@ packages:
   '@ethersproject/wordlists@5.7.0':
     resolution: {integrity: sha512-S2TFNJNfHWVHNE6cNDjbVlZ6MgE17MIxMbMg2zv3wn+3XSJGosL1m9ZVv3GXCf/2ymSsQ+hRI5IzoMJTG6aoVA==}
 
-  '@farcaster/core@0.14.18':
-    resolution: {integrity: sha512-uyYJEPcSier9GtcWo23nMZX1s+rXEFhtN/ObDlXWYRov1iCa3R3XtUJ+QtjpfgTL9zBGjhs9yB4BWMtEjL5Ldw==}
+  '@farcaster/core@0.14.19':
+    resolution: {integrity: sha512-ks5Tn9HRDXqM18fFaZM2a70C03gMjR/yXLJHtmYqN9zIk34S45zpQy4PYXi0modNc/JUda2TE/jQ2rm88S9oiQ==}
 
   '@fastify/deepmerge@1.3.0':
     resolution: {integrity: sha512-J8TOSBq3SoZbDhM9+R/u77hP93gz/rajSA+K2kGyijPpORPWUXHUpTaleoj+92As0S9uPRP7Oi8IqMf0u+ro6A==}
@@ -9495,7 +9495,7 @@ snapshots:
       '@ethersproject/properties': 5.7.0
       '@ethersproject/strings': 5.7.0
 
-  '@farcaster/core@0.14.18(bufferutil@4.0.8)(typescript@4.9.5)(zod@3.23.8)':
+  '@farcaster/core@0.14.19(bufferutil@4.0.8)(typescript@4.9.5)(zod@3.23.8)':
     dependencies:
       '@noble/curves': 1.4.0
       '@noble/hashes': 1.4.0
