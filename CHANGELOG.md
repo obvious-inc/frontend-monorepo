@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.4] - 2024-07-20
+
+### 🚀 Features
+
+- Pull changes from upstream (#449)
+
+### ◀️ Revert
+
+- *(package)* Modify `postbuild` script command
+
 ## [1.2.0-alpha.3] - 2024-07-20
 
 ### 🚀 Features
