@@ -89,8 +89,6 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
 
       setData(finalSims);
     } catch (e) {
-      console.error(e);
-      setError(e);
       setData(null);
     } finally {
       setIsFetching(false);
@@ -140,8 +138,6 @@ export const useProposalSimulation = (
         setError("One or more transactions failed to simulate.");
       }
     } catch (e) {
-      console.error(e);
-      setError(e);
       setData(null);
     } finally {
       setIsFetching(false);
