@@ -1,7 +1,7 @@
 {
   "name": "nouns-camp",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
     "prestart": "pnpx @cloudflare/next-on-pages",
     "start": "wrangler pages dev .vercel/output/static --compatibility-flag=nodejs_compat",
