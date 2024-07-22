@@ -58,7 +58,7 @@
     "tinykeys": "2.1.0",
     "use-debounce": "10.0.1",
     "viem": "2.16.2",
-    "wagmi": "2.10.7",
+    "wagmi": "2.11.3",
     "zustand": "4.5.4"
   }
 }
