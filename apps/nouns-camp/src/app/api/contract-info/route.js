@@ -1,12 +1,26 @@
+import { CHAIN_ID } from "../../../constants/env";
+
 export const runtime = "edge";
 
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
 
+const getEtherscanApiEndpoint = () => {
+  switch (CHAIN_ID) {
+    case 1:
+      return "https://api.etherscan.io";
+    case 11155111:
+      return "https://api-sepolia.etherscan.io";
+    default:
+      throw new Error();
+  }
+};
+
 const etherscanRequest = (query) => {
   const searchParams = new URLSearchParams(query);
+  const apiEndpoint = getEtherscanApiEndpoint();
   return new Request(
-    `https://api.etherscan.io/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`,
+    `${apiEndpoint}/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`,
   );
 };
 
@@ -50,15 +64,15 @@ const fetchContractInfo = async (address_) => {
   if (responseBody.status !== "1" || responseBody.result.length === 0)
     throw new Error();
 
-  if (responseBody.result[0]["SourceCode"] === "") {
-    const error = new Error();
-    error.code = "contract-address-required";
-    return Promise.reject(error);
-  }
-
   if (responseBody.result[0]["ABI"] === "Contract source code not verified") {
     const error = new Error();
     error.code = "source-code-not-verified";
+    return Promise.reject(error);
+  }
+
+  if (responseBody.result[0]["SourceCode"] === "") {
+    const error = new Error();
+    error.code = "contract-address-required";
     return Promise.reject(error);
   }
 
