@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.5] - 2024-07-24
+
+### 🚜 Refactor
+
+- *(turbo)* Replace `pipeline` with `tasks`
+
+### ⚙️ Miscellaneous Tasks
+
+- *(package)* Add package manager to `package.json`
+- *(next)* Enable turbo mode for local development
+- Remove specified version in pnpm action setup
+
 ## [1.2.0-alpha.4] - 2024-07-20
 
 ### 🚀 Features
