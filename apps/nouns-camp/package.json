@@ -19,7 +19,7 @@
     "wrangler": "3.66.0"
   },
   "dependencies": {
-    "@emotion/cache": "11.13.0",
+    "@emotion/cache": "11.13.1",
     "@emotion/react": "11.13.0",
     "@farcaster/core": "0.14.19",
     "@lilnounsdao/assets": "0.5.15",
