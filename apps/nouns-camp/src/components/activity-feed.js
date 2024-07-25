@@ -371,8 +371,8 @@ const FeedItem = React.memo(
                     item={voteOrFeedbackPost}
                     href={
                       context !== "proposal"
-                        ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
-                        : `#${item.id}`
+                        ? `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity#${voteOrFeedbackPost.id}`
+                        : `#${voteOrFeedbackPost.id}`
                     }
                     showSignal={
                       // Don’t render support for abstained feedback reposts
