@@ -731,9 +731,14 @@ const ProposalMainSection = ({
 
             {/* Display state callout for "important" states on mobile */}
             {!isDesktopLayout &&
-              ["active", "objection-period", "succeeded", "queued"].includes(
-                proposal.state,
-              ) && (
+              [
+                "active",
+                "updatable",
+                "pending",
+                "objection-period",
+                "succeeded",
+                "queued",
+              ].includes(proposal.state) && (
                 <Callout
                   icon={renderProposalStateIcon()}
                   css={(t) =>
