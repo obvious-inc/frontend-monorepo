@@ -291,8 +291,6 @@ const ProposalMainSection = ({
     proposalActionInputRef.current.focus();
   }, []);
 
-  useScrollToHash();
-
   if (proposal == null) return null;
 
   const renderProposalStateIcon = () => {
