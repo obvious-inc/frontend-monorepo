@@ -153,7 +153,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.12.1
-        version: 1.12.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        version: 1.12.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -173,8 +173,8 @@ importers:
         specifier: 35.2.1
         version: 35.2.1(@swc/core@1.7.2)
       wrangler:
-        specifier: 3.67.0
-        version: 3.67.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+        specifier: 3.67.1
+        version: 3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
 
   packages/common:
     dependencies:
@@ -5979,6 +5979,11 @@ packages:
     engines: {node: '>=16.13'}
     hasBin: true
 
+  miniflare@3.20240718.1:
+    resolution: {integrity: sha512-mn3MjGnpgYvarCRTfz4TQyVyY8yW0zz7f8LOAPVai78IGC/lcVcyskZcuIr7Zovb2i+IERmmsJAiEPeZHIIKbA==}
+    engines: {node: '>=16.13'}
+    hasBin: true
+
   minimalistic-assert@1.0.1:
     resolution: {integrity: sha512-UtJcAD4yEaGtjPezWuO9wC4nwUnVH/8/Im3yEHQP4b67cXlD/Qr9hdITCU1xDbSEXg2XKNaP8jsReV7vQd00/A==}
 
@@ -7724,8 +7729,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@3.67.0:
-    resolution: {integrity: sha512-elun6p9rAmGr/CtnCixhUXWeKT+LnFbHDsLLizgAlFJbsgCPV/O1if7uMjTGD/fUJNXrwbTVRpxvInz5X9gE2Q==}
+  wrangler@3.67.1:
+    resolution: {integrity: sha512-lLVJxq/OZMfntvZ79WQJNC1OKfxOCs6PLfogqDBuPFEQ3L/Mwqvd9IZ0bB8ahrwUN/K3lSdDPXynk9HfcGZxVw==}
     engines: {node: '>=16.17.0'}
     hasBin: true
     peerDependencies:
@@ -8890,7 +8895,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.12.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@cloudflare/next-on-pages@1.12.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.12.1
       ast-types: 0.14.2
@@ -8905,7 +8910,7 @@ snapshots:
       pcre-to-regexp: 1.1.0
       semver: 7.6.3
       vercel: 35.2.1(@swc/core@1.7.2)
-      wrangler: 3.67.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      wrangler: 3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -15474,6 +15479,25 @@ snapshots:
       - supports-color
       - utf-8-validate
 
+  miniflare@3.20240718.1(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+    dependencies:
+      '@cspotcode/source-map-support': 0.8.1
+      acorn: 8.12.1
+      acorn-walk: 8.3.3
+      capnp-ts: 0.7.0
+      exit-hook: 2.2.1
+      glob-to-regexp: 0.4.1
+      stoppable: 1.1.0
+      undici: 6.19.2
+      workerd: 1.20240718.0
+      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      youch: 3.3.3
+      zod: 3.23.8
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
   minimalistic-assert@1.0.1: {}
 
   minimalistic-crypto-utils@1.0.1: {}
@@ -17414,7 +17438,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20240718.0
       '@cloudflare/workerd-windows-64': 1.20240718.0
 
-  wrangler@3.67.0(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+  wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.3.4
       '@esbuild-plugins/node-globals-polyfill': 0.2.3(esbuild@0.17.19)
@@ -17423,7 +17447,7 @@ snapshots:
       chokidar: 3.6.0
       date-fns: 3.6.0
       esbuild: 0.17.19
-      miniflare: 3.20240718.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      miniflare: 3.20240718.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       nanoid: 3.3.7
       path-to-regexp: 6.2.2
       resolve: 1.22.8
