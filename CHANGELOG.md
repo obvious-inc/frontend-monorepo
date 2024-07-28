@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.8] - 2024-07-28
+
+### 🚀 Features
+
+- *(camp)* Add Google Analytics integration
+
 ## [1.2.0-alpha.7] - 2024-07-28
 
 ### 🚀 Features
