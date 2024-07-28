@@ -45,7 +45,6 @@ import {
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
-import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitProposalCast } from "../hooks/farcaster.js";
@@ -290,8 +289,6 @@ const ProposalMainSection = ({
     setPendingRepostTargetFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
     proposalActionInputRef.current.focus();
   }, []);
-
-  useScrollToHash();
 
   if (proposal == null) return null;
 
@@ -731,9 +728,14 @@ const ProposalMainSection = ({
 
             {/* Display state callout for "important" states on mobile */}
             {!isDesktopLayout &&
-              ["active", "objection-period", "succeeded", "queued"].includes(
-                proposal.state,
-              ) && (
+              [
+                "active",
+                "updatable",
+                "pending",
+                "objection-period",
+                "succeeded",
+                "queued",
+              ].includes(proposal.state) && (
                 <Callout
                   icon={renderProposalStateIcon()}
                   css={(t) =>
