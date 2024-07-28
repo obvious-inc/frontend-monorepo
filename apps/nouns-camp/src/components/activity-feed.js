@@ -326,8 +326,8 @@ const FeedItem = React.memo(
                       item={target}
                       href={
                         context !== "proposal"
-                          ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
-                          : `#${item.id}`
+                          ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
+                          : `#${target.id}`
                       }
                       showSignal
                     />
