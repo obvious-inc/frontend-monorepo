@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.6] - 2024-07-28
+
+### 🐛 Bug Fixes
+
+- Solve some minor issues and update dependencies
+
 ## [1.2.0-alpha.5] - 2024-07-24
 
 ### 🚜 Refactor
