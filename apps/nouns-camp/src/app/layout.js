@@ -13,6 +13,9 @@ import GlobalStylesWrapper from "../global-styles-wrapper.js";
 import { Provider as StoreProvider } from "../store.js";
 import { Provider as FarcasterStateProvider } from "../hooks/farcaster.js";
 
+import { GoogleAnalytics } from '@next/third-parties/google'
+import { GA_ID } from "../constants/env";
+
 import "../reset.css";
 import "../index.css";
 
@@ -92,6 +95,7 @@ export default async function RootLayout({ children }) {
         >{`(${beforeInteractive})()`}</Script>
 
         {/*{isProduction && <VercelAnalytics />}*/}
+        {isProduction && <GoogleAnalytics gaId={GA_ID} />}
 
         <EmotionRootStyleRegistry>
           <ConfigProvider config={config}>
