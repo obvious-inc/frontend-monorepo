@@ -22,8 +22,8 @@ import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
-import { isHex } from "viem";
 import { buildEtherscanLink } from "../utils/etherscan.js";
+import { isTransactionHash } from "../utils/transactions.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
@@ -155,9 +155,9 @@ const FeedItem = React.memo(
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
 
     const renderTimestamp = (item) => {
-      const txHash = item.transactionHash;
-
-      const formattedDate = isHex(txHash) ? (
+      const txHash =
+        item.transactionHash ?? item.txHash ?? item.id.split("-")?.[0];
+      const formattedDate = isTransactionHash(txHash) ? (
         <a
           href={buildEtherscanLink(`/tx/${txHash}`)}
           target="_blank"
