@@ -1,4 +1,3 @@
-import { headers } from "next/headers";
 import { notFound as nextNotFound } from "next/navigation";
 import {
   string as stringUtils,
@@ -6,23 +5,15 @@ import {
   message as messageUtils,
 } from "@shades/common/utils";
 import metaConfig from "../../../metadata-config.js";
-import { getStateFromCookie as getWagmiStateFromCookie } from "../../../wagmi-config.js";
 import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
-import { mainnet } from "../../../chains.js";
 import { Hydrater as StoreHydrater } from "../../../store.js";
 import ClientAppProvider from "../../client-app-provider.js";
 import ProposalScreen from "../../../components/proposal-screen.js";
 
 export const runtime = "edge";
 
-const getChainId = () => {
-  const wagmiState = getWagmiStateFromCookie(headers().get("cookie"));
-  return wagmiState?.chainId ?? mainnet.id;
-};
-
-const fetchProposal = async (id, { chainId }) => {
+const fetchProposal = async (id) => {
   const data = await subgraphFetch({
-    chainId,
     query: `
       query {
         proposal(id: ${id}) {
@@ -58,11 +49,11 @@ const fetchProposal = async (id, { chainId }) => {
       }`,
   });
   if (data?.proposal == null) return null;
-  return parseProposal(data.proposal, { chainId });
+  return parseProposal(data.proposal);
 };
 
 export async function generateMetadata({ params }) {
-  const proposal = await fetchProposal(params.id, { chainId: getChainId() });
+  const proposal = await fetchProposal(params.id);
 
   if (proposal == null) nextNotFound();
 
@@ -99,9 +90,7 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const proposal = await fetchProposal(params.id, {
-    chainId: getChainId(),
-  });
+  const proposal = await fetchProposal(params.id);
 
   if (proposal == null) nextNotFound();
 
