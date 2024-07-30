@@ -371,8 +371,10 @@ export const toMarkdown = (blockElements) => {
 
         const children = el.children.map((el, i) => {
           const listItemPrefix = isBulletList ? "-" : `${i + 1}.`;
-          const renderedListItemChildBlocks =
-            el.children.map(renderBlockElement);
+          const renderedListItemChildBlocks = el.children.map((c) => {
+            if (!c.type) return "";
+            return renderBlockElement(c);
+          });
 
           const indentSpace = "".padStart(listItemPrefix.length + 1, " ");
 
