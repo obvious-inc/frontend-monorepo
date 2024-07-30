@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.9] - 2024-07-30
+
+### 🚀 Features
+
+- Pull changes from upstream (#476)
+
+### 🚜 Refactor
+
+- *(candidates)* Remove `chainId` handling from `fetchCandidate`
+- *(proposals)* Simplify `fetchProposal` by removing `chainId`
+
+### ⚙️ Miscellaneous Tasks
+
+- *(next)* Enforce public env variable whitelist
+
+### ◀️ Revert
+
+- *(proposals)* Simplify `fetchProposal` by removing `chainId`
+
 ## [1.2.0-alpha.8] - 2024-07-28
 
 ### 🚀 Features
