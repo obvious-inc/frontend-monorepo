@@ -17,11 +17,11 @@ const { withSentryConfig } = require("@sentry/nextjs");
     if (process.env[key] == null) throw new Error(`${key} is not defined`);
 
   // Assert that any public keys are defined in the whitelist
-  // for (const key of Object.keys(process.env)) {
-  //   if (key.startsWith("NEXT_PUBLIC_VERCEL_")) continue; // Variables injected by Vercel are fine
+  for (const key of Object.keys(process.env)) {
+    if (key.startsWith("NEXT_PUBLIC_VERCEL_")) continue; // Variables injected by Vercel are fine
   //   if (key.startsWith("NEXT_PUBLIC_") && !whitelistedKeys.includes(key))
   //     throw new Error(`${key} is not allowed`);
-  // }
+  }
 })();
 
 const withSerwist = require("@serwist/next").default({
