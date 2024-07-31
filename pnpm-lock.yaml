@@ -155,8 +155,8 @@ importers:
         version: 4.5.4(immer@10.1.1)(react@18.3.1)
     devDependencies:
       '@cloudflare/next-on-pages':
-        specifier: 1.12.1
-        version: 1.12.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        specifier: 1.13.1
+        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -952,8 +952,8 @@ packages:
     resolution: {integrity: sha512-YLPHc8yASwjNkmcDMQMY35yiWjoKAKnhUbPRszBRS0YgH+IXtsMp61j+yTcnCE3oO2DgP0U3iejLC8FTtKDC8Q==}
     engines: {node: '>=16.13'}
 
-  '@cloudflare/next-on-pages@1.12.1':
-    resolution: {integrity: sha512-Kx19dKNwe0FgBuBA3h8hnEfJqFLQR7tK787pN7huv6191g7185VWc5n1eSYJdCBvPEoS3D2Lk6ogjSMOgFQhBA==}
+  '@cloudflare/next-on-pages@1.13.1':
+    resolution: {integrity: sha512-pq7dZ57+nWExb9od1C5TLJ5yYF/hIYxYx/I2YWbPY7yyFfS1PdDMxubBvMrZddcDEdQA7zj1d11G9b1qXE9Lzw==}
     hasBin: true
     peerDependencies:
       '@cloudflare/workers-types': ^4.20240208.0
@@ -5983,11 +5983,6 @@ packages:
     resolution: {integrity: sha512-vqiC06CuhBTUdZH+RYl8sFrL096vA45Ok5ISO6sE/Mr1jRbGH4Csnhi8f3wKVl7x8mO4Au7Ir9D3Oyv1VYMFJw==}
     engines: {node: '>=12'}
 
-  miniflare@3.20240718.0:
-    resolution: {integrity: sha512-TKgSeyqPBeT8TBLxbDJOKPWlq/wydoJRHjAyDdgxbw59N6wbP8JucK6AU1vXCfu21eKhrEin77ssXOpbfekzPA==}
-    engines: {node: '>=16.13'}
-    hasBin: true
-
   miniflare@3.20240718.1:
     resolution: {integrity: sha512-mn3MjGnpgYvarCRTfz4TQyVyY8yW0zz7f8LOAPVai78IGC/lcVcyskZcuIr7Zovb2i+IERmmsJAiEPeZHIIKbA==}
     engines: {node: '>=16.13'}
@@ -8907,7 +8902,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.12.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@35.2.1(@swc/core@1.7.2))(wrangler@3.67.1(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.12.1
       ast-types: 0.14.2
@@ -8917,7 +8912,7 @@ snapshots:
       cookie: 0.5.0
       esbuild: 0.15.18
       js-yaml: 4.1.0
-      miniflare: 3.20240718.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      miniflare: 3.20240718.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       package-manager-manager: 0.2.0
       pcre-to-regexp: 1.1.0
       semver: 7.6.3
@@ -15477,25 +15472,6 @@ snapshots:
   mimic-fn@2.1.0: {}
 
   mimic-fn@4.0.0: {}
-
-  miniflare@3.20240718.0(bufferutil@4.0.8)(utf-8-validate@5.0.10):
-    dependencies:
-      '@cspotcode/source-map-support': 0.8.1
-      acorn: 8.12.1
-      acorn-walk: 8.3.3
-      capnp-ts: 0.7.0
-      exit-hook: 2.2.1
-      glob-to-regexp: 0.4.1
-      stoppable: 1.1.0
-      undici: 6.19.2
-      workerd: 1.20240718.0
-      ws: 8.18.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
-      youch: 3.3.3
-      zod: 3.23.8
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
 
   miniflare@3.20240718.1(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
