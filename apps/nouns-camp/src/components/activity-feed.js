@@ -155,8 +155,7 @@ const FeedItem = React.memo(
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
 
     const renderTimestamp = (item) => {
-      const txHash =
-        item.transactionHash ?? item.txHash ?? item.id.split("-")?.[0];
+      const txHash = item.transactionHash ?? item.txHash;
       const formattedDate = isTransactionHash(txHash) ? (
         <a
           href={buildEtherscanLink(`/tx/${txHash}`)}

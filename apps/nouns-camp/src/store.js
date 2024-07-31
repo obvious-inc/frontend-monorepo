@@ -509,6 +509,7 @@ const createStore = ({ initialState, publicClient }) =>
           ) {
             createdAt
             createdBlock
+            createdTransactionHash
             updateMessage
             proposal { id }
           }
@@ -550,6 +551,8 @@ const createStore = ({ initialState, publicClient }) =>
               createdBlock
               canceledBlock
               lastUpdatedBlock
+              createdTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -635,6 +638,8 @@ const createStore = ({ initialState, publicClient }) =>
               createdBlock
               canceledBlock
               lastUpdatedBlock
+              createdTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -824,6 +829,7 @@ const createStore = ({ initialState, publicClient }) =>
               proposalVersions(where: {proposal: "${id}"}) {
                 createdAt
                 createdBlock
+                createdTransactionHash
                 updateMessage
                 proposal {
                   id
@@ -836,6 +842,7 @@ const createStore = ({ initialState, publicClient }) =>
                   }
                 }
               ) {
+                id
                 createdBlock
                 createdTimestamp
                 updateMessage
@@ -1093,6 +1100,8 @@ const createStore = ({ initialState, publicClient }) =>
                 canceledTimestamp
                 createdTimestamp
                 lastUpdatedTimestamp
+                createdTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1158,6 +1167,8 @@ const createStore = ({ initialState, publicClient }) =>
                 canceledTimestamp
                 createdTimestamp
                 lastUpdatedTimestamp
+                createdTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1258,6 +1269,7 @@ const createStore = ({ initialState, publicClient }) =>
               ) {
                 createdAt
                 createdBlock
+                createdTransactionHash
                 updateMessage
                 proposal { id }
               }
