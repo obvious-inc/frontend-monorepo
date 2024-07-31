@@ -9,13 +9,13 @@
     "lint": "next lint && prettier . --check"
   },
   "devDependencies": {
-    "@cloudflare/next-on-pages": "1.12.1",
+    "@cloudflare/next-on-pages": "1.13.1",
     "dotenv": "16.4.5",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.5",
     "eslint-config-prettier": "9.1.0",
-    "eslint-plugin-next-on-pages": "1.12.1",
-    "vercel": "35.2.1",
+    "eslint-plugin-next-on-pages": "1.13.1",
+    "vercel": "35.2.2",
     "wrangler": "3.67.1"
   },
   "dependencies": {
@@ -46,7 +46,7 @@
     "diff": "5.2.0",
     "is-hotkey": "0.2.0",
     "lodash.throttle": "4.1.1",
-    "marked": "13.0.2",
+    "marked": "13.0.3",
     "next": "14.2.5",
     "react": "18.3.1",
     "react-aria": "3.34.1",
@@ -57,7 +57,7 @@
     "slate-history": "0.100.0",
     "slate-react": "0.107.1",
     "tinykeys": "2.1.0",
-    "use-debounce": "10.0.1",
+    "use-debounce": "10.0.2",
     "viem": "2.17.8",
     "wagmi": "2.11.3",
     "zustand": "4.5.4"

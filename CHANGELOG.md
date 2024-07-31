@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.10] - 2024-07-31
+
+### 🚀 Features
+
+- Add etherscan links to all events with transaction hash (#485)
+
 ## [1.2.0-alpha.9] - 2024-07-30
 
 ### 🚀 Features

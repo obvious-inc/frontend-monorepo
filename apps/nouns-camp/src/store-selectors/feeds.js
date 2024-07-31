@@ -38,6 +38,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
       authorAccount: p.voterId,
       blockNumber: p.createdBlock,
       timestamp: p.createdTimestamp,
+      transactionHash: p.createdTransactionHash,
       voteCount: p.votes,
       proposalId,
       isPending: p.isPending,
@@ -125,6 +126,7 @@ export const buildProposalFeed = (
         id: `proposal-update-${v.createdBlock}`,
         body: v.updateMessage,
         blockNumber: v.createdBlock,
+        transactionHash: v.createdTransactionHash,
         timestamp: v.createdTimestamp,
         proposalId: proposal.id,
         authorAccount: proposal.proposerId, // only proposer can update proposals
@@ -145,6 +147,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-created`,
       timestamp: proposal.createdTimestamp,
       blockNumber: proposal.createdBlock,
+      transactionHash: proposal.createdTransactionHash,
       authorAccount: proposal.proposerId,
       proposalId: proposal.id,
     });
@@ -156,6 +159,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-canceled`,
       blockNumber: proposal.canceledBlock,
       timestamp: proposal.canceledTimestamp,
+      transactionHash: proposal.canceledTransactionHash,
       proposalId: proposal.id,
     });
 
@@ -166,6 +170,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-queued`,
       blockNumber: proposal.queuedBlock,
       timestamp: proposal.queuedTimestamp,
+      transactionHash: proposal.queuedTransactionHash,
       proposalId: proposal.id,
     });
 
@@ -176,6 +181,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-executed`,
       blockNumber: proposal.executedBlock,
       timestamp: proposal.executedTimestamp,
+      transactionHash: proposal.executedTransactionHash,
       proposalId: proposal.id,
     });
 
@@ -257,6 +263,7 @@ export const buildCandidateFeed = (
       isPending: p.isPending,
       candidateId: candidate.id,
       targetProposalId,
+      transactionHash: p.id?.split("-")?.[0],
     }));
   };
 
@@ -299,6 +306,7 @@ export const buildCandidateFeed = (
         body: v.updateMessage,
         blockNumber: v.createdBlock,
         timestamp: v.createdTimestamp,
+        transactionHash: v.id?.split("-")?.[0],
         candidateId,
         authorAccount: candidate.proposerId, // only proposer can update
       })) ?? [];
@@ -312,6 +320,7 @@ export const buildCandidateFeed = (
       id: `${candidate.id}-created`,
       timestamp: candidate.createdTimestamp,
       blockNumber: candidate.createdBlock,
+      transactionHash: candidate.createdTransactionHash,
       authorAccount: candidate.proposerId,
       candidateId,
       targetProposalId,
@@ -324,6 +333,7 @@ export const buildCandidateFeed = (
       id: `${candidate.id}-canceled`,
       timestamp: candidate.canceledTimestamp,
       blockNumber: candidate.canceledBlock,
+      transactionHash: candidate.canceledTransactionHash,
       candidateId,
       targetProposalId,
     });
@@ -336,6 +346,7 @@ export const buildCandidateFeed = (
     voteCount: s.signer.nounsRepresented?.length,
     timestamp: s.createdTimestamp,
     blockNumber: s.createdBlock,
+    transactionHash: s.createdTransactionHash,
     expiresAt: s.expirationTimestamp,
     isCanceled: s.canceled,
     candidateId,

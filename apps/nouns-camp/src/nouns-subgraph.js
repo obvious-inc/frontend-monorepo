@@ -18,7 +18,8 @@ export const VOTE_FIELDS = `
   fragment VoteFields on Vote {
     id
     blockNumber
-# blockTimestamp
+  # blockTimestamp
+  # transactionHash
     reason
     supportDetailed
     votes
@@ -66,6 +67,7 @@ export const FULL_PROPOSAL_FIELDS = `
     description
     createdBlock
     createdTimestamp
+    createdTransactionHash
   # lastUpdatedBlock
   # lastUpdatedTimestamp
     startBlock
@@ -74,10 +76,13 @@ export const FULL_PROPOSAL_FIELDS = `
   # objectionPeriodEndBlock
   # canceledBlock
   # canceledTimestamp
+  # canceledTransactionHash
   # queuedBlock
   # queuedTimestamp
+  # queuedTransactionHash
   # executedBlock
   # executedTimestamp
+  # executedTransactionHash
     targets
     signatures
     calldatas
@@ -100,6 +105,7 @@ export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
     canceled
     createdBlock
     createdTimestamp
+    createdTransactionHash
     expirationTimestamp
     sig
     signer {
@@ -145,6 +151,7 @@ const parseFeedbackPost = (post) => ({
   type: "feedback-post",
   createdBlock: BigInt(post.createdBlock),
   createdTimestamp: parseTimestamp(post.createdTimestamp),
+  createdTransactionHash: post.id.split("-")?.[0],
   reason: post.reason,
   support: post.supportDetailed,
   votes: post.votes == null ? undefined : Number(post.votes),
@@ -160,6 +167,7 @@ const parseProposalVote = (v) => ({
   createdBlock: v.blockNumber == null ? undefined : BigInt(v.blockNumber),
   createdTimestamp:
     v.blockTimestamp == null ? undefined : parseTimestamp(v.blockTimestamp),
+  createdTransactionHash: v.transactionHash,
   reason: v.reason,
   support: v.supportDetailed,
   votes: v.votes == null ? undefined : Number(v.votes),
@@ -171,6 +179,7 @@ const parseProposalVersion = (v) => ({
   updateMessage: v.updateMessage,
   createdBlock: BigInt(v.createdBlock),
   createdTimestamp: parseTimestamp(v.createdAt),
+  createdTransactionHash: v.createdTransactionHash,
   proposalId: v.proposal?.id,
 });
 
