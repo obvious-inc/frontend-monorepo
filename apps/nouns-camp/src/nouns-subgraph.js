@@ -105,6 +105,7 @@ export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
     canceled
     createdBlock
     createdTimestamp
+    createdTransactionHash
     expirationTimestamp
     sig
     signer {

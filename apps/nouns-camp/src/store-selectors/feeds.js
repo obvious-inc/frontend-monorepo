@@ -263,6 +263,7 @@ export const buildCandidateFeed = (
       isPending: p.isPending,
       candidateId: candidate.id,
       targetProposalId,
+      transactionHash: p.id?.split("-")?.[0],
     }));
   };
 
@@ -345,6 +346,7 @@ export const buildCandidateFeed = (
     voteCount: s.signer.nounsRepresented?.length,
     timestamp: s.createdTimestamp,
     blockNumber: s.createdBlock,
+    transactionHash: s.createdTransactionHash,
     expiresAt: s.expirationTimestamp,
     isCanceled: s.canceled,
     candidateId,

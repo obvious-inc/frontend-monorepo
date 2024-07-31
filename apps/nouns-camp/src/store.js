@@ -1132,6 +1132,7 @@ const createStore = ({ initialState, publicClient }) =>
                 status
                 createdBlock
                 createdTimestamp
+                createdTransactionHash
                 lastUpdatedBlock
                 lastUpdatedTimestamp
                 startBlock
@@ -1140,10 +1141,13 @@ const createStore = ({ initialState, publicClient }) =>
                 objectionPeriodEndBlock
                 canceledBlock
                 canceledTimestamp
+                canceledTransactionHash
                 queuedBlock
                 queuedTimestamp
+                queuedTransactionHash
                 executedBlock
                 executedTimestamp
+                executedTransactionHash
                 forVotes
                 againstVotes
                 abstainVotes
