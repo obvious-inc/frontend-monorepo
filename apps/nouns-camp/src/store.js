@@ -1133,7 +1133,7 @@ const createStore = ({ initialState, publicClient }) =>
                 status
                 createdBlock
                 createdTimestamp
-              # createdTransactionHash
+                createdTransactionHash
               # lastUpdatedBlock
               # lastUpdatedTimestamp
                 startBlock
