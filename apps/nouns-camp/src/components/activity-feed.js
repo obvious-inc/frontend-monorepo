@@ -22,6 +22,8 @@ import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
+import { isTransactionHash } from "../utils/transactions.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
@@ -152,6 +154,60 @@ const FeedItem = React.memo(
 
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
 
+    const renderTimestamp = (item) => {
+      const txHash = item.transactionHash ?? item.txHash;
+      const formattedDate = isTransactionHash(txHash) ? (
+        <a
+          href={buildEtherscanLink(`/tx/${txHash}`)}
+          target="_blank"
+          rel="noopener noreferrer"
+          css={css({ fontWeight: "normal !important" })}
+        >
+          <FormattedDateWithTooltip
+            tinyRelative
+            relativeDayThreshold={7}
+            month="short"
+            day="numeric"
+            year={
+              getDateYear(item.timestamp) !== getDateYear(new Date())
+                ? "numeric"
+                : undefined
+            }
+            value={item.timestamp}
+          />
+        </a>
+      ) : (
+        <FormattedDateWithTooltip
+          tinyRelative
+          relativeDayThreshold={7}
+          month="short"
+          day="numeric"
+          year={
+            getDateYear(item.timestamp) !== getDateYear(new Date())
+              ? "numeric"
+              : undefined
+          }
+          value={item.timestamp}
+        />
+      );
+
+      return (
+        <span
+          data-timestamp
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              padding: "0.15rem 0",
+              display: "inline-block",
+            })
+          }
+        >
+          {formattedDate}
+        </span>
+      );
+    };
+
     return (
       <div
         key={item.id}
@@ -242,33 +298,7 @@ const FeedItem = React.memo(
                     <Spinner size="1rem" />
                   </div>
                 ) : (
-                  item.timestamp != null && (
-                    <span
-                      data-timestamp
-                      css={(t) =>
-                        css({
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          padding: "0.15rem 0",
-                          display: "inline-block",
-                        })
-                      }
-                    >
-                      <FormattedDateWithTooltip
-                        tinyRelative
-                        relativeDayThreshold={7}
-                        month="short"
-                        day="numeric"
-                        year={
-                          getDateYear(item.timestamp) !==
-                          getDateYear(new Date())
-                            ? "numeric"
-                            : undefined
-                        }
-                        value={item.timestamp}
-                      />
-                    </span>
-                  )
+                  item.timestamp != null && renderTimestamp(item)
                 )}
               </div>
             </div>

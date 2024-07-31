@@ -6,6 +6,7 @@ import {
   parseEther,
   formatUnits,
   formatEther,
+  isHex,
 } from "viem";
 import {
   array as arrayUtils,
@@ -873,3 +874,5 @@ export const isEqual = (ts1, ts2) => {
     );
   });
 };
+
+export const isTransactionHash = (s) => isHex(s) && /^0x[0-9a-f]{64}$/i.test(s);
