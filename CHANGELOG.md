@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.11] - 2024-08-03
+
+### 🐛 Bug Fixes
+
+- Solve some minor issues and update dependencies
+
 ## [1.2.0-alpha.10] - 2024-07-31
 
 ### 🚀 Features
 
 - Add etherscan links to all events with transaction hash (#485)
+
+### 🐛 Bug Fixes
+
+- *(store)* Un-comment `createdTransactionHash` in GraphQL query
 
 ## [1.2.0-alpha.9] - 2024-07-30
 
