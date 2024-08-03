@@ -27,6 +27,27 @@ import { isTransactionHash } from "../utils/transactions.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
+const buildTimestampLink = (item) => {
+  if (item.type === "farcaster-cast") {
+    if (item.authorUsername == null) return null;
+    return `https://warpcast.com/${item.authorUsername}/${item.id}`;
+  }
+
+  if (
+    item.eventType === "propdate-posted" ||
+    item.eventType === "propdate-marked-completed"
+  ) {
+    // the id is what comes after "propdate-"
+    const propdateId = item.id.slice(9);
+    return `https://www.updates.wtf/update/${propdateId}`;
+  }
+
+  const txHash = item.transactionHash ?? item.txHash;
+  if (!isTransactionHash(txHash)) return null;
+
+  return buildEtherscanLink(`/tx/${txHash}`);
+};
+
 const ActivityFeed = ({
   context,
   items = [],
@@ -155,28 +176,9 @@ const FeedItem = React.memo(
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
 
     const renderTimestamp = (item) => {
-      const txHash = item.transactionHash ?? item.txHash;
-      const formattedDate = isTransactionHash(txHash) ? (
-        <a
-          href={buildEtherscanLink(`/tx/${txHash}`)}
-          target="_blank"
-          rel="noopener noreferrer"
-          css={css({ fontWeight: "normal !important" })}
-        >
-          <FormattedDateWithTooltip
-            tinyRelative
-            relativeDayThreshold={7}
-            month="short"
-            day="numeric"
-            year={
-              getDateYear(item.timestamp) !== getDateYear(new Date())
-                ? "numeric"
-                : undefined
-            }
-            value={item.timestamp}
-          />
-        </a>
-      ) : (
+      const timestampLink = buildTimestampLink(item);
+
+      const formattedDate = (
         <FormattedDateWithTooltip
           tinyRelative
           relativeDayThreshold={7}
@@ -203,7 +205,18 @@ const FeedItem = React.memo(
             })
           }
         >
-          {formattedDate}
+          {timestampLink ? (
+            <a
+              href={timestampLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              css={css({ fontWeight: "normal !important" })}
+            >
+              {formattedDate}
+            </a>
+          ) : (
+            formattedDate
+          )}
         </span>
       );
     };
@@ -898,13 +911,7 @@ const ItemTitle = ({ item, context }) => {
                 })
               }
             >
-              <a
-                href="https://propdates.wtf/about"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Propdate
-              </a>
+              Propdate posted
               {context !== "proposal" && (
                 <>
                   {" "}
@@ -924,14 +931,7 @@ const ItemTitle = ({ item, context }) => {
               }
             >
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              marked as completed via{" "}
-              <a
-                href="https://propdates.wtf/about"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Propdate
-              </a>
+              marked as completed via Propdate
             </span>
           );
 
