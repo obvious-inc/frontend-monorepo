@@ -29,6 +29,7 @@ const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
 
 const buildTimestampLink = (item) => {
   if (item.type === "farcaster-cast") {
+    console.log("item", item);
     if (item.authorUsername == null) return null;
     return `https://warpcast.com/${item.authorUsername}/${item.id}`;
   }
