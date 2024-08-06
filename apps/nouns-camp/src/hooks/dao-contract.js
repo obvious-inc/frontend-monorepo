@@ -32,7 +32,7 @@ const useSimulate = ({ enabled = true, ...options }) =>
   });
 
 // const getClientId = (description) => {
-//   if (/submitted via[\s\*\\]+\[Noundry gallery/i.test(description))
+//   if (/submitted via[\s*\\]+\[Noundry gallery/i.test(description))
 //     return NOUNDRY_CLIENT_ID;
 //
 //   return CAMP_CLIENT_ID;
