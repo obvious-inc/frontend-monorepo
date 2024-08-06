@@ -17,9 +17,12 @@ const buildVoteAndFeedbackPostFeedItems = ({
   const filteredVotes = votes.filter(
     (v) => v.votes > 0 || (v.reason?.trim() ?? "") !== "",
   );
+  const filteredFeedbackPosts = feedbackPosts.filter(
+    (p) => p.votes > 0 || (p.reason?.trim() ?? "") !== "",
+  );
   const ascendingVotesAndFeedbackPosts = arrayUtils.sortBy("createdBlock", [
     ...filteredVotes,
-    ...feedbackPosts,
+    ...filteredFeedbackPosts,
   ]);
 
   return ascendingVotesAndFeedbackPosts.reduce((acc, p, postIndex) => {
