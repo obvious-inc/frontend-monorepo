@@ -49,6 +49,7 @@ import {
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
+import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useSubmitCandidateCast } from "../hooks/farcaster.js";
 import NounCountNoggles from "./noun-count-noggles.js";
 import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
@@ -146,6 +147,8 @@ const ProposalCandidateScreenContent = ({
 
   useProposalCandidateFetch(candidateId);
   useProposalFetch(candidate.latestVersion.targetProposalId);
+
+  useScrollToHash();
 
   if (candidate?.latestVersion.content.description == null) return null;
 
