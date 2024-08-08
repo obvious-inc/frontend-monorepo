@@ -60,6 +60,7 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 import ProposalActionForm from "./proposal-action-form.js";
+import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useProposalSimulation } from "../hooks/simulation.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
@@ -289,6 +290,8 @@ const ProposalMainSection = ({
     setPendingRepostTargetFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
     proposalActionInputRef.current.focus();
   }, []);
+
+  useScrollToHash();
 
   if (proposal == null) return null;
 
