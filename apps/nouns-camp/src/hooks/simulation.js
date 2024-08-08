@@ -188,7 +188,6 @@ export const useProposalCandidateSimulation = (
       }
     } catch (e) {
       console.error(e);
-      setError(e);
       setData(null);
     } finally {
       setIsFetching(false);
