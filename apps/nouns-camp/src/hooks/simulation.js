@@ -8,30 +8,27 @@ const fetchSimulationBundle = async ({
   signatures,
   calldatas,
 }) => {
-  var unparsedTxs = targets.map(function (e, i) {
-    return {
-      target: e,
-      value: values[i],
-      signature: signatures[i],
-      calldata: calldatas[i],
-    };
-  });
+  const unparsedTxs = targets.map((e, i) => ({
+    target: e,
+    value: values[i],
+    signature: signatures[i],
+    calldata: calldatas[i],
+  }));
   const parsedTxs = unparsedTxs.map((tx) => parseProposalAction(tx));
-  const body = JSON.stringify(parsedTxs);
+
   const res = await fetch("/api/simulate/bundle", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body,
+    body: JSON.stringify(parsedTxs),
   });
 
   if (!res.ok) {
     throw new Error("Failed to simulate transaction");
   }
 
-  const simulations = await res.json();
-  return simulations;
+  return res.json();
 };
 
 export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
@@ -89,6 +86,7 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
 
       setData(finalSims);
     } catch (e) {
+      console.error(e);
       setData(null);
     } finally {
       setIsFetching(false);
@@ -138,6 +136,7 @@ export const useProposalSimulation = (
         setError("One or more transactions failed to simulate.");
       }
     } catch (e) {
+      console.error(e);
       setData(null);
     } finally {
       setIsFetching(false);

@@ -34,14 +34,12 @@ export async function GET(_, context) {
   const { targets, values, signatures, calldatas } =
     candidate.latestVersion.content;
 
-  var unparsedTxs = targets.map(function (e, i) {
-    return {
-      target: e,
-      value: values[i].toString(),
-      signature: signatures[i],
-      calldata: calldatas[i],
-    };
-  });
+  const unparsedTxs = targets.map((e, i) => ({
+    target: e,
+    value: values[i].toString(),
+    signature: signatures[i],
+    calldata: calldatas[i],
+  }));
 
   return fetchSimulationBundle(unparsedTxs);
 }
