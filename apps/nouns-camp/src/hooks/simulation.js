@@ -167,7 +167,7 @@ export const useProposalCandidateSimulation = (
       setError(null);
 
       const res = await fetch(
-        `/api/simulate/candidate/${candidateId}?version=${version}`,
+        `/api/simulate/candidate/${encodeURIComponent(candidateId)}?version=${version}`,
       );
       const data = await res.json();
       const simulations = data?.simulations;
