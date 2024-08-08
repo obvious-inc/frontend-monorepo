@@ -7,7 +7,7 @@
     "prestart": "pnpm run build",
     "start": "pnpm run --recursive --parallel --if-present start",
     "build": "turbo build --filter='./packages/*'",
-    "postbuild": "[ \"$CF_PAGES\" ] && cd apps/nouns-camp && pnpx @cloudflare/next-on-pages || true",
+    "postbuild": "[ \"$CF_PAGES\" ] && cd apps/nouns-camp && pnpm next-on-pages || true",
     "lint": "turbo lint",
     "format": "pnpm run --recursive --if-present format",
     "test": "pnpm run --recursive --if-present test"
