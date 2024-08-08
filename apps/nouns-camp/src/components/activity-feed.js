@@ -21,7 +21,6 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import { isTransactionHash } from "../utils/transactions.js";
 
@@ -55,91 +54,87 @@ const ActivityFeed = ({
   onReply,
   onRepost,
   onLike,
-}) => {
-  useScrollToHash();
-
-  return (
-    <ul
-      css={(t) =>
-        css({
-          lineHeight: "calc(20/14)", // 20px line height given font size if 14px
-          fontSize: t.text.sizes.base,
-          '[role="listitem"]': {
-            scrollMargin: "calc(3.2rem + 1.6rem) 0",
+}) => (
+  <ul
+    css={(t) =>
+      css({
+        lineHeight: "calc(20/14)", // 20px line height given font size if 14px
+        fontSize: t.text.sizes.base,
+        '[role="listitem"]': {
+          scrollMargin: "calc(3.2rem + 1.6rem) 0",
+        },
+        '[role="listitem"] + [role="listitem"]': {
+          marginTop: "var(--vertical-spacing)",
+        },
+        '[data-pending="true"]': { opacity: 0.6 },
+        "[data-nowrap]": { whiteSpace: "nowrap" },
+        "[data-header]": {
+          display: "grid",
+          gridTemplateColumns: "2rem minmax(0,1fr)",
+          gridGap: "0.6rem",
+          alignItems: "flex-start",
+          a: {
+            color: t.colors.textDimmed,
+            fontWeight: t.text.weights.emphasis,
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
           },
-          '[role="listitem"] + [role="listitem"]': {
-            marginTop: "var(--vertical-spacing)",
+        },
+        "[data-avatar-button]": {
+          display: "block",
+          outline: "none",
+          ":focus-visible [data-avatar]": {
+            boxShadow: t.shadows.focus,
+            background: t.colors.backgroundModifierHover,
           },
-          '[data-pending="true"]': { opacity: 0.6 },
-          "[data-nowrap]": { whiteSpace: "nowrap" },
-          "[data-header]": {
-            display: "grid",
-            gridTemplateColumns: "2rem minmax(0,1fr)",
-            gridGap: "0.6rem",
-            alignItems: "flex-start",
-            a: {
-              color: t.colors.textDimmed,
-              fontWeight: t.text.weights.emphasis,
-              textDecoration: "none",
-              "@media(hover: hover)": {
-                ":hover": { textDecoration: "underline" },
+          "@media (hover: hover)": {
+            ":not(:disabled)": {
+              cursor: "pointer",
+              ":hover [data-avatar]": {
+                boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
               },
             },
           },
-          "[data-avatar-button]": {
-            display: "block",
-            outline: "none",
-            ":focus-visible [data-avatar]": {
-              boxShadow: t.shadows.focus,
-              background: t.colors.backgroundModifierHover,
-            },
-            "@media (hover: hover)": {
-              ":not(:disabled)": {
-                cursor: "pointer",
-                ":hover [data-avatar]": {
-                  boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
-                },
-              },
-            },
+        },
+        "[data-timeline-symbol]": {
+          position: "relative",
+          height: "2rem",
+          width: "0.1rem",
+          background: t.colors.borderLight,
+          zIndex: -1,
+          margin: "auto",
+          ":after": {
+            content: '""',
+            position: "absolute",
+            width: "0.7rem",
+            height: "0.7rem",
+            background: t.colors.textMuted,
+            top: "50%",
+            left: "50%",
+            transform: "translateY(-50%) translateX(-50%)",
+            borderRadius: "50%",
+            border: "0.1rem solid",
+            borderColor: t.colors.backgroundPrimary,
           },
-          "[data-timeline-symbol]": {
-            position: "relative",
-            height: "2rem",
-            width: "0.1rem",
-            background: t.colors.borderLight,
-            zIndex: -1,
-            margin: "auto",
-            ":after": {
-              content: '""',
-              position: "absolute",
-              width: "0.7rem",
-              height: "0.7rem",
-              background: t.colors.textMuted,
-              top: "50%",
-              left: "50%",
-              transform: "translateY(-50%) translateX(-50%)",
-              borderRadius: "50%",
-              border: "0.1rem solid",
-              borderColor: t.colors.backgroundPrimary,
-            },
-          },
-        })
-      }
-      style={{ "--vertical-spacing": spacing }}
-    >
-      {items.map((item) => (
-        <FeedItem
-          key={item.id}
-          {...item}
-          context={context}
-          onReply={onReply}
-          onRepost={onRepost}
-          onLike={onLike}
-        />
-      ))}
-    </ul>
-  );
-};
+        },
+      })
+    }
+    style={{ "--vertical-spacing": spacing }}
+  >
+    {items.map((item) => (
+      <FeedItem
+        key={item.id}
+        {...item}
+        context={context}
+        onReply={onReply}
+        onRepost={onRepost}
+        onLike={onLike}
+      />
+    ))}
+  </ul>
+);
 
 const FeedItem = React.memo(
   ({ context, onReply, onRepost, onLike, ...item }) => {

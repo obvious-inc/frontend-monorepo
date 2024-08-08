@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.14] - 2024-08-08
+
+### 🚀 Features
+
+- Pull changes from upstream (#506)
+
+### ⚙️ Miscellaneous Tasks
+
+- *(nouns-camp)* Update `prestart` script
+
+### ◀️ Revert
+
+- *(deps-dev)* Bump @cloudflare/next-on-pages from 1.13.1 to 1.13.2 (#501)
+- *(deps-dev)* Bump eslint-plugin-next-on-pages from 1.13.1 to 1.13.2 (#504)
+
 ## [1.2.0-alpha.13] - 2024-08-06
 
 ### 🚀 Features
