@@ -2,6 +2,7 @@
 // import { verifyMessage, isAddress } from "viem";
 // import { subgraphFetch } from "../../../nouns-subgraph.js";
 // import { CHAIN_ID, APP_URL } from "../../../constants/env.js";
+// import { makeUrlId as makeCandidateUrlId } from "../../../utils/candidates.js";
 // import {
 //   parseEpochTimestamp,
 //   buildCandidateCastSignatureMessage,
@@ -108,7 +109,11 @@ export async function POST(request) {
   //   const castMessage = await submitCastAdd(fid, privateAccountKey, {
   //     text,
   //     parentUrl: await createCanonicalCandidateUrl(candidateId),
-  //     embeds: [{ url: `${APP_URL}/candidates/${candidateId}` }],
+  //     embeds: [
+  //       {
+  //         url: `${APP_URL}/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`,
+  //       },
+  //     ],
   //   });
   //   return jsonResponse(201, {
   //     hash: castMessage.hash,
