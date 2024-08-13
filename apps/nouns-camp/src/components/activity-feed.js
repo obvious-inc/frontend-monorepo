@@ -367,7 +367,6 @@ const FeedItem = React.memo(
                           ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
                           : `#${target.id}`
                       }
-                      showSignal
                     />
                   </div>
                   <div className="reply-area">
@@ -416,13 +415,6 @@ const FeedItem = React.memo(
                       context !== "proposal"
                         ? `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity#${voteOrFeedbackPost.id}`
                         : `#${voteOrFeedbackPost.id}`
-                    }
-                    showSignal={
-                      // Don’t render support for abstained feedback reposts
-                      !(item.type === "feedback-post" && item.support === 2) ||
-                      item.reposts.some(
-                        (repost) => repost.support !== item.support,
-                      )
                     }
                   />
                 </li>
@@ -1228,7 +1220,7 @@ const Signal = ({ positive, negative, ...props }) => (
   />
 );
 
-const QuotedVoteOrFeedbackPost = ({ href, item, showSignal = false }) => (
+const QuotedVoteOrFeedbackPost = ({ href, item }) => (
   <div
     css={(t) =>
       css({
@@ -1252,30 +1244,39 @@ const QuotedVoteOrFeedbackPost = ({ href, item, showSignal = false }) => (
       accountAddress={item.voterId}
       style={{ position: "relative" }}
     />
-    {showSignal && (
-      <span
-        css={(t) =>
-          css({
-            fontWeight: t.text.weights.emphasis,
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
-            "[data-abstain]": { color: t.colors.textDimmed },
-          })
-        }
-      >
-        {" "}
-        {(() => {
+    <span
+      css={(t) =>
+        css({
+          fontWeight: t.text.weights.emphasis,
+          "[data-for]": { color: t.colors.textPositive },
+          "[data-against]": { color: t.colors.textNegative },
+          "[data-abstain]": { color: t.colors.textDimmed },
+        })
+      }
+    >
+      {" "}
+      {(() => {
+        if (item.type === "feedback-post") {
           switch (item.support) {
             case 0:
-              return <Signal negative>(against)</Signal>;
+              return <Signal negative>(against signal)</Signal>;
             case 1:
-              return <Signal positive>(for)</Signal>;
+              return <Signal positive>(for signal)</Signal>;
             case 2:
-              return <Signal>(abstained)</Signal>;
+              return <Signal>(comment)</Signal>;
           }
-        })()}
-      </span>
-    )}
+        }
+
+        switch (item.support) {
+          case 0:
+            return <Signal negative>(against)</Signal>;
+          case 1:
+            return <Signal positive>(for)</Signal>;
+          case 2:
+            return <Signal>(abstained)</Signal>;
+        }
+      })()}
+    </span>
     :{" "}
     <MarkdownRichText
       text={item.reason}
