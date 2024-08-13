@@ -2,6 +2,7 @@
 
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
+import { formatEther } from "viem";
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
@@ -43,6 +44,7 @@ import {
   useMainFeedItems,
 } from "../store.js";
 import { useCollection as useDrafts } from "../hooks/drafts.js";
+import useTreasuryData from "../hooks/treasury-data.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalList from "./proposal-list.js";
@@ -134,6 +136,8 @@ const BrowseScreen = () => {
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
     hasFetchedBrowseDataOnce,
   );
+
+  const treasuryData = useTreasuryData();
 
   const candidateSortStrategies =
     connectedAccountAddress == null
@@ -781,7 +785,26 @@ const BrowseScreen = () => {
               prefetch: true,
             },
           },
-        ]}
+          treasuryData != null && {
+            label: (
+              <>
+                <span>Treasury</span> {"Ξ"}{" "}
+                {Math.round(
+                  parseFloat(formatEther(treasuryData.totals.allInEth)),
+                ).toLocaleString()}
+              </>
+            ),
+            buttonProps: {
+              component: NextLink,
+              href: (() => {
+                const linkSearchParams = new URLSearchParams(searchParams);
+                linkSearchParams.set("treasury", 1);
+                return `?${linkSearchParams}`;
+              })(),
+              prefetch: true,
+            },
+          },
+        ].filter(Boolean)}
       >
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer

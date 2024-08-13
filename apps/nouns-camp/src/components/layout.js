@@ -1,4 +1,3 @@
-import { formatEther } from "viem";
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
@@ -16,17 +15,12 @@ import {
   isTestnet as isTestnetChain,
 } from "../utils/chains.js";
 import { useAccount, useDelegate } from "../store.js";
-import {
-  useSearchParamToggleState,
-  useNavigate,
-  useSearchParams,
-} from "../hooks/navigation.js";
+import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
-import useTreasuryData from "../hooks/treasury-data.js";
 
 const TreasuryDialog = React.lazy(() => import("./treasury-dialog.js"));
 
@@ -113,7 +107,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   const pathname = usePathname();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
@@ -132,8 +125,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     switchToTargetChain: switchWalletToTargetChain,
     isLoading: isLoadingWallet,
   } = useWallet();
-
-  const treasuryData = useTreasuryData();
 
   const isTestnet = isTestnetChain(CHAIN_ID);
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
@@ -308,40 +299,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               >
                 {item.label}
               </NextLink>
-
-              {index === 0 && pathname === "/" && treasuryData != null && (
-                <NextLink
-                  prefetch
-                  href={(() => {
-                    const linkSearchParams = new URLSearchParams(searchParams);
-                    linkSearchParams.set("treasury", 1);
-                    return `?${linkSearchParams}`;
-                  })()}
-                  css={(t) =>
-                    css({
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      fontSize: t.fontSizes.base,
-                      color: t.colors.textNormal,
-                      padding: "0.3rem 0.5rem",
-                      borderRadius: "0.4rem",
-                      textDecoration: "none",
-                      ".dimmed": { color: t.colors.textDimmed },
-                      "@media(hover: hover)": {
-                        cursor: "pointer",
-                        ":hover": {
-                          background: t.colors.backgroundModifierHover,
-                        },
-                      },
-                    })
-                  }
-                >
-                  <span>Treasury</span> {"Ξ"}{" "}
-                  {Math.round(
-                    parseFloat(formatEther(treasuryData.totals.allInEth)),
-                  ).toLocaleString()}
-                </NextLink>
-              )}
             </React.Fragment>
           ))}
         </div>
