@@ -1089,7 +1089,7 @@ export const ProposalHeader = ({
                     value={percentOfOneYearIncomeForecast}
                     maximumFractionDigits={2}
                   />{" "}
-                  of 1Y income forecast{" "}
+                  of 1Y inflow projection{" "}
                   <span
                     className="nowrap"
                     css={css({
@@ -1171,7 +1171,7 @@ export const ProposalHeader = ({
                     localeFormatting
                   />{" "}
                   (last 14 auctions)
-                  <br />1 year income forecast: {"Ξ"}
+                  <br />1 year inflow projection: {"Ξ"}
                   <FormattedEthWithConditionalTooltip
                     value={oneYearIncomeForecast}
                     decimals={1}

@@ -108,7 +108,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   const [activityDayCount, setActivityDayCount] = React.useState(
     () => searchParams.get("timeframe") ?? 30,
   );
-  const [incomeForecastDayCount, setIncomeForecastDayCount] =
+  const [inflowProjectionDayCount, setInflowProjectionDayCount] =
     React.useState(365);
 
   const {
@@ -154,13 +154,13 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
-  const incomeForcastYearFraction = incomeForecastDayCount / 365;
+  const inflowProjectionYearFraction = inflowProjectionDayCount / 365;
 
   const stEthReturnRateEstimateBPS = BigInt(
-    Math.round(aprs.lido * incomeForcastYearFraction * 10_000),
+    Math.round(aprs.lido * inflowProjectionYearFraction * 10_000),
   );
   const rEthReturnRateEstimateBPS = BigInt(
-    Math.round(aprs.rocketPool * incomeForcastYearFraction * 10_000),
+    Math.round(aprs.rocketPool * inflowProjectionYearFraction * 10_000),
   );
 
   return (
@@ -533,9 +533,9 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
           </dd>
         </Dl>
         <Heading>
-          Income forecast for{" "}
+          Inflow projection for{" "}
           <NativeSelect
-            value={incomeForecastDayCount}
+            value={inflowProjectionDayCount}
             options={[
               { value: 30, label: "1 month" },
               { value: 180, label: "6 months" },
@@ -552,7 +552,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
               })
             }
             onChange={(e) => {
-              setIncomeForecastDayCount(Number(e.target.value));
+              setInflowProjectionDayCount(Number(e.target.value));
             }}
           />
         </Heading>
@@ -564,7 +564,9 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                 <Tooltip.Trigger>
                   {"Ξ"}
                   <FormattedEth
-                    value={twoWeekAvgNounPrice * BigInt(incomeForecastDayCount)}
+                    value={
+                      twoWeekAvgNounPrice * BigInt(inflowProjectionDayCount)
+                    }
                     tooltip={false}
                   />{" "}
                   <span data-small>
@@ -575,6 +577,18 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                     />{" "}
                     per auction)
                   </span>
+                  <p
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.small,
+                        color: t.colors.textDimmed,
+                        fontStyle: "italic",
+                      })
+                    }
+                  >
+                    Price change rate is intentionally disregarded. DYOR for a
+                    more realistic forecast.
+                  </p>
                 </Tooltip.Trigger>
                 <Tooltip.Content
                   side="top"
@@ -583,14 +597,14 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                   css={(t) =>
                     css({
                       maxWidth: "23rem",
-                      ".calculation": {
+                      ".dimmed": {
                         color: t.colors.textDimmedAlpha,
                       },
                     })
                   }
                 >
                   <p>
-                    Forecast made using a 14 day rolling auction price average{" "}
+                    Projection made using a 14 day rolling auction price average{" "}
                     <span className="nowrap">
                       ({"Ξ"}
                       <FormattedEth
@@ -600,16 +614,16 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                       )
                     </span>
                   </p>
-                  <p className="calculation">
+                  <p className="dimmed">
                     {"Ξ"}
                     <FormattedEth
                       value={twoWeekAvgNounPrice}
                       tooltip={false}
                     />{" "}
-                    {"×"} {incomeForecastDayCount} days = {"Ξ"}
+                    {"×"} {inflowProjectionDayCount} days = {"Ξ"}
                     <FormattedEth
                       value={
-                        twoWeekAvgNounPrice * BigInt(incomeForecastDayCount)
+                        twoWeekAvgNounPrice * BigInt(inflowProjectionDayCount)
                       }
                       tooltip={false}
                     />
