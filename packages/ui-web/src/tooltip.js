@@ -25,6 +25,7 @@ export const Content = React.forwardRef(({ portal = true, ...props }, ref) => {
           borderRadius: "0.3rem",
           lineHeight: 1.35,
           boxShadow: t.shadows.elevationHigh,
+          "p + p": { marginTop: "0.5em" },
         })
       }
       {...props}

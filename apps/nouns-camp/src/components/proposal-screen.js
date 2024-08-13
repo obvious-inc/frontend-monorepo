@@ -3,10 +3,12 @@
 import React from "react";
 import { formatUnits } from "viem";
 import { notFound as nextNotFound } from "next/navigation";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import {
+  CaretDown as CaretDownIcon,
   Clock as ClockIcon,
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
@@ -48,6 +50,7 @@ import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-t
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitProposalCast } from "../hooks/farcaster.js";
+import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -62,6 +65,8 @@ import TransactionList, {
 import ProposalActionForm from "./proposal-action-form.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useProposalSimulation } from "../hooks/simulation.js";
+import useTreasuryData from "../hooks/treasury-data.js";
+import FormattedNumber from "./formatted-number.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -891,7 +896,84 @@ export const ProposalHeader = ({
   transactions = [],
   hasPassed,
 }) => {
+  const [searchParams] = useSearchParams();
+
+  const forceAskBreakdown = searchParams.get("force-ask-breakdown") != null;
+
+  const [showFullAskBreakdown, setShowFullAskBreakdown] = React.useState(false);
+
+  const treasuryData = useTreasuryData();
+  const { avgAuctionPrice } =
+    useRecentAuctionProceeds({ auctionCount: 14 }) ?? {};
+
   const requestedAmounts = extractAmountsFromTransactions(transactions);
+
+  const {
+    percentOfTreasury,
+    percentOfOneYearIncomeForecast,
+    oneYearIncomeForecast,
+    numberOfDays,
+    stakingYield,
+  } = (() => {
+    if (treasuryData == null || avgAuctionPrice == null) return {};
+
+    const { balances, totals, rates, aprs } = treasuryData;
+
+    const usdcToEth = (usdc) => (usdc * rates.usdcEth) / 10n ** 6n;
+
+    const totalAskInEth = requestedAmounts.reduce(
+      (sum, { currency, amount }) => {
+        switch (currency) {
+          case "eth":
+          case "weth":
+            return sum + amount;
+          case "usdc":
+            return sum + usdcToEth(amount);
+          case "nouns":
+            return sum;
+          default:
+            throw new Error();
+        }
+      },
+      0n,
+    );
+
+    const treasuryFractionBps = (totalAskInEth * 10_000n) / totals.allInEth;
+
+    const stEthAprBps = BigInt(Math.round(aprs.lido * 10_000));
+    const rEthAprBps = BigInt(Math.round(aprs.rocketPool * 10_000));
+    const stEthYield =
+      ((balances.executor.steth + balances.executor.wsteth) * stEthAprBps) /
+      10_000n;
+    const rEthYield = (balances.executor.reth * rEthAprBps) / 10_000n;
+    const totalStakingYield = stEthYield + rEthYield;
+
+    const projectedOneYearAuctionProceeds = avgAuctionPrice * 365n;
+    const oneYearIncomeForecast =
+      projectedOneYearAuctionProceeds + totalStakingYield;
+    const oneYearIncomeForecastFractionBps =
+      (totalAskInEth * 10_000n) / oneYearIncomeForecast;
+    const forcastedDailyIncome = avgAuctionPrice + totalStakingYield / 365n;
+
+    return {
+      // Round to one decimal
+      percentOfTreasury: Math.round(Number(treasuryFractionBps) / 10) / 1_000,
+      // One decimal when 3%
+      percentOfOneYearIncomeForecast:
+        oneYearIncomeForecastFractionBps > 300n
+          ? Math.round(Number(oneYearIncomeForecastFractionBps) / 100) / 100
+          : Math.round(Number(oneYearIncomeForecastFractionBps) / 10) / 1_000,
+      oneYearIncomeForecast,
+      numberOfDays: Math.round(
+        Number((totalAskInEth * 10_000n) / forcastedDailyIncome) / 10_000,
+      ),
+      stakingYield: totalStakingYield,
+    };
+  })();
+
+  const enableAskBreakdown =
+    percentOfTreasury > 0n && (!hasPassed || forceAskBreakdown);
+
   return (
     <div css={css({ userSelect: "text" })}>
       <h1
@@ -982,6 +1064,140 @@ export const ProposalHeader = ({
             >
               {hasPassed ? "Requested" : "Requesting"}{" "}
               <RequestedAmounts amounts={requestedAmounts} />
+              {enableAskBreakdown && (
+                <button
+                  onClick={() => setShowFullAskBreakdown((s) => !s)}
+                  css={(t) =>
+                    css({
+                      display: "block",
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                      },
+                    })
+                  }
+                >
+                  <FormattedNumber
+                    style="percent"
+                    value={percentOfTreasury}
+                    maximumFractionDigits={2}
+                  />{" "}
+                  of treasury &middot;{" "}
+                  <FormattedNumber
+                    style="percent"
+                    value={percentOfOneYearIncomeForecast}
+                    maximumFractionDigits={2}
+                  />{" "}
+                  of 1Y income forecast{" "}
+                  <span
+                    className="nowrap"
+                    css={css({
+                      "@media(max-width: 460px)": {
+                        display: "none",
+                      },
+                    })}
+                  >
+                    (
+                    {numberOfDays === 1 ? (
+                      "<1 day"
+                    ) : (
+                      <>
+                        {"≈"}
+                        {numberOfDays} days
+                      </>
+                    )}
+                    )
+                  </span>{" "}
+                  <CaretDownIcon
+                    style={{
+                      display: "inline-flex",
+                      width: "0.7em",
+                      transform: showFullAskBreakdown
+                        ? "scaleY(-1)"
+                        : "translateY(1px)",
+                    }}
+                  />
+                </button>
+              )}
+              {showFullAskBreakdown && (
+                <NextLink
+                  prefetch
+                  href={(() => {
+                    const linkSearchParams = new URLSearchParams(searchParams);
+                    linkSearchParams.set("treasury", 1);
+                    return `?${linkSearchParams}`;
+                  })()}
+                  css={(t) =>
+                    css({
+                      display: "block",
+                      color: t.colors.textDimmed,
+                      fontSize: t.text.sizes.small,
+                      marginTop: "0.8em",
+                      textDecoration: "none",
+                      "@media(hover: hover)": { cursor: "pointer" },
+                    })
+                  }
+                >
+                  {treasuryData != null && (
+                    <>
+                      Current treasury balance: {"Ξ"}
+                      <FormattedEthWithConditionalTooltip
+                        value={treasuryData.totals.allInEth}
+                        decimals={2}
+                        truncationDots={false}
+                        tokenSymbol={false}
+                        localeFormatting
+                      />{" "}
+                      ($
+                      <FormattedEthWithConditionalTooltip
+                        currency="usdc"
+                        value={treasuryData.totals.allInUsd}
+                        decimals={0}
+                        truncationDots={false}
+                        tokenSymbol={false}
+                        localeFormatting
+                      />
+                      )
+                    </>
+                  )}
+                  <br />
+                  Recent auction price average: {"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={avgAuctionPrice}
+                    decimals={2}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  (last 14 auctions)
+                  <br />1 year income forecast: {"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={oneYearIncomeForecast}
+                    decimals={1}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  ({"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={avgAuctionPrice}
+                    decimals={2}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  {"×"} 365 days + {"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={stakingYield}
+                    decimals={2}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  staking yield)
+                </NextLink>
+              )}
             </Callout>
           </div>
         )}

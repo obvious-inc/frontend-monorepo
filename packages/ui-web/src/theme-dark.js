@@ -16,6 +16,7 @@ const primaryTransparentSoft = createPrimary({ opacity: 0.15 });
 const textNormal = "hsl(0 0% 83%)";
 const textDimmed = "hsl(0 0% 60%)";
 const textDimmedModifierHover = "hsl(0 0% 66%)";
+const textDimmedAlpha = "hsl(0 0% 100% / 55%)";
 const textMuted = "hsl(0 0% 40%)";
 const textMutedModifierHover = "hsl(0 0% 46%)";
 const textMutedAlpha = "hsl(0 0% 100% / 28%)";
@@ -130,6 +131,7 @@ export default {
     textNormal,
     textDimmedModifierHover,
     textDimmed,
+    textDimmedAlpha,
     textMuted,
     textMutedModifierHover,
     textMutedAlpha,
