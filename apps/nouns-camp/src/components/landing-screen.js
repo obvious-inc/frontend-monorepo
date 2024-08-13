@@ -788,7 +788,8 @@ const BrowseScreen = () => {
           treasuryData != null && {
             label: (
               <>
-                <span>Treasury</span> {"Ξ"}{" "}
+                <span data-desktop-only>Treasury </span>
+                {"Ξ"}{" "}
                 {Math.round(
                   parseFloat(formatEther(treasuryData.totals.allInEth)),
                 ).toLocaleString()}
