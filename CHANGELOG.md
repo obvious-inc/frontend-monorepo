@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.20] - 2024-08-14
+
+### 🐛 Bug Fixes
+
+- *(treasury-dialog)* Comment out payer USDC balance
+
 ## [1.2.0-alpha.19] - 2024-08-14
 
 ### 🚜 Refactor
