@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.23] - 2024-08-14
+
+### ⚙️ Miscellaneous Tasks
+
+- *(treasury-dialog)* Comment out unused `useContract` import
+
 ## [1.2.0-alpha.22] - 2024-08-14
 
 ### 🚜 Refactor
