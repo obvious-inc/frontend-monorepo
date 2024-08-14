@@ -145,7 +145,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
     balances.executor.eth,
     balances.executor.weth,
     balances["dao-proxy"].eth,
-    balances["token-buyer"].eth,
+    // balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
@@ -251,7 +251,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                                 tooltip={false}
                               />
                             </dd>
-                            {balances["token-buyer"].eth > 0 && (
+                            {/*{balances["token-buyer"].eth > 0 && (
                               <>
                                 <dt>Token Buyer ETH</dt>
                                 <dd>
@@ -262,7 +262,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                                   />
                                 </dd>
                               </>
-                            )}
+                            )}*/}
                             {balances["dao-proxy"].eth > 0 && (
                               <>
                                 <dt>DAO Proxy ETH</dt>
