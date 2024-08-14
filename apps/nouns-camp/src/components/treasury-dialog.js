@@ -669,7 +669,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
             </span>
           </dd>
         </Dl>
-        <p
+        {/*<p
           css={(t) =>
             css({
               margin: "2.8rem 0 0",
@@ -698,7 +698,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
           <a href="https://tabs.wtf" target="_blank" rel="norefferer">
             tabs.wtf
           </a>
-        </p>
+        </p>*/}
       </main>
     </div>
   );
