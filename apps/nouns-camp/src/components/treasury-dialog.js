@@ -363,9 +363,9 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                 return (
                   <>
                     {Number(
-                      balances.executor.nouns + balances["fork-escrow"].nouns,
+                      balances.executor.nouns /*+ balances["fork-escrow"].nouns*/,
                     )}{" "}
-                    {balances["fork-escrow"].nouns > 0 && (
+                    {/*{balances["fork-escrow"].nouns > 0 && (
                       <span data-small>
                         (Includes {balances["fork-escrow"].nouns.toString()}{" "}
                         Nouns held in{" "}
@@ -374,7 +374,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                         </EtherscanLink>
                         )
                       </span>
-                    )}
+                    )}*/}
                   </>
                 );
               })(),
