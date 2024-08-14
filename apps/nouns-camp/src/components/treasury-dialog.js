@@ -11,7 +11,7 @@ import {
   extractAmounts as getRequestedAssets,
 } from "../utils/transactions.js";
 import { subgraphFetch as queryNounsSubgraph } from "../nouns-subgraph.js";
-import useContract from "../hooks/contract.js";
+// import useContract from "../hooks/contract.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import useTreasuryData from "../hooks/treasury-data.js";
 import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
