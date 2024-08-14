@@ -103,7 +103,7 @@ const TreasuryDialog = ({ isOpen, close }) => {
 const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   const [searchParams] = useSearchParams();
 
-  const forkEscrowAddress = useContract("fork-escrow")?.address;
+  // const forkEscrowAddress = useContract("fork-escrow")?.address;
 
   const [activityDayCount, setActivityDayCount] = React.useState(
     () => searchParams.get("timeframe") ?? 30,
@@ -704,14 +704,14 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   );
 };
 
-const EtherscanLink = ({ address, ...props }) => (
-  <a
-    href={`https://etherscan.io/address/${address}`}
-    target="_blank"
-    rel="noreferrer"
-    {...props}
-  />
-);
+// const EtherscanLink = ({ address, ...props }) => (
+//   <a
+//     href={`https://etherscan.io/address/${address}`}
+//     target="_blank"
+//     rel="noreferrer"
+//     {...props}
+//   />
+// );
 
 const Dl = (props) => (
   <dl

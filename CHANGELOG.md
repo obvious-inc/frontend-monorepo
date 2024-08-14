@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.22] - 2024-08-14
+
+### 🚜 Refactor
+
+- *(treasury-dialog)* Comment out unused code
+
 ## [1.2.0-alpha.21] - 2024-08-14
 
 ### 🐛 Bug Fixes
