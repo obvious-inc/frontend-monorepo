@@ -337,7 +337,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                 <>
                   <FormattedUsdc
                     value={totals.usdc}
-                    tooltip={
+                    /*tooltip={
                       balances.payer.usdc > 0 ? (
                         <>
                           Includes <FormattedUsdc value={balances.payer.usdc} />{" "}
@@ -346,7 +346,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                       ) : (
                         false
                       )
-                    }
+                    }*/
                   />{" "}
                   {usdcToEth != null && (
                     <span data-small>

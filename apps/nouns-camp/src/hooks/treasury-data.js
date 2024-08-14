@@ -18,7 +18,7 @@ export const getTotalEth = (data) => {
 };
 
 export const getTotalUsdc = (data) =>
-  [data.balances.executor.usdc, data.balances.payer.usdc]
+  [data.balances.executor.usdc/*, data.balances.payer.usdc*/]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
@@ -59,7 +59,7 @@ const useTreasuryData = () => {
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
-  const usdcTotal = [balances.executor.usdc, balances.payer.usdc]
+  const usdcTotal = [balances.executor.usdc/*, balances.payer.usdc*/]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
