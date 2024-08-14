@@ -118,7 +118,7 @@ module.exports = withSentry(
           ignoredModules.map((n) => [n, "@shades/common"]),
         ),
       },
-      instrumentationHook: true,
+      instrumentationHook: process.env.NODE_ENV === 'production',
     },
   }),
 );

@@ -284,7 +284,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     fontSize: t.fontSizes.base,
                     color: t.colors.textNormal,
                     padding: "0.3rem 0.5rem",
-                    borderRadius: "0.2rem",
+                    borderRadius: "0.4rem",
                     textDecoration: "none",
                     '&[data-index="0"]': { minWidth: "max-content" },
                     '&[data-disabled="true"]': { pointerEvents: "none" },
