@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.16] - 2024-08-14
+
+### ⚙️ Miscellaneous Tasks
+
+- *(dependabot)* Add `next-on-page` group
+- *(dependabot)* Update dependabot ignore configuration
+
+### ◀️ Revert
+
+- *(deps-dev)* Bump @cloudflare/next-on-pages from 1.13.1 to 1.13.2 (#509)
+- *(deps-dev)* Bump eslint-plugin-next-on-pages from 1.13.1 to 1.13.2 (#508)
+- *(deps-dev)* Bump @cloudflare/next-on-pages from 1.13.1 to 1.13.2 (#514)
+
 ## [1.2.0-alpha.15] - 2024-08-08
 
 ### 🚀 Features
