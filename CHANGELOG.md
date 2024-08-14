@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0-alpha.18] - 2024-08-14
+
+### 🚜 Refactor
+
+- *(treasury-dialog)* Comment out `token-buyer` balance
+
 ## [1.2.0-alpha.17] - 2024-08-14
 
 ### 🚀 Features
