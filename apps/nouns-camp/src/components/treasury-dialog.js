@@ -1,12 +1,11 @@
 import React from "react";
 import { css } from "@emotion/react";
-import { useBalance, useReadContract } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
 import { array as arrayUtils } from "@shades/common/utils";
-import { useFetch } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
+import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import { CHAIN_ID } from "../constants/env.js";
 import {
   parse as parseTransactions,
   extractAmounts as getRequestedAssets,
@@ -14,277 +13,155 @@ import {
 import { subgraphFetch as queryNounsSubgraph } from "../nouns-subgraph.js";
 import useContract from "../hooks/contract.js";
 import { useSearchParams } from "../hooks/navigation.js";
+import useTreasuryData from "../hooks/treasury-data.js";
+import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import NativeSelect from "./native-select.js";
+import FormattedNumber from "./formatted-number.js";
 
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
-const useChainlinkUsdcToEthConverter = () => {
-  const { data: rate } = useReadContract({
-    // Chainlink USDC/ETH price feed
-    // TODO: multi-chain support
-    address: "0x986b5E1e1755e3C2440e960477f25201B0a8bbD4",
-    chainId: CHAIN_ID,
-    abi: [
-      {
-        type: "function",
-        name: "latestAnswer",
-        inputs: [],
-        outputs: [{ type: "int256" }],
-      },
-    ],
-    functionName: "latestAnswer",
-  });
-  if (rate == null) return;
-  return (usdc) => (usdc * 10n ** 23n) / rate;
-};
-
-const useRecentSettledAuctions = ({ count = 30 } = {}) => {
-  const [auctions, setAuctions] = React.useState(null);
-
-  useFetch(async () => {
-    const query = `{
-      auctions(
-        where: { settled: true },
-        orderDirection: desc,
-        orderBy: startTime,
-        first: ${Math.min(1000, count)}
-      ) {
-        id
-        amount
-      }
-    }`;
-    const { auctions } = await queryNounsSubgraph({ query });
-    setAuctions(auctions);
-  }, [count]);
-
-  return auctions;
-};
-
 const useAssetsDeployed = ({ days = 30 } = {}) => {
-  const [{ assets, proposalIds }, setData] = React.useState({
-    assets: null,
-    proposalIds: null,
+  const { data } = useQuery({
+    queryKey: ["assets-deployed", days],
+    queryFn: async () => {
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const { proposals } = await queryNounsSubgraph({
+        query: `{
+          proposals(
+            where: { executedTimestamp_gt: ${nowSeconds - days * ONE_DAY_IN_SECONDS} },
+            orderDirection: desc,
+            orderBy: executedBlock,
+            first: 1000
+          ) {
+            id
+            targets
+            signatures
+            calldatas
+            values
+          }
+        }`,
+      });
+      const transactions = proposals.flatMap((proposal) =>
+        parseTransactions(proposal),
+      );
+      return {
+        proposalIds: arrayUtils.sortBy(
+          (id) => Number(id),
+          proposals.map(({ id }) => id),
+        ),
+        assets: getRequestedAssets(transactions).reduce((assets, asset) => {
+          // Merge ETH amounts
+          if (asset.currency.endsWith("eth")) {
+            const ethAmount =
+              assets.find(({ currency }) => currency === "eth")?.amount ?? 0n;
+            return [
+              { currency: "eth", amount: ethAmount + asset.amount },
+              ...assets.filter(({ currency }) => currency !== "eth"),
+            ];
+          }
+          return [...assets, asset];
+        }, []),
+      };
+    },
   });
 
-  useFetch(async () => {
-    const nowSeconds = Math.floor(Date.now() / 1000);
-    const query = `{
-      proposals(
-        where: { executedTimestamp_gt: ${nowSeconds - days * ONE_DAY_IN_SECONDS} },
-        orderDirection: desc,
-        orderBy: executedBlock,
-        first: 1000
-      ) {
-        id
-        targets
-        signatures
-        calldatas
-        values
+  return data;
+};
+
+const TreasuryDialog = ({ isOpen, close }) => {
+  const data = useTreasuryData();
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      width="44rem"
+    >
+      {(props) =>
+        data == null ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "20rem",
+            }}
+          >
+            <Spinner />
+          </div>
+        ) : (
+          <Content dismiss={close} {...data} {...props} />
+        )
       }
-    }`;
-    const { proposals } = await queryNounsSubgraph({ query });
-    const transactions = proposals.flatMap((proposal) =>
-      parseTransactions(proposal),
-    );
-    const assets = getRequestedAssets(transactions).reduce((assets, asset) => {
-      // Merge ETH amounts
-      if (asset.currency.endsWith("eth")) {
-        const ethAmount =
-          assets.find(({ currency }) => currency === "eth")?.amount ?? 0n;
-        return [
-          { currency: "eth", amount: ethAmount + asset.amount },
-          ...assets.filter(({ currency }) => currency !== "eth"),
-        ];
-      }
-      return [...assets, asset];
-    }, []);
-    const proposalIds = arrayUtils.sortBy(
-      (id) => Number(id),
-      proposals.map(({ id }) => id),
-    );
-    setData({ assets, proposalIds });
-  }, [days]);
-
-  return { assets, proposalIds };
+    </Dialog>
+  );
 };
 
-const useBalanceOf = ({ contract, account }) => {
-  const address = useContract(contract)?.address;
-  const { data: balance } = useReadContract({
-    address,
-    chainId: CHAIN_ID,
-    abi: [
-      {
-        type: "function",
-        name: "balanceOf",
-        inputs: [{ type: "address" }],
-        outputs: [{ type: "uint256" }],
-      },
-    ],
-    functionName: "balanceOf",
-    args: [account],
-  });
-  return balance;
-};
-
-const useBalances = () => {
-  const treasuryAddress = useContract("executor")?.address;
-  const forkEscrowAddress = useContract("fork-escrow")?.address;
-  const daoProxyAddress = useContract("dao")?.address;
-  const tokenBuyerAddress = useContract("token-buyer")?.address;
-  const daoPayerAddress = useContract("payer")?.address;
-
-  const { data: treasuryEthBalance } = useBalance({
-    address: treasuryAddress,
-    chainId: CHAIN_ID,
-  });
-  const { data: daoProxyEthBalance } = useBalance({
-    address: daoProxyAddress,
-    chainId: CHAIN_ID,
-  });
-  const { data: tokenBuyerEthBalance } = useBalance({
-    address: tokenBuyerAddress,
-    chainId: CHAIN_ID,
-  });
-
-  const treasuryUsdc = useBalanceOf({
-    contract: "usdc-token",
-    account: treasuryAddress,
-  });
-  const payerUsdc = useBalanceOf({
-    contract: "usdc-token",
-    account: daoPayerAddress,
-  });
-  const treasuryWeth = useBalanceOf({
-    contract: "weth-token",
-    account: treasuryAddress,
-  });
-  const treasuryOeth = useBalanceOf({
-    contract: "oeth-token",
-    account: treasuryAddress,
-  });
-  const treasuryReth = useBalanceOf({
-    contract: "reth-token",
-    account: treasuryAddress,
-  });
-  const treasurySteth = useBalanceOf({
-    contract: "steth-token",
-    account: treasuryAddress,
-  });
-  const treasuryWsteth = useBalanceOf({
-    contract: "wsteth-token",
-    account: treasuryAddress,
-  });
-  const forkEscrowNouns = useBalanceOf({
-    contract: "token",
-    account: forkEscrowAddress,
-  });
-  const treasuryNouns = useBalanceOf({
-    contract: "token",
-    account: treasuryAddress,
-  });
-
-  return {
-    treasuryEth: treasuryEthBalance?.value,
-    daoProxyEth: daoProxyEthBalance?.value,
-    tokenBuyerEth: tokenBuyerEthBalance?.value,
-    treasuryUsdc,
-    payerUsdc,
-    treasuryWeth,
-    treasuryOeth,
-    treasuryReth,
-    treasurySteth,
-    treasuryWsteth,
-    forkEscrowNouns,
-    treasuryNouns,
-  };
-};
-
-const TreasuryDialog = ({ isOpen, close }) => (
-  <Dialog
-    isOpen={isOpen}
-    onRequestClose={() => {
-      close();
-    }}
-    width="44rem"
-  >
-    {(props) => <Content dismiss={close} {...props} />}
-  </Dialog>
-);
-
-const Content = ({ titleProps, dismiss }) => {
+const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   const [searchParams] = useSearchParams();
 
   const forkEscrowAddress = useContract("fork-escrow")?.address;
 
-  const {
-    treasuryEth,
-    treasuryUsdc,
-    treasuryWeth,
-    treasuryOeth,
-    treasuryReth,
-    treasurySteth,
-    treasuryWsteth,
-    treasuryNouns,
-    daoProxyEth,
-    tokenBuyerEth,
-    payerUsdc,
-    forkEscrowNouns,
-  } = useBalances();
-
   const [activityDayCount, setActivityDayCount] = React.useState(
     () => searchParams.get("timeframe") ?? 30,
   );
+  const [inflowProjectionDayCount, setInflowProjectionDayCount] =
+    React.useState(365);
 
-  const auctions = useRecentSettledAuctions({ count: activityDayCount });
-  const { auctionProceeds, auctionNounIds } = React.useMemo(() => {
-    if (auctions == null) return {};
-    const auctionProceeds = auctions.reduce(
-      (sum, { amount }) => sum + BigInt(amount),
-      BigInt(0),
-    );
-    const auctionNounIds = arrayUtils.sortBy(
-      (id) => Number(id),
-      auctions.map(({ id }) => id),
-    );
-    return { auctionProceeds, auctionNounIds };
-  }, [auctions]);
+  const {
+    totalAuctionProceeds: twoWeekAuctionProceeds,
+    auctionedNounIds: twoWeekSettledNounIds,
+  } = useRecentAuctionProceeds({ auctionCount: 14 }) ?? {};
+  const {
+    totalAuctionProceeds: auctionProceeds_,
+    auctionedNounIds: auctionNounIds_,
+  } =
+    useRecentAuctionProceeds({
+      auctionCount: activityDayCount,
+      enabled: activityDayCount !== 14,
+    }) ?? {};
+
+  // Beautiful
+  const [auctionProceeds, auctionNounIds] =
+    activityDayCount === 14
+      ? [twoWeekAuctionProceeds, twoWeekSettledNounIds]
+      : [auctionProceeds_, auctionNounIds_];
+
+  const twoWeekAvgNounPrice =
+    twoWeekAuctionProceeds == null
+      ? null
+      : twoWeekAuctionProceeds / BigInt(twoWeekSettledNounIds.length);
 
   const { assets: assetsDeployed, proposalIds: deployedProposalIds } =
-    useAssetsDeployed({ days: activityDayCount });
+    useAssetsDeployed({ days: activityDayCount }) ?? {};
 
-  const convertUsdcToEth = useChainlinkUsdcToEthConverter();
+  const usdcToEth = (usdc) => (usdc * rates.usdcEth) / 10n ** 6n;
+  const rethToEth = (reth) => (reth * rates.rethEth) / 10n ** 18n;
 
-  const ethTotal = [
-    treasuryEth,
-    treasuryWeth,
-    treasuryOeth,
-    treasuryReth,
-    treasurySteth,
-    treasuryWsteth,
-    daoProxyEth,
-    tokenBuyerEth,
+  const regularEthTotal = [
+    balances.executor.eth,
+    balances.executor.weth,
+    balances["dao-proxy"].eth,
+    balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
-  const plainishEthTotal = [
-    treasuryEth,
-    treasuryWeth,
-    daoProxyEth,
-    tokenBuyerEth,
-  ]
+  const stEthTotal = [balances.executor.steth, balances.executor.wsteth]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
-  const stEthTotal = [treasurySteth, treasuryWsteth]
-    .filter(Boolean)
-    .reduce((sum, amount) => sum + amount, BigInt(0));
+  const inflowProjectionYearFraction = inflowProjectionDayCount / 365;
 
-  const usdcTotal = [treasuryUsdc, payerUsdc]
-    .filter(Boolean)
-    .reduce((sum, amount) => sum + amount, BigInt(0));
+  const stEthReturnRateEstimateBPS = BigInt(
+    Math.round(aprs.lido * inflowProjectionYearFraction * 10_000),
+  );
+  const rEthReturnRateEstimateBPS = BigInt(
+    Math.round(aprs.rocketPool * inflowProjectionYearFraction * 10_000),
+  );
 
   return (
     <div
@@ -319,6 +196,15 @@ const Content = ({ titleProps, dismiss }) => {
           },
         })}
       >
+        <Heading>Total</Heading>
+        <FormattedEth value={totals.allInEth} tooltip={false} /> in ETH{" "}
+        <span
+          css={(t) =>
+            css({ color: t.colors.textDimmed, fontSize: t.text.sizes.small })
+          }
+        >
+          (<FormattedUsdc value={totals.allInUsd} tooltip={false} /> in USD)
+        </span>
         <Heading>Assets overview</Heading>
         <Dl
           css={css({
@@ -334,7 +220,7 @@ const Content = ({ titleProps, dismiss }) => {
               value: (
                 <>
                   <FormattedEth
-                    value={ethTotal}
+                    value={totals.eth}
                     tokenSymbol={false}
                     tooltip={false}
                   />
@@ -351,87 +237,94 @@ const Content = ({ titleProps, dismiss }) => {
                       })
                     }
                   >
-                    {treasuryEth != null && (
-                      <li>
-                        <FormattedEth
-                          value={plainishEthTotal}
-                          tokenSymbol="ETH"
-                          tooltip={
-                            <Dl>
-                              <dt>Treasury ETH</dt>
-                              <dd>
-                                <FormattedEth
-                                  value={treasuryEth}
-                                  tokenSymbol={false}
-                                  tooltip={false}
-                                />
-                              </dd>
-                              <dt>Token Buyer ETH</dt>
-                              <dd>
-                                <FormattedEth
-                                  value={tokenBuyerEth}
-                                  tokenSymbol={false}
-                                  tooltip={false}
-                                />
-                              </dd>
-                              <dt>DAO Proxy ETH</dt>
-                              <dd>
-                                <FormattedEth
-                                  value={daoProxyEth}
-                                  tokenSymbol={false}
-                                  tooltip={false}
-                                />
-                              </dd>
-                              <dt>wETH</dt>
-                              <dd>
-                                <FormattedEth
-                                  value={treasuryWeth}
-                                  tokenSymbol={false}
-                                  tooltip={false}
-                                />
-                              </dd>
-                            </Dl>
-                          }
-                        />
-                      </li>
-                    )}
-                    {treasurySteth != null && (
-                      <li>
-                        <FormattedEth
-                          value={stEthTotal}
-                          tokenSymbol="stETH"
-                          tooltip={
-                            treasuryWsteth > 0 ? (
+                    <li>
+                      <FormattedEth
+                        value={regularEthTotal}
+                        tokenSymbol="ETH"
+                        tooltip={
+                          <Dl>
+                            <dt>Treasury ETH</dt>
+                            <dd>
+                              <FormattedEth
+                                value={balances.executor.eth}
+                                tokenSymbol={false}
+                                tooltip={false}
+                              />
+                            </dd>
+                            {balances["token-buyer"].eth > 0 && (
                               <>
-                                Includes{" "}
-                                <FormattedEth
-                                  value={treasuryWsteth}
-                                  tokenSymbol="wstETH"
-                                />
+                                <dt>Token Buyer ETH</dt>
+                                <dd>
+                                  <FormattedEth
+                                    value={balances["token-buyer"].eth}
+                                    tokenSymbol={false}
+                                    tooltip={false}
+                                  />
+                                </dd>
                               </>
-                            ) : (
-                              false
-                            )
-                          }
-                        />
-                      </li>
-                    )}
-                    {treasuryOeth != null && (
+                            )}
+                            {balances["dao-proxy"].eth > 0 && (
+                              <>
+                                <dt>DAO Proxy ETH</dt>
+                                <dd>
+                                  <FormattedEth
+                                    value={balances["dao-proxy"].eth}
+                                    tokenSymbol={false}
+                                    tooltip={false}
+                                  />
+                                </dd>
+                              </>
+                            )}
+                            {balances.executor.weth > 0 && (
+                              <>
+                                <dt>wETH</dt>
+                                <dd>
+                                  <FormattedEth
+                                    value={balances.executor.weth}
+                                    tokenSymbol={false}
+                                    tooltip={false}
+                                  />
+                                </dd>
+                              </>
+                            )}
+                          </Dl>
+                        }
+                      />
+                    </li>
+                    <li>
+                      <FormattedEth
+                        value={stEthTotal}
+                        tokenSymbol="stETH"
+                        tooltip={
+                          balances.executor.wsteth > 0 ? (
+                            <>
+                              Includes{" "}
+                              <FormattedEth
+                                value={balances.executor.wsteth}
+                                tokenSymbol="wstETH"
+                              />
+                            </>
+                          ) : (
+                            false
+                          )
+                        }
+                      />
+                    </li>
+                    {balances.executor.reth > 0 && (
                       <li>
                         <FormattedEth
-                          value={treasuryOeth}
-                          tokenSymbol="oETH"
-                          tooltip={false}
-                        />
-                      </li>
-                    )}
-                    {treasuryReth != null && (
-                      <li>
-                        <FormattedEth
-                          value={treasuryReth}
+                          value={balances.executor.reth}
                           tokenSymbol="rETH"
                           tooltip={false}
-                        />
+                        />{" "}
+                        <span data-small>
+                          ({"Ξ"}
+                          <FormattedEth
+                            value={rethToEth(balances.executor.reth)}
+                            tooltip={false}
+                          />
+                          )
+                        </span>
                       </li>
                     )}
                   </ul>
@@ -443,22 +336,22 @@ const Content = ({ titleProps, dismiss }) => {
               value: (
                 <>
                   <FormattedUsdc
-                    value={usdcTotal}
+                    value={totals.usdc}
                     tooltip={
-                      payerUsdc > 0 ? (
+                      balances.payer.usdc > 0 ? (
                         <>
-                          Includes <FormattedUsdc value={payerUsdc} /> USDC held
-                          in The Payer contract
+                          Includes <FormattedUsdc value={balances.payer.usdc} />{" "}
+                          USDC held in The Payer contract
                         </>
                       ) : (
                         false
                       )
                     }
                   />{" "}
-                  {convertUsdcToEth != null && (
+                  {usdcToEth != null && (
                     <span data-small>
-                      ({"\u2248"}
-                      <FormattedEth value={convertUsdcToEth(usdcTotal)} /> ETH)
+                      ({"Ξ"}
+                      <FormattedEth value={usdcToEth(totals.usdc)} />)
                     </span>
                   )}
                 </>
@@ -467,13 +360,15 @@ const Content = ({ titleProps, dismiss }) => {
             {
               label: "Nouns",
               value: (() => {
-                if (treasuryNouns == null) return null;
                 return (
                   <>
-                    {Number(treasuryNouns + (forkEscrowNouns ?? 0n))}{" "}
-                    {forkEscrowNouns != null && forkEscrowNouns > 0 && (
+                    {Number(
+                      balances.executor.nouns + balances["fork-escrow"].nouns,
+                    )}{" "}
+                    {balances["fork-escrow"].nouns > 0 && (
                       <span data-small>
-                        (Includes {Number(forkEscrowNouns)} Nouns held in{" "}
+                        (Includes {balances["fork-escrow"].nouns.toString()}{" "}
+                        Nouns held in{" "}
                         <EtherscanLink address={forkEscrowAddress}>
                           The Fork Escrow
                         </EtherscanLink>
@@ -491,7 +386,6 @@ const Content = ({ titleProps, dismiss }) => {
             </React.Fragment>
           ))}
         </Dl>
-
         <Heading>
           Activity last{" "}
           <NativeSelect
@@ -507,6 +401,7 @@ const Content = ({ titleProps, dismiss }) => {
                 borderColor: t.colors.borderLighter,
                 borderRadius: "0.3rem",
                 padding: "0 0.4rem",
+                margin: "0 0.1em",
               })
             }
             onChange={(e) => {
@@ -538,7 +433,16 @@ const Content = ({ titleProps, dismiss }) => {
           <dd>
             {auctionProceeds != null && (
               <>
-                <FormattedEth value={auctionProceeds} tooltip={false} /> ETH
+                {"Ξ"}
+                <FormattedEth value={auctionProceeds} tooltip={false} />{" "}
+                <span data-small>
+                  (avg {"Ξ"}
+                  <FormattedEth
+                    value={auctionProceeds / BigInt(auctionNounIds.length)}
+                    tooltip={false}
+                  />{" "}
+                  per token)
+                </span>
               </>
             )}
           </dd>
@@ -583,25 +487,27 @@ const Content = ({ titleProps, dismiss }) => {
                       switch (asset.currency) {
                         case "eth":
                           return (
-                            <FormattedEth
-                              value={asset.amount}
-                              tokenSymbol="ETH"
-                              tooltip={false}
-                            />
+                            <>
+                              {"Ξ"}
+                              <FormattedEth
+                                value={asset.amount}
+                                tooltip={false}
+                              />
+                            </>
                           );
 
                         case "usdc":
                           return (
                             <>
-                              <FormattedUsdc value={asset.amount} /> USDC{" "}
-                              {convertUsdcToEth != null && (
+                              $<FormattedUsdc value={asset.amount} />{" "}
+                              {usdcToEth != null && (
                                 <span data-small>
-                                  ({"\u2248"}
+                                  ({"Ξ"}
                                   <FormattedEth
-                                    value={convertUsdcToEth(asset.amount)}
+                                    value={usdcToEth(asset.amount)}
                                     tooltip={false}
-                                  />{" "}
-                                  ETH)
+                                  />
+                                  )
                                 </span>
                               )}
                             </>
@@ -626,7 +532,143 @@ const Content = ({ titleProps, dismiss }) => {
             )}
           </dd>
         </Dl>
-
+        <Heading>
+          Inflow projection for{" "}
+          <NativeSelect
+            value={inflowProjectionDayCount}
+            options={[
+              { value: 30, label: "1 month" },
+              { value: 180, label: "6 months" },
+              { value: 365, label: "1 year" },
+            ]}
+            css={(t) =>
+              css({
+                display: "inline-block",
+                border: "0.1rem solid",
+                borderColor: t.colors.borderLighter,
+                borderRadius: "0.3rem",
+                padding: "0 0.4rem",
+                margin: "0 0.1em",
+              })
+            }
+            onChange={(e) => {
+              setInflowProjectionDayCount(Number(e.target.value));
+            }}
+          />
+        </Heading>
+        <Dl>
+          <dt>Auction proceeds</dt>
+          <dd>
+            {twoWeekAvgNounPrice != null && (
+              <Tooltip.Root>
+                <Tooltip.Trigger>
+                  {"Ξ"}
+                  <FormattedEth
+                    value={
+                      twoWeekAvgNounPrice * BigInt(inflowProjectionDayCount)
+                    }
+                    tooltip={false}
+                  />{" "}
+                  <span data-small>
+                    ({"Ξ"}
+                    <FormattedEth
+                      value={twoWeekAvgNounPrice}
+                      tooltip={false}
+                    />{" "}
+                    per auction)
+                  </span>
+                  <p
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.small,
+                        color: t.colors.textDimmed,
+                        fontStyle: "italic",
+                      })
+                    }
+                  >
+                    Price change rate is intentionally disregarded. DYOR for a
+                    more realistic forecast.
+                  </p>
+                </Tooltip.Trigger>
+                <Tooltip.Content
+                  side="top"
+                  sideOffset={6}
+                  portal
+                  css={(t) =>
+                    css({
+                      maxWidth: "23rem",
+                      ".dimmed": {
+                        color: t.colors.textDimmedAlpha,
+                      },
+                    })
+                  }
+                >
+                  <p>
+                    Projection made using a 14 day rolling auction price average{" "}
+                    <span className="nowrap">
+                      ({"Ξ"}
+                      <FormattedEth
+                        value={twoWeekAvgNounPrice}
+                        tooltip={false}
+                      />
+                      )
+                    </span>
+                  </p>
+                  <p className="dimmed">
+                    {"Ξ"}
+                    <FormattedEth
+                      value={twoWeekAvgNounPrice}
+                      tooltip={false}
+                    />{" "}
+                    {"×"} {inflowProjectionDayCount} days = {"Ξ"}
+                    <FormattedEth
+                      value={
+                        twoWeekAvgNounPrice * BigInt(inflowProjectionDayCount)
+                      }
+                      tooltip={false}
+                    />
+                  </p>
+                </Tooltip.Content>
+              </Tooltip.Root>
+            )}
+          </dd>
+          <dt>stETH yield</dt>
+          <dd>
+            {"Ξ"}
+            <FormattedEth
+              value={(stEthTotal * stEthReturnRateEstimateBPS) / 10_000n}
+              tooltip={false}
+            />{" "}
+            <span data-small>
+              (
+              <FormattedNumber
+                value={aprs.lido}
+                style="percent"
+                maximumFractionDigits={2}
+              />{" "}
+              APR)
+            </span>
+          </dd>
+          <dt>rETH yield</dt>
+          <dd>
+            {"Ξ"}
+            <FormattedEth
+              value={
+                (balances.executor.reth * rEthReturnRateEstimateBPS) / 10_000n
+              }
+              tooltip={false}
+            />{" "}
+            <span data-small>
+              (
+              <FormattedNumber
+                value={aprs.rocketPool}
+                style="percent"
+                maximumFractionDigits={2}
+              />{" "}
+              APR)
+            </span>
+          </dd>
+        </Dl>
         <p
           css={(t) =>
             css({
@@ -634,7 +676,8 @@ const Content = ({ titleProps, dismiss }) => {
               fontSize: t.text.sizes.small,
               color: t.colors.textDimmed,
               a: {
-                color: t.colors.textDimmed,
+                color: "inherit",
+                fontStyle: "italic",
                 textDecoration: "none",
                 "@media(hover: hover)": {
                   ":hover": { textDecoration: "underline" },
@@ -644,8 +687,16 @@ const Content = ({ titleProps, dismiss }) => {
           }
         >
           More at{" "}
+          <a
+            href="https://www.nounswap.wtf/stats/treasury"
+            target="_blank"
+            rel="norefferer"
+          >
+            nounswap.wtf
+          </a>{" "}
+          and{" "}
           <a href="https://tabs.wtf" target="_blank" rel="norefferer">
-            tabs.wtf {"\u2197"}
+            tabs.wtf
           </a>
         </p>
       </main>

@@ -12,6 +12,7 @@ import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import { CHAIN_ID } from "../constants/env.js";
+// import { useConfig } from "../config-provider.js";
 
 const impersonationAddress =
   typeof location === "undefined"

@@ -2,9 +2,22 @@ import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
 import { CHAIN_ID } from "./constants/env.js";
 
+const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+const DAO_LOGIC_PROXY_CONTRACT = "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039";
+const DAO_EXECUTOR_PROXY_CONTRACT =
+  "0xd5f279ff9EB21c6D40C8f345a66f2751C4eeA1fB";
+const DAO_DATA_PROXY_CONTRACT = "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039";
+const DAO_TOKEN_CONTRACT = "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B";
+const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
+  "0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E";
+const DAO_DESCRIPTOR_CONTRACT = "0xb2a47999b3117c7dD628920ED8e77eBDfB948B68";
+const DAO_TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
+const DAO_PAYER_CONTRACT = "0x0";
+
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
-    "eth-token": "0x0000000000000000000000000000000000000000",
+    "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     "wsteth-token": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
     "oeth-token": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
@@ -18,23 +31,24 @@ const addressByIdentifierByChainId = {
       "0x43c015df7f3868b287ad94d88b1e05f596bba453",
 
     // Nouns contracts
-    dao: "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039",
-    executor: "0xd5f279ff9EB21c6D40C8f345a66f2751C4eeA1fB",
-    data: "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039",
-    token: "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B",
-    "auction-house": "0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E",
-    "auction-house-admin": "0xc1c119932d78ab9080862c5fcb964029f086401e",
-    descriptor: "0xb2a47999b3117c7dD628920ED8e77eBDfB948B68",
+    dao: DAO_LOGIC_PROXY_CONTRACT,
+    executor: DAO_EXECUTOR_PROXY_CONTRACT,
+    data: DAO_DATA_PROXY_CONTRACT,
+    token: DAO_TOKEN_CONTRACT,
+    "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
+    "auction-house-admin": "0x0",
+    descriptor: DAO_DESCRIPTOR_CONTRACT,
     "fork-escrow": "0x0",
-    payer: "0x0",
+    payer: DAO_PAYER_CONTRACT,
     "executor-v1": "0xd5f279ff9EB21c6D40C8f345a66f2751C4eeA1fB",
-    "token-buyer": "0x0",
+    "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
     "stream-factory": "0x0",
-    "client-incentives-rewards-proxy": "0x0",
+    "client-incentives-rewards-proxy":
+      "0x0",
     "prop-house-nouns-house": "0x0",
   },
   [sepolia.id]: {
-    "eth-token": "0x0000000000000000000000000000000000000000",
+    "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
     "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
 

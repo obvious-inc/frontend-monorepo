@@ -34,26 +34,26 @@ export const useVotes = ({ start, end } = {}) => {
       const fetchVotes = async ({ page = 1, pageSize = 1000 } = {}) => {
         const { votes } = await subgraphFetch({
           query: `{
-          votes (
-            orderBy: blockNumber,
-            first: ${pageSize},
-            skip: ${(page - 1) * pageSize}
-           where: {
-             ${[
-               start == null
-                 ? null
+            votes (
+              orderBy: blockNumber,
+              first: ${pageSize},
+              skip: ${(page - 1) * pageSize}
+              where: {
+                ${[
+                  start == null
+                    ? null
                  : `# blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
-               end == null
-                 ? null
+                  end == null
+                    ? null
                  : `# blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
-             ].join(",")}
-           }
-          ) {
-            supportDetailed
-            reason
-            voter { id }
-          }
-        }`,
+                ].join(",")}
+              }
+            ) {
+              supportDetailed
+              reason
+              voter { id }
+            }
+          }`,
         });
 
         if (votes.length < pageSize) return votes;

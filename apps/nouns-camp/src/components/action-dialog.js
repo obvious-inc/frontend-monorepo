@@ -1646,7 +1646,7 @@ const AmountWithCurrencyInput = ({
 //       const paymentTokenContract = getContractWithIdentifier(
 //         `${currency}-token`,
 //       );
-//
+        //
 //       let amount = 0;
 //       try {
 //         amount = BigInt(amount_);
