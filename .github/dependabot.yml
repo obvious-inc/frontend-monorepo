@@ -68,6 +68,10 @@ updates:
         patterns:
           - 'next'
           - 'eslint-config-next'
+      next-on-page:
+        patterns:
+          - '@cloudflare/next-on-pages'
+          - 'eslint-plugin-next-on-pages'
       react:
         patterns:
           - 'react'
@@ -77,8 +81,16 @@ updates:
     # List of packages to ignore for specific update types
     ignore:
       - dependency-name: "eslint"
-        update-types: [ "version-update:semver-major" ]
+        update-types:
+          - "version-update:semver-major"
       - dependency-name: "@serwist/next"
-        update-types: [ "version-update:semver-major" ]
+        update-types:
+          - "version-update:semver-major"
       - dependency-name: "@sentry/nextjs"
-        update-types: [ "version-update:semver-major" ]
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@cloudflare/next-on-pages"
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+          - "version-update:semver-patch"
