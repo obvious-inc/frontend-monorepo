@@ -11,7 +11,7 @@ export const getTotalEth = (data) => {
     balances.executor.steth,
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
-    balances["token-buyer"].eth,
+    // balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
@@ -54,7 +54,7 @@ const useTreasuryData = () => {
     balances.executor.steth,
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
-    balances["token-buyer"].eth,
+    // balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
