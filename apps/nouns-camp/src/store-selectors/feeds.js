@@ -17,9 +17,12 @@ const buildVoteAndFeedbackPostFeedItems = ({
   const filteredVotes = votes.filter(
     (v) => v.votes > 0 || (v.reason?.trim() ?? "") !== "",
   );
+  const filteredFeedbackPosts = feedbackPosts.filter(
+    (p) => p.votes > 0 || (p.reason?.trim() ?? "") !== "",
+  );
   const ascendingVotesAndFeedbackPosts = arrayUtils.sortBy("createdBlock", [
     ...filteredVotes,
-    ...feedbackPosts,
+    ...filteredFeedbackPosts,
   ]);
 
   return ascendingVotesAndFeedbackPosts.reduce((acc, p, postIndex) => {
@@ -31,9 +34,6 @@ const buildVoteAndFeedbackPostFeedItems = ({
       reasonWithStrippedReposts,
     );
 
-    // Don’t include candidate items
-    if (p.candidateId != null) return acc;
-
     acc.push({
       id: p.id,
       type: p.type,
@@ -41,6 +41,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
       authorAccount: p.voterId,
       blockNumber: p.createdBlock,
       timestamp: p.createdTimestamp,
+      transactionHash: p.createdTransactionHash,
       voteCount: p.votes,
       proposalId,
       isPending: p.isPending,
@@ -94,6 +95,7 @@ export const buildProposalFeed = (
         authorAccount: c.account?.nounerAddress,
         authorAvatarUrl: c.account?.pfpUrl,
         authorDisplayName: displayName,
+        authorUsername: c.account?.username,
         body: c.text,
         timestamp: new Date(c.timestamp),
         proposalId: proposal.id,
@@ -105,7 +107,7 @@ export const buildProposalFeed = (
     votes: proposal.votes,
     feedbackPosts: [
       ...(proposal?.feedbackPosts ?? []),
-      ...(candidate?.feedbackPosts ?? []),
+      ...(includeCandidateItems ? candidate?.feedbackPosts ?? [] : []),
     ],
   });
 
@@ -128,6 +130,7 @@ export const buildProposalFeed = (
         id: `proposal-update-${v.createdBlock}`,
         body: v.updateMessage,
         blockNumber: v.createdBlock,
+        transactionHash: v.createdTransactionHash,
         timestamp: v.createdTimestamp,
         proposalId: proposal.id,
         authorAccount: proposal.proposerId, // only proposer can update proposals
@@ -148,6 +151,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-created`,
       timestamp: proposal.createdTimestamp,
       blockNumber: proposal.createdBlock,
+      transactionHash: proposal.createdTransactionHash,
       authorAccount: proposal.proposerId,
       proposalId: proposal.id,
     });
@@ -159,6 +163,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-canceled`,
       blockNumber: proposal.canceledBlock,
       timestamp: proposal.canceledTimestamp,
+      transactionHash: proposal.canceledTransactionHash,
       proposalId: proposal.id,
     });
 
@@ -169,6 +174,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-queued`,
       blockNumber: proposal.queuedBlock,
       timestamp: proposal.queuedTimestamp,
+      transactionHash: proposal.queuedTransactionHash,
       proposalId: proposal.id,
     });
 
@@ -179,6 +185,7 @@ export const buildProposalFeed = (
       id: `${proposal.id}-executed`,
       blockNumber: proposal.executedBlock,
       timestamp: proposal.executedTimestamp,
+      transactionHash: proposal.executedTransactionHash,
       proposalId: proposal.id,
     });
 
@@ -260,6 +267,7 @@ export const buildCandidateFeed = (
       isPending: p.isPending,
       candidateId: candidate.id,
       targetProposalId,
+      transactionHash: p.id?.split("-")?.[0],
     }));
   };
 
@@ -282,6 +290,7 @@ export const buildCandidateFeed = (
         authorAccount: c.account?.nounerAddress,
         authorAvatarUrl: c.account?.pfpUrl,
         authorDisplayName: displayName,
+        authorUsername: c.account?.username,
         body: c.text,
         timestamp: new Date(c.timestamp),
         candidateId,
@@ -302,6 +311,7 @@ export const buildCandidateFeed = (
         body: v.updateMessage,
         blockNumber: v.createdBlock,
         timestamp: v.createdTimestamp,
+        transactionHash: v.id?.split("-")?.[0],
         candidateId,
         authorAccount: candidate.proposerId, // only proposer can update
       })) ?? [];
@@ -315,6 +325,7 @@ export const buildCandidateFeed = (
       id: `${candidate.id}-created`,
       timestamp: candidate.createdTimestamp,
       blockNumber: candidate.createdBlock,
+      transactionHash: candidate.createdTransactionHash,
       authorAccount: candidate.proposerId,
       candidateId,
       targetProposalId,
@@ -327,6 +338,7 @@ export const buildCandidateFeed = (
       id: `${candidate.id}-canceled`,
       timestamp: candidate.canceledTimestamp,
       blockNumber: candidate.canceledBlock,
+      transactionHash: candidate.canceledTransactionHash,
       candidateId,
       targetProposalId,
     });
@@ -339,6 +351,7 @@ export const buildCandidateFeed = (
     voteCount: s.signer.nounsRepresented?.length,
     timestamp: s.createdTimestamp,
     blockNumber: s.createdBlock,
+    transactionHash: s.createdTransactionHash,
     expiresAt: s.expirationTimestamp,
     isCanceled: s.canceled,
     candidateId,

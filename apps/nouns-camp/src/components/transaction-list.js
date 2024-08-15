@@ -64,7 +64,7 @@ export const useEnhancedParsedTransaction = (transaction) => {
   };
 };
 
-const TransactionList = ({ transactions }) => (
+const TransactionList = ({ transactions, isSimulationRunning }) => (
   <ol
     data-count={transactions.length}
     css={(t) =>
@@ -89,13 +89,13 @@ const TransactionList = ({ transactions }) => (
   >
     {transactions.map((t, i) => (
       <li key={i}>
-        <ListItem transaction={t} />
+        <ListItem transaction={t} isSimulationRunning={isSimulationRunning} />
       </li>
     ))}
   </ol>
 );
 
-const ListItem = ({ transaction }) => {
+const ListItem = ({ transaction, isSimulationRunning }) => {
   const daoPayerContract = useContract("payer");
   const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
@@ -113,12 +113,19 @@ const ListItem = ({ transaction }) => {
             inputs={t.functionInputs}
             inputTypes={t.functionInputTypes}
             value={t.value}
+            simulation={t.simulation}
+            isSimulationRunning={isSimulationRunning}
           />
         );
 
       case "unparsed-function-call":
       case "unparsed-payable-function-call":
-        return <UnparsedFunctionCallCodeBlock transaction={t} />;
+        return (
+          <UnparsedFunctionCallCodeBlock
+            transaction={t}
+            isSimulationRunning={isSimulationRunning}
+          />
+        );
 
       case "transfer":
       case "usdc-approval":
@@ -251,12 +258,19 @@ const ListItem = ({ transaction }) => {
             inputs={t.functionInputs}
             inputTypes={t.functionInputTypes}
             value={t.value}
+            simulation={t.simulation}
+            isSimulationRunning={isSimulationRunning}
           />
         );
 
       case "transfer":
       case "payer-top-up":
-        return <UnparsedFunctionCallCodeBlock transaction={t} />;
+        return (
+          <UnparsedFunctionCallCodeBlock
+            transaction={t}
+            isSimulationRunning={isSimulationRunning}
+          />
+        );
 
       case "unparsed-function-call":
       case "proxied-function-call":
@@ -339,54 +353,56 @@ const ListItem = ({ transaction }) => {
   );
 };
 
-const SimulationBadge = ({ simulation }) => (
-  <div css={css({ position: "absolute", bottom: "1.1rem", right: "1.1rem" })}>
-    {simulation.fetching ? (
-      <Spinner size="1.2rem" />
-    ) : simulation.error ? (
-      simulation.id ? (
-        <div title={simulation?.error ?? "Simulation failed"}>
+const SimulationBadge = ({ simulation, isSimulationRunning }) => {
+  const SimulationIcon = () => {
+    return simulation.error ? (
+      <CrossCircleIcon
+        aria-hidden="true"
+        css={(t) => css({ width: "1.3rem", color: t.colors.textNegative })}
+      />
+    ) : (
+      <CheckmarkIcon
+        aria-hidden="true"
+        css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
+      />
+    );
+  };
+
+  const SimulationStatus = () => {
+    const simulationTitle = simulation.error
+      ? simulation?.error ?? "Simulation failed"
+      : "Simulation passed";
+
+    return (
+      <div title={simulationTitle}>
+        {simulation.id ? (
           <Link
             component="a"
             href={`https://www.tdly.co/shared/simulation/${simulation.id}`}
             rel="noreferrer"
             target="_blank"
           >
-            <CrossCircleIcon
-              aria-hidden="true"
-              css={(t) =>
-                css({ width: "1.3rem", color: t.colors.textNegative })
-              }
-            />
+            <SimulationIcon />
           </Link>
-        </div>
-      ) : (
-        <div title={simulation?.error ?? "Simulation failed"}>
-          <CrossCircleIcon
-            aria-hidden="true"
-            css={(t) => css({ width: "1.3rem", color: t.colors.textNegative })}
-          />
-        </div>
-      )
-    ) : simulation.success ? (
-      <div title="Simulation passed">
-        <Link
-          component="a"
-          href={`https://www.tdly.co/shared/simulation/${simulation.id}`}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <CheckmarkIcon
-            aria-hidden="true"
-            css={(t) => css({ width: "1.2rem", color: t.colors.textPositive })}
-          />
-        </Link>
+        ) : (
+          <SimulationIcon />
+        )}
       </div>
-    ) : (
-      <></>
-    )}
-  </div>
-);
+    );
+  };
+
+  const renderContent = () => {
+    if (isSimulationRunning) return <Spinner size="1.2rem" />;
+    if (simulation?.error || simulation?.success) return <SimulationStatus />;
+    return null;
+  };
+
+  return (
+    <div css={css({ position: "absolute", bottom: "1.1rem", right: "1.1rem" })}>
+      {renderContent()}
+    </div>
+  );
+};
 
 export const FunctionCallCodeBlock = ({
   target,
@@ -395,6 +411,7 @@ export const FunctionCallCodeBlock = ({
   value,
   inputTypes,
   simulation,
+  isSimulationRunning,
 }) => (
   <Code block>
     <AddressDisplayNameWithTooltip address={target} data-identifier>
@@ -469,13 +486,16 @@ export const FunctionCallCodeBlock = ({
         </span>
       </>
     )}
-    {simulation && <SimulationBadge simulation={simulation} />}
+    <SimulationBadge
+      simulation={simulation}
+      isSimulationRunning={isSimulationRunning}
+    />
   </Code>
 );
 
 export const UnparsedFunctionCallCodeBlock = ({
   transaction: t,
-  simulation: s,
+  isSimulationRunning,
 }) => (
   <Code block>
     <span data-identifier>target</span>:{" "}
@@ -509,7 +529,10 @@ export const UnparsedFunctionCallCodeBlock = ({
         </span>
       </>
     )}
-    {s && <SimulationBadge simulation={s} />}
+    <SimulationBadge
+      simulation={t.simulation}
+      isSimulationRunning={isSimulationRunning}
+    />
   </Code>
 );
 

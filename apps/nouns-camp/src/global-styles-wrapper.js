@@ -46,6 +46,9 @@ const GlobalStyles = ({ children }) => {
       <EmotionGlobal
         styles={(t) =>
           css({
+            ":root": {
+              "--text-dimmed": t.colors.textDimmed,
+            },
             html: {
               fontSize: {
                 tiny: "0.546875em",

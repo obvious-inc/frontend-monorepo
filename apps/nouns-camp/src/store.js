@@ -77,7 +77,7 @@ const mergeProposals = (p1, p2) => {
       (v1, v2) => {
         if (v1.id === v2.id) return true;
         if (!v1.isPending) return false;
-        return v1.voterId.toLowerCase() === v2.voterId.toLowerCase();
+        return v1.voterId === v2.voterId;
       },
       // p2 has to be first here to take precedence
       [...p2.votes, ...p1.votes],
@@ -509,6 +509,7 @@ const createStore = ({ initialState, publicClient }) =>
           ) {
             createdAt
             createdBlock
+            createdTransactionHash
             updateMessage
             proposal { id }
           }
@@ -550,6 +551,8 @@ const createStore = ({ initialState, publicClient }) =>
               createdBlock
               canceledBlock
               lastUpdatedBlock
+              createdTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -635,6 +638,8 @@ const createStore = ({ initialState, publicClient }) =>
               createdBlock
               canceledBlock
               lastUpdatedBlock
+              createdTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -811,6 +816,7 @@ const createStore = ({ initialState, publicClient }) =>
       reverseResolveEnsAddresses,
 
       // Subgraph reads
+      subgraphFetch,
       fetchProposals,
       fetchProposal: async (id) => {
         const data = await subgraphFetch({
@@ -823,7 +829,11 @@ const createStore = ({ initialState, publicClient }) =>
               proposalVersions(where: {proposal: "${id}"}) {
                 createdAt
                 createdBlock
+                createdTransactionHash
                 updateMessage
+                proposal {
+                  id
+                }
               }
               proposalCandidateVersions(
                 where: {
@@ -832,6 +842,7 @@ const createStore = ({ initialState, publicClient }) =>
                   }
                 }
               ) {
+                id
                 createdBlock
                 createdTimestamp
                 updateMessage
@@ -990,6 +1001,7 @@ const createStore = ({ initialState, publicClient }) =>
                   quorumVotes
                   executionETA
                   proposer { id }
+                  signers { id }
                 }
               }
           }`,
@@ -1088,6 +1100,8 @@ const createStore = ({ initialState, publicClient }) =>
                 canceledTimestamp
                 createdTimestamp
                 lastUpdatedTimestamp
+                createdTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1118,6 +1132,7 @@ const createStore = ({ initialState, publicClient }) =>
                 status
                 createdBlock
                 createdTimestamp
+                createdTransactionHash
                 lastUpdatedBlock
                 lastUpdatedTimestamp
                 startBlock
@@ -1126,10 +1141,13 @@ const createStore = ({ initialState, publicClient }) =>
                 objectionPeriodEndBlock
                 canceledBlock
                 canceledTimestamp
+                canceledTransactionHash
                 queuedBlock
                 queuedTimestamp
+                queuedTransactionHash
                 executedBlock
                 executedTimestamp
+                executedTransactionHash
                 forVotes
                 againstVotes
                 abstainVotes
@@ -1153,6 +1171,8 @@ const createStore = ({ initialState, publicClient }) =>
                 canceledTimestamp
                 createdTimestamp
                 lastUpdatedTimestamp
+                createdTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1253,6 +1273,7 @@ const createStore = ({ initialState, publicClient }) =>
               ) {
                 createdAt
                 createdBlock
+                createdTransactionHash
                 updateMessage
                 proposal { id }
               }
@@ -1825,9 +1846,14 @@ const useStore = (selector) => {
   return useZustandStore(store, selector);
 };
 
+export const useSubgraphFetch = () => {
+  return useStore((s) => s.subgraphFetch);
+};
+
 export const useActions = () => {
   const publicClient = usePublicClient();
 
+  const subgraphFetch = useStore((s) => s.subgraphFetch);
   const fetchProposal = useStore((s) => s.fetchProposal);
   const fetchProposals = useStore((s) => s.fetchProposals);
   const fetchActiveProposals = useStore((s) => s.fetchActiveProposals);
@@ -1861,6 +1887,7 @@ export const useActions = () => {
   );
 
   return {
+    subgraphFetch,
     fetchProposal,
     fetchProposals,
     fetchActiveProposals,

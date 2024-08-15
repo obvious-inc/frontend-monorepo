@@ -33,7 +33,8 @@ const DialogHeader = ({ title, subtitle, titleProps, dismiss, ...props }) => (
               fontSize: t.text.sizes.base,
               color: t.colors.textDimmed,
               fontWeight: t.text.weights.normal,
-              lineHeight: 1.5,
+              lineHeight: 1.3,
+              marginTop: "0.2em",
             })
           }
         >

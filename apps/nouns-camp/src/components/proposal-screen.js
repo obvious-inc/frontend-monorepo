@@ -3,10 +3,12 @@
 import React from "react";
 import { formatUnits } from "viem";
 import { notFound as nextNotFound } from "next/navigation";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
 import { ErrorBoundary } from "@shades/common/react";
 import {
+  CaretDown as CaretDownIcon,
   Clock as ClockIcon,
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
@@ -22,6 +24,7 @@ import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
+  getLatestVersionBlock,
 } from "../utils/proposals.js";
 import {
   useProposal,
@@ -44,10 +47,10 @@ import {
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
-import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitProposalCast } from "../hooks/farcaster.js";
+import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -60,6 +63,10 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 import ProposalActionForm from "./proposal-action-form.js";
+import useScrollToHash from "../hooks/scroll-to-hash.js";
+import { useProposalSimulation } from "../hooks/simulation.js";
+import useTreasuryData from "../hooks/treasury-data.js";
+import FormattedNumber from "./formatted-number.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -100,6 +107,20 @@ const ProposalMainSection = ({
 
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
+
+  const latestProposalVersionBlock = getLatestVersionBlock(proposal);
+
+  const {
+    data: simulationResults,
+    error: simulationError,
+    isFetching: simulationIsFetching,
+  } = useProposalSimulation(proposal?.id, {
+    enabled:
+      latestProposalVersionBlock &&
+      proposal?.state &&
+      !isFinalProposalState(proposal.state),
+    version: latestProposalVersionBlock,
+  });
 
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
@@ -666,7 +687,13 @@ const ProposalMainSection = ({
                   <Tabs.Item key="transactions" title="Transactions">
                     <div style={{ paddingTop: "3.2rem" }}>
                       {proposal.transactions != null && (
-                        <TransactionList transactions={proposal.transactions} />
+                        <TransactionList
+                          transactions={proposal.transactions.map((t, i) => ({
+                            ...t,
+                            simulation: simulationResults?.[i],
+                          }))}
+                          isSimulationRunning={simulationIsFetching}
+                        />
                       )}
                     </div>
                   </Tabs.Item>
@@ -683,11 +710,40 @@ const ProposalMainSection = ({
               },
             })}
           >
+            {simulationError && (
+              <Callout
+                compact
+                variant="info"
+                css={() =>
+                  css({
+                    marginBottom: "2.4rem",
+                    "@media (min-width: 600px)": {
+                      marginBottom: "4.8rem",
+                    },
+                  })
+                }
+              >
+                <p>
+                  <b>This proposal will fail to execute.</b>
+                </p>
+
+                <p>
+                  One or more transactions didn&apos;t pass the simulation.
+                  Check the Transactions tab to see which ones failed.
+                </p>
+              </Callout>
+            )}
+
             {/* Display state callout for "important" states on mobile */}
             {!isDesktopLayout &&
-              ["active", "objection-period", "succeeded", "queued"].includes(
-                proposal.state,
-              ) && (
+              [
+                "active",
+                "updatable",
+                "pending",
+                "objection-period",
+                "succeeded",
+                "queued",
+              ].includes(proposal.state) && (
                 <Callout
                   icon={renderProposalStateIcon()}
                   css={(t) =>
@@ -798,7 +854,13 @@ const ProposalMainSection = ({
                       }}
                     >
                       {proposal.transactions != null && (
-                        <TransactionList transactions={proposal.transactions} />
+                        <TransactionList
+                          transactions={proposal.transactions.map((t, i) => ({
+                            ...t,
+                            simulation: simulationResults?.[i],
+                          }))}
+                          isSimulationRunning={simulationIsFetching}
+                        />
                       )}
                     </div>
                   </Tabs.Item>
@@ -834,7 +896,84 @@ export const ProposalHeader = ({
   transactions = [],
   hasPassed,
 }) => {
+  const [searchParams] = useSearchParams();
+
+  const forceAskBreakdown = searchParams.get("force-ask-breakdown") != null;
+
+  const [showFullAskBreakdown, setShowFullAskBreakdown] = React.useState(false);
+
+  const treasuryData = useTreasuryData();
+  const { avgAuctionPrice } =
+    useRecentAuctionProceeds({ auctionCount: 14 }) ?? {};
+
   const requestedAmounts = extractAmountsFromTransactions(transactions);
+
+  const {
+    percentOfTreasury,
+    percentOfOneYearIncomeForecast,
+    oneYearIncomeForecast,
+    numberOfDays,
+    stakingYield,
+  } = (() => {
+    if (treasuryData == null || avgAuctionPrice == null) return {};
+
+    const { balances, totals, rates, aprs } = treasuryData;
+
+    const usdcToEth = (usdc) => (usdc * rates.usdcEth) / 10n ** 6n;
+
+    const totalAskInEth = requestedAmounts.reduce(
+      (sum, { currency, amount }) => {
+        switch (currency) {
+          case "eth":
+          case "weth":
+            return sum + amount;
+          case "usdc":
+            return sum + usdcToEth(amount);
+          case "nouns":
+            return sum;
+          default:
+            throw new Error();
+        }
+      },
+      0n,
+    );
+
+    const treasuryFractionBps = (totalAskInEth * 10_000n) / totals.allInEth;
+
+    const stEthAprBps = BigInt(Math.round(aprs.lido * 10_000));
+    const rEthAprBps = BigInt(Math.round(aprs.rocketPool * 10_000));
+    const stEthYield =
+      ((balances.executor.steth + balances.executor.wsteth) * stEthAprBps) /
+      10_000n;
+    const rEthYield = (balances.executor.reth * rEthAprBps) / 10_000n;
+    const totalStakingYield = stEthYield + rEthYield;
+
+    const projectedOneYearAuctionProceeds = avgAuctionPrice * 365n;
+    const oneYearIncomeForecast =
+      projectedOneYearAuctionProceeds + totalStakingYield;
+    const oneYearIncomeForecastFractionBps =
+      (totalAskInEth * 10_000n) / oneYearIncomeForecast;
+    const forcastedDailyIncome = avgAuctionPrice + totalStakingYield / 365n;
+
+    return {
+      // Round to one decimal
+      percentOfTreasury: Math.round(Number(treasuryFractionBps) / 10) / 1_000,
+      // One decimal when 3%
+      percentOfOneYearIncomeForecast:
+        oneYearIncomeForecastFractionBps > 300n
+          ? Math.round(Number(oneYearIncomeForecastFractionBps) / 100) / 100
+          : Math.round(Number(oneYearIncomeForecastFractionBps) / 10) / 1_000,
+      oneYearIncomeForecast,
+      numberOfDays: Math.round(
+        Number((totalAskInEth * 10_000n) / forcastedDailyIncome) / 10_000,
+      ),
+      stakingYield: totalStakingYield,
+    };
+  })();
+
+  const enableAskBreakdown =
+    percentOfTreasury > 0n && (!hasPassed || forceAskBreakdown);
+
   return (
     <div css={css({ userSelect: "text" })}>
       <h1
@@ -871,15 +1010,21 @@ export const ProposalHeader = ({
         }
       >
         Proposed{" "}
-        <FormattedDateWithTooltip
-          capitalize={false}
-          value={createdAt}
-          day="numeric"
-          month="short"
-          year={
-            createdAt.getYear() !== new Date().getYear() ? "numeric" : undefined
-          }
-        />{" "}
+        {createdAt != null && (
+          <>
+            <FormattedDateWithTooltip
+              capitalize={false}
+              value={createdAt}
+              day="numeric"
+              month="short"
+              year={
+                createdAt.getYear() !== new Date().getYear()
+                  ? "numeric"
+                  : undefined
+              }
+            />{" "}
+          </>
+        )}
         by{" "}
         <AccountPreviewPopoverTrigger showAvatar accountAddress={proposerId} />
         {sponsorIds.length !== 0 && (
@@ -919,6 +1064,140 @@ export const ProposalHeader = ({
             >
               {hasPassed ? "Requested" : "Requesting"}{" "}
               <RequestedAmounts amounts={requestedAmounts} />
+              {enableAskBreakdown && (
+                <button
+                  onClick={() => setShowFullAskBreakdown((s) => !s)}
+                  css={(t) =>
+                    css({
+                      display: "block",
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                      },
+                    })
+                  }
+                >
+                  <FormattedNumber
+                    style="percent"
+                    value={percentOfTreasury}
+                    maximumFractionDigits={2}
+                  />{" "}
+                  of treasury &middot;{" "}
+                  <FormattedNumber
+                    style="percent"
+                    value={percentOfOneYearIncomeForecast}
+                    maximumFractionDigits={2}
+                  />{" "}
+                  of 1Y inflow projection{" "}
+                  <span
+                    className="nowrap"
+                    css={css({
+                      "@media(max-width: 460px)": {
+                        display: "none",
+                      },
+                    })}
+                  >
+                    (
+                    {numberOfDays === 1 ? (
+                      "<1 day"
+                    ) : (
+                      <>
+                        {"≈"}
+                        {numberOfDays} days
+                      </>
+                    )}
+                    )
+                  </span>{" "}
+                  <CaretDownIcon
+                    style={{
+                      display: "inline-flex",
+                      width: "0.7em",
+                      transform: showFullAskBreakdown
+                        ? "scaleY(-1)"
+                        : "translateY(1px)",
+                    }}
+                  />
+                </button>
+              )}
+              {showFullAskBreakdown && (
+                <NextLink
+                  prefetch
+                  href={(() => {
+                    const linkSearchParams = new URLSearchParams(searchParams);
+                    linkSearchParams.set("treasury", 1);
+                    return `?${linkSearchParams}`;
+                  })()}
+                  css={(t) =>
+                    css({
+                      display: "block",
+                      color: t.colors.textDimmed,
+                      fontSize: t.text.sizes.small,
+                      marginTop: "0.8em",
+                      textDecoration: "none",
+                      "@media(hover: hover)": { cursor: "pointer" },
+                    })
+                  }
+                >
+                  {treasuryData != null && (
+                    <>
+                      Current treasury balance: {"Ξ"}
+                      <FormattedEthWithConditionalTooltip
+                        value={treasuryData.totals.allInEth}
+                        decimals={2}
+                        truncationDots={false}
+                        tokenSymbol={false}
+                        localeFormatting
+                      />{" "}
+                      ($
+                      <FormattedEthWithConditionalTooltip
+                        currency="usdc"
+                        value={treasuryData.totals.allInUsd}
+                        decimals={0}
+                        truncationDots={false}
+                        tokenSymbol={false}
+                        localeFormatting
+                      />
+                      )
+                    </>
+                  )}
+                  <br />
+                  Recent auction price average: {"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={avgAuctionPrice}
+                    decimals={2}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  (last 14 auctions)
+                  <br />1 year inflow projection: {"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={oneYearIncomeForecast}
+                    decimals={1}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  ({"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={avgAuctionPrice}
+                    decimals={2}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  {"×"} 365 days + {"Ξ"}
+                  <FormattedEthWithConditionalTooltip
+                    value={stakingYield}
+                    decimals={2}
+                    truncationDots={false}
+                    tokenSymbol={false}
+                    localeFormatting
+                  />{" "}
+                  staking yield)
+                </NextLink>
+              )}
             </Callout>
           </div>
         )}
@@ -944,7 +1223,17 @@ export const ProposalBody = React.memo(({ markdownText }) => {
       >
         {markdownText != null && (
           <React.Suspense fallback={null}>
-            <MarkdownRichText text={markdownText} imagesMaxHeight={680} />
+            <MarkdownRichText
+              text={markdownText}
+              imagesMaxHeight={680}
+              imagesMaxWidth={null}
+              css={css({
+                // better for displaying transparent assets
+                ".image > img": {
+                  background: "unset",
+                },
+              })}
+            />
           </React.Suspense>
         )}
       </div>
@@ -1114,7 +1403,7 @@ const ProposalScreen = ({ proposalId }) => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
-          { to: "/?tab=proposals", label: "Proposals", desktopOnly: true },
+          { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
             to: `/proposals/${proposalId}`,
             label: (

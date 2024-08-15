@@ -21,8 +21,31 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
+import { isTransactionHash } from "../utils/transactions.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
+
+const buildTimestampLink = (item) => {
+  if (item.type === "farcaster-cast") {
+    if (item.authorUsername == null) return null;
+    return `https://warpcast.com/${item.authorUsername}/${item.id}`;
+  }
+
+  if (
+    item.eventType === "propdate-posted" ||
+    item.eventType === "propdate-marked-completed"
+  ) {
+    // the id is what comes after "propdate-"
+    const propdateId = item.id.slice(9);
+    return `https://www.updates.wtf/update/${propdateId}`;
+  }
+
+  const txHash = item.transactionHash ?? item.txHash;
+  if (!isTransactionHash(txHash)) return null;
+
+  return buildEtherscanLink(`/tx/${txHash}`);
+};
 
 const ActivityFeed = ({
   context,
@@ -147,6 +170,52 @@ const FeedItem = React.memo(
 
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
 
+    const renderTimestamp = (item) => {
+      const timestampLink = buildTimestampLink(item);
+
+      const formattedDate = (
+        <FormattedDateWithTooltip
+          tinyRelative
+          relativeDayThreshold={7}
+          month="short"
+          day="numeric"
+          year={
+            getDateYear(item.timestamp) !== getDateYear(new Date())
+              ? "numeric"
+              : undefined
+          }
+          value={item.timestamp}
+        />
+      );
+
+      return (
+        <span
+          data-timestamp
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              padding: "0.15rem 0",
+              display: "inline-block",
+            })
+          }
+        >
+          {timestampLink ? (
+            <a
+              href={timestampLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              css={css({ fontWeight: "normal !important" })}
+            >
+              {formattedDate}
+            </a>
+          ) : (
+            formattedDate
+          )}
+        </span>
+      );
+    };
+
     return (
       <div
         key={item.id}
@@ -237,33 +306,7 @@ const FeedItem = React.memo(
                     <Spinner size="1rem" />
                   </div>
                 ) : (
-                  item.timestamp != null && (
-                    <span
-                      data-timestamp
-                      css={(t) =>
-                        css({
-                          fontSize: t.text.sizes.small,
-                          color: t.colors.textDimmed,
-                          padding: "0.15rem 0",
-                          display: "inline-block",
-                        })
-                      }
-                    >
-                      <FormattedDateWithTooltip
-                        tinyRelative
-                        relativeDayThreshold={7}
-                        month="short"
-                        day="numeric"
-                        year={
-                          getDateYear(item.timestamp) !==
-                          getDateYear(new Date())
-                            ? "numeric"
-                            : undefined
-                        }
-                        value={item.timestamp}
-                      />
-                    </span>
-                  )
+                  item.timestamp != null && renderTimestamp(item)
                 )}
               </div>
             </div>
@@ -316,15 +359,16 @@ const FeedItem = React.memo(
             >
               {item.replies.map(({ body, target }) => (
                 <li key={target.id}>
-                  <QuotedVoteOrFeedbackPost
-                    item={target}
-                    href={
-                      context !== "proposal"
-                        ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
-                        : `#${item.id}`
-                    }
-                    showSignal
-                  />
+                  <div css={css({ fontSize: "0.875em" })}>
+                    <QuotedVoteOrFeedbackPost
+                      item={target}
+                      href={
+                        context !== "proposal"
+                          ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
+                          : `#${target.id}`
+                      }
+                    />
+                  </div>
                   <div className="reply-area">
                     <div className="reply-line-container">
                       <div className="reply-line" />
@@ -369,15 +413,8 @@ const FeedItem = React.memo(
                     item={voteOrFeedbackPost}
                     href={
                       context !== "proposal"
-                        ? `/proposals/${item.proposalId}?tab=activity#${item.id}`
-                        : `#${item.id}`
-                    }
-                    showSignal={
-                      // Don’t render support for abstained feedback reposts
-                      !(item.type === "feedback-post" && item.support === 2) ||
-                      item.reposts.some(
-                        (repost) => repost.support !== item.support,
-                      )
+                        ? `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity#${voteOrFeedbackPost.id}`
+                        : `#${voteOrFeedbackPost.id}`
                     }
                   />
                 </li>
@@ -861,13 +898,7 @@ const ItemTitle = ({ item, context }) => {
                 })
               }
             >
-              <a
-                href="https://propdates.wtf/about"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Propdate
-              </a>
+              Propdate posted
               {context !== "proposal" && (
                 <>
                   {" "}
@@ -887,14 +918,7 @@ const ItemTitle = ({ item, context }) => {
               }
             >
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              marked as completed via{" "}
-              <a
-                href="https://propdates.wtf/about"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Propdate
-              </a>
+              marked as completed via Propdate
             </span>
           );
 
@@ -1196,7 +1220,7 @@ const Signal = ({ positive, negative, ...props }) => (
   />
 );
 
-const QuotedVoteOrFeedbackPost = ({ href, item, showSignal = false }) => (
+const QuotedVoteOrFeedbackPost = ({ href, item }) => (
   <div
     css={(t) =>
       css({
@@ -1220,30 +1244,39 @@ const QuotedVoteOrFeedbackPost = ({ href, item, showSignal = false }) => (
       accountAddress={item.voterId}
       style={{ position: "relative" }}
     />
-    {showSignal && (
-      <span
-        css={(t) =>
-          css({
-            fontWeight: t.text.weights.emphasis,
-            "[data-for]": { color: t.colors.textPositive },
-            "[data-against]": { color: t.colors.textNegative },
-            "[data-abstain]": { color: t.colors.textDimmed },
-          })
-        }
-      >
-        {" "}
-        {(() => {
+    <span
+      css={(t) =>
+        css({
+          fontWeight: t.text.weights.emphasis,
+          "[data-for]": { color: t.colors.textPositive },
+          "[data-against]": { color: t.colors.textNegative },
+          "[data-abstain]": { color: t.colors.textDimmed },
+        })
+      }
+    >
+      {" "}
+      {(() => {
+        if (item.type === "feedback-post") {
           switch (item.support) {
             case 0:
-              return <Signal negative>(against)</Signal>;
+              return <Signal negative>(against signal)</Signal>;
             case 1:
-              return <Signal positive>(for)</Signal>;
+              return <Signal positive>(for signal)</Signal>;
             case 2:
-              return <Signal>(abstained)</Signal>;
+              return <Signal>(comment)</Signal>;
           }
-        })()}
-      </span>
-    )}
+        }
+
+        switch (item.support) {
+          case 0:
+            return <Signal negative>(against)</Signal>;
+          case 1:
+            return <Signal positive>(for)</Signal>;
+          case 2:
+            return <Signal>(abstained)</Signal>;
+        }
+      })()}
+    </span>
     :{" "}
     <MarkdownRichText
       text={item.reason}

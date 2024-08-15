@@ -1,112 +1,203 @@
 import React from "react";
-import { decodeAbiParameters, encodeFunctionData, parseAbiItem } from "viem";
-import { unparse } from "../utils/transactions";
+import { resolveAction, unparse } from "../utils/transactions";
+import { parseProposalAction } from "../app/api/tenderly-utils";
 
-const SIMULATE_TRANSACTION_TYPES = [
-  "function-call",
-  "proxied-function-call",
-  "payable-function-call",
-  "proxied-payable-function-call",
-  "treasury-noun-transfer",
-  "escrow-noun-transfer",
-  "transfer",
-  "usdc-transfer-via-payer",
-];
-
-const parse = ({ target, value, signature, calldata }) => {
-  if (signature === "") {
-    return {
-      to: target,
-      input: calldata,
-      value,
-    };
-  }
-
-  const { name, inputs } = parseAbiItem(`function ${signature}`);
-  const args = decodeAbiParameters(inputs, calldata);
-
-  const encodedData = encodeFunctionData({
-    abi: [
-      {
-        inputs: inputs,
-        name: name,
-        type: "function",
-      },
-    ],
-    functionName: name,
-    args: args,
-  });
-
-  return {
-    to: target,
-    value: value || "0",
-    input: encodedData,
-  };
-};
-
-export const fetchSimulation = async ({
-  target,
-  value,
-  signature,
-  calldata,
+const fetchSimulationBundle = async ({
+  targets,
+  values,
+  signatures,
+  calldatas,
 }) => {
-  const parsedTx = parse({ target, value, signature, calldata });
-  const body = JSON.stringify(parsedTx);
-  const res = await fetch("/api/simulate", {
+  const unparsedTxs = targets.map((e, i) => ({
+    target: e,
+    value: values[i],
+    signature: signatures[i],
+    calldata: calldatas[i],
+  }));
+  const parsedTxs = unparsedTxs.map((tx) => parseProposalAction(tx));
+
+  const res = await fetch("/api/simulate/bundle", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body,
+    body: JSON.stringify(parsedTxs),
   });
 
   if (!res.ok) {
     throw new Error("Failed to simulate transaction");
   }
 
-  const simulation = await res.json();
-  return simulation;
+  return res.json();
 };
 
-export const useTransactionSimulation = (transaction) => {
-  const [isFetching, setIsFetching] = React.useState(false);
-  const [simulation, setSimulation] = React.useState(null);
+export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
+  const [error, setError] = React.useState(null);
+  const [data, setData] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(null);
 
   const fetchData = React.useCallback(async () => {
     try {
       setIsFetching(true);
-      if (!SIMULATE_TRANSACTION_TYPES.includes(transaction.type)) {
-        setSimulation(null);
+      setError(null);
+
+      const transactions = actions.map((action) => resolveAction(action));
+
+      const flatTxs = transactions.flat();
+      const txs = unparse(flatTxs);
+      const sims = await fetchSimulationBundle(txs);
+
+      // if sims is not an array, then something went wrong
+      if (!Array.isArray(sims)) {
+        const reason =
+          "One or more transactions failed to simulate due to insufficient balance.";
+
+        const errorSim = {
+          success: false,
+          error: transactions.length > 1 ? reason : sims.error_message,
+        };
+
+        setError(reason);
+
+        // set all sims to the error sim
+        setData(actions.map((_, i) => transactions[i].map(() => errorSim)));
         return;
       }
 
-      const { targets, values, signatures, calldatas } = unparse([transaction]);
+      if (sims.some((s) => !s.status)) {
+        // todo: handle other possible errors
+        setError("One or more transactions failed to simulate.");
+      }
 
-      const tx = {
-        target: targets[0],
-        value: values[0],
-        signature: signatures[0],
-        calldata: calldatas[0],
-      };
+      const returnSims = sims?.map((s) => {
+        return {
+          success: s?.status,
+          error: s?.error_message,
+          id: s?.id,
+        };
+      });
 
-      const sim = await fetchSimulation(tx);
-      setSimulation(sim);
+      let lastSlicePos = 0;
+      const finalSims = actions.map((_, i) => {
+        const sliceStart = lastSlicePos;
+        lastSlicePos += transactions[i].length;
+        return returnSims.slice(sliceStart, lastSlicePos);
+      });
+
+      setData(finalSims);
     } catch (e) {
       console.error(e);
-      setSimulation(null);
+      setData(null);
     } finally {
       setIsFetching(false);
     }
-  }, [transaction]);
+  }, [actions]);
 
   React.useEffect(() => {
+    if (!enabled) return;
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, enabled]);
 
-  return {
-    fetching: isFetching,
-    success: simulation?.status,
-    error: simulation?.error_message,
-    id: simulation?.id,
-  };
+  if (!enabled) return { data: null, error: null, isFetching: false };
+  return { data, error, isFetching };
+};
+
+export const useProposalSimulation = (
+  proposalId,
+  { version, enabled } = {},
+) => {
+  const [error, setError] = React.useState(null);
+  const [data, setData] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(null);
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setIsFetching(true);
+      setError(null);
+
+      const res = await fetch(
+        `/api/simulate/proposal/${proposalId}?version=${version}`,
+      );
+      const data = await res.json();
+      const simulations = data?.simulations;
+
+      setData(
+        simulations?.map((s) => {
+          return {
+            success: s?.status,
+            error: s?.error_message,
+            id: s?.id,
+          };
+        }),
+      );
+
+      if (simulations.some((s) => !s.status)) {
+        // todo: handle other possible errors
+        setError("One or more transactions failed to simulate.");
+      }
+    } catch (e) {
+      console.error(e);
+      setData(null);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [proposalId, version]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    fetchData();
+  }, [fetchData, enabled]);
+
+  if (!enabled) return { data: null, error: null, isFetching: false };
+  return { data, error, isFetching };
+};
+
+export const useProposalCandidateSimulation = (
+  candidateId,
+  { version, enabled } = {},
+) => {
+  const [error, setError] = React.useState(null);
+  const [data, setData] = React.useState(null);
+  const [isFetching, setIsFetching] = React.useState(null);
+
+  const fetchData = React.useCallback(async () => {
+    try {
+      setIsFetching(true);
+      setError(null);
+
+      const res = await fetch(
+        `/api/simulate/candidate/${encodeURIComponent(candidateId)}?version=${version}`,
+      );
+      const data = await res.json();
+      const simulations = data?.simulations;
+
+      setData(
+        simulations?.map((s) => {
+          return {
+            success: s?.status,
+            error: s?.error_message,
+            id: s?.id,
+          };
+        }),
+      );
+
+      if (simulations.some((s) => !s.status)) {
+        // todo: handle other possible errors
+        setError("One or more transactions failed to simulate.");
+      }
+    } catch (e) {
+      console.error(e);
+      setData(null);
+    } finally {
+      setIsFetching(false);
+    }
+  }, [candidateId, version]);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    fetchData();
+  }, [fetchData, enabled]);
+
+  if (!enabled) return { data: null, error: null, isFetching: false };
+  return { data, error, isFetching };
 };

@@ -13,6 +13,8 @@ import { useCurrentVotes } from "./token-contract.js";
 
 const { address: contractAddress } = resolveIdentifier("dao");
 
+const NOUNDRY_CLIENT_ID = 1;
+
 const useRead = ({ enabled = true, ...options }) =>
   useReadContract({
     chainId: CHAIN_ID,
@@ -28,6 +30,13 @@ const useSimulate = ({ enabled = true, ...options }) =>
     ...options,
     query: { enabled },
   });
+
+const getClientId = (description) => {
+  if (/submitted via[\s*\\]+\[Noundry gallery/i.test(description))
+    return NOUNDRY_CLIENT_ID;
+
+  return CAMP_CLIENT_ID;
+};
 
 export const useProposalThreshold = () => {
   const { data } = useRead({
@@ -336,6 +345,7 @@ export const useCreateProposal = () => {
   return async ({ description, transactions }) => {
     const { targets, values, signatures, calldatas } =
       unparseTransactions(transactions);
+    const clientId = getClientId(description);
 
     const hash = await writeContract({
       chainId: CHAIN_ID,
@@ -356,14 +366,7 @@ export const useCreateProposal = () => {
         },
       ],
       functionName: "propose",
-      args: [
-        targets,
-        values,
-        signatures,
-        calldatas,
-        description,
-        CAMP_CLIENT_ID,
-      ],
+      args: [targets, values, signatures, calldatas, description, clientId],
     });
     registerEvent("Proposal successfully created", {
       account: accountAddress,
@@ -405,6 +408,7 @@ export const useCreateProposalWithSignatures = () => {
   return async ({ description, transactions, proposerSignatures }) => {
     const { targets, values, signatures, calldatas } =
       unparseTransactions(transactions);
+    const clientId = getClientId(description);
 
     return writeContract({
       chainId: CHAIN_ID,
@@ -441,7 +445,7 @@ export const useCreateProposalWithSignatures = () => {
         signatures,
         calldatas,
         description,
-        CAMP_CLIENT_ID,
+        clientId,
       ],
     })
       .then((hash) => {

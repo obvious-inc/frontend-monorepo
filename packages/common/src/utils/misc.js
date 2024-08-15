@@ -105,6 +105,9 @@ export const searchRecords = (records, rawQuery) => {
     })
     .filter((i) => i.index !== -1);
 
+  // TODO: This will not take the order of matched queries into account
+  //
+  // Preferrably, given query[0] and query[1] get the same score, query[0] // should win.
   return sortBy(
     { value: (r) => r.index, type: "index" },
     { value: (r) => r.fallbackSortProperty, order: "desc" },
