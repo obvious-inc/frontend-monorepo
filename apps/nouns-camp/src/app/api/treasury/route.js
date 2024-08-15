@@ -33,6 +33,9 @@ const balanceOf = ({ contract, account }) => {
 export async function GET() {
   const executorAddress = resolveContractIdentifier("executor")?.address;
   const daoProxyAddress = resolveContractIdentifier("dao")?.address;
+  const clientIncentivesRewardsProxyAddress = resolveContractIdentifier(
+    "client-incentives-rewards-proxy",
+  )?.address;
   const forkEscrowAddress = resolveContractIdentifier("fork-escrow")?.address;
   const tokenBuyerAddress = resolveContractIdentifier("token-buyer")?.address;
   const payerAddress = resolveContractIdentifier("payer")?.address;
@@ -41,6 +44,7 @@ export async function GET() {
     executorBalances,
     daoProxyEthBalance,
     tokenBuyerEthBalance,
+    clientIncentivesRewardsProxyWethBalance,
     payerUsdcBalance,
     forkEscrowNounsBalance,
     convertionRates,
@@ -65,6 +69,10 @@ export async function GET() {
     })(),
     publicClient.getBalance({ address: daoProxyAddress }),
     publicClient.getBalance({ address: tokenBuyerAddress }),
+    balanceOf({
+      contract: "weth-token",
+      account: clientIncentivesRewardsProxyAddress,
+    }),
     balanceOf({ contract: "usdc-token", account: payerAddress }),
     balanceOf({ contract: "token", account: forkEscrowAddress }),
     (async () => {
@@ -114,6 +122,9 @@ export async function GET() {
       balances: {
         executor: objectUtils.mapValues((v) => v.toString(), executorBalances),
         "dao-proxy": { eth: daoProxyEthBalance.toString() },
+        "client-incentives-rewards-proxy": {
+          weth: clientIncentivesRewardsProxyWethBalance.toString(),
+        },
         "token-buyer": { eth: tokenBuyerEthBalance.toString() },
         payer: { usdc: payerUsdcBalance.toString() },
         "fork-escrow": { nouns: forkEscrowNounsBalance.toString() },
