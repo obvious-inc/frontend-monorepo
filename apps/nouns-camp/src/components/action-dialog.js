@@ -270,7 +270,7 @@ const useNounIdsByOwner = ({ owner } = {}) => {
     setNouns(nounIds);
   }, [owner]);
 
-  if (!owner) return [];
+  if (!owner) return null;
 
   return nouns;
 };
@@ -912,8 +912,10 @@ const formConfigByActionType = {
       });
       const hasRequiredInputs =
         state.nounId !== "" && isAddress(state.receiverAddress);
-      const isAvailableNoun =
-        state.nounId !== "" && state.treasuryNouns.includes(state.nounId);
+      const isUnavailableNoun =
+        state.nounId !== "" &&
+        state.treasuryNouns != null &&
+        !state.treasuryNouns.includes(state.nounId);
       return (
         <>
           <div>
@@ -946,7 +948,7 @@ const formConfigByActionType = {
               <NounAvatar id={state.nounId} size="3.5rem" />
             </div>
             <div
-              data-warn={hasRequiredInputs && !isAvailableNoun}
+              data-warn={hasRequiredInputs && isUnavailableNoun}
               css={(t) =>
                 css({
                   fontSize: t.text.sizes.small,
@@ -961,7 +963,7 @@ const formConfigByActionType = {
                 })
               }
             >
-              {hasRequiredInputs && !isAvailableNoun && (
+              {hasRequiredInputs && isUnavailableNoun && (
                 <>Noun {state.nounId} is not available. </>
               )}
               See list of Nouns available in the{" "}
