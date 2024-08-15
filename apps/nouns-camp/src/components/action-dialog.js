@@ -896,7 +896,7 @@ const formConfigByActionType = {
       };
     },
     hasRequiredInputs: ({ state }) =>
-      state.nounId != null &&
+      state.nounId !== "" &&
       state.receiverAddress != null &&
       isAddress(state.receiverAddress) &&
       state.treasuryNouns != null &&
@@ -910,6 +910,10 @@ const formConfigByActionType = {
       useCustomCacheEnsAddress(state.receiverQuery.trim(), {
         enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
       });
+      const hasRequiredInputs =
+        state.nounId !== "" && isAddress(state.receiverAddress);
+      const isAvailableNoun =
+        state.nounId !== "" && state.treasuryNouns.includes(state.nounId);
       return (
         <>
           <div>
@@ -942,25 +946,24 @@ const formConfigByActionType = {
               <NounAvatar id={state.nounId} size="3.5rem" />
             </div>
             <div
+              data-warn={hasRequiredInputs && !isAvailableNoun}
               css={(t) =>
                 css({
                   fontSize: t.text.sizes.small,
-                  color:
-                    state.nounId &&
-                    state.receiverAddress &&
-                    state.treasuryNouns &&
-                    !state.treasuryNouns.includes(state.nounId)
-                      ? t.colors.textHighlight
-                      : t.colors.textDimmed,
+                  color: t.colors.textDimmed,
                   marginTop: "0.7rem",
                   a: {
                     color: "inherit",
                     textDecoration: "underline",
                   },
                   "p + p": { marginTop: "0.7em" },
+                  '&[data-warn="true"]': { color: t.colors.textHighlight },
                 })
               }
             >
+              {hasRequiredInputs && !isAvailableNoun && (
+                <>Noun {state.nounId} is not available. </>
+              )}
               See list of Nouns available in the{" "}
               <a
                 href={`/voters/${state.treasuryAddress}`}
