@@ -306,16 +306,10 @@ export const blockquote = (string) =>
 export const getFirstImage = (text) => {
   const blocks = toMessageBlocks(text);
 
-  const findFirstImage = (blocks) => {
-    for (const block of blocks) {
-      if (block.type === "image") return block;
-      if (block.type === "image-grid") return block.children[0];
-      if (block.children) {
-        const firstImage = findFirstImage(block.children);
-        if (firstImage) return firstImage;
-      }
-    }
-  };
+  const flattenBlocks = (blocks) =>
+    blocks.flatMap((block) =>
+      block.children ? [block, ...flattenBlocks(block.children)] : [block]
+    );
 
-  return findFirstImage(blocks);
+  return flattenBlocks(blocks).find((block) => block.type === "image");
 };
