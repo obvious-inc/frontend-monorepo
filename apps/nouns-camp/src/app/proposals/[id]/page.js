@@ -70,6 +70,8 @@ export async function generateMetadata({ params }) {
 
   const canonicalUrl = `${metaConfig.canonicalAppBasename}/proposals/${params.id}`;
 
+  const firstImage = markdownUtils.getFirstImage(body ?? "");
+
   return {
     title,
     description,
@@ -83,6 +85,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
+      images: firstImage?.url,
     },
   };
 }

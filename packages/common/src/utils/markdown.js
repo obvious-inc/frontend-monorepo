@@ -302,3 +302,20 @@ export const blockquote = (string) =>
     .split("\n")
     .map((l) => `> ${l}`)
     .join("\n");
+
+export const getFirstImage = (text) => {
+  const blocks = toMessageBlocks(text);
+
+  const findFirstImage = (blocks) => {
+    for (const block of blocks) {
+      if (block.type === "image") return block;
+      if (block.type === "image-grid") return block.children[0];
+      if (block.children) {
+        const firstImage = findFirstImage(block.children);
+        if (firstImage) return firstImage;
+      }
+    }
+  };
+
+  return findFirstImage(blocks);
+};
