@@ -85,7 +85,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
-      images: firstImage?.url,
+      images: firstImage?.url ?? "/opengraph-image.png",
     },
   };
 }
