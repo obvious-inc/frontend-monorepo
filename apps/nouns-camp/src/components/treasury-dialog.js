@@ -6,6 +6,7 @@ import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import {
   parse as parseTransactions,
   extractAmounts as getRequestedAssets,
@@ -18,6 +19,7 @@ import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import NativeSelect from "./native-select.js";
 import FormattedNumber from "./formatted-number.js";
+import ExplorerAddressLink from "./chain-explorer-address-link.js";
 
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
@@ -145,6 +147,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
     balances.executor.eth,
     balances.executor.weth,
     balances["dao-proxy"].eth,
+    // balances["client-incentives-rewards-proxy"].eth,
     // balances["token-buyer"].eth,
   ]
     .filter(Boolean)
@@ -243,7 +246,15 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                         tokenSymbol="ETH"
                         tooltip={
                           <Dl>
-                            <dt>Treasury ETH</dt>
+                            <dt>
+                              <ExplorerAddressLink
+                                address={
+                                  resolveContractIdentifier("executor").address
+                                }
+                              >
+                                Treasury (executor/timelock) ETH
+                              </ExplorerAddressLink>
+                            </dt>
                             <dd>
                               <FormattedEth
                                 value={balances.executor.eth}
@@ -253,7 +264,16 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                             </dd>
                             {/*{balances["token-buyer"].eth > 0 && (
                               <>
-                                <dt>Token Buyer ETH</dt>
+                                <dt>
+                                  <ExplorerAddressLink
+                                    address={
+                                      resolveContractIdentifier("token-buyer")
+                                        .address
+                                    }
+                                  >
+                                    Token Buyer ETH
+                                  </ExplorerAddressLink>
+                                </dt>
                                 <dd>
                                   <FormattedEth
                                     value={balances["token-buyer"].eth}
@@ -265,7 +285,15 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                             )}*/}
                             {balances["dao-proxy"].eth > 0 && (
                               <>
-                                <dt>DAO Proxy ETH</dt>
+                                <dt>
+                                  <ExplorerAddressLink
+                                    address={
+                                      resolveContractIdentifier("dao").address
+                                    }
+                                  >
+                                    DAO Proxy (vote refunds) ETH
+                                  </ExplorerAddressLink>
+                                </dt>
                                 <dd>
                                   <FormattedEth
                                     value={balances["dao-proxy"].eth}
@@ -275,9 +303,36 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                                 </dd>
                               </>
                             )}
+                            {/*{balances["client-incentives-rewards-proxy"]?.weth >
+                              0 && (
+                              <>
+                                <dt>
+                                  <ExplorerAddressLink
+                                    address={
+                                      resolveContractIdentifier(
+                                        "client-incentives-rewards-proxy",
+                                      ).address
+                                    }
+                                  >
+                                    Client incentives rewards wETH
+                                  </ExplorerAddressLink>
+                                </dt>
+                                <dd>
+                                  <FormattedEth
+                                    value={
+                                      balances[
+                                        "client-incentives-rewards-proxy"
+                                      ].weth
+                                    }
+                                    tokenSymbol={false}
+                                    tooltip={false}
+                                  />
+                                </dd>
+                              </>
+                            )}*/}
                             {balances.executor.weth > 0 && (
                               <>
-                                <dt>wETH</dt>
+                                <dt>Treasury wETH</dt>
                                 <dd>
                                   <FormattedEth
                                     value={balances.executor.weth}

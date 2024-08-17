@@ -162,9 +162,9 @@ export const useSetDelegate = (address) => {
 };
 
 export const useTotalSupply = () => {
-  const { data } = useReadContract({
-    chainId: CHAIN_ID,
+  const { data, isSuccess } = useReadContract({
     address: contractAddress,
+    chainId: CHAIN_ID,
     abi: [
       {
         inputs: [],
@@ -174,8 +174,9 @@ export const useTotalSupply = () => {
       },
     ],
     functionName: "totalSupply",
-    query: { enabled: true },
   });
 
-  return data == null ? null : Number(data);
+  if (!isSuccess) return undefined;
+
+  return Number(data);
 };
