@@ -1,4 +1,4 @@
-import { CHAIN_ID } from "../constants/env";
+import { CHAIN_ID } from "../constants/env.js";
 
 const getEtherscanLinkHost = () => {
   switch (CHAIN_ID) {

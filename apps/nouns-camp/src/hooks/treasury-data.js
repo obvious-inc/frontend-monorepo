@@ -11,6 +11,7 @@ export const getTotalEth = (data) => {
     balances.executor.steth,
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
+    // balances["client-incentives-rewards-proxy"].weth,
     // balances["token-buyer"].eth,
   ]
     .filter(Boolean)
@@ -54,6 +55,7 @@ const useTreasuryData = () => {
     balances.executor.steth,
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
+    // balances["client-incentives-rewards-proxy"].weth,
     // balances["token-buyer"].eth,
   ]
     .filter(Boolean)
