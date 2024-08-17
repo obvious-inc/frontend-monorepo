@@ -64,6 +64,8 @@ export async function generateMetadata({ params }) {
 
   const canonicalUrl = `${metaConfig.canonicalAppBasename}/candidates/${candidateId}`;
 
+  const firstImage = markdownUtils.getFirstImage(body ?? "");
+
   return {
     title,
     description,
@@ -77,6 +79,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
+      images: firstImage?.url ?? "/opengraph-image.png",
     },
   };
 }

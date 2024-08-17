@@ -302,3 +302,14 @@ export const blockquote = (string) =>
     .split("\n")
     .map((l) => `> ${l}`)
     .join("\n");
+
+export const getFirstImage = (text) => {
+  const blocks = toMessageBlocks(text);
+
+  const flattenBlocks = (blocks) =>
+    blocks.flatMap((block) =>
+      block.children ? [block, ...flattenBlocks(block.children)] : [block]
+    );
+
+  return flattenBlocks(blocks).find((block) => block.type === "image");
+};
