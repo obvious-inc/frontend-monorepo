@@ -111,7 +111,16 @@ const useCustomCacheEnsAddress = (name, { enabled }) => {
 
   React.useEffect(() => {
     if (!enabled || name == null || address != null) return;
-    publicClient.getEnsAddress({ name: normalizeEnsName(name) }).then(
+    let normalizedName;
+    try {
+      normalizedName = normalizeEnsName(name);
+    } catch (e) {
+      // disallowed chars will raise an exception, i.e. /, \, etc
+      console.error(e.message);
+      return;
+    }
+
+    publicClient.getEnsAddress({ name: normalizedName }).then(
       (address) => {
         if (address == null) return;
         register({ name, address });
