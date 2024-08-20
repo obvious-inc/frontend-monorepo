@@ -201,7 +201,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
       account: accountAddress,
     });
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    const eventLog = receipt.logs[0];
+    const eventLog = receipt.logs.find((l) => l.address === contractAddress);
     const decodedEvent = decodeEventLog({
       abi: [
         {

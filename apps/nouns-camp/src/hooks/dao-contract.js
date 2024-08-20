@@ -374,7 +374,7 @@ export const useCreateProposal = () => {
     });
 
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    const eventLog = receipt.logs[1];
+    const eventLog = receipt.logs.find((l) => l.address === contractAddress);
     const decodedEvent = decodeEventLog({
       abi: [
         {
@@ -457,7 +457,9 @@ export const useCreateProposalWithSignatures = () => {
         return publicClient.waitForTransactionReceipt({ hash });
       })
       .then((receipt) => {
-        const eventLog = receipt.logs[1];
+        const eventLog = receipt.logs.find(
+          (l) => l.address === contractAddress,
+        );
         const decodedEvent = decodeEventLog({
           abi: [
             {
