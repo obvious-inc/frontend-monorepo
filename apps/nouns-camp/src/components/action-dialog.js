@@ -25,6 +25,7 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
+import { createSignature } from "../utils/transactions.js";
 import usePublicClient from "../hooks/public-client.js";
 import { fetchContractInfo } from "../hooks/etherscan-contract-info.js";
 import useEthToUsdRate, {
@@ -32,7 +33,6 @@ import useEthToUsdRate, {
 } from "../hooks/eth-to-usd-rate.js";
 import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
-import { formatAbiParameter } from "abitype";
 import { useTotalSupply } from "../hooks/token-contract.js";
 import NounAvatar from "./noun-avatar.js";
 import { subgraphFetch } from "../nouns-subgraph.js";
@@ -257,12 +257,6 @@ const isFunctionAbiItem = (item) => {
     return ["payable", "nonpayable"].includes(item.stateMutability);
   if (item.constant != null) return !item.constant;
   return !item.pure || !item.view;
-};
-
-const createSignature = (functionAbiItem) => {
-  const formattedInputs =
-    functionAbiItem.inputs?.map((p) => formatAbiParameter(p)) ?? [];
-  return `${functionAbiItem.name}(${formattedInputs.join(",")})`;
 };
 
 const useNounIdsByOwner = ({ owner } = {}) => {
@@ -517,7 +511,10 @@ const CustomTransactionActionForm = ({ state, setState }) => {
   const contractCallAbiItemOptions = abi
     ?.filter(isFunctionAbiItem)
     .map((item) => {
-      const signature = createSignature(item);
+      const signature = createSignature({
+        functionName: item.name,
+        inputTypes: item.inputs,
+      });
 
       const label = (
         <span>
@@ -1021,7 +1018,10 @@ const formConfigByActionType = {
           return customAbi.some(
             (abiItem) =>
               isFunctionAbiItem(abiItem) &&
-              createSignature(abiItem) === signature,
+              createSignature({
+                functionName: abiItem.name,
+                inputTypes: abiItem.inputs,
+              }) === signature,
           );
         })(),
       };
@@ -1044,7 +1044,9 @@ const formConfigByActionType = {
     },
     hasRequiredInputs: ({ state }) => {
       const selectedSignatureAbiItem = state.abi?.find(
-        (i) => createSignature(i) === state.signature,
+        (i) =>
+          createSignature({ functionName: i.name, inputTypes: i.inputs }) ===
+          state.signature,
       );
 
       if (selectedSignatureAbiItem == null) return false;
@@ -1063,7 +1065,9 @@ const formConfigByActionType = {
     },
     buildAction: ({ state }) => {
       const selectedSignatureAbiItem = state.abi?.find(
-        (i) => createSignature(i) === state.signature,
+        (i) =>
+          createSignature({ functionName: i.name, inputTypes: i.inputs }) ===
+          state.signature,
       );
 
       const { inputs: inputTypes } = selectedSignatureAbiItem;

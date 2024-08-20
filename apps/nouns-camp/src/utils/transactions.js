@@ -25,7 +25,7 @@ const normalizeSignature = (s) => {
   return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
 };
 
-const createSignature = ({ functionName, inputTypes }) => {
+export const createSignature = ({ functionName, inputTypes }) => {
   const stringifyTuple = ({ components }) =>
     `(${components.map(stringifyType).join(",")})`;
   const stringifyType = ({ type, components }) => {
