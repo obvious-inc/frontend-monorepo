@@ -31,10 +31,11 @@ const useTreasuryData = () => {
       const { balances, rates, aprs } = await res.json();
       return {
         balances: objectUtils.mapValues(
-          (contract) => objectUtils.mapValues((n) => BigInt(n), contract),
+          (contract) =>
+            objectUtils.mapValues((n) => (n != null ? BigInt(n) : n), contract),
           balances,
         ),
-        rates: objectUtils.mapValues((v) => BigInt(v), rates),
+        rates: objectUtils.mapValues((n) => (n != null ? BigInt(n) : n), rates),
         aprs,
       };
     },
@@ -51,7 +52,7 @@ const useTreasuryData = () => {
   const ethTotal = [
     balances.executor.eth,
     balances.executor.weth,
-    rethToEth(balances.executor.reth),
+    balances.executor.reth == null ? null : rethToEth(balances.executor.reth),
     balances.executor.steth,
     balances.executor.wsteth,
     balances["dao-proxy"].eth,

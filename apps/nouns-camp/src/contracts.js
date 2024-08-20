@@ -28,6 +28,10 @@ const addressByIdentifierByChainId = {
     "prop-house": "0x000000002c93cad6f9cfd00c603aef62458d8a48",
     "prop-house-timed-round-implementation":
       "0x43c015df7f3868b287ad94d88b1e05f596bba453",
+    "chainlink-reth-eth-price-feed":
+      "0x536218f9e9eb48863970252233c8f271f554c2d0",
+    "chainlink-usdc-eth-price-feed":
+      "0x986b5e1e1755e3c2440e960477f25201b0a8bbd4",
 
     // Nouns contracts
     dao: DAO_LOGIC_PROXY_CONTRACT,
@@ -50,6 +54,8 @@ const addressByIdentifierByChainId = {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
     "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
+    "steth-token": "0x3e3fe7dbc6b4c189e7128855dd526361c49b40af",
+    "wsteth-token": "0xb82381a3fbd3fafa77b3a7be693342618240067b",
 
     // Nouns contracts
     dao: "0x35d2670d7c8931aacdd37c89ddcb0638c3c44a57",
@@ -58,12 +64,10 @@ const addressByIdentifierByChainId = {
     token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
     "auction-house": "0x488609b7113fcf3b761a05956300d605e8f6bcaf",
     "auction-house-admin": "0x9a19e520d9cd6c40ecc79623f16390a68962b7e9",
-    descriptor: "0x0000000000000000000000000000000000000000",
     "fork-escrow": "0xa15b495deb1b77f066b0c286fdb640c81ef356c4",
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
     "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
     "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
-    "client-incentives-rewards-proxy": null,
     "prop-house-nouns-house": "0x0000000000000000000000000000000000000000",
   },
 };
@@ -138,16 +142,16 @@ const metaByIdentifier = {
   },
 };
 
-export const resolveIdentifier = (identifier) => {
-  const address = addressByIdentifierByChainId[CHAIN_ID]?.[identifier];
+export const resolveIdentifier = (identifier, { chainId = CHAIN_ID } = {}) => {
+  const address = addressByIdentifierByChainId[chainId]?.[identifier];
   if (address == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, ...meta };
 };
 
-export const resolveAddress = (address) => {
+export const resolveAddress = (address, { chainId = CHAIN_ID } = {}) => {
   const identifier =
-    identifierByAddressByChainId[CHAIN_ID]?.[address.toLowerCase()];
+    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };
