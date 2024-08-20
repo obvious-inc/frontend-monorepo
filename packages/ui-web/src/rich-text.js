@@ -467,12 +467,14 @@ const createRenderer = ({
             key={i}
             element={el}
             maxWidth={
-              imagesMaxWidth === null ? null : imagesMaxWidth ?? defaultMaxWidth
+              imagesMaxWidth === null
+                ? null
+                : (imagesMaxWidth ?? defaultMaxWidth)
             }
             maxHeight={
               imagesMaxHeight === null
                 ? null
-                : imagesMaxHeight ?? defaultMaxHeight
+                : (imagesMaxHeight ?? defaultMaxHeight)
             }
             inline={
               parent == null ||

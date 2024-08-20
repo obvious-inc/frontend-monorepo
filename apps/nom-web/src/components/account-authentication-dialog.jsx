@@ -25,7 +25,9 @@ const AccountAuthenticationDialog = ({
       style={{ "--padding": isAuthenticated ? "2rem" : "2rem 2rem 4rem" }}
     >
       <DialogHeader
-        title={isAuthenticated ? "Account verified" : title ?? "Verify account"}
+        title={
+          isAuthenticated ? "Account verified" : (title ?? "Verify account")
+        }
         subtitle={subtitle}
         titleProps={titleProps}
         dismiss={dismiss}

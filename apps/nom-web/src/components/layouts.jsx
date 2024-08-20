@@ -548,7 +548,7 @@ const ProfileDropdownTrigger = React.forwardRef(
         ? null
         : user.hasCustomDisplayName
           ? user.displayName
-          : userEnsName ?? truncatedAddress;
+          : (userEnsName ?? truncatedAddress);
 
     const showAccountDescription = userDisplayName !== truncatedAddress;
     const accountDescription =

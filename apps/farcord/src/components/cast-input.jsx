@@ -26,7 +26,7 @@ const CastInput = ({
 
   const replyTarget = threadCast?.author.username
     ? `@${threadCast?.author.username}`
-    : threadCast?.author.displayName ?? threadCast?.author.fid;
+    : (threadCast?.author.displayName ?? threadCast?.author.fid);
 
   const replyPlaceholderText = !threadCast
     ? "Reply..."

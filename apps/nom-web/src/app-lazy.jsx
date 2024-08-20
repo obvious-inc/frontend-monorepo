@@ -134,10 +134,10 @@ const useSystemNotifications = () => {
                   icon:
                     message.author == null
                       ? undefined
-                      : message.author.profilePicture?.small ??
+                      : (message.author.profilePicture?.small ??
                         module.generatePlaceholderAvatarDataUri(
                           message.author.walletAddress,
-                        ),
+                        )),
                   onClick: ({ close }) => {
                     navigate(`/channels/${channel.id}`);
                     window.focus();
