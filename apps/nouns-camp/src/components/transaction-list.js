@@ -21,15 +21,13 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import Link from "@shades/ui-web/link";
 import Spinner from "@shades/ui-web/spinner";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const decimalsByCurrency = {
   eth: 18,
   weth: 18,
   usdc: 6,
 };
-
-const createEtherscanAddressUrl = (address) =>
-  `https://etherscan.io/address/${address}`;
 
 export const useEnhancedParsedTransaction = (transaction) => {
   const { type, target, calldata, value } = transaction;
@@ -698,7 +696,7 @@ export const TransactionExplanation = ({ transaction: t }) => {
             <Tooltip.Root>
               <Tooltip.Trigger asChild>
                 <a
-                  href={createEtherscanAddressUrl(t.receiverAddress)}
+                  href={buildEtherscanLink(`/address/${t.receiverAddress}`)}
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -854,7 +852,7 @@ export const AddressDisplayNameWithTooltip = ({
     <Tooltip.Root>
       <Tooltip.Trigger asChild {...props}>
         <a
-          href={createEtherscanAddressUrl(address)}
+          href={buildEtherscanLink(`/address/${address}`)}
           target="_blank"
           rel="noreferrer"
         >

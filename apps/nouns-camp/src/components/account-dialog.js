@@ -15,6 +15,7 @@ import AccountAvatar from "./account-avatar.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounAvatar from "./noun-avatar.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const AccountDialog = ({ isOpen, close }) => (
   <Dialog
@@ -101,7 +102,7 @@ const Content = ({ titleProps, dismiss }) => {
             css={css({ margin: "-0.2rem" })}
           />
           <a
-            href={`https://etherscan.io/address/${accountAddress}`}
+            href={buildEtherscanLink(`/address/${accountAddress}`)}
             target="_blank"
             rel="noreferrer"
             css={css({

@@ -81,11 +81,21 @@ const useEditorMode = ({ body }, { setBody }) => {
   return [mode, setMode];
 };
 
-const useActionTransactions = (actions) => {
-  return React.useMemo(
-    () => actions.flatMap((a) => resolveActionTransactions(a)),
-    [actions],
-  );
+// Since actions might come from a local cache we should expect this to
+// potentially throw if we make breaking format changes
+const useActionTransactions = (actions, { catchErrors = false } = {}) => {
+  return React.useMemo(() => {
+    const resolve = () => actions.flatMap((a) => resolveActionTransactions(a));
+
+    if (!catchErrors) return resolve();
+
+    try {
+      return resolve();
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }, [catchErrors, actions]);
 };
 
 const ProposalEditor = ({
@@ -124,7 +134,12 @@ const ProposalEditor = ({
     [actions, payerTopUpValue],
   );
 
-  const actionTransactions = useActionTransactions(actionsIncludingPayerTopUp);
+  const maybeActionTransactions = useActionTransactions(
+    actionsIncludingPayerTopUp,
+    {
+      catchErrors: true,
+    },
+  );
 
   const {
     data: simulationResults,
@@ -143,8 +158,9 @@ const ProposalEditor = ({
   const hasRequiredInput =
     !isTitleEmpty &&
     !isBodyEmpty &&
-    actionTransactions.length > 0 &&
-    actionTransactions.length <= MAX_TRANSACTION_COUNT;
+    maybeActionTransactions != null &&
+    maybeActionTransactions.length > 0 &&
+    maybeActionTransactions.length <= MAX_TRANSACTION_COUNT;
 
   const enableSubmit = hasRequiredInput && !disabled && !submitDisabled;
 
@@ -1397,8 +1413,10 @@ const SidebarContent = ({
   const selectedAction =
     selectedActionIndex == null ? null : actions[selectedActionIndex];
 
-  const transactions = useActionTransactions(actions);
-  const transactionCount = transactions.length;
+  const maybeTransactions = useActionTransactions(actions, {
+    catchErrors: true,
+  });
+  const transactionCount = maybeTransactions?.length ?? 0;
 
   return (
     <>

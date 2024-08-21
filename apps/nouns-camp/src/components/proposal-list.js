@@ -42,6 +42,7 @@ import FormattedNumber from "./formatted-number.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Tag from "./tag.js";
 import VotesTagGroup from "./votes-tag-group.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const ProposalVotesDialog = React.lazy(
   () => import("./proposal-votes-dialog.js"),
@@ -1079,7 +1080,7 @@ const AccountListItem = React.memo(
 
                         case "open-etherscan":
                           window.open(
-                            `https://etherscan.io/address/${accountAddress}`,
+                            buildEtherscanLink(`/address/${accountAddress}`),
                             "_blank",
                           );
                           break;

@@ -20,6 +20,7 @@ import AccountAvatar from "./account-avatar.js";
 import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NextLink from "next/link";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -461,7 +462,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
                   case "open-etherscan":
                     window.open(
-                      `https://etherscan.io/address/${accountAddress}`,
+                      buildEtherscanLink(`/address/${accountAddress}`),
                       "_blank",
                     );
                     break;

@@ -9,6 +9,7 @@ import {
   formatEther,
   encodeAbiParameters,
   decodeAbiParameters,
+  parseAbiItem,
 } from "viem";
 import { normalize as normalizeEnsName } from "viem/ens";
 import { css } from "@emotion/react";
@@ -36,6 +37,7 @@ import AddressInput from "./address-input.js";
 // import { useTotalSupply } from "../hooks/token-contract.js";
 // import NounAvatar from "./noun-avatar.js";
 // import { subgraphFetch } from "../nouns-subgraph.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const decimalsByCurrency = {
   eth: 18,
@@ -183,13 +185,7 @@ const buildInitialInputState = (inputs = []) => {
     if (isArray) return [];
 
     if (input.components != null) {
-      return input.components.reduce(
-        (obj, c) => ({
-          ...obj,
-          [c.name]: buildInputState(c),
-        }),
-        {},
-      );
+      return input.components.map((c) => buildInputState(c));
     }
 
     switch (simplifyType(input.type)) {
@@ -603,7 +599,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
                 <Link
                   color="currentColor"
                   component="a"
-                  href={`https://etherscan.io/address/${state.target}`}
+                  href={buildEtherscanLink(`/address/${state.target}`)}
                   rel="noreferrer"
                   target="_blank"
                 >
@@ -1064,13 +1060,9 @@ const formConfigByActionType = {
       }
     },
     buildAction: ({ state }) => {
-      const selectedSignatureAbiItem = state.abi?.find(
-        (i) =>
-          createSignature({ functionName: i.name, inputTypes: i.inputs }) ===
-          state.signature,
+      const { inputs: inputTypes } = parseAbiItem(
+        `function ${state.signature}`,
       );
-
-      const { inputs: inputTypes } = selectedSignatureAbiItem;
 
       return {
         type: "custom-transaction",
@@ -1301,7 +1293,10 @@ const renderInput = (input, inputValue, setInputValue) => {
 
   if (isArray) {
     const elementType = input.type.slice(0, -2);
-    const defaultValue = input.components != null ? {} : "";
+    const defaultValue =
+      input.components != null
+        ? Array.from({ length: input.components.length })
+        : "";
     return (
       <div key={input.name} data-input>
         {labelContent != null && <Label>{labelContent}</Label>}
@@ -1367,19 +1362,19 @@ const renderInput = (input, inputValue, setInputValue) => {
         {labelContent != null && <Label>{labelContent}</Label>}
         <div data-components css={css({ display: "flex", gap: "0.4rem" })}>
           <div css={css({ flex: "1", minWidth: 0 })}>
-            {input.components.map((c) => {
-              const componentValue = inputValue?.[c.name] ?? "";
+            {input.components.map((c, componentIndex) => {
+              const componentValue = inputValue?.[componentIndex] ?? "";
               const setComponentValue = (getComponentValue) => {
                 setInputValue((currentInputValue) => {
-                  const currentComponentValue = currentInputValue?.[c.name];
+                  const currentComponentValue =
+                    currentInputValue?.[componentIndex];
                   const nextComponentValue =
                     typeof getComponentValue === "function"
                       ? getComponentValue(currentComponentValue)
                       : getComponentValue;
-                  return {
-                    ...currentInputValue,
-                    [c.name]: nextComponentValue,
-                  };
+                  const nextInputValue = [...currentInputValue];
+                  nextInputValue[componentIndex] = nextComponentValue;
+                  return nextInputValue;
                 });
               };
 
