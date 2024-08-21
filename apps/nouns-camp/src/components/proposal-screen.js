@@ -938,7 +938,8 @@ export const ProposalHeader = ({
       0n,
     );
 
-    const treasuryFractionBps = (totalAskInEth * 10_000n) / totals.allInEth;
+    const treasuryFractionBps =
+      totals.allInEth !== 0n ? (totalAskInEth * 10_000n) / totals.allInEth : 0n;
 
     const stEthAprBps = BigInt(Math.round(aprs.lido * 10_000));
     const rEthAprBps = BigInt(Math.round(aprs.rocketPool * 10_000));

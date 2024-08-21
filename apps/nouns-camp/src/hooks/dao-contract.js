@@ -260,14 +260,14 @@ export const useCastProposalVote = (
   } = useSimulate({
     abi: [
       {
-        inputs: [{ type: "uint256" }, { type: "uint8" }],
+        inputs: [{ type: "uint256" }, { type: "uint8" }/*, { type: "uint32" }*/],
         name: "castRefundableVote",
         outputs: [],
         type: "function",
       },
     ],
     functionName: "castRefundableVote",
-    args: [Number(proposalId), support],
+    args: [Number(proposalId), support/*, CAMP_CLIENT_ID*/],
     enabled: enabled && support != null && !hasReason,
   });
 
@@ -388,9 +388,12 @@ export const useCreateProposal = () => {
             { name: "calldatas", type: "bytes[]" },
             { name: "startBlock", type: "uint256" },
             { name: "endBlock", type: "uint256" },
+            // { name: "signers", type: "address[]" },
+            // { name: "updatePeriodEndBlock", type: "uint256" },
             { name: "proposalThreshold", type: "uint256" },
             { name: "quorumVotes", type: "uint256" },
             { name: "description", type: "string" }
+            // { indexed: true, name: "clientId", type: "uint32" },
           ],
           name: "ProposalCreatedWithRequirements",
           type: "event",

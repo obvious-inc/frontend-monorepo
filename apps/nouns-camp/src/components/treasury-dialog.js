@@ -148,7 +148,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
     balances.executor.weth,
     balances["dao-proxy"].eth,
     // balances["client-incentives-rewards-proxy"].eth,
-    // balances["token-buyer"].eth,
+    balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
@@ -262,7 +262,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                                 tooltip={false}
                               />
                             </dd>
-                            {/*{balances["token-buyer"].eth > 0 && (
+                            {balances["token-buyer"].eth > 0 && (
                               <>
                                 <dt>
                                   <ExplorerAddressLink
@@ -282,7 +282,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                                   />
                                 </dd>
                               </>
-                            )}*/}
+                            )}
                             {balances["dao-proxy"].eth > 0 && (
                               <>
                                 <dt>
@@ -394,7 +394,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                 <>
                   <FormattedUsdc
                     value={totals.usdc}
-                    /*tooltip={
+                    tooltip={
                       balances.payer.usdc > 0 ? (
                         <>
                           Includes <FormattedUsdc value={balances.payer.usdc} />{" "}
@@ -403,7 +403,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                       ) : (
                         false
                       )
-                    }*/
+                    }
                   />{" "}
                   {usdcToEth != null && (
                     <span data-small>

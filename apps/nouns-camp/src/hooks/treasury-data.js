@@ -12,14 +12,14 @@ export const getTotalEth = (data) => {
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
     // balances["client-incentives-rewards-proxy"].weth,
-    // balances["token-buyer"].eth,
+    balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 };
 
 export const getTotalUsdc = (data) =>
-  [data.balances.executor.usdc/*, data.balances.payer.usdc*/]
+  [data.balances.executor.usdc, data.balances.payer.usdc]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
@@ -57,12 +57,12 @@ const useTreasuryData = () => {
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
     // balances["client-incentives-rewards-proxy"].weth,
-    // balances["token-buyer"].eth,
+    balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
-  const usdcTotal = [balances.executor.usdc/*, balances.payer.usdc*/]
+  const usdcTotal = [balances.executor.usdc, balances.payer.usdc]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 

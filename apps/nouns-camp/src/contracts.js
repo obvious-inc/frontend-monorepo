@@ -40,7 +40,7 @@ const addressByIdentifierByChainId = {
     data: DAO_DATA_PROXY_CONTRACT,
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
-    "auction-house-admin": "0x0",
+    "auction-house-admin": "0xA4BebeC5bf3670Bb47a55ff705c91956C703237B",
     descriptor: DAO_DESCRIPTOR_CONTRACT,
     "fork-escrow": "0x0",
     payer: DAO_PAYER_CONTRACT,

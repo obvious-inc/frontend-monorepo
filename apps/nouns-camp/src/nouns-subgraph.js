@@ -432,6 +432,7 @@ export const subgraphFetch = async ({
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ operationName, query, variables }),
+    // cache: isServer ? "no-cache" : "default",
   });
   if (!response.ok) {
     console.error("Unsuccessful subgraph request", {
