@@ -20,6 +20,8 @@ import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import NativeSelect from "./native-select.js";
 import FormattedNumber from "./formatted-number.js";
 import ExplorerAddressLink from "./chain-explorer-address-link.js";
+import Link from "@shades/ui-web/link";
+import NextLink from "next/link";
 
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
@@ -106,6 +108,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   const [searchParams] = useSearchParams();
 
   const forkEscrowAddress = useContract("fork-escrow")?.address;
+  const treasuryAddress = useContract("executor")?.address;
 
   const [activityDayCount, setActivityDayCount] = React.useState(
     () => searchParams.get("timeframe") ?? 30,
@@ -419,9 +422,16 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
               value: (() => {
                 return (
                   <>
-                    {Number(
-                      balances.executor.nouns + balances["fork-escrow"].nouns,
-                    )}{" "}
+                    <Link
+                      underline
+                      component={NextLink}
+                      href={`/voters/${treasuryAddress}`}
+                      style={{ fontStyle: "normal" }}
+                    >
+                      {Number(
+                        balances.executor.nouns + balances["fork-escrow"].nouns,
+                      )}
+                    </Link>{" "}
                     {balances["fork-escrow"].nouns > 0 && (
                       <span data-small>
                         (Includes {balances["fork-escrow"].nouns.toString()}{" "}
