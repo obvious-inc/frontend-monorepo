@@ -33,9 +33,9 @@ import useEthToUsdRate, {
 } from "../hooks/eth-to-usd-rate.js";
 import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
-import { useTotalSupply } from "../hooks/token-contract.js";
-import NounAvatar from "./noun-avatar.js";
-import { subgraphFetch } from "../nouns-subgraph.js";
+// import { useTotalSupply } from "../hooks/token-contract.js";
+// import NounAvatar from "./noun-avatar.js";
+// import { subgraphFetch } from "../nouns-subgraph.js";
 
 const decimalsByCurrency = {
   eth: 18,
@@ -259,24 +259,24 @@ const isFunctionAbiItem = (item) => {
   return !item.pure || !item.view;
 };
 
-const useNounIdsByOwner = ({ owner } = {}) => {
-  const [nouns, setNouns] = React.useState(null);
-
-  useFetch(async () => {
-    const query = `{
-      nouns(first: 1000, where: { owner: "${owner.toLowerCase()}" }) {
-        id
-      }
-    }`;
-    const { nouns } = await subgraphFetch({ query });
-    const nounIds = nouns.map((n) => n.id);
-    setNouns(nounIds);
-  }, [owner]);
-
-  if (!owner) return null;
-
-  return nouns;
-};
+// const useNounIdsByOwner = ({ owner } = {}) => {
+//   const [nouns, setNouns] = React.useState(null);
+//
+//   useFetch(async () => {
+//     const query = `{
+//       nouns(first: 1000, where: { owner: "${owner.toLowerCase()}" }) {
+//         id
+//       }
+//     }`;
+//     const { nouns } = await subgraphFetch({ query });
+//     const nounIds = nouns.map((n) => n.id);
+//     setNouns(nounIds);
+//   }, [owner]);
+//
+//   if (!owner) return null;
+//
+//   return nouns;
+// };
 
 const StreamingPaymentActionForm = ({ state, setState }) => {
   const fetchPredictedStreamContractAddress =
@@ -875,132 +875,132 @@ const formConfigByActionType = {
     }),
     Component: StreamingPaymentActionForm,
   },
-  "treasury-noun-transfer": {
-    title: "Noun transfer",
-    initialState: ({ action }) => ({
-      nounId: action?.nounId || "",
-      receiverQuery: action?.target ?? "",
-    }),
-    useStateMiddleware: ({ state }) => {
-      const ensCache = useEnsCache();
-      const receiverQuery = state.receiverQuery?.trim();
-      const ensAddress = ensCache.resolve(receiverQuery);
-      const receiverAddress = isAddress(receiverQuery)
-        ? receiverQuery
-        : (ensAddress ?? "");
-      const { address: treasuryAddress } =
-        getContractWithIdentifier("executor");
-      const totalSupply = useTotalSupply();
-      const maxNounId = totalSupply ? totalSupply - 2 : 0;
-      const treasuryNouns = useNounIdsByOwner({ owner: treasuryAddress });
-      return {
-        ...state,
-        receiverAddress,
-        treasuryAddress,
-        maxNounId,
-        treasuryNouns,
-      };
-    },
-    hasRequiredInputs: ({ state }) =>
-      state.nounId !== "" &&
-      state.receiverAddress != null &&
-      isAddress(state.receiverAddress) &&
-      state.treasuryNouns != null &&
-      state.treasuryNouns.includes(state.nounId),
-    buildAction: ({ state }) => ({
-      type: "treasury-noun-transfer",
-      target: state.receiverAddress,
-      nounId: state.nounId,
-    }),
-    Component: ({ state, setState }) => {
-      useCustomCacheEnsAddress(state.receiverQuery.trim(), {
-        enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
-      });
-      const hasRequiredInputs =
-        state.nounId !== "" && isAddress(state.receiverAddress);
-      const isUnavailableNoun =
-        state.nounId !== "" &&
-        state.treasuryNouns != null &&
-        !state.treasuryNouns.includes(state.nounId);
-      return (
-        <>
-          <div>
-            <Label htmlFor="nounId">Noun</Label>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "minmax(0,1fr) auto",
-                gap: "1rem",
-                alignItems: "center",
-              }}
-            >
-              <Input
-                type="number"
-                min={0}
-                max={state.maxNounId}
-                value={state.nounId}
-                onChange={(e) => {
-                  try {
-                    const n = BigInt(e.target.value);
-                    const truncatedN =
-                      n > state.maxNounId ? state.maxNounId : n < 0 ? 0 : n;
-                    setState({ nounId: truncatedN.toString() });
-                  } catch (e) {
-                    // Ignore
-                  }
-                }}
-                placeholder="0"
-              />
-              <NounAvatar id={state.nounId} size="3.5rem" />
-            </div>
-            <div
-              data-warn={hasRequiredInputs && isUnavailableNoun}
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  color: t.colors.textDimmed,
-                  marginTop: "0.7rem",
-                  a: {
-                    color: "inherit",
-                    textDecoration: "underline",
-                  },
-                  "p + p": { marginTop: "0.7em" },
-                  '&[data-warn="true"]': { color: t.colors.textHighlight },
-                })
-              }
-            >
-              {hasRequiredInputs && isUnavailableNoun && (
-                <>Noun {state.nounId} is not available. </>
-              )}
-              See list of Nouns available in the{" "}
-              <a
-                href={`/voters/${state.treasuryAddress}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                treasury
-              </a>
-              .
-            </div>
-          </div>
-
-          <AddressInput
-            label="Receiver account"
-            value={state.receiverQuery}
-            onChange={(maybeAddress) => {
-              setState({ receiverQuery: maybeAddress });
-            }}
-            placeholder="0x..., vitalik.eth"
-            hint={
-              !isAddress(state.receiverQuery)
-                ? "Specify an Ethereum account address or ENS name"
-                : null
-            }
-          />
-        </>
-      );
-    },
-  },
+  // "treasury-noun-transfer": {
+  //   title: "Noun transfer",
+  //   initialState: ({ action }) => ({
+  //     nounId: action?.nounId || "",
+  //     receiverQuery: action?.target ?? "",
+  //   }),
+  //   useStateMiddleware: ({ state }) => {
+  //     const ensCache = useEnsCache();
+  //     const receiverQuery = state.receiverQuery?.trim();
+  //     const ensAddress = ensCache.resolve(receiverQuery);
+  //     const receiverAddress = isAddress(receiverQuery)
+  //       ? receiverQuery
+  //       : (ensAddress ?? "");
+  //     const { address: treasuryAddress } =
+  //       getContractWithIdentifier("executor");
+  //     const totalSupply = useTotalSupply();
+  //     const maxNounId = totalSupply ? totalSupply - 2 : 0;
+  //     const treasuryNouns = useNounIdsByOwner({ owner: treasuryAddress });
+  //     return {
+  //       ...state,
+  //       receiverAddress,
+  //       treasuryAddress,
+  //       maxNounId,
+  //       treasuryNouns,
+  //     };
+  //   },
+  //   hasRequiredInputs: ({ state }) =>
+  //     state.nounId !== "" &&
+  //     state.receiverAddress != null &&
+  //     isAddress(state.receiverAddress) &&
+  //     state.treasuryNouns != null &&
+  //     state.treasuryNouns.includes(state.nounId),
+  //   buildAction: ({ state }) => ({
+  //     type: "treasury-noun-transfer",
+  //     target: state.receiverAddress,
+  //     nounId: state.nounId,
+  //   }),
+  //   Component: ({ state, setState }) => {
+  //     useCustomCacheEnsAddress(state.receiverQuery.trim(), {
+  //       enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
+  //     });
+  //     const hasRequiredInputs =
+  //       state.nounId !== "" && isAddress(state.receiverAddress);
+  //     const isUnavailableNoun =
+  //       state.nounId !== "" &&
+  //       state.treasuryNouns != null &&
+  //       !state.treasuryNouns.includes(state.nounId);
+  //     return (
+  //       <>
+  //         <div>
+  //           <Label htmlFor="nounId">Noun</Label>
+  //           <div
+  //             style={{
+  //               display: "grid",
+  //               gridTemplateColumns: "minmax(0,1fr) auto",
+  //               gap: "1rem",
+  //               alignItems: "center",
+  //             }}
+  //           >
+  //             <Input
+  //               type="number"
+  //               min={0}
+  //               max={state.maxNounId}
+  //               value={state.nounId}
+  //               onChange={(e) => {
+  //                 try {
+  //                   const n = BigInt(e.target.value);
+  //                   const truncatedN =
+  //                     n > state.maxNounId ? state.maxNounId : n < 0 ? 0 : n;
+  //                   setState({ nounId: truncatedN.toString() });
+  //                 } catch (e) {
+  //                   // Ignore
+  //                 }
+  //               }}
+  //               placeholder="0"
+  //             />
+  //             <NounAvatar id={state.nounId} size="3.5rem" />
+  //           </div>
+  //           <div
+  //             data-warn={hasRequiredInputs && isUnavailableNoun}
+  //             css={(t) =>
+  //               css({
+  //                 fontSize: t.text.sizes.small,
+  //                 color: t.colors.textDimmed,
+  //                 marginTop: "0.7rem",
+  //                 a: {
+  //                   color: "inherit",
+  //                   textDecoration: "underline",
+  //                 },
+  //                 "p + p": { marginTop: "0.7em" },
+  //                 '&[data-warn="true"]': { color: t.colors.textHighlight },
+  //               })
+  //             }
+  //           >
+  //             {hasRequiredInputs && isUnavailableNoun && (
+  //               <>Noun {state.nounId} is not available. </>
+  //             )}
+  //             See list of Nouns available in the{" "}
+  //             <a
+  //               href={`/voters/${state.treasuryAddress}`}
+  //               target="_blank"
+  //               rel="noreferrer"
+  //             >
+  //               treasury
+  //             </a>
+  //             .
+  //           </div>
+  //         </div>
+  //
+  //         <AddressInput
+  //           label="Receiver account"
+  //           value={state.receiverQuery}
+  //           onChange={(maybeAddress) => {
+  //             setState({ receiverQuery: maybeAddress });
+  //           }}
+  //           placeholder="0x..., vitalik.eth"
+  //           hint={
+  //             !isAddress(state.receiverQuery)
+  //               ? "Specify an Ethereum account address or ENS name"
+  //               : null
+  //           }
+  //         />
+  //       </>
+  //     );
+  //   },
+  // },
   "custom-transaction": {
     title: "Custom transaction",
     initialState: ({ action }) => {
