@@ -2240,9 +2240,10 @@ export const useAccountProposalCandidates = (accountAddress) => {
 export const useProposalCandidateVotingPower = (candidateId) => {
   const candidate = useProposalCandidate(candidateId);
   const proposerDelegate = useDelegate(candidate.proposerId);
-  const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId,
-  );
+  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
 
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
