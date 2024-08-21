@@ -308,7 +308,7 @@ export const getFirstImage = (text) => {
 
   const flattenBlocks = (blocks) =>
     blocks.flatMap((block) =>
-      block.children ? [block, ...flattenBlocks(block.children)] : [block]
+      block.children ? [block, ...flattenBlocks(block.children)] : [block],
     );
 
   return flattenBlocks(blocks).find((block) => block.type === "image");

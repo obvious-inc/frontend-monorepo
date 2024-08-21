@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.0] - 2024-08-21
+
+### 🚀 Features
+
+- Pull changes from upstream (#545)
+- Enable payers and streams (#546)
+
+### 🚜 Refactor
+
+- *(action-dialog)* Comment out unused functions
+
 ## [1.2.0-alpha.26] - 2024-08-19
 
 ### 🚀 Features

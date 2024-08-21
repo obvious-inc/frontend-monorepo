@@ -12,14 +12,14 @@ export const getTotalEth = (data) => {
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
     // balances["client-incentives-rewards-proxy"].weth,
-    // balances["token-buyer"].eth,
+    balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 };
 
 export const getTotalUsdc = (data) =>
-  [data.balances.executor.usdc/*, data.balances.payer.usdc*/]
+  [data.balances.executor.usdc, data.balances.payer.usdc]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
@@ -31,10 +31,11 @@ const useTreasuryData = () => {
       const { balances, rates, aprs } = await res.json();
       return {
         balances: objectUtils.mapValues(
-          (contract) => objectUtils.mapValues((n) => BigInt(n), contract),
+          (contract) =>
+            objectUtils.mapValues((n) => (n != null ? BigInt(n) : n), contract),
           balances,
         ),
-        rates: objectUtils.mapValues((v) => BigInt(v), rates),
+        rates: objectUtils.mapValues((n) => (n != null ? BigInt(n) : n), rates),
         aprs,
       };
     },
@@ -51,17 +52,17 @@ const useTreasuryData = () => {
   const ethTotal = [
     balances.executor.eth,
     balances.executor.weth,
-    rethToEth(balances.executor.reth),
+    balances.executor.reth == null ? null : rethToEth(balances.executor.reth),
     balances.executor.steth,
     balances.executor.wsteth,
     balances["dao-proxy"].eth,
     // balances["client-incentives-rewards-proxy"].weth,
-    // balances["token-buyer"].eth,
+    balances["token-buyer"].eth,
   ]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 
-  const usdcTotal = [balances.executor.usdc/*, balances.payer.usdc*/]
+  const usdcTotal = [balances.executor.usdc, balances.payer.usdc]
     .filter(Boolean)
     .reduce((sum, amount) => sum + amount, BigInt(0));
 

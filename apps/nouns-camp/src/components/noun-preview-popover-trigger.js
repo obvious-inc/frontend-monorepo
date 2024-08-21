@@ -184,8 +184,8 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
     : newAccountDisplayName;
 
   const previousAccountAddress = isDestinationAccount
-    ? ownerEns ?? noun.ownerId
-    : newAccountEns ?? event.newAccountId;
+    ? (ownerEns ?? noun.ownerId)
+    : (newAccountEns ?? event.newAccountId);
 
   return (
     <div>
@@ -281,8 +281,8 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
     : newAccountDisplayName;
 
   const previousAccountAddress = isDestinationAccount
-    ? previousAccountEns ?? event.previousAccountId
-    : newAccountEns ?? event.newAccountId;
+    ? (previousAccountEns ?? event.previousAccountId)
+    : (newAccountEns ?? event.newAccountId);
 
   const transferredFromText = transferredFromAuction
     ? "Auction House"

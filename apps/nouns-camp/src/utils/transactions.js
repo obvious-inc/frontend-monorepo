@@ -25,7 +25,7 @@ const normalizeSignature = (s) => {
   return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
 };
 
-const createSignature = ({ functionName, inputTypes }) => {
+export const createSignature = ({ functionName, inputTypes }) => {
   const stringifyTuple = ({ components }) =>
     `(${components.map(stringifyType).join(",")})`;
   const stringifyType = ({ type, components }) => {
@@ -771,15 +771,15 @@ export const resolveAction = (a) => {
         }
       }
 
-      // case "treasury-noun-transfer":
-      //   return [
-      //     {
-      //       type: "treasury-noun-transfer",
-      //       nounId: a.nounId,
-      //       receiverAddress: a.target,
-      //       safe: true,
-      //     },
-      //   ];
+      case "treasury-noun-transfer":
+        return [
+          {
+            type: "treasury-noun-transfer",
+            nounId: a.nounId,
+            receiverAddress: a.target,
+            safe: true,
+          },
+        ];
 
       case "payer-top-up":
         return [

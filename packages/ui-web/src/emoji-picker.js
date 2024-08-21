@@ -225,7 +225,7 @@ const EmojiPicker = ({ width = "auto", height = "100%", onSelect }) => {
           placeholder={
             highlightedEmojiItem == null
               ? "Search"
-              : highlightedEmojiItem.description ?? "Search"
+              : (highlightedEmojiItem.description ?? "Search")
           }
         />
       </div>

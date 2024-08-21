@@ -1,5 +1,5 @@
 import React from "react";
-import {tinykeys} from "tinykeys";
+import { tinykeys } from "tinykeys";
 
 // Syntax docs: https://github.com/jamiebuilds/tinykeys
 

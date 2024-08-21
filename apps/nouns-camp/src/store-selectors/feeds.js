@@ -107,7 +107,7 @@ export const buildProposalFeed = (
     votes: proposal.votes,
     feedbackPosts: [
       ...(proposal?.feedbackPosts ?? []),
-      ...(includeCandidateItems ? candidate?.feedbackPosts ?? [] : []),
+      ...(includeCandidateItems ? (candidate?.feedbackPosts ?? []) : []),
     ],
   });
 

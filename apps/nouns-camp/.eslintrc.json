@@ -10,12 +10,7 @@
     "jsx-a11y/alt-text": "off",
     "react/prop-types": "off",
     "react/display-name": "off",
-    "react/no-unknown-property": [
-      2,
-      {
-        "ignore": ["css"]
-      }
-    ],
+    "react/no-unknown-property": [2, { "ignore": ["css"] }],
     "@next/next/no-img-element": "off"
   },
   "settings": {
