@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.1] - 2024-08-21
+
+### 🚀 Features
+
+- Pull changes from upstream (#547)
+
 ## [1.3.0-alpha.0] - 2024-08-21
 
 ### 🚀 Features
