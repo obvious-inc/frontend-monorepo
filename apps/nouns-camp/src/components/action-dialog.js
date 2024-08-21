@@ -37,6 +37,7 @@ import AddressInput from "./address-input.js";
 import { useTotalSupply } from "../hooks/token-contract.js";
 import NounAvatar from "./noun-avatar.js";
 import { subgraphFetch } from "../nouns-subgraph.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const decimalsByCurrency = {
   eth: 18,
@@ -598,7 +599,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
                 <Link
                   color="currentColor"
                   component="a"
-                  href={`https://etherscan.io/address/${state.target}`}
+                  href={buildEtherscanLink(`/address/${state.target}`)}
                   rel="noreferrer"
                   target="_blank"
                 >

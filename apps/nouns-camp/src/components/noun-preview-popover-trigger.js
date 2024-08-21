@@ -14,6 +14,7 @@ import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 export const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
   const noun = useNoun(nounId);
@@ -223,7 +224,7 @@ const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
       since{" "}
       <span>
         <a
-          href={`https://etherscan.io/tx/${transactionHash}`}
+          href={buildEtherscanLink(`/tx/${transactionHash}`)}
           rel="noreferrer"
           target="_blank"
           css={css({
@@ -331,7 +332,7 @@ const NounTransferPreviewText = ({ event, contextAccount }) => {
       on{" "}
       <span>
         <a
-          href={`https://etherscan.io/tx/${transactionHash}`}
+          href={buildEtherscanLink(`/tx/${transactionHash}`)}
           rel="noreferrer"
           target="_blank"
         >
