@@ -146,6 +146,7 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
 
   const usdcToEth = (usdc) => (usdc * rates.usdcEth) / 10n ** 6n;
   const rethToEth = (reth) => (reth * rates.rethEth) / 10n ** 18n;
+  const oethToEth = (oeth) => (oeth * rates.oethEth) / 10n ** 18n;
 
   const regularEthTotal = [
     balances.executor.eth,
@@ -168,6 +169,9 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   );
   const rEthReturnRateEstimateBPS = BigInt(
     Math.round(aprs.rocketPool * inflowProjectionYearFraction * 10_000),
+  );
+  const oEthReturnRateEstimateBPS = BigInt(
+    Math.round(aprs.originEther * inflowProjectionYearFraction * 10_000),
   );
 
   return (
@@ -388,6 +392,23 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                         </span>
                       </li>
                     )}
+                    {balances.executor.oeth > 0 && (
+                      <li>
+                        <FormattedEth
+                          value={balances.executor.oeth}
+                          tokenSymbol="oETH"
+                          tooltip={false}
+                        />{" "}
+                        <span data-small>
+                          ({"Ξ"}
+                          <FormattedEth
+                            value={oethToEth(balances.executor.oeth)}
+                            tooltip={false}
+                          />
+                          )
+                        </span>
+                      </li>
+                    )}
                   </ul>
                 </>
               ),
@@ -430,7 +451,8 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                       style={{ fontStyle: "normal" }}
                     >
                       {Number(
-                        balances.executor.nouns /*+ balances["fork-escrow"].nouns*/,
+                        balances.executor
+                          .nouns /*+ balances["fork-escrow"].nouns*/,
                       )}
                     </Link>{" "}
                     {/*{balances["fork-escrow"].nouns > 0 && (
@@ -733,6 +755,30 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                   (
                   <FormattedNumber
                     value={aprs.rocketPool}
+                    style="percent"
+                    maximumFractionDigits={2}
+                  />{" "}
+                  APR)
+                </span>
+              </dd>
+            </>
+          )}
+          {balances.executor.oeth != null && (
+            <>
+              <dt>oETH yield</dt>
+              <dd>
+                {"Ξ"}
+                <FormattedEth
+                  value={
+                    (balances.executor.oeth * oEthReturnRateEstimateBPS) /
+                    10_000n
+                  }
+                  tooltip={false}
+                />{" "}
+                <span data-small>
+                  (
+                  <FormattedNumber
+                    value={aprs.originEther}
                     style="percent"
                     maximumFractionDigits={2}
                   />{" "}
