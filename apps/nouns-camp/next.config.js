@@ -38,6 +38,7 @@ const withSentry = (config) =>
       silent: true, // Suppresses source map uploading logs during build
       org: process.env.SENTRY_ORG,
       project: process.env.SENTRY_PROJECT,
+      authToken: process.env.SENTRY_AUTH_TOKEN,
     },
     {
       // Upload a larger set of source maps for prettier stack traces (increases build time)

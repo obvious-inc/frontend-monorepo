@@ -129,9 +129,10 @@ const ProposalCandidateScreenContent = ({
 
   const proposerDelegate = useDelegate(candidate.proposerId);
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
-  const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId,
-  );
+  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
 
   const {
     data: simulationResults,
@@ -765,9 +766,10 @@ const ProposalCandidateScreenContent = ({
 const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
   const candidate = useProposalCandidate(candidateId);
 
-  const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId,
-  );
+  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
 
   const signatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
@@ -1220,9 +1222,10 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
     { prefetch: true, replace: true },
   );
 
-  const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId,
-  );
+  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
 
   const cancelCandidate = useCancelProposalCandidate(slug, {
     enabled: isProposer,

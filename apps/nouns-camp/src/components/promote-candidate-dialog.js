@@ -38,9 +38,10 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
   const candidate = useProposalCandidate(candidateId);
   const proposerDelegate = useDelegate(candidate.proposerId);
   const proposalThreshold = useProposalThreshold();
-  const activeProposerIds = useProposals({ filter: "active" }).map(
-    (p) => p.proposerId,
-  );
+  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
   const authoredActiveProposalId = useActiveProposalId(
     connectedWalletAccountAddress,
   );

@@ -46,6 +46,7 @@ import NounPreviewPopoverTrigger, {
   DelegationStatusDot,
 } from "./noun-preview-popover-trigger.js";
 import ProposalList from "./proposal-list.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -607,7 +608,7 @@ const VoterHeader = ({ accountAddress }) => {
 
                     case "open-etherscan":
                       window.open(
-                        `https://etherscan.io/address/${accountAddress}`,
+                        buildEtherscanLink(`/address/${accountAddress}`),
                         "_blank",
                       );
                       break;
@@ -665,7 +666,7 @@ const VoterHeader = ({ accountAddress }) => {
             }
           >
             <a
-              href={`https://etherscan.io/address/${accountAddress}`}
+              href={buildEtherscanLink(`/address/${accountAddress}`)}
               target="_blank"
               rel="noreferrer"
               css={css({
