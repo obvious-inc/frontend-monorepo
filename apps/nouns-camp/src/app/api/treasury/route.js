@@ -60,6 +60,7 @@ export async function GET() {
     convertionRates,
     lidoApr,
     rocketPoolApr,
+    originEtherApr,
   } = Object.fromEntries(
     await Promise.all([
       (async () => {
@@ -145,7 +146,18 @@ export async function GET() {
             }),
           ),
         );
-        return ["convertionRates", { rethEth, usdcEth }];
+
+        const oethEth = await (async () => {
+          const res = await fetch(
+            "https://api.dexscreener.com/latest/dex/pairs/ethereum/0x52299416C469843F4e0d54688099966a6c7d720f",
+          );
+          if (!res.ok) throw new Error();
+          const { pairs } = await res.json();
+          const [oethWETH] = pairs;
+          return BigInt(oethWETH.priceNative * 10 ** 18);
+        })();
+
+        return ["convertionRates", { rethEth, usdcEth, oethEth }];
       })(),
       (async () => {
         const res = await fetch(
@@ -162,6 +174,14 @@ export async function GET() {
         if (!res.ok) throw new Error();
         const { rethAPR } = await res.json();
         return ["rocketPoolApr", Number(rethAPR) / 100];
+      })(),
+      (async () => {
+        const res = await fetch(
+          "https://analytics.ousd.com/api/v2/oeth/apr/trailing",
+        );
+        if (!res.ok) throw new Error();
+        const { apy } = await res.json();
+        return ["originEtherApr", Number(apy) / 100];
       })(),
     ]),
   );
@@ -182,7 +202,11 @@ export async function GET() {
         // "fork-escrow": { nouns: forkEscrowNounsBalance.toString() },
       },
       rates: objectUtils.mapValues((v) => v.toString(), convertionRates),
-      aprs: { lido: lidoApr, rocketPool: rocketPoolApr },
+      aprs: {
+        lido: lidoApr,
+        rocketPool: rocketPoolApr,
+        originEther: originEtherApr,
+      },
     },
     {
       headers: {
