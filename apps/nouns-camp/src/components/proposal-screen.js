@@ -945,7 +945,7 @@ export const ProposalHeader = ({
     const stEthYield =
       ((balances.executor.steth + balances.executor.wsteth) * stEthAprBps) /
       10_000n;
-    const rEthYield = (balances.executor.reth * rEthAprBps) / 10_000n;
+    const rEthYield = ((balances.executor.reth ?? 0n) * rEthAprBps) / 10_000n;
     const totalStakingYield = stEthYield + rEthYield;
 
     const projectedOneYearAuctionProceeds = avgAuctionPrice * 365n;

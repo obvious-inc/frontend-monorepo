@@ -12,8 +12,8 @@ const DAO_TOKEN_CONTRACT = "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B";
 const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
   "0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E";
 const DAO_DESCRIPTOR_CONTRACT = "0xb2a47999b3117c7dD628920ED8e77eBDfB948B68";
-const DAO_TOKEN_BUYER_CONTRACT = "0x4f2acdc74f6941390d9b1804fabc3e780388cfe5";
-const DAO_PAYER_CONTRACT = "0x0";
+const DAO_TOKEN_BUYER_CONTRACT = "0x387140cD0132ff750263f08aCfdFbEc7b0Cf63c0";
+const DAO_PAYER_CONTRACT = "0xF62387d21153fdcbB06Ab3026c2089e418688164";
 
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
@@ -29,6 +29,10 @@ const addressByIdentifierByChainId = {
     "prop-house": "0x000000002c93cad6f9cfd00c603aef62458d8a48",
     "prop-house-timed-round-implementation":
       "0x43c015df7f3868b287ad94d88b1e05f596bba453",
+    "chainlink-reth-eth-price-feed":
+      "0x536218f9e9eb48863970252233c8f271f554c2d0",
+    "chainlink-usdc-eth-price-feed":
+      "0x986b5e1e1755e3c2440e960477f25201b0a8bbd4",
 
     // Nouns contracts
     dao: DAO_LOGIC_PROXY_CONTRACT,
@@ -42,7 +46,7 @@ const addressByIdentifierByChainId = {
     payer: DAO_PAYER_CONTRACT,
     "executor-v1": "0xd5f279ff9EB21c6D40C8f345a66f2751C4eeA1fB",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
-    "stream-factory": "0x0",
+    "stream-factory": "0xb2fFEEF1F68CfacDeFdAFe6F1a9D30Ff47C7cB5e",
     "client-incentives-rewards-proxy":
       "0x0",
     "prop-house-nouns-house": "0x0",
@@ -51,6 +55,8 @@ const addressByIdentifierByChainId = {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": "0xfff9976782d46cc05630d1f6ebab18b2324d6b14",
     "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
+    "steth-token": "0x3e3fe7dbc6b4c189e7128855dd526361c49b40af",
+    "wsteth-token": "0xb82381a3fbd3fafa77b3a7be693342618240067b",
 
     // Nouns contracts
     dao: "0xa7C37f79ff5E6F932147fC69724B6ED432CA6Aa7",
@@ -59,13 +65,10 @@ const addressByIdentifierByChainId = {
     token: "0x6e48e79f718776CF412a87e047722dBFda5B465D",
     "auction-house": "0xA777a0a132dCc0a1c35E1eA19f28595dBe7ca6a6",
     "auction-house-admin": "0x7Dc74E65a3619C28076F06135ef9DCAa9b7ba8cF",
-    descriptor: "0x852f20f0140a4b5aa29c70bf39c9a85edc2b454e",
     "fork-escrow": "0x0",
-    payer: "0x0",
-    "executor-v1": "0x0",
-    "token-buyer": "0x0",
-    "stream-factory": "0x0",
-    "client-incentives-rewards-proxy": "0x0",
+    payer: "0x5a2A0951C6b3479DBEe1D5909Aac7B325d300D94",
+    "token-buyer": "0x821176470cFeF1dB78F1e2dbae136f73c36ddd48",
+    "stream-factory": "0xb78ccF3BD015f209fb9B2d3d132FD8784Df78DF5",
     "prop-house-nouns-house": "0x0",
   },
 };
@@ -140,16 +143,16 @@ const metaByIdentifier = {
   },
 };
 
-export const resolveIdentifier = (identifier) => {
-  const address = addressByIdentifierByChainId[CHAIN_ID]?.[identifier];
+export const resolveIdentifier = (identifier, { chainId = CHAIN_ID } = {}) => {
+  const address = addressByIdentifierByChainId[chainId]?.[identifier];
   if (address == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, ...meta };
 };
 
-export const resolveAddress = (address) => {
+export const resolveAddress = (address, { chainId = CHAIN_ID } = {}) => {
   const identifier =
-    identifierByAddressByChainId[CHAIN_ID]?.[address.toLowerCase()];
+    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };

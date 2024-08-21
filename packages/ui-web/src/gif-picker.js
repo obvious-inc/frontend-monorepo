@@ -189,7 +189,7 @@ const GifPicker = ({
           placeholder={
             highlightedIndex == null
               ? "Search"
-              : highlightedItem?.title ?? "Search"
+              : (highlightedItem?.title ?? "Search")
           }
         />
       </div>

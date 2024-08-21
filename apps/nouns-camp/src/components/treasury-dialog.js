@@ -346,25 +346,27 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
                         }
                       />
                     </li>
-                    <li>
-                      <FormattedEth
-                        value={stEthTotal}
-                        tokenSymbol="stETH"
-                        tooltip={
-                          balances.executor.wsteth > 0 ? (
-                            <>
-                              Includes{" "}
-                              <FormattedEth
-                                value={balances.executor.wsteth}
-                                tokenSymbol="wstETH"
-                              />
-                            </>
-                          ) : (
-                            false
-                          )
-                        }
-                      />
-                    </li>
+                    {stEthTotal > 0n && (
+                      <li>
+                        <FormattedEth
+                          value={stEthTotal}
+                          tokenSymbol="stETH"
+                          tooltip={
+                            balances.executor.wsteth > 0 ? (
+                              <>
+                                Includes{" "}
+                                <FormattedEth
+                                  value={balances.executor.wsteth}
+                                  tokenSymbol="wstETH"
+                                />
+                              </>
+                            ) : (
+                              false
+                            )
+                          }
+                        />
+                      </li>
+                    )}
                     {balances.executor.reth > 0 && (
                       <li>
                         <FormattedEth
@@ -704,25 +706,30 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
               APR)
             </span>
           </dd>
-          <dt>rETH yield</dt>
-          <dd>
-            {"Ξ"}
-            <FormattedEth
-              value={
-                (balances.executor.reth * rEthReturnRateEstimateBPS) / 10_000n
-              }
-              tooltip={false}
-            />{" "}
-            <span data-small>
-              (
-              <FormattedNumber
-                value={aprs.rocketPool}
-                style="percent"
-                maximumFractionDigits={2}
-              />{" "}
-              APR)
-            </span>
-          </dd>
+          {balances.executor.reth != null && (
+            <>
+              <dt>rETH yield</dt>
+              <dd>
+                {"Ξ"}
+                <FormattedEth
+                  value={
+                    (balances.executor.reth * rEthReturnRateEstimateBPS) /
+                    10_000n
+                  }
+                  tooltip={false}
+                />{" "}
+                <span data-small>
+                  (
+                  <FormattedNumber
+                    value={aprs.rocketPool}
+                    style="percent"
+                    maximumFractionDigits={2}
+                  />{" "}
+                  APR)
+                </span>
+              </dd>
+            </>
+          )}
         </Dl>
         {/*<p
           css={(t) =>

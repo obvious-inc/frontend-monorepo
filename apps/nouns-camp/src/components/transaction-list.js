@@ -370,7 +370,7 @@ const SimulationBadge = ({ simulation, isSimulationRunning }) => {
 
   const SimulationStatus = () => {
     const simulationTitle = simulation.error
-      ? simulation?.error ?? "Simulation failed"
+      ? (simulation?.error ?? "Simulation failed")
       : "Simulation passed";
 
     return (

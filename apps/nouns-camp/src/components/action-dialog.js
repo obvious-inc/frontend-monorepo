@@ -1,10 +1,10 @@
-// import formatDate from "date-fns/format";
-// import parseDate from "date-fns/parse";
+import formatDate from "date-fns/format";
+import parseDate from "date-fns/parse";
 import React from "react";
 import {
   isAddress,
   parseAbi,
-  // parseUnits,
+  parseUnits,
   parseEther,
   formatEther,
   encodeAbiParameters,
@@ -24,7 +24,8 @@ import Spinner from "@shades/ui-web/spinner";
 import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
-// import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
+import { resolveIdentifier as getContractWithIdentifier } from "../contracts.js";
+import { createSignature } from "../utils/transactions.js";
 import usePublicClient from "../hooks/public-client.js";
 import { fetchContractInfo } from "../hooks/etherscan-contract-info.js";
 import useEthToUsdRate, {
@@ -32,16 +33,15 @@ import useEthToUsdRate, {
 } from "../hooks/eth-to-usd-rate.js";
 import FormattedNumber from "./formatted-number.js";
 import AddressInput from "./address-input.js";
-import { formatAbiParameter } from "abitype";
-// import { useTotalSupply } from "../hooks/token-contract.js";
-// import NounAvatar from "./noun-avatar.js";
-// import { subgraphFetch } from "../nouns-subgraph.js";
+import { useTotalSupply } from "../hooks/token-contract.js";
+import NounAvatar from "./noun-avatar.js";
+import { subgraphFetch } from "../nouns-subgraph.js";
 
-// const decimalsByCurrency = {
-//   eth: 18,
-//   weth: 18,
-//   usdc: 6,
-// };
+const decimalsByCurrency = {
+  eth: 18,
+  weth: 18,
+  usdc: 6,
+};
 
 const parseAbiString = (string) => {
   try {
@@ -203,16 +203,16 @@ const buildInitialInputState = (inputs = []) => {
   return inputs.map(buildInputState);
 };
 
-// const parseAmount = (amount, currency) => {
-//   switch (currency.toLowerCase()) {
-//     case "eth":
-//     case "weth":
-//     case "usdc":
-//       return parseUnits(amount.toString(), decimalsByCurrency[currency]);
-//     default:
-//       throw new Error();
-//   }
-// };
+const parseAmount = (amount, currency) => {
+  switch (currency.toLowerCase()) {
+    case "eth":
+    case "weth":
+    case "usdc":
+      return parseUnits(amount.toString(), decimalsByCurrency[currency]);
+    default:
+      throw new Error();
+  }
+};
 
 const ActionDialog = ({ isOpen, close, ...props }) => (
   <EnsCacheProvider>
@@ -259,208 +259,202 @@ const isFunctionAbiItem = (item) => {
   return !item.pure || !item.view;
 };
 
-const createSignature = (functionAbiItem) => {
-  const formattedInputs =
-    functionAbiItem.inputs?.map((p) => formatAbiParameter(p)) ?? [];
-  return `${functionAbiItem.name}(${formattedInputs.join(",")})`;
+const useNounIdsByOwner = ({ owner } = {}) => {
+  const [nouns, setNouns] = React.useState(null);
+
+  useFetch(async () => {
+    const query = `{
+      nouns(first: 1000, where: { owner: "${owner.toLowerCase()}" }) {
+        id
+      }
+    }`;
+    const { nouns } = await subgraphFetch({ query });
+    const nounIds = nouns.map((n) => n.id);
+    setNouns(nounIds);
+  }, [owner]);
+
+  if (!owner) return null;
+
+  return nouns;
 };
 
-// const useNounIdsByOwner = ({ owner } = {}) => {
-//   const [nouns, setNouns] = React.useState(null);
-//
-//   useFetch(async () => {
-//     const query = `{
-//       nouns(first: 1000, where: { owner: "${owner.toLowerCase()}" }) {
-//         id
-//       }
-//     }`;
-//     const { nouns } = await subgraphFetch({ query });
-//     const nounIds = nouns.map((n) => n.id);
-//     setNouns(nounIds);
-//   }, [owner]);
-//
-//   if (!owner) return null;
-//
-//   return nouns;
-// };
-//
-// const StreamingPaymentActionForm = ({ state, setState }) => {
-//   const fetchPredictedStreamContractAddress =
-//     useFetchPredictedStreamContractAddress();
-//
-//   const canPredictStreamContractAddress =
-//     isAddress(state.receiverAddress) &&
-//     state.amount > 0 &&
-//     state.dateRange?.start != null &&
-//     state.dateRange?.end != null &&
-//     state.dateRange.start < state.dateRange.end;
-//
-//   useFetch(
-//     !canPredictStreamContractAddress
-//       ? null
-//       : ({ signal }) =>
-//           fetchPredictedStreamContractAddress({
-//             receiverAddress: state.receiverAddress,
-//             amount: state.amount,
-//             currency: state.currency,
-//             startDate: state.dateRange?.start,
-//             endDate: state.dateRange?.end,
-//           }).then((address) => {
-//             if (signal?.aborted) return;
-//             setState({ predictedStreamContractAddress: address });
-//           }),
-//     [
-//       state.receiverAddress,
-//       state.amount,
-//       state.currency,
-//       state.dateRange?.start,
-//       state.dateRange?.end,
-//     ],
-//   );
-//
-//   useCustomCacheEnsAddress(state.receiverQuery.trim(), {
-//     enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
-//   });
-//
-//   return (
-//     <>
-//       <div>
-//         <div
-//           style={{
-//             display: "grid",
-//             gridTemplateColumns: "repeat(2, minmax(0,1fr))",
-//             gap: "1.6rem",
-//           }}
-//         >
-//           <Input
-//             label="Start vesting"
-//             type="date"
-//             max={
-//               state.dateRange.end == null
-//                 ? undefined
-//                 : formatDate(state.dateRange.end, "yyyy-MM-dd")
-//             }
-//             value={
-//               state.dateRange.start == null
-//                 ? "yyyy-MM-dd"
-//                 : formatDate(state.dateRange.start, "yyyy-MM-dd")
-//             }
-//             onChange={(e) => {
-//               setState(({ dateRange }) => {
-//                 const { start, end } = dateRange;
-//                 if (isNaN(e.target.valueAsNumber))
-//                   return { dateRange: { start: null, end } };
-//
-//                 try {
-//                   const selectedStart = parseDate(
-//                     e.target.value,
-//                     "yyyy-MM-dd",
-//                     new Date(),
-//                   );
-//                   formatDate(selectedStart, "yyyy-MM-dd"); // Validation :shrug:
-//                   return {
-//                     dateRange: {
-//                       start:
-//                         end == null || selectedStart <= end
-//                           ? selectedStart
-//                           : start,
-//                       end,
-//                     },
-//                   };
-//                 } catch (e) {
-//                   return { dateRange: { start, end } };
-//                 }
-//               });
-//             }}
-//           />
-//           <Input
-//             label="End vesting"
-//             type="date"
-//             min={
-//               state.dateRange.state == null
-//                 ? undefined
-//                 : formatDate(state.dateRange.start, "yyyy-MM-dd")
-//             }
-//             value={
-//               state.dateRange.end == null
-//                 ? "yyyy-MM-dd"
-//                 : formatDate(state.dateRange.end, "yyyy-MM-dd")
-//             }
-//             onChange={(e) => {
-//               setState(({ dateRange }) => {
-//                 const { start, end } = dateRange;
-//
-//                 if (isNaN(e.target.valueAsNumber))
-//                   return { dateRange: { start, end: null } };
-//
-//                 try {
-//                   const selectedEnd = parseDate(
-//                     e.target.value,
-//                     "yyyy-MM-dd",
-//                     new Date(),
-//                   );
-//                   formatDate(selectedEnd, "yyyy-MM-dd"); // Validation :shrug:
-//
-//                   return {
-//                     dateRange: {
-//                       start,
-//                       end:
-//                         start == null || selectedEnd >= start
-//                           ? selectedEnd
-//                           : end,
-//                     },
-//                   };
-//                 } catch (e) {
-//                   return { dateRange: { start, end } };
-//                 }
-//               });
-//             }}
-//           />
-//         </div>
-//         <div
-//           css={(t) =>
-//             css({
-//               fontSize: t.text.sizes.small,
-//               color: t.colors.textDimmed,
-//               marginTop: "0.7rem",
-//               em: {
-//                 fontWeight: t.text.weights.emphasis,
-//                 fontStyle: "normal",
-//               },
-//             })
-//           }
-//         >
-//           Start date <em>can</em> be in the past.
-//         </div>
-//       </div>
-//
-//       <AmountWithCurrencyInput
-//         amount={state.amount}
-//         setAmount={(amount) => setState({ amount })}
-//         currency={state.currency}
-//         setCurrency={(currency) => setState({ currency })}
-//         currencyOptions={[
-//           { value: "weth", label: "WETH" },
-//           { value: "usdc", label: "USDC" },
-//         ]}
-//       />
-//
-//       <AddressInput
-//         label="Receiver account"
-//         value={state.receiverQuery}
-//         onChange={(maybeAddress) => {
-//           setState({ receiverQuery: maybeAddress });
-//         }}
-//         placeholder="0x..., vitalik.eth"
-//         hint={
-//           !isAddress(state.receiverQuery)
-//             ? "Specify an Ethereum account address or ENS name"
-//             : null
-//         }
-//       />
-//     </>
-//   );
-// };
+const StreamingPaymentActionForm = ({ state, setState }) => {
+  const fetchPredictedStreamContractAddress =
+    useFetchPredictedStreamContractAddress();
+
+  const canPredictStreamContractAddress =
+    isAddress(state.receiverAddress) &&
+    state.amount > 0 &&
+    state.dateRange?.start != null &&
+    state.dateRange?.end != null &&
+    state.dateRange.start < state.dateRange.end;
+
+  useFetch(
+    !canPredictStreamContractAddress
+      ? null
+      : ({ signal }) =>
+          fetchPredictedStreamContractAddress({
+            receiverAddress: state.receiverAddress,
+            amount: state.amount,
+            currency: state.currency,
+            startDate: state.dateRange?.start,
+            endDate: state.dateRange?.end,
+          }).then((address) => {
+            if (signal?.aborted) return;
+            setState({ predictedStreamContractAddress: address });
+          }),
+    [
+      state.receiverAddress,
+      state.amount,
+      state.currency,
+      state.dateRange?.start,
+      state.dateRange?.end,
+    ],
+  );
+
+  useCustomCacheEnsAddress(state.receiverQuery.trim(), {
+    enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
+  });
+
+  return (
+    <>
+      <div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+            gap: "1.6rem",
+          }}
+        >
+          <Input
+            label="Start vesting"
+            type="date"
+            max={
+              state.dateRange.end == null
+                ? undefined
+                : formatDate(state.dateRange.end, "yyyy-MM-dd")
+            }
+            value={
+              state.dateRange.start == null
+                ? "yyyy-MM-dd"
+                : formatDate(state.dateRange.start, "yyyy-MM-dd")
+            }
+            onChange={(e) => {
+              setState(({ dateRange }) => {
+                const { start, end } = dateRange;
+                if (isNaN(e.target.valueAsNumber))
+                  return { dateRange: { start: null, end } };
+
+                try {
+                  const selectedStart = parseDate(
+                    e.target.value,
+                    "yyyy-MM-dd",
+                    new Date(),
+                  );
+                  formatDate(selectedStart, "yyyy-MM-dd"); // Validation :shrug:
+                  return {
+                    dateRange: {
+                      start:
+                        end == null || selectedStart <= end
+                          ? selectedStart
+                          : start,
+                      end,
+                    },
+                  };
+                } catch (e) {
+                  return { dateRange: { start, end } };
+                }
+              });
+            }}
+          />
+          <Input
+            label="End vesting"
+            type="date"
+            min={
+              state.dateRange.state == null
+                ? undefined
+                : formatDate(state.dateRange.start, "yyyy-MM-dd")
+            }
+            value={
+              state.dateRange.end == null
+                ? "yyyy-MM-dd"
+                : formatDate(state.dateRange.end, "yyyy-MM-dd")
+            }
+            onChange={(e) => {
+              setState(({ dateRange }) => {
+                const { start, end } = dateRange;
+
+                if (isNaN(e.target.valueAsNumber))
+                  return { dateRange: { start, end: null } };
+
+                try {
+                  const selectedEnd = parseDate(
+                    e.target.value,
+                    "yyyy-MM-dd",
+                    new Date(),
+                  );
+                  formatDate(selectedEnd, "yyyy-MM-dd"); // Validation :shrug:
+
+                  return {
+                    dateRange: {
+                      start,
+                      end:
+                        start == null || selectedEnd >= start
+                          ? selectedEnd
+                          : end,
+                    },
+                  };
+                } catch (e) {
+                  return { dateRange: { start, end } };
+                }
+              });
+            }}
+          />
+        </div>
+        <div
+          css={(t) =>
+            css({
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+              marginTop: "0.7rem",
+              em: {
+                fontWeight: t.text.weights.emphasis,
+                fontStyle: "normal",
+              },
+            })
+          }
+        >
+          Start date <em>can</em> be in the past.
+        </div>
+      </div>
+
+      <AmountWithCurrencyInput
+        amount={state.amount}
+        setAmount={(amount) => setState({ amount })}
+        currency={state.currency}
+        setCurrency={(currency) => setState({ currency })}
+        currencyOptions={[
+          { value: "weth", label: "WETH" },
+          { value: "usdc", label: "USDC" },
+        ]}
+      />
+
+      <AddressInput
+        label="Receiver account"
+        value={state.receiverQuery}
+        onChange={(maybeAddress) => {
+          setState({ receiverQuery: maybeAddress });
+        }}
+        placeholder="0x..., vitalik.eth"
+        hint={
+          !isAddress(state.receiverQuery)
+            ? "Specify an Ethereum account address or ENS name"
+            : null
+        }
+      />
+    </>
+  );
+};
 
 const CustomTransactionActionForm = ({ state, setState }) => {
   const publicClient = usePublicClient();
@@ -517,7 +511,10 @@ const CustomTransactionActionForm = ({ state, setState }) => {
   const contractCallAbiItemOptions = abi
     ?.filter(isFunctionAbiItem)
     .map((item) => {
-      const signature = createSignature(item);
+      const signature = createSignature({
+        functionName: item.name,
+        inputTypes: item.inputs,
+      });
 
       const label = (
         <span>
@@ -783,7 +780,7 @@ const formConfigByActionType = {
       const ensAddress = ensCache.resolve(receiverQuery);
       const receiverAddress = isAddress(receiverQuery)
         ? receiverQuery
-        : ensAddress ?? "";
+        : (ensAddress ?? "");
       return { ...state, receiverAddress };
     },
     hasRequiredInputs: ({ state }) =>
@@ -810,7 +807,7 @@ const formConfigByActionType = {
             setCurrency={(currency) => setState({ currency })}
             currencyOptions={[
               { value: "eth", label: "ETH" },
-              // { value: "usdc", label: "USDC" },
+              { value: "usdc", label: "USDC" },
             ]}
           />
 
@@ -831,179 +828,179 @@ const formConfigByActionType = {
       );
     },
   },
-  // "streaming-payment": {
-  //   title: "Streaming transfer",
-  //   description:
-  //     "Payment streams vest requested funds with each Ethereum block. Vested funds can be withdrawn at any time.",
-  //   initialState: ({ action }) => ({
-  //     amount: action?.amount ?? "",
-  //     currency: action?.currency ?? "weth",
-  //     receiverQuery: action?.target ?? "",
-  //     dateRange: {
-  //       start:
-  //         action?.startTimestamp == null
-  //           ? null
-  //           : new Date(action.startTimestamp),
-  //       end:
-  //         action?.endTimestamp == null ? null : new Date(action.endTimestamp),
-  //     },
-  //     predictedStreamContractAddress: null,
-  //   }),
-  //   useStateMiddleware: ({ state }) => {
-  //     const ensCache = useEnsCache();
-  //     const receiverQuery = state.receiverQuery?.trim();
-  //     const ensAddress = ensCache.resolve(receiverQuery);
-  //     const receiverAddress = isAddress(receiverQuery)
-  //       ? receiverQuery
-  //       : ensAddress ?? "";
-  //     return { ...state, receiverAddress };
-  //   },
-  //   hasRequiredInputs: ({ state }) =>
-  //     state.amount != null &&
-  //     parseFloat(state.amount) > 0 &&
-  //     state.receiverAddress != null &&
-  //     isAddress(state.receiverAddress) &&
-  //     state.dateRange.start != null &&
-  //     state.dateRange.end != null &&
-  //     state.dateRange.end > state.dateRange.start &&
-  //     state.predictedStreamContractAddress != null,
-  //   buildAction: ({ state }) => ({
-  //     type: "streaming-payment",
-  //     target: state.receiverAddress,
-  //     amount: state.amount,
-  //     currency: state.currency,
-  //     startTimestamp: state.dateRange.start?.getTime(),
-  //     endTimestamp: state.dateRange.end?.getTime(),
-  //     predictedStreamContractAddress: state.predictedStreamContractAddress,
-  //   }),
-  //   Component: StreamingPaymentActionForm,
-  // },
-  // "treasury-noun-transfer": {
-  //   title: "Noun transfer",
-  //   initialState: ({ action }) => ({
-  //     nounId: action?.nounId || "",
-  //     receiverQuery: action?.target ?? "",
-  //   }),
-  //   useStateMiddleware: ({ state }) => {
-  //     const ensCache = useEnsCache();
-  //     const receiverQuery = state.receiverQuery?.trim();
-  //     const ensAddress = ensCache.resolve(receiverQuery);
-  //     const receiverAddress = isAddress(receiverQuery)
-  //       ? receiverQuery
-  //       : ensAddress ?? "";
-  //     const { address: treasuryAddress } =
-  //       getContractWithIdentifier("executor");
-  //     const totalSupply = useTotalSupply();
-  //     const maxNounId = totalSupply ? totalSupply - 2 : 0;
-  //     const treasuryNouns = useNounIdsByOwner({ owner: treasuryAddress });
-  //     return {
-  //       ...state,
-  //       receiverAddress,
-  //       treasuryAddress,
-  //       maxNounId,
-  //       treasuryNouns,
-  //     };
-  //   },
-  //   hasRequiredInputs: ({ state }) =>
-  //     state.nounId !== "" &&
-  //     state.receiverAddress != null &&
-  //     isAddress(state.receiverAddress) &&
-  //     state.treasuryNouns != null &&
-  //     state.treasuryNouns.includes(state.nounId),
-  //   buildAction: ({ state }) => ({
-  //     type: "treasury-noun-transfer",
-  //     target: state.receiverAddress,
-  //     nounId: state.nounId,
-  //   }),
-  //   Component: ({ state, setState }) => {
-  //     useCustomCacheEnsAddress(state.receiverQuery.trim(), {
-  //       enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
-  //     });
-  //     const hasRequiredInputs =
-  //       state.nounId !== "" && isAddress(state.receiverAddress);
-  //     const isUnavailableNoun =
-  //       state.nounId !== "" &&
-  //       state.treasuryNouns != null &&
-  //       !state.treasuryNouns.includes(state.nounId);
-  //     return (
-  //       <>
-  //         <div>
-  //           <Label htmlFor="nounId">Noun</Label>
-  //           <div
-  //             style={{
-  //               display: "grid",
-  //               gridTemplateColumns: "minmax(0,1fr) auto",
-  //               gap: "1rem",
-  //               alignItems: "center",
-  //             }}
-  //           >
-  //             <Input
-  //               type="number"
-  //               min={0}
-  //               max={state.maxNounId}
-  //               value={state.nounId}
-  //               onChange={(e) => {
-  //                 try {
-  //                   const n = BigInt(e.target.value);
-  //                   const truncatedN =
-  //                     n > state.maxNounId ? state.maxNounId : n < 0 ? 0 : n;
-  //                   setState({ nounId: truncatedN.toString() });
-  //                 } catch (e) {
-  //                   // Ignore
-  //                 }
-  //               }}
-  //               placeholder="0"
-  //             />
-  //             <NounAvatar id={state.nounId} size="3.5rem" />
-  //           </div>
-  //           <div
-  //             data-warn={hasRequiredInputs && isUnavailableNoun}
-  //             css={(t) =>
-  //               css({
-  //                 fontSize: t.text.sizes.small,
-  //                 color: t.colors.textDimmed,
-  //                 marginTop: "0.7rem",
-  //                 a: {
-  //                   color: "inherit",
-  //                   textDecoration: "underline",
-  //                 },
-  //                 "p + p": { marginTop: "0.7em" },
-  //                 '&[data-warn="true"]': { color: t.colors.textHighlight },
-  //               })
-  //             }
-  //           >
-  //             {hasRequiredInputs && isUnavailableNoun && (
-  //               <>Noun {state.nounId} is not available. </>
-  //             )}
-  //             See list of Nouns available in the{" "}
-  //             <a
-  //               href={`/voters/${state.treasuryAddress}`}
-  //               target="_blank"
-  //               rel="noreferrer"
-  //             >
-  //               treasury
-  //             </a>
-  //             .
-  //           </div>
-  //         </div>
-  //
-  //         <AddressInput
-  //           label="Receiver account"
-  //           value={state.receiverQuery}
-  //           onChange={(maybeAddress) => {
-  //             setState({ receiverQuery: maybeAddress });
-  //           }}
-  //           placeholder="0x..., vitalik.eth"
-  //           hint={
-  //             !isAddress(state.receiverQuery)
-  //               ? "Specify an Ethereum account address or ENS name"
-  //               : null
-  //           }
-  //         />
-  //       </>
-  //     );
-  //   },
-  // },
+  "streaming-payment": {
+    title: "Streaming transfer",
+    description:
+      "Payment streams vest requested funds with each Ethereum block. Vested funds can be withdrawn at any time.",
+    initialState: ({ action }) => ({
+      amount: action?.amount ?? "",
+      currency: action?.currency ?? "weth",
+      receiverQuery: action?.target ?? "",
+      dateRange: {
+        start:
+          action?.startTimestamp == null
+            ? null
+            : new Date(action.startTimestamp),
+        end:
+          action?.endTimestamp == null ? null : new Date(action.endTimestamp),
+      },
+      predictedStreamContractAddress: null,
+    }),
+    useStateMiddleware: ({ state }) => {
+      const ensCache = useEnsCache();
+      const receiverQuery = state.receiverQuery?.trim();
+      const ensAddress = ensCache.resolve(receiverQuery);
+      const receiverAddress = isAddress(receiverQuery)
+        ? receiverQuery
+        : (ensAddress ?? "");
+      return { ...state, receiverAddress };
+    },
+    hasRequiredInputs: ({ state }) =>
+      state.amount != null &&
+      parseFloat(state.amount) > 0 &&
+      state.receiverAddress != null &&
+      isAddress(state.receiverAddress) &&
+      state.dateRange.start != null &&
+      state.dateRange.end != null &&
+      state.dateRange.end > state.dateRange.start &&
+      state.predictedStreamContractAddress != null,
+    buildAction: ({ state }) => ({
+      type: "streaming-payment",
+      target: state.receiverAddress,
+      amount: state.amount,
+      currency: state.currency,
+      startTimestamp: state.dateRange.start?.getTime(),
+      endTimestamp: state.dateRange.end?.getTime(),
+      predictedStreamContractAddress: state.predictedStreamContractAddress,
+    }),
+    Component: StreamingPaymentActionForm,
+  },
+  "treasury-noun-transfer": {
+    title: "Noun transfer",
+    initialState: ({ action }) => ({
+      nounId: action?.nounId || "",
+      receiverQuery: action?.target ?? "",
+    }),
+    useStateMiddleware: ({ state }) => {
+      const ensCache = useEnsCache();
+      const receiverQuery = state.receiverQuery?.trim();
+      const ensAddress = ensCache.resolve(receiverQuery);
+      const receiverAddress = isAddress(receiverQuery)
+        ? receiverQuery
+        : (ensAddress ?? "");
+      const { address: treasuryAddress } =
+        getContractWithIdentifier("executor");
+      const totalSupply = useTotalSupply();
+      const maxNounId = totalSupply ? totalSupply - 2 : 0;
+      const treasuryNouns = useNounIdsByOwner({ owner: treasuryAddress });
+      return {
+        ...state,
+        receiverAddress,
+        treasuryAddress,
+        maxNounId,
+        treasuryNouns,
+      };
+    },
+    hasRequiredInputs: ({ state }) =>
+      state.nounId !== "" &&
+      state.receiverAddress != null &&
+      isAddress(state.receiverAddress) &&
+      state.treasuryNouns != null &&
+      state.treasuryNouns.includes(state.nounId),
+    buildAction: ({ state }) => ({
+      type: "treasury-noun-transfer",
+      target: state.receiverAddress,
+      nounId: state.nounId,
+    }),
+    Component: ({ state, setState }) => {
+      useCustomCacheEnsAddress(state.receiverQuery.trim(), {
+        enabled: state.receiverQuery.trim().split(".").slice(-1)[0].length > 0,
+      });
+      const hasRequiredInputs =
+        state.nounId !== "" && isAddress(state.receiverAddress);
+      const isUnavailableNoun =
+        state.nounId !== "" &&
+        state.treasuryNouns != null &&
+        !state.treasuryNouns.includes(state.nounId);
+      return (
+        <>
+          <div>
+            <Label htmlFor="nounId">Noun</Label>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "minmax(0,1fr) auto",
+                gap: "1rem",
+                alignItems: "center",
+              }}
+            >
+              <Input
+                type="number"
+                min={0}
+                max={state.maxNounId}
+                value={state.nounId}
+                onChange={(e) => {
+                  try {
+                    const n = BigInt(e.target.value);
+                    const truncatedN =
+                      n > state.maxNounId ? state.maxNounId : n < 0 ? 0 : n;
+                    setState({ nounId: truncatedN.toString() });
+                  } catch (e) {
+                    // Ignore
+                  }
+                }}
+                placeholder="0"
+              />
+              <NounAvatar id={state.nounId} size="3.5rem" />
+            </div>
+            <div
+              data-warn={hasRequiredInputs && isUnavailableNoun}
+              css={(t) =>
+                css({
+                  fontSize: t.text.sizes.small,
+                  color: t.colors.textDimmed,
+                  marginTop: "0.7rem",
+                  a: {
+                    color: "inherit",
+                    textDecoration: "underline",
+                  },
+                  "p + p": { marginTop: "0.7em" },
+                  '&[data-warn="true"]': { color: t.colors.textHighlight },
+                })
+              }
+            >
+              {hasRequiredInputs && isUnavailableNoun && (
+                <>Noun {state.nounId} is not available. </>
+              )}
+              See list of Nouns available in the{" "}
+              <a
+                href={`/voters/${state.treasuryAddress}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                treasury
+              </a>
+              .
+            </div>
+          </div>
+
+          <AddressInput
+            label="Receiver account"
+            value={state.receiverQuery}
+            onChange={(maybeAddress) => {
+              setState({ receiverQuery: maybeAddress });
+            }}
+            placeholder="0x..., vitalik.eth"
+            hint={
+              !isAddress(state.receiverQuery)
+                ? "Specify an Ethereum account address or ENS name"
+                : null
+            }
+          />
+        </>
+      );
+    },
+  },
   "custom-transaction": {
     title: "Custom transaction",
     initialState: ({ action }) => {
@@ -1021,7 +1018,10 @@ const formConfigByActionType = {
           return customAbi.some(
             (abiItem) =>
               isFunctionAbiItem(abiItem) &&
-              createSignature(abiItem) === signature,
+              createSignature({
+                functionName: abiItem.name,
+                inputTypes: abiItem.inputs,
+              }) === signature,
           );
         })(),
       };
@@ -1044,7 +1044,9 @@ const formConfigByActionType = {
     },
     hasRequiredInputs: ({ state }) => {
       const selectedSignatureAbiItem = state.abi?.find(
-        (i) => createSignature(i) === state.signature,
+        (i) =>
+          createSignature({ functionName: i.name, inputTypes: i.inputs }) ===
+          state.signature,
       );
 
       if (selectedSignatureAbiItem == null) return false;
@@ -1063,7 +1065,9 @@ const formConfigByActionType = {
     },
     buildAction: ({ state }) => {
       const selectedSignatureAbiItem = state.abi?.find(
-        (i) => createSignature(i) === state.signature,
+        (i) =>
+          createSignature({ functionName: i.name, inputTypes: i.inputs }) ===
+          state.signature,
       );
 
       const { inputs: inputTypes } = selectedSignatureAbiItem;
@@ -1793,57 +1797,57 @@ const AmountWithCurrencyInput = ({
   );
 };
 
-// const useFetchPredictedStreamContractAddress = () => {
-//   const publicClient = usePublicClient();
-//
-//   return React.useCallback(
-//     ({ amount: amount_, currency, receiverAddress, startDate, endDate }) => {
-//       const executorContract = getContractWithIdentifier("executor");
-//       const streamFactoryContract = getContractWithIdentifier("stream-factory");
-//       const paymentTokenContract = getContractWithIdentifier(
-//         `${currency}-token`,
-//       );
+const useFetchPredictedStreamContractAddress = () => {
+  const publicClient = usePublicClient();
+
+  return React.useCallback(
+    ({ amount: amount_, currency, receiverAddress, startDate, endDate }) => {
+      const executorContract = getContractWithIdentifier("executor");
+      const streamFactoryContract = getContractWithIdentifier("stream-factory");
+      const paymentTokenContract = getContractWithIdentifier(
+        `${currency}-token`,
+      );
+
+      let amount = 0;
+      try {
+        amount = BigInt(amount_);
+      } catch (e) {
         //
-//       let amount = 0;
-//       try {
-//         amount = BigInt(amount_);
-//       } catch (e) {
-//         //
-//       }
-//
-//       return publicClient.readContract({
-//         address: streamFactoryContract.address,
-//         abi: [
-//           {
-//             name: "predictStreamAddress",
-//             type: "function",
-//             stateMutability: "view",
-//             inputs: [
-//               { type: "address" },
-//               { type: "address" },
-//               { type: "address" },
-//               { type: "uint256" },
-//               { type: "address" },
-//               { type: "uint256" },
-//               { type: "uint256" },
-//             ],
-//             outputs: [{ type: "address" }],
-//           },
-//         ],
-//         functionName: "predictStreamAddress",
-//         args: [
-//           executorContract.address,
-//           executorContract.address,
-//           receiverAddress,
-//           parseAmount(amount, currency),
-//           paymentTokenContract.address,
-//           (startDate?.getTime() ?? 0) / 1000,
-//           (endDate?.getTime() ?? 0) / 1000,
-//         ],
-//       });
-//     },
-//     [publicClient],
-//   );
-// };
+      }
+
+      return publicClient.readContract({
+        address: streamFactoryContract.address,
+        abi: [
+          {
+            name: "predictStreamAddress",
+            type: "function",
+            stateMutability: "view",
+            inputs: [
+              { type: "address" },
+              { type: "address" },
+              { type: "address" },
+              { type: "uint256" },
+              { type: "address" },
+              { type: "uint256" },
+              { type: "uint256" },
+            ],
+            outputs: [{ type: "address" }],
+          },
+        ],
+        functionName: "predictStreamAddress",
+        args: [
+          executorContract.address,
+          executorContract.address,
+          receiverAddress,
+          parseAmount(amount, currency),
+          paymentTokenContract.address,
+          (startDate?.getTime() ?? 0) / 1000,
+          (endDate?.getTime() ?? 0) / 1000,
+        ],
+      });
+    },
+    [publicClient],
+  );
+};
 
 export default ActionDialog;
