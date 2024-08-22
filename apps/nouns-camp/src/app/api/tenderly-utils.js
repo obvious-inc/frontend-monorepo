@@ -77,12 +77,7 @@ export const parseProposalAction = ({ target, value, signature, calldata }) => {
 
 export const fetchSimulationBundle = async (unparsedTxs) => {
   const { address: executorAddress } = resolveIdentifier("executor");
-
-  console.log("unparsed txs", unparsedTxs);
-
   const parsedTxs = unparsedTxs.map((t) => parseProposalAction(t));
-  console.log("parsed txs", parsedTxs);
-
   const parsedTransactions = parsedTxs.map((transaction) => {
     return {
       ...transaction,
@@ -92,8 +87,6 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       ...TENDERLY_SIMULATION_OPTIONS,
     };
   });
-
-  console.log("json body", JSON.stringify({ simulations: parsedTransactions }));
 
   const response = await fetch(`${TENDERLY_API_ENDPOINT}/simulate-bundle`, {
     method: "POST",
@@ -107,8 +100,6 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
 
   const text = await response.text();
   const data = JSON.parse(text);
-
-  console.log("TEXT", text);
 
   const propCacheHeader = "max-age=3600";
 
@@ -152,8 +143,6 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       },
     );
   }
-
-  console.log("DEBUG simulations", data?.simulation_results);
 
   const simulations =
     data?.simulation_results?.map((sr) => {
@@ -200,8 +189,6 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       },
     );
   }
-
-  console.log("final sims", simulations);
 
   await shareSimulations(simulations);
 
