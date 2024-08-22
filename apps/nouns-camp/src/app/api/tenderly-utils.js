@@ -78,6 +78,8 @@ export const parseProposalAction = ({ target, value, signature, calldata }) => {
 export const fetchSimulationBundle = async (unparsedTxs) => {
   const { address: executorAddress } = resolveIdentifier("executor");
   const parsedTxs = unparsedTxs.map((t) => parseProposalAction(t));
+  console.log("parsed txs", parsedTxs);
+
   const parsedTransactions = parsedTxs.map((transaction) => {
     return {
       ...transaction,

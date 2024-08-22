@@ -35,6 +35,8 @@ export async function GET(_, context) {
     args: [Number(proposalId)],
   });
 
+  console.log("prop actions", proposalActions);
+
   const [targets, values, signatures, calldatas] = proposalActions;
   var unparsedTxs = targets.map(function (e, i) {
     return {
