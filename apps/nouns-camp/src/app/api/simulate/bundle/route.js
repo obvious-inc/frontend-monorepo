@@ -34,6 +34,7 @@ export async function POST(request) {
   // when a simulation fails, the other sims won't be executed
   const data = await response.json();
 
+  // TODO: unify error handling between bundles and normal prop/candie sim
   if (!response.ok) {
     const errorSlug = data?.error?.slug;
 
@@ -64,7 +65,34 @@ export async function POST(request) {
     );
   }
 
-  const simulations = data?.simulation_results?.map((sr) => sr?.simulation);
+  const simulations =
+    data?.simulation_results?.map((sr) => {
+      const simulation = sr.simulation || {};
+      return {
+        id: simulation.id,
+        status: simulation.status,
+        slug: simulation.slug,
+        error_message: simulation.error_message,
+      };
+    }) ?? [];
+
+  // sometimes tenderly will return an internal server error
+  // we should consider that a tenderly api error and return a 400 error
+  if (simulations.some((s) => s.slug === "internal_server_error")) {
+    return new Response(
+      JSON.stringify({
+        error: "tenderly-api-error",
+        reason: "Internal Server Error",
+      }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
   await shareSimulations(simulations);
 
   return new Response(JSON.stringify(simulations), {
