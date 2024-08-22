@@ -150,6 +150,7 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       return {
         id: simulation.id,
         status: simulation.status,
+        slug: simulation.slug,
         error_message: simulation.error_message,
       };
     }) ?? [];
@@ -159,6 +160,23 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       JSON.stringify({
         error: "empty-simulation",
         reason: "No simulation results",
+      }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
+  // sometimes tenderly will return an internal server error
+  // we should consider that a tenderly api error and return a 400 error
+  if (simulations.some((s) => s.slug === "internal_server_error")) {
+    return new Response(
+      JSON.stringify({
+        error: "tenderly-api-error",
+        reason: "Internal Server Error",
       }),
       {
         status: 400,
