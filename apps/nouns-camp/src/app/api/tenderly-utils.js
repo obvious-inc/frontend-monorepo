@@ -103,6 +103,8 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
 
   const data = await response.json();
 
+  console.log("DATA", data);
+
   const propCacheHeader = "max-age=3600";
 
   if (!response.ok) {
