@@ -57,7 +57,7 @@
     "slate": "0.103.0",
     "slate-history": "0.100.0",
     "slate-react": "0.108.0",
-    "tinykeys": "2.1.0",
+    "tinykeys": "3.0.0",
     "use-debounce": "10.0.3",
     "viem": "2.17.8",
     "wagmi": "2.11.3",
