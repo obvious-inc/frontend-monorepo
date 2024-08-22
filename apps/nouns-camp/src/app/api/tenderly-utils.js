@@ -89,6 +89,8 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
     };
   });
 
+  console.log("json body", JSON.stringify({ simulations: parsedTransactions }));
+
   const response = await fetch(`${TENDERLY_API_ENDPOINT}/simulate-bundle`, {
     method: "POST",
     headers: {
@@ -144,6 +146,8 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
     );
   }
 
+  console.log("DEBUG simulations", data?.simulation_results);
+
   const simulations =
     data?.simulation_results?.map((sr) => {
       const simulation = sr.simulation || {};
@@ -189,6 +193,8 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       },
     );
   }
+
+  console.log("final sims", simulations);
 
   await shareSimulations(simulations);
 
