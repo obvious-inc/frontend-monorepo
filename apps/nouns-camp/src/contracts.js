@@ -4,23 +4,23 @@ import { CHAIN_ID } from "./constants/env.js";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-const DAO_LOGIC_PROXY_CONTRACT = "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039";
+const DAO_LOGIC_PROXY_CONTRACT = "0x5d2c31ce16924c2a71d317e5bbfd5ce387854039";
 const DAO_EXECUTOR_PROXY_CONTRACT =
-  "0xd5f279ff9EB21c6D40C8f345a66f2751C4eeA1fB";
-const DAO_DATA_PROXY_CONTRACT = "0x5d2C31ce16924C2a71D317e5BbFd5ce387854039";
-const DAO_TOKEN_CONTRACT = "0x4b10701Bfd7BFEdc47d50562b76b436fbB5BdB3B";
+  "0xd5f279ff9eb21c6d40c8f345a66f2751c4eea1fb";
+const DAO_DATA_PROXY_CONTRACT = "0x5d2c31ce16924c2a71d317e5bbfd5ce387854039";
+const DAO_TOKEN_CONTRACT = "0x4b10701bfd7bfedc47d50562b76b436fbb5bdb3b";
 const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
-  "0x55e0F7A3bB39a28Bd7Bcc458e04b3cF00Ad3219E";
-const DAO_DESCRIPTOR_CONTRACT = "0xb2a47999b3117c7dD628920ED8e77eBDfB948B68";
-const DAO_TOKEN_BUYER_CONTRACT = "0x387140cD0132ff750263f08aCfdFbEc7b0Cf63c0";
-const DAO_PAYER_CONTRACT = "0xF62387d21153fdcbB06Ab3026c2089e418688164";
+  "0x55e0f7a3bb39a28bd7bcc458e04b3cf00ad3219e";
+const DAO_DESCRIPTOR_CONTRACT = "0xb2a47999b3117c7dd628920ed8e77ebdfb948b68";
+const DAO_TOKEN_BUYER_CONTRACT = "0x387140cd0132ff750263f08acfdfbec7b0cf63c0";
+const DAO_PAYER_CONTRACT = "0xf62387d21153fdcbb06ab3026c2089e418688164";
 
 const addressByIdentifierByChainId = {
   [mainnet.id]: {
     "eth-token": ETH_TOKEN_CONTRACT_ADDRESS,
     "weth-token": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
     "wsteth-token": "0x7f39c581f595b53c5cb19bd0b3f8da6c935e2ca0",
-    "oeth-token": "0x856c4Efb76C1D1AE02e20CEB03A2A6a08b0b8dC3",
+    "oeth-token": "0x856c4efb76c1d1ae02e20ceb03a2a6a08b0b8dc3",
     "reth-token": "0xae78736cd615f374d3085123a210448e74fc6393",
     "usdc-token": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
     "steth-token": "0xae7ab96520de3a18e5e111b5eaab095312d7fe84",
@@ -40,13 +40,13 @@ const addressByIdentifierByChainId = {
     data: DAO_DATA_PROXY_CONTRACT,
     token: DAO_TOKEN_CONTRACT,
     "auction-house": DAO_AUCTION_HOUSE_PROXY_CONTRACT,
-    "auction-house-admin": "0xA4BebeC5bf3670Bb47a55ff705c91956C703237B",
+    "auction-house-admin": "0xa4bebec5bf3670bb47a55ff705c91956c703237b",
     descriptor: DAO_DESCRIPTOR_CONTRACT,
     "fork-escrow": "0x0",
     payer: DAO_PAYER_CONTRACT,
-    "executor-v1": "0xd5f279ff9EB21c6D40C8f345a66f2751C4eeA1fB",
+    "executor-v1": "0xd5f279ff9eb21c6d40c8f345a66f2751c4eea1fb",
     "token-buyer": DAO_TOKEN_BUYER_CONTRACT,
-    "stream-factory": "0xb2fFEEF1F68CfacDeFdAFe6F1a9D30Ff47C7cB5e",
+    "stream-factory": "0xb2ffeef1f68cfacdefdafe6f1a9d30ff47c7cb5e",
     "client-incentives-rewards-proxy":
       "0x0",
     "prop-house-nouns-house": "0x0",
@@ -59,16 +59,16 @@ const addressByIdentifierByChainId = {
     "wsteth-token": "0xb82381a3fbd3fafa77b3a7be693342618240067b",
 
     // Nouns contracts
-    dao: "0xa7C37f79ff5E6F932147fC69724B6ED432CA6Aa7",
-    executor: "0xE54f098b1880C536e0083720922b8a365FB403DC",
-    data: "0xa7C37f79ff5E6F932147fC69724B6ED432CA6Aa7",
-    token: "0x6e48e79f718776CF412a87e047722dBFda5B465D",
-    "auction-house": "0xA777a0a132dCc0a1c35E1eA19f28595dBe7ca6a6",
-    "auction-house-admin": "0x7Dc74E65a3619C28076F06135ef9DCAa9b7ba8cF",
+    dao: "0xa7c37f79ff5e6f932147fc69724b6ed432ca6aa7",
+    executor: "0xe54f098b1880c536e0083720922b8a365fb403dc",
+    data: "0xa7c37f79ff5e6f932147fc69724b6ed432ca6aa7",
+    token: "0x6e48e79f718776cf412a87e047722dbfda5b465d",
+    "auction-house": "0xa777a0a132dcc0a1c35e1ea19f28595dbe7ca6a6",
+    "auction-house-admin": "0x7dc74e65a3619c28076f06135ef9dcaa9b7ba8cf",
     "fork-escrow": "0x0",
-    payer: "0x5a2A0951C6b3479DBEe1D5909Aac7B325d300D94",
-    "token-buyer": "0x821176470cFeF1dB78F1e2dbae136f73c36ddd48",
-    "stream-factory": "0xb78ccF3BD015f209fb9B2d3d132FD8784Df78DF5",
+    payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",
+    "token-buyer": "0x821176470cfef1db78f1e2dbae136f73c36ddd48",
+    "stream-factory": "0xb78ccf3bd015f209fb9b2d3d132fd8784df78df5",
     "prop-house-nouns-house": "0x0",
   },
 };
