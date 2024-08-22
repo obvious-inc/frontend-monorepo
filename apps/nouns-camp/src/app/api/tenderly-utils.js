@@ -173,7 +173,7 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
   // we should consider that a tenderly api error and return a 400 error
   if (
     simulations.some(
-      (s) => s.error_message.toLowerCase() === "internal server error",
+      (s) => s.error_message?.toLowerCase() === "internal server error",
     )
   ) {
     return new Response(
