@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.3] - 2024-08-22
+
+### 🐛 Bug Fixes
+
+- *(contracts)* Standardize case for contract addresses
+
 ## [1.3.0-alpha.2] - 2024-08-21
 
 ### 🚀 Features
