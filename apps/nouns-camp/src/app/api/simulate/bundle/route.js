@@ -71,14 +71,17 @@ export async function POST(request) {
       return {
         id: simulation.id,
         status: simulation.status,
-        slug: simulation.slug,
         error_message: simulation.error_message,
       };
     }) ?? [];
 
-  // sometimes tenderly will return an internal server error
+  // sometimes tenderly will return an internal server error within the simulation response
   // we should consider that a tenderly api error and return a 400 error
-  if (simulations.some((s) => s.slug === "internal_server_error")) {
+  if (
+    simulations.some(
+      (s) => s.error_message.toLowerCase() === "internal server error",
+    )
+  ) {
     return new Response(
       JSON.stringify({
         error: "tenderly-api-error",
