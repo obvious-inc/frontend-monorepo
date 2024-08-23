@@ -96,6 +96,7 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       "X-Access-Key": process.env.TENDERLY_API_KEY,
     },
     body: JSON.stringify({ simulations: parsedTransactions }),
+    cache: "no-cache",
   });
 
   const text = await response.text();
