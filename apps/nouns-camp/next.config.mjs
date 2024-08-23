@@ -115,6 +115,7 @@ export default withSentry(
 
       return config;
     },
+    swcMinify: false,
     experimental: {
       turbo: {
         // Ignoring modules is not a thing yet
