@@ -16,6 +16,7 @@
   "dependencies": {
     "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.0",
+    "@farcaster/core": "^0.15.1",
     "@nouns/assets": "^0.8.0",
     "@nouns/contracts": "^0.3.0",
     "@nouns/sdk": "^0.4.0",
