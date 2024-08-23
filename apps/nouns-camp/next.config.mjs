@@ -1,14 +1,17 @@
-const { readFileSync } = require("node:fs");
-const path = require("node:path");
-const dotenv = require("dotenv");
-const webpack = require("webpack");
-const { withSentryConfig } = require("@sentry/nextjs");
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+import webpack from "webpack";
+import { withSentryConfig } from "@sentry/nextjs";
+import serwist from "@serwist/next";
 
 // Assert environment variables are setup correctly
 (() => {
   // Skip this check in CI lint jobs (`next lint` runs this file)
   if (process.env.CI_LINT != null) return;
 
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const templateFile = readFileSync(path.join(__dirname, ".env.template"));
   const whitelistedKeys = Object.keys(dotenv.parse(templateFile));
 
@@ -24,7 +27,7 @@ const { withSentryConfig } = require("@sentry/nextjs");
   }
 })();
 
-const withSerwist = require("@serwist/next").default({
+const withSerwist = serwist({
   swSrc: "src/app/service-worker.js",
   swDest: "public/service-worker.js",
   swUrl: "/service-worker.js",
@@ -70,7 +73,7 @@ const ignoredModules = [
   "encoding",
 ];
 
-module.exports = withSentry(
+export default withSentry(
   withSerwist({
     reactStrictMode: true,
     compiler: {
@@ -112,6 +115,8 @@ module.exports = withSentry(
 
       return config;
     },
+    // https://github.com/farcasterxyz/hub-monorepo/issues/2031
+    swcMinify: false,
     experimental: {
       turbo: {
         // Ignoring modules is not a thing yet

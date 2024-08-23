@@ -1,10 +1,12 @@
-import { defaultCache } from "@serwist/next/browser";
-import { installSerwist } from "@serwist/sw";
+import { defaultCache } from "@serwist/next/worker";
+import { Serwist } from "serwist";
 
-installSerwist({
+const serwist = new Serwist({
   precacheEntries: self.__SW_MANIFEST,
   skipWaiting: true,
   clientsClaim: true,
   navigationPreload: true,
   runtimeCaching: defaultCache,
 });
+
+serwist.addEventListeners();
