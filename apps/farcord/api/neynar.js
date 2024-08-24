@@ -17,11 +17,11 @@ export default async function handler(request) {
   queryParams.delete("path");
   queryParams.delete("api_key");
 
-  const remainingQuery = queryParams.toString();
-
   console.log("version", version);
   console.log("path", remainingPath);
-  console.log("query", remainingQuery);
+  console.log("query", queryParams.toString());
+
+  queryParams.append("api_key", process.env.FARCASTER_HUB_API_KEY);
 
   let body;
   try {
@@ -32,10 +32,9 @@ export default async function handler(request) {
 
   const neynarApiEndpoint =
     version === "v1" ? NEYNAR_V1_ENDPOINT : NEYNAR_V2_ENDPOINT;
-  remainingQuery.append("api_key", process.env.FARCASTER_HUB_API_KEY);
 
   const result = await fetch(
-    `${neynarApiEndpoint}/${remainingPath}?${remainingQuery}`,
+    `${neynarApiEndpoint}/${remainingPath}?` + queryParams,
     {
       method: request.method,
       headers: {
