@@ -5,10 +5,9 @@ export const config = {
 const neynarApiKey = process.env.FARCASTER_HUB_API_KEY;
 
 export default async function handler(request) {
-  const { slug } = request.query;
-
-  const version = slug[0];
-  const path = slug.slice(1).join("/");
+  const path = new URL(request.url).pathname;
+  const version = path.split("/")[0];
+  const remainingPath = path.split("/").slice(1).join("/");
 
   let body;
   try {
@@ -17,13 +16,13 @@ export default async function handler(request) {
     body = null;
   }
 
-  console.log("body", body);
+  // console.log("body", body);
 
   if (request.method === "POST") {
     // handle POST requests
     return new Response(
       JSON.stringify({
-        data: { post: `version: ${version} | path: ${path}` },
+        data: { post: `version: ${version} | path: ${remainingPath}` },
       }),
       {
         status: 200,
@@ -36,7 +35,7 @@ export default async function handler(request) {
     return new Response(
       JSON.stringify({
         data: {
-          data: { get: `version: ${version} | path: ${path}` },
+          get: `version: ${version} | path: ${remainingPath}`,
         },
       }),
       {
