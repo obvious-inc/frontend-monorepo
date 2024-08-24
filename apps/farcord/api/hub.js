@@ -26,9 +26,11 @@ export default async function handler(request) {
     body = null;
   }
 
-  const hubRequest = new Request(url, { method, headers, body });
-
-  const result = await fetch(hubRequest);
+  const result = await fetch(url, {
+    method,
+    headers,
+    body,
+  });
 
   if (!result.ok) {
     return new Response(
