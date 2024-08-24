@@ -76,9 +76,18 @@ const PromoteCandidateDialog = React.lazy(
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
+const useActiveProposerIds = () => {
+  const activeProposals = useProposals({ filter: "active" });
+  return activeProposals.flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
+};
+
 const ProposalCandidateScreenContent = ({
   candidateId,
   toggleSponsorDialog,
+  toggleProposeDialog,
   scrollContainerRef,
 }) => {
   const proposerId = candidateId.split("-")[0];
@@ -129,10 +138,7 @@ const ProposalCandidateScreenContent = ({
 
   const proposerDelegate = useDelegate(candidate.proposerId);
   const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
-  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
-    p.proposerId,
-    ...p.signers.map((s) => s.id),
-  ]);
+  const activeProposerIds = useActiveProposerIds();
 
   const {
     data: simulationResults,
@@ -150,6 +156,8 @@ const ProposalCandidateScreenContent = ({
   useProposalFetch(candidate.latestVersion.targetProposalId);
 
   useScrollToHash();
+
+  const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
 
   if (candidate?.latestVersion.content.description == null) return null;
 
@@ -173,10 +181,6 @@ const ProposalCandidateScreenContent = ({
       activeProposerIds: [],
     },
   );
-
-  const sponsorsVotingPower = arrayUtils.unique(
-    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id)),
-  ).length;
 
   const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
   const missingSponsorVotingPower = isProposalThresholdMet
@@ -406,6 +410,7 @@ const ProposalCandidateScreenContent = ({
                       <SponsorsTabMainContent
                         candidateId={candidateId}
                         toggleSponsorDialog={toggleSponsorDialog}
+                        toggleProposeDialog={toggleProposeDialog}
                       />
                     </div>
                   </Tabs.Item>
@@ -734,6 +739,7 @@ const ProposalCandidateScreenContent = ({
                         <SponsorsTabMainContent
                           candidateId={candidateId}
                           toggleSponsorDialog={toggleSponsorDialog}
+                          toggleProposeDialog={toggleProposeDialog}
                         />
                       </>
                     )}
@@ -763,13 +769,16 @@ const ProposalCandidateScreenContent = ({
   );
 };
 
-const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
+const SponsorsTabMainContent = ({
+  candidateId,
+  toggleSponsorDialog,
+  toggleProposeDialog,
+}) => {
   const candidate = useProposalCandidate(candidateId);
+  const proposerDelegate = useDelegate(candidate.proposerId);
 
-  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
-    p.proposerId,
-    ...p.signers.map((s) => s.id),
-  ]);
+  const activeProposerIds = useActiveProposerIds();
+  const proposalThreshold = useProposalThreshold();
 
   const signatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
@@ -792,6 +801,26 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
     candidate.canceledTimestamp == null &&
     !isProposer;
 
+  const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
+
+  const proposerVotingPower =
+    proposerDelegate == null ? 0 : proposerDelegate.nounsRepresented.length;
+
+  const isProposalThresholdMet =
+    proposerVotingPower + sponsorsVotingPower > proposalThreshold;
+
+  const isCanceled = candidate.canceledTimestamp != null;
+
+  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
+
+  const hasBeenPromoted = candidate.latestVersion.proposalId != null;
+
+  const isPromotable =
+    isProposalThresholdMet &&
+    !hasBeenPromoted &&
+    !isCanceled &&
+    !isProposalUpdate;
+
   if (signatures.length === 0)
     return (
       <div
@@ -805,16 +834,28 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
         }
       >
         No sponsors
-        {showSponsorButton && (
+        {(showSponsorButton || isPromotable) && (
           <div css={css({ marginTop: "2.4rem" })}>
-            <Button
-              type="button"
-              onClick={() => {
-                toggleSponsorDialog();
-              }}
-            >
-              Sponsor candidate
-            </Button>
+            {showSponsorButton && (
+              <Button
+                type="button"
+                onClick={() => {
+                  toggleSponsorDialog();
+                }}
+              >
+                Sponsor candidate
+              </Button>
+            )}
+            {isPromotable && (
+              <Button
+                type="button"
+                onClick={() => {
+                  toggleProposeDialog();
+                }}
+              >
+                Promote candidate
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -952,16 +993,28 @@ const SponsorsTabMainContent = ({ candidateId, toggleSponsorDialog }) => {
           ))}
       </ul>
 
-      {showSponsorButton && (
+      {(showSponsorButton || isPromotable) && (
         <div css={css({ marginTop: "3.2rem" })}>
-          <Button
-            type="button"
-            onClick={() => {
-              toggleSponsorDialog();
-            }}
-          >
-            Sponsor candidate
-          </Button>
+          {showSponsorButton && (
+            <Button
+              type="button"
+              onClick={() => {
+                toggleSponsorDialog();
+              }}
+            >
+              Sponsor candidate
+            </Button>
+          )}
+          {isPromotable && (
+            <Button
+              type="button"
+              onClick={() => {
+                toggleProposeDialog();
+              }}
+            >
+              Promote candidate
+            </Button>
+          )}
         </div>
       )}
     </>
@@ -1170,6 +1223,27 @@ const SponsorDialog = ({ candidateId, titleProps, dismiss }) => {
   );
 };
 
+const useSponsorsVotingPower = (candidateId) => {
+  const candidate = useProposalCandidate(candidateId);
+
+  const activeProposerIds = useActiveProposerIds();
+
+  const validSignatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+    activeProposerIds,
+  });
+
+  const sponsoringNouns = arrayUtils.unique(
+    validSignatures.flatMap((s) => {
+      // don't count votes from signers who have active or pending proposals
+      // if (!activePendingProposers.includes(signature.signer.id)) {
+      return s.signer.nounsRepresented.map((n) => n.id);
+    }),
+  );
+
+  return sponsoringNouns.length;
+};
+
 const ProposalCandidateScreen = ({ candidateId: rawId }) => {
   const candidateId = normalizeId(decodeURIComponent(rawId));
 
@@ -1222,27 +1296,11 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
     { prefetch: true, replace: true },
   );
 
-  const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
-    p.proposerId,
-    ...p.signers.map((s) => s.id),
-  ]);
-
   const cancelCandidate = useCancelProposalCandidate(slug, {
     enabled: isProposer,
   });
 
-  const validSignatures = getSponsorSignatures(candidate, {
-    excludeInvalid: true,
-    activeProposerIds,
-  });
-
-  const sponsorsVotingPower = arrayUtils.unique(
-    validSignatures.flatMap((s) => {
-      // don't count votes from signers who have active or pending proposals
-      // if (!activePendingProposers.includes(signature.signer.id)) {
-      return s.signer.nounsRepresented.map((n) => n.id);
-    }),
-  ).length;
+  const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
 
   const proposerVotingPower =
     proposerDelegate == null ? 0 : proposerDelegate.nounsRepresented.length;
@@ -1254,12 +1312,12 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
     if (candidate == null) return [];
 
     const isCanceled = candidate.canceledTimestamp != null;
+
     const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
 
     if (!isProposer || isCanceled) return undefined;
 
     const hasBeenPromoted = candidate.latestVersion.proposalId != null;
-
     const proposerActions = [];
 
     if (!hasBeenPromoted)
@@ -1268,7 +1326,10 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
         label: "Edit",
       });
 
-    if (isProposalThresholdMet && !hasBeenPromoted && !isProposalUpdate)
+    const isPromotable =
+      isProposalThresholdMet && !hasBeenPromoted && !isProposalUpdate;
+
+    if (isPromotable)
       proposerActions.push({
         onSelect: toggleProposeDialog,
         label: "Promote",
@@ -1354,6 +1415,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
           <ProposalCandidateScreenContent
             candidateId={candidateId}
             toggleSponsorDialog={toggleSponsorDialog}
+            toggleProposeDialog={toggleProposeDialog}
             scrollContainerRef={scrollContainerRef}
           />
         )}

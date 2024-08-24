@@ -46,7 +46,7 @@ export default async function handler(request) {
         "Content-Type": "application/json",
       },
       body: body ? JSON.stringify(body) : null,
-    }
+    },
   );
 
   const responseHeaders = {
@@ -65,7 +65,7 @@ export default async function handler(request) {
       {
         status: 400,
         headers: responseHeaders,
-      }
+      },
     );
   }
 
