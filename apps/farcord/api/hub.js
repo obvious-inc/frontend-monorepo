@@ -5,7 +5,10 @@ export default function handler(request, response) {
   // remove path from query parameters and use as part of URL
   const urlParams = new URLSearchParams(request.url.split("?")[1]);
   const path = urlParams.get("path");
+  const cache = urlParams.get("cache");
+
   urlParams.delete("path");
+  urlParams.delete("cache");
 
   const url = process.env.FARCASTER_HUB_HTTP_ENDPOINT + path + "?" + urlParams;
 
@@ -27,7 +30,13 @@ export default function handler(request, response) {
       return res.json();
     })
     .then((data) => {
-      return response.status(200).json(data);
+      return response
+        .status(200, {
+          headers: {
+            "Cache-Control": cache ? `public, max-age=${cache}` : null,
+          },
+        })
+        .json(data);
     })
     .catch((err) => {
       return err;
