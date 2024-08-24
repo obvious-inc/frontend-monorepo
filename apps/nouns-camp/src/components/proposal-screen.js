@@ -278,7 +278,11 @@ const ProposalMainSection = ({
 
       const targetPost = feedItems.find((i) => i.id === postId);
 
-      if (targetPost != null) setPendingSupport(targetPost.support);
+      if (targetPost != null)
+        setPendingSupport((support) => {
+          if (support != null) return support;
+          return targetPost.support;
+        });
 
       const input = proposalActionInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });
