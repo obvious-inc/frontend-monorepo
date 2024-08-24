@@ -2,10 +2,7 @@ import React from "react";
 import { parseString } from "../utils/message";
 import { array as arrayUtils } from "@shades/common/utils";
 
-const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
-const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
-
-const NEYNAR_API_KEY = import.meta.env.PUBLIC_NEYNAR_API_KEY;
+const EDGE_API_BASE_URL = import.meta.env.EDGE_API_BASE_URL;
 
 const DEFAULT_PAGE_SIZE = 75;
 
@@ -18,8 +15,8 @@ export async function fetchNeynarFeedCasts({
   if (!parentUrl && !fid) return [];
 
   let params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     limit,
+    cache: 60,
   });
 
   if (parentUrl) {
@@ -32,7 +29,7 @@ export async function fetchNeynarFeedCasts({
 
   if (cursor) params.set("cursor", cursor);
 
-  return fetch(NEYNAR_V2_ENDPOINT + "/feed?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/neynar?path=/v2/feed&` + params)
     .then((result) => {
       return result.json();
     })
@@ -43,7 +40,7 @@ export async function fetchNeynarFeedCasts({
       return await Promise.all(
         casts.map(async (cast) => {
           return parseCast({ cast });
-        }),
+        })
       );
     })
     .then((parsedCasts) => {
@@ -56,13 +53,13 @@ export async function fetchNeynarFeedCasts({
 
 export async function fetchNeynarRecentCasts({ cursor }) {
   let params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     limit: DEFAULT_PAGE_SIZE,
+    cache: 60,
   });
 
   if (cursor) params.set("cursor", cursor);
 
-  return fetch(NEYNAR_V1_ENDPOINT + "/recent-casts?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/neynar?path=/v1/recent-casts&` + params)
     .then((result) => {
       return result.json();
     })
@@ -73,7 +70,7 @@ export async function fetchNeynarRecentCasts({ cursor }) {
       return await Promise.all(
         casts.map(async (cast) => {
           return parseCast({ cast });
-        }),
+        })
       );
     })
     .then((parsedCasts) => {
@@ -88,13 +85,15 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
   if (!threadCastHash) return [];
 
   const params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     threadHash: threadCastHash,
+    cache: 60,
   });
 
   if (cursor) params.set("cursor", cursor);
 
-  return fetch(NEYNAR_V1_ENDPOINT + "/all-casts-in-thread?" + params)
+  return fetch(
+    `${EDGE_API_BASE_URL}/neynar?path=/v1/all-casts-in-thread&` + params
+  )
     .then((result) => {
       return result.json();
     })
@@ -105,7 +104,7 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
       return await Promise.all(
         casts.map(async (cast) => {
           return parseCast({ cast });
-        }),
+        })
       );
     })
     .then((parsedCasts) => {
@@ -118,13 +117,13 @@ export async function fetchNeynarThreadCasts({ threadCastHash, cursor }) {
 
 export async function fetchNeynarCast(castHash) {
   const params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     hash: castHash,
+    cache: 120,
   });
 
   if (!castHash) return null;
 
-  return fetch(NEYNAR_V1_ENDPOINT + "/cast?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/neynar?path=/v1/cast&` + params)
     .then((result) => {
       return result.json();
     })
@@ -138,11 +137,11 @@ export async function fetchNeynarCast(castHash) {
 
 export const fetchUserByFid = async (fid) => {
   const params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     fid: Number(fid),
+    cache: 300,
   });
 
-  return fetch(NEYNAR_V1_ENDPOINT + "/user?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/neynar?path=/v1/user&` + params)
     .then((result) => {
       return result.json();
     })
@@ -160,11 +159,12 @@ export const fetchUserByFid = async (fid) => {
 
 export const fetchUserByUsername = async (username) => {
   const params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     username,
   });
 
-  return fetch(NEYNAR_V1_ENDPOINT + "/user-by-username?" + params)
+  return fetch(
+    `${EDGE_API_BASE_URL}/neynar?path=/v1/user-by-username&` + params
+  )
     .then((result) => {
       return result.json();
     })
@@ -187,13 +187,12 @@ export async function fetchNotifications({
   limit = 50, //limit for notificatons is different
 }) {
   let params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     fid,
     cursor,
     limit,
   });
 
-  return fetch(NEYNAR_V2_ENDPOINT + "/notifications?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/neynar?path=/v2/notifications&` + params)
     .then((result) => {
       return result.json();
     })
@@ -214,12 +213,11 @@ export async function fetchNotifications({
 
 export async function searchUsersByUsername({ fid, query }) {
   let params = new URLSearchParams({
-    api_key: NEYNAR_API_KEY,
     viewer_fid: fid ? Number(fid) : 3, // required...
     q: query,
   });
 
-  return fetch(NEYNAR_V2_ENDPOINT + "/user/search?" + params)
+  return fetch(`${EDGE_API_BASE_URL}/neynar?path=/v2/user/search&` + params)
     .then((result) => {
       return result.json();
     })
@@ -294,10 +292,10 @@ const parseCast = ({ cast, hash }) => {
         }
       : {
           likes: arrayUtils.unique(
-            cast.reactions?.likes.map((r) => r.fid) || [],
+            cast.reactions?.likes.map((r) => r.fid) || []
           ),
           recasts: arrayUtils.unique(
-            cast.reactions?.recasts.map((r) => r.fid) || [],
+            cast.reactions?.recasts.map((r) => r.fid) || []
           ),
         };
 
@@ -347,7 +345,7 @@ const parseNotification = ({ notification }) => {
 
   if (notification.follows) {
     const timestamp = new Date(
-      parsedNotification.mostRecentTimestamp,
+      parsedNotification.mostRecentTimestamp
     ).getTime();
     parsedNotification.id = `${parsedNotification.type}-${timestamp}`;
     parsedNotification.follows = notification.follows.map((f) => {
