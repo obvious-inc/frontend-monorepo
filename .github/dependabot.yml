@@ -68,6 +68,7 @@ updates:
         patterns:
           - 'next'
           - 'eslint-config-next'
+          - '@next/*'
       next-on-page:
         patterns:
           - '@cloudflare/next-on-pages'
