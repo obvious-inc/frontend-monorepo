@@ -1,4 +1,8 @@
-export default function handler(request, response) {
+export const config = {
+  runtime: "edge",
+};
+
+export default async function handler(request) {
   const headers = new Headers(request.headers);
   headers.set("api_key", process.env.FARCASTER_HUB_API_KEY);
 
@@ -24,24 +28,32 @@ export default function handler(request, response) {
 
   const hubRequest = new Request(url, { method, headers, body });
 
-  return fetch(hubRequest)
-    .then((res) => {
-      if (!res.ok) {
-        return response.status(res.status).json({ error: res.statusText });
-      }
+  const result = await fetch(hubRequest);
 
-      return res.json();
-    })
-    .then((data) => {
-      return response
-        .status(200, {
-          headers: {
-            "Cache-Control": cache ? `public, max-age=${cache}` : null,
-          },
-        })
-        .json(data);
-    })
-    .catch((err) => {
-      return err;
-    });
+  if (!result.ok) {
+    return new Response(
+      JSON.stringify({
+        error: {
+          status: result.status,
+          statusText: result.statusText,
+        },
+      }),
+      {
+        status: result.status,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+  }
+
+  const data = await result.json();
+
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": cache ? `public, max-age=${cache}` : null,
+    },
+  });
 }
