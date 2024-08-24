@@ -4,7 +4,6 @@ export const config = {
 
 export default async function handler(request) {
   const headers = new Headers(request.headers);
-  headers.set("api_key", process.env.FARCASTER_HUB_API_KEY);
 
   // remove path from query parameters and use as part of URL
   const urlParams = new URLSearchParams(request.url.split("?")[1]);
@@ -29,11 +28,18 @@ export default async function handler(request) {
   console.log("url", url);
   console.log("method", method);
   console.log("body", body);
-  console.log("headers", headers);
+
+  const fetchHeaders = {
+    ...request.headers,
+    "Content-Type": "application/json",
+    api_key: process.env.FARCASTER_HUB_API_KEY,
+  };
+
+  console.log("fetch headers", fetchHeaders);
 
   const result = await fetch(url, {
     method,
-    headers,
+    headers: fetchHeaders,
     body,
   });
 
