@@ -7,6 +7,9 @@ export default function handler(request, response) {
   const path = urlParams.get("path");
   const cache = urlParams.get("cache");
 
+  console.log("url params", urlParams.toString());
+  console.log("cache", cache);
+
   urlParams.delete("path");
   urlParams.delete("cache");
 
