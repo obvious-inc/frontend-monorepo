@@ -2,7 +2,6 @@ export const config = {
   runtime: "edge",
 };
 
-const neynarApiKey = process.env.FARCASTER_HUB_API_KEY;
 const NEYNAR_V1_ENDPOINT = "https://api.neynar.com/v1/farcaster";
 const NEYNAR_V2_ENDPOINT = "https://api.neynar.com/v2/farcaster";
 
@@ -19,6 +18,10 @@ export default async function handler(request) {
 
   const remainingQuery = queryParams.toString();
 
+  console.log("version", version);
+  console.log("remainingPath", remainingPath);
+  console.log("remainingQuery", remainingQuery);
+
   let body;
   try {
     body = await request.json();
@@ -26,36 +29,76 @@ export default async function handler(request) {
     body = null;
   }
 
-  // console.log("body", body);
+  const neynarApiEndpoint =
+    version === "v1" ? NEYNAR_V1_ENDPOINT : NEYNAR_V2_ENDPOINT;
+  remainingQuery["api_key"] = process.env.FARCASTER_HUB_API_KEY;
 
-  if (request.method === "POST") {
-    // handle POST requests
+  const result = await fetch(
+    `${neynarApiEndpoint}/${remainingPath}?${remainingQuery}`,
+    {
+      method: request.method,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: body ? JSON.stringify(body) : null,
+    }
+  );
+
+  if (!result.ok) {
     return new Response(
       JSON.stringify({
-        data: {
-          post: `version: ${version} | path: ${remainingPath} | query: ${remainingQuery}`,
+        error: {
+          message: "Failed to fetch data from Neynar",
         },
       }),
       {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
-    );
-  } else {
-    return new Response(
-      JSON.stringify({
-        data: {
-          get: `version: ${version} | path: ${remainingPath}  | query: ${remainingQuery}`,
-        },
-      }),
-      {
-        status: 200,
+        status: 400,
         headers: {
           "Content-Type": "application/json",
         },
       }
     );
   }
+
+  const resultBody = await result.json();
+
+  return new Response(JSON.stringify(resultBody), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  // console.log("body", body);
+
+  // if (request.method === "POST") {
+  //   // handle POST requests
+  //   return new Response(
+  //     JSON.stringify({
+  //       data: {
+  //         post: `version: ${version} | path: ${remainingPath} | query: ${remainingQuery}`,
+  //       },
+  //     }),
+  //     {
+  //       status: 200,
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //     }
+  //   );
+  // } else {
+  //   return new Response(
+  //     JSON.stringify({
+  //       data: {
+  //         get: `version: ${version} | path: ${remainingPath}  | query: ${remainingQuery}`,
+  //       },
+  //     }),
+  //     {
+  //       status: 200,
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //     }
+  //   );
+  // }
 }
