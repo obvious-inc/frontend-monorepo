@@ -26,6 +26,11 @@ export default async function handler(request) {
     body = null;
   }
 
+  console.log("url", url);
+  console.log("method", method);
+  console.log("body", body);
+  console.log("headers", headers);
+
   const result = await fetch(url, {
     method,
     headers,
