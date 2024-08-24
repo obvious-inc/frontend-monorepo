@@ -1,20 +1,11 @@
-export const config = {
-  runtime: "edge",
-};
-
-export default async function handler(request) {
+export default function handler(request, response) {
   const headers = new Headers(request.headers);
+  headers.set("api_key", process.env.FARCASTER_HUB_API_KEY);
 
   // remove path from query parameters and use as part of URL
   const urlParams = new URLSearchParams(request.url.split("?")[1]);
   const path = urlParams.get("path");
-  const cache = urlParams.get("cache");
-
-  console.log("url params", urlParams.toString());
-  console.log("cache", cache);
-
   urlParams.delete("path");
-  urlParams.delete("cache");
 
   const url = process.env.FARCASTER_HUB_HTTP_ENDPOINT + path + "?" + urlParams;
 
@@ -25,48 +16,20 @@ export default async function handler(request) {
     body = null;
   }
 
-  console.log("url", url);
-  console.log("method", method);
-  console.log("body", body);
+  const hubRequest = new Request(url, { method, headers, body });
 
-  const fetchHeaders = {
-    ...request.headers,
-    "Content-Type": "application/json",
-    api_key: process.env.FARCASTER_HUB_API_KEY,
-  };
-
-  console.log("fetch headers", fetchHeaders);
-
-  const result = await fetch(url, {
-    method,
-    headers: fetchHeaders,
-    body,
-  });
-
-  if (!result.ok) {
-    return new Response(
-      JSON.stringify({
-        error: {
-          status: result.status,
-          statusText: result.statusText,
-        },
-      }),
-      {
-        status: result.status,
-        headers: {
-          "Content-Type": "application/json",
-        },
+  return fetch(hubRequest)
+    .then((res) => {
+      if (!res.ok) {
+        return response.status(res.status).json({ error: res.statusText });
       }
-    );
-  }
 
-  const data = await result.json();
-
-  return new Response(JSON.stringify(data), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": cache ? `public, max-age=${cache}` : null,
-    },
-  });
+      return res.json();
+    })
+    .then((data) => {
+      return response.status(200).json(data);
+    })
+    .catch((err) => {
+      return err;
+    });
 }
