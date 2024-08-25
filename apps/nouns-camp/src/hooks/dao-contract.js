@@ -1,7 +1,7 @@
 import { decodeEventLog } from "viem";
 import React from "react";
 import { useReadContract, useWriteContract, useSimulateContract } from "wagmi";
-import { CHAIN_ID, /*CAMP_CLIENT_ID*/ } from "../constants/env.js";
+import { CHAIN_ID /*CAMP_CLIENT_ID*/ } from "../constants/env.js";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
 import { useActions } from "../store.js";
@@ -126,7 +126,7 @@ export const useCurrentDynamicQuorum = ({ againstVotes = 0 } = {}) => {
 
   const blockNumber = useBlockNumber({ watch: true, cache: 20_000 });
 
-  const adjustedTotalSupply = useTotalSupply()
+  const adjustedTotalSupply = useTotalSupply();
   // const { data: adjustedTotalSupply } = useRead({
   //   abi: [
   //     {
@@ -260,14 +260,17 @@ export const useCastProposalVote = (
   } = useSimulate({
     abi: [
       {
-        inputs: [{ type: "uint256" }, { type: "uint8" }/*, { type: "uint32" }*/],
+        inputs: [
+          { type: "uint256" },
+          { type: "uint8" } /*, { type: "uint32" }*/,
+        ],
         name: "castRefundableVote",
         outputs: [],
         type: "function",
       },
     ],
     functionName: "castRefundableVote",
-    args: [Number(proposalId), support/*, CAMP_CLIENT_ID*/],
+    args: [Number(proposalId), support /*, CAMP_CLIENT_ID*/],
     enabled: enabled && support != null && !hasReason,
   });
 
@@ -290,7 +293,7 @@ export const useCastProposalVote = (
       },
     ],
     functionName: "castRefundableVoteWithReason",
-    args: [Number(proposalId), support, reason/*, CAMP_CLIENT_ID*/],
+    args: [Number(proposalId), support, reason /*, CAMP_CLIENT_ID*/],
     enabled: enabled && support != null && hasReason,
   });
 
@@ -367,7 +370,14 @@ export const useCreateProposal = () => {
         },
       ],
       functionName: "propose",
-      args: [targets, values, signatures, calldatas, description/*, clientId*/],
+      args: [
+        targets,
+        values,
+        signatures,
+        calldatas,
+        description,
+        // clientId,
+      ],
     });
     registerEvent("Proposal successfully created", {
       account: accountAddress,
@@ -388,12 +398,9 @@ export const useCreateProposal = () => {
             { name: "calldatas", type: "bytes[]" },
             { name: "startBlock", type: "uint256" },
             { name: "endBlock", type: "uint256" },
-            // { name: "signers", type: "address[]" },
-            // { name: "updatePeriodEndBlock", type: "uint256" },
             { name: "proposalThreshold", type: "uint256" },
             { name: "quorumVotes", type: "uint256" },
-            { name: "description", type: "string" }
-            // { indexed: true, name: "clientId", type: "uint32" },
+            { name: "description", type: "string" },
           ],
           name: "ProposalCreatedWithRequirements",
           type: "event",
