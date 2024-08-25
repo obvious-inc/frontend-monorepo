@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.5] - 2024-08-25
+
+### 🚀 Features
+
+- Pull changes from upstream (#561)
+
+### 🐛 Bug Fixes
+
+- *(route)* Comment out `cache` setting in simulate API call
+
+### 🚜 Refactor
+
+- *(hooks)* Simplify `eventLog` retrieval
+
+### 🎨 Styling
+
+- *(dao-contract)* Fix code formatting issues
+
 ## [1.3.0-alpha.4] - 2024-08-24
 
 ### 🐛 Bug Fixes
