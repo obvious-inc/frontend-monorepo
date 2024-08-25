@@ -11,7 +11,11 @@ const chain = getChain(CHAIN_ID);
 
 const publicClient = createPublicClient({
   chain,
-  transport: http(getJsonRpcUrl(chain.id)),
+  transport: http(getJsonRpcUrl(chain.id), {
+    fetchOptions: {
+      cache: "no-cache",
+    },
+  }),
 });
 
 export async function GET(_, context) {

@@ -34,7 +34,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
       reasonWithStrippedReposts,
     );
 
-    acc.push({
+    const item = {
       id: p.id,
       type: p.type,
       support: p.support,
@@ -49,7 +49,11 @@ const buildVoteAndFeedbackPostFeedItems = ({
       replies,
       reposts,
       reason: p.reason,
-    });
+    };
+
+    if (p.candidateId != null) item.candidateId = p.candidateId;
+
+    acc.push(item);
 
     return acc;
   }, []);
@@ -102,14 +106,20 @@ export const buildProposalFeed = (
       };
     }) ?? [];
 
-  const voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
+  let voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
     proposalId,
     votes: proposal.votes,
     feedbackPosts: [
       ...(proposal?.feedbackPosts ?? []),
-      ...(includeCandidateItems ? (candidate?.feedbackPosts ?? []) : []),
+      ...(candidate?.feedbackPosts ?? []),
     ],
   });
+
+  if (!includeCandidateItems) {
+    voteAndFeedbackPostItems = voteAndFeedbackPostItems.filter(
+      (item) => item.candidateId == null,
+    );
+  }
 
   const propdateItems = [];
 
