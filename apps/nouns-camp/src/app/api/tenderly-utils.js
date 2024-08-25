@@ -77,7 +77,6 @@ export const parseProposalAction = ({ target, value, signature, calldata }) => {
 
 export const fetchSimulationBundle = async (unparsedTxs) => {
   const { address: executorAddress } = resolveIdentifier("executor");
-
   const parsedTxs = unparsedTxs.map((t) => parseProposalAction(t));
   const parsedTransactions = parsedTxs.map((transaction) => {
     return {
@@ -97,9 +96,11 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       "X-Access-Key": process.env.TENDERLY_API_KEY,
     },
     body: JSON.stringify({ simulations: parsedTransactions }),
+    cache: "no-cache",
   });
 
-  const data = await response.json();
+  const text = await response.text();
+  const data = JSON.parse(text);
 
   const propCacheHeader = "max-age=3600";
 
@@ -159,6 +160,27 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
       JSON.stringify({
         error: "empty-simulation",
         reason: "No simulation results",
+      }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
+  // sometimes tenderly will return an internal server error
+  // we should consider that a tenderly api error and return a 400 error
+  if (
+    simulations.some(
+      (s) => s.error_message?.toLowerCase() === "internal server error",
+    )
+  ) {
+    return new Response(
+      JSON.stringify({
+        error: "tenderly-api-error",
+        reason: "Internal Server Error",
       }),
       {
         status: 400,

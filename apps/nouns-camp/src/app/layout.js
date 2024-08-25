@@ -56,7 +56,17 @@ export const metadata = {
 };
 
 export const viewport = {
-  themeColor: metaConfig.viewportThemeColor,
+  colorScheme: "light dark",
+  themeColor: [
+    {
+      media: "(prefers-color-scheme: light)",
+      color: metaConfig.viewportLightThemeColor,
+    },
+    {
+      media: "(prefers-color-scheme: dark)",
+      color: metaConfig.viewportDarkThemeColor,
+    },
+  ],
 };
 
 const beforeInteractive = () => {
