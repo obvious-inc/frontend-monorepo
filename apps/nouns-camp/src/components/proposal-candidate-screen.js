@@ -816,6 +816,7 @@ const SponsorsTabMainContent = ({
   const hasBeenPromoted = candidate.latestVersion.proposalId != null;
 
   const isPromotable =
+    isProposer &&
     isProposalThresholdMet &&
     !hasBeenPromoted &&
     !isCanceled &&
