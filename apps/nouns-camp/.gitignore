@@ -5,3 +5,5 @@ public/service-worker.js.map
 # Sentry Config File
 .sentryclirc
 .vercel
+
+src/abis

@@ -51,7 +51,6 @@ import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useSubmitCandidateCast } from "../hooks/farcaster.js";
-import NounCountNoggles from "./noun-count-noggles.js";
 import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
 import ProposalActionForm from "./proposal-action-form.js";
 import VotingBar from "./voting-bar.js";
@@ -781,7 +780,7 @@ const SponsorsTabMainContent = ({
   const proposalThreshold = useProposalThreshold();
 
   const signatures = getSponsorSignatures(candidate, {
-    excludeInvalid: true,
+    excludeInvalid: false,
     activeProposerIds,
   });
 
@@ -889,28 +888,68 @@ const SponsorsTabMainContent = ({
         }
       >
         {arrayUtils
-          .sortBy({ value: (s) => s.createdBlock, order: "desc" }, signatures)
-          .map((s) => (
-            <li key={s.createdBlock}>
-              <div
-                css={css({
-                  display: "grid",
-                  gap: "0.6rem",
-                  gridTemplateColumns: "auto minmax(0,1fr) auto",
-                })}
-              >
-                <AccountPreviewPopoverTrigger accountAddress={s.signer.id}>
-                  <button data-avatar-button>
-                    <AccountAvatar
-                      data-avatar
-                      address={s.signer.id}
-                      size="2rem"
-                    />
-                  </button>
-                </AccountPreviewPopoverTrigger>
-                <div>
-                  <AccountPreviewPopoverTrigger accountAddress={s.signer.id} />
-                  <span
+          .sortBy(
+            { value: (s) => s.createdBlock, order: "desc" },
+            signatures.filter((s) => s.status !== "redundant"),
+          )
+          .map((s) => {
+            const votingPower = s.signer.nounsRepresented.length;
+            return (
+              <li key={s.createdBlock}>
+                <div
+                  css={css({
+                    display: "grid",
+                    gap: "0.6rem",
+                    gridTemplateColumns: "auto minmax(0,1fr)",
+                  })}
+                >
+                  <AccountPreviewPopoverTrigger accountAddress={s.signer.id}>
+                    <button data-avatar-button>
+                      <AccountAvatar
+                        data-avatar
+                        address={s.signer.id}
+                        size="2rem"
+                      />
+                    </button>
+                  </AccountPreviewPopoverTrigger>
+                  <div>
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={s.signer.id}
+                    />{" "}
+                    ({votingPower} {votingPower === 1 ? "vote" : "votes"})
+                    <span
+                      css={(t) =>
+                        css({
+                          fontSize: t.text.sizes.small,
+                          color: t.colors.textDimmed,
+                        })
+                      }
+                    >
+                      &nbsp;&middot;{" "}
+                      <FormattedDateWithTooltip
+                        disableRelative
+                        month="short"
+                        day="numeric"
+                        value={s.createdTimestamp}
+                      />
+                    </span>
+                  </div>
+                </div>
+
+                <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
+                  {(s.reason || null) != null && (
+                    <React.Suspense fallback={null}>
+                      <div css={css({ margin: "0.5rem 0" })}>
+                        <MarkdownRichText
+                          text={s.reason}
+                          displayImages={false}
+                          compact
+                        />
+                      </div>
+                    </React.Suspense>
+                  )}
+
+                  <div
                     css={(t) =>
                       css({
                         fontSize: t.text.sizes.small,
@@ -918,80 +957,50 @@ const SponsorsTabMainContent = ({
                       })
                     }
                   >
-                    &nbsp;&middot;{" "}
-                    <FormattedDateWithTooltip
-                      disableRelative
-                      month="short"
-                      day="numeric"
-                      value={s.createdTimestamp}
-                    />
-                  </span>
-                </div>
+                    {(() => {
+                      if (s.canceled) return "Canceled";
 
-                <NounCountNoggles count={s.signer.nounsRepresented.length} />
-              </div>
+                      const daysLeftUntilExpiration = datesDifferenceInDays(
+                        s.expirationTimestamp,
+                        new Date(),
+                      );
 
-              <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-                {(s.reason || null) != null && (
-                  <React.Suspense fallback={null}>
-                    <div css={css({ margin: "0.5rem 0" })}>
-                      <MarkdownRichText
-                        text={s.reason}
-                        displayImages={false}
-                        compact
-                      />
-                    </div>
-                  </React.Suspense>
-                )}
+                      if (daysLeftUntilExpiration < -100)
+                        return "Expired >100 days ago";
 
-                <div
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.small,
-                      color: t.colors.textDimmed,
-                    })
-                  }
-                >
-                  {(() => {
-                    if (s.canceled) return "Canceled";
+                      if (daysLeftUntilExpiration > 100)
+                        return "Expires in >100 days";
 
-                    const daysLeftUntilExpiration = datesDifferenceInDays(
-                      s.expirationTimestamp,
-                      new Date(),
-                    );
+                      const relativeTimestamp = (
+                        <FormattedDateWithTooltip
+                          capitalize={false}
+                          relativeDayThreshold={Infinity}
+                          value={s.expirationTimestamp}
+                          month="short"
+                          day="numeric"
+                        />
+                      );
 
-                    if (daysLeftUntilExpiration < -100)
-                      return "Expired >100 days ago";
+                      if (daysLeftUntilExpiration < 0)
+                        return <>Expired {relativeTimestamp}</>;
 
-                    if (daysLeftUntilExpiration > 100)
-                      return "Expires in >100 days";
+                      if (s.status === "busy")
+                        return <>Signer already has an active proposal</>;
 
-                    const relativeTimestamp = (
-                      <FormattedDateWithTooltip
-                        capitalize={false}
-                        relativeDayThreshold={Infinity}
-                        value={s.expirationTimestamp}
-                        month="short"
-                        day="numeric"
-                      />
-                    );
-
-                    if (daysLeftUntilExpiration < 0)
-                      return <>Expired {relativeTimestamp}</>;
-
-                    return <>Expires {relativeTimestamp}</>;
-                  })()}
-                </div>
-
-                {s.signer.id.toLowerCase() ===
-                  connectedWalletAccountAddress && (
-                  <div style={{ marginTop: "0.6rem" }}>
-                    <CancelSignatureButton signature={s.sig} />
+                      return <>Expires {relativeTimestamp}</>;
+                    })()}
                   </div>
-                )}
-              </div>
-            </li>
-          ))}
+
+                  {s.signer.id.toLowerCase() ===
+                    connectedWalletAccountAddress && (
+                    <div style={{ marginTop: "0.6rem" }}>
+                      <CancelSignatureButton signature={s.sig} />
+                    </div>
+                  )}
+                </div>
+              </li>
+            );
+          })}
       </ul>
 
       {(showSponsorButton || isPromotable) && (
