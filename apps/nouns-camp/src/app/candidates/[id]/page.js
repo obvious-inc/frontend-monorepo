@@ -74,6 +74,8 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
+      card: firstImage?.url ? "summary_large_image" : "summary",
+      images: firstImage?.url ?? "/opengraph-image.png",
     },
     openGraph: {
       title,
