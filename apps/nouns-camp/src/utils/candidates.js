@@ -29,32 +29,44 @@ export const makeUrlId = (id) => {
 
 export const getSponsorSignatures = (
   candidate,
-  { excludeInvalid = false, activeProposerIds } = {},
+  { excludeInvalid = false, activeProposerIds = [] } = {},
 ) => {
   const signatures = candidate?.latestVersion?.content.contentSignatures ?? [];
   return arrayUtils
     .sortBy({ value: (i) => i.expirationTimestamp, order: "desc" }, signatures)
     .reduce((signatures, s) => {
-      if (!excludeInvalid) return [...signatures, s];
+      // Exclude canceled ones...
+      const isCanceled = s.canceled;
+      // ...expired ones
+      const hasExpired = s.expirationTimestamp <= new Date();
+      // ...signatures from signers with active proposals
+      const isActiveProposer = activeProposerIds.includes(
+        s.signer.id.toLowerCase(),
+      );
+      // ...signatures from the proposer
+      // (The proposer’s voting power is taken into account automatically by
+      // the contract. Submitting proposer signatures will reject.)
+      const isProposer =
+        s.signer.id.toLowerCase() === candidate.proposerId.toLowerCase();
+      // ...duplicates from the same signer with shorter expiration
+      const isOldSignature = signatures.some(
+        (s_) => s_.signer.id === s.signer.id,
+      );
 
-      if (
-        // Exclude canceled ones...
-        s.canceled ||
-        // ...expired ones
-        s.expirationTimestamp <= new Date() ||
-        // ...signatures from the proposer
-        //
-        // (The proposer’s voting power is taken into account automatically by
-        // the contract. Submitting proposer signatures will reject.)
-        s.signer.id.toLowerCase() === candidate.proposerId.toLowerCase() ||
-        // ...signatures from signers with active proposals
-        activeProposerIds.includes(s.signer.id.toLowerCase()) ||
-        // ...duplicates from the same signer with shorter expiration
-        signatures.some((s_) => s_.signer.id === s.signer.id)
-      )
-        return signatures;
+      const status =
+        isProposer || isOldSignature
+          ? "redundant"
+          : isCanceled
+            ? "canceled"
+            : hasExpired
+              ? "expired"
+              : isActiveProposer
+                ? "busy"
+                : "valid";
 
-      return [...signatures, s];
+      if (excludeInvalid && status !== "valid") return signatures;
+
+      return [...signatures, { ...s, status }];
     }, []);
 };
 

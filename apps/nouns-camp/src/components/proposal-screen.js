@@ -67,6 +67,10 @@ import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useProposalSimulation } from "../hooks/simulation.js";
 import useTreasuryData from "../hooks/treasury-data.js";
 import FormattedNumber from "./formatted-number.js";
+import { useStreamData } from "../hooks/stream-contract.js";
+import { resolveIdentifier } from "../contracts.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
+import getDateYear from "date-fns/getYear";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -768,6 +772,7 @@ const ProposalMainSection = ({
               updatedAt={proposal.lastUpdatedTimestamp}
               transactions={proposal.transactions}
               hasPassed={isFinalOrSucceededState}
+              hasSucceeded={isSucceededProposalState(proposal.state)}
             />
             {isDesktopLayout ? (
               <ProposalBody markdownText={proposal.body} />
@@ -899,6 +904,7 @@ export const ProposalHeader = ({
   sponsorIds = [],
   transactions = [],
   hasPassed,
+  hasSucceeded,
 }) => {
   const [searchParams] = useSearchParams();
 
@@ -980,6 +986,9 @@ export const ProposalHeader = ({
 
   const enableAskBreakdown =
     percentOfTreasury > 0n && (!hasPassed || forceAskBreakdown);
+
+  const streamTransactions = transactions.filter((t) => t.type === "stream");
+  const enableStreamStatus = hasSucceeded && streamTransactions.length > 0;
 
   return (
     <div css={css({ userSelect: "text" })}>
@@ -1205,6 +1214,13 @@ export const ProposalHeader = ({
                   staking yield)
                 </NextLink>
               )}
+              {enableStreamStatus &&
+                streamTransactions.map((streamTransaction) => (
+                  <StreamStatus
+                    key={streamTransaction.streamContractAddress}
+                    transaction={streamTransaction}
+                  />
+                ))}
             </Callout>
           </div>
         )}
@@ -1313,6 +1329,135 @@ const RequestedAmounts = ({ amounts }) => (
   </>
 );
 
+const StreamStatus = ({ transaction }) => {
+  const { streamContractAddress, tokenAmount } = transaction;
+  const {
+    token,
+    startTime,
+    stopTime,
+    elapsedTime,
+    remainingBalance,
+    recipientActiveBalance,
+  } = useStreamData({ streamContractAddress });
+
+  const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
+  const wethTokenContract = resolveIdentifier("weth-token")?.address;
+
+  const formatPercentage = (number, total) => {
+    if (Number(number) === 0) return "0%";
+    const percentage = (number * 100) / total;
+    const isLessThanOne = percentage < 1;
+    const hasDecimals = Math.round(percentage) !== percentage;
+
+    return (
+      <span
+        css={css({
+          ":before": {
+            content: isLessThanOne ? '"<"' : hasDecimals ? '"~"' : undefined,
+          },
+        })}
+      >
+        {isLessThanOne ? "1" : Math.round(percentage)}%
+      </span>
+    );
+  };
+
+  const vestedAmount =
+    Number(recipientActiveBalance) +
+    (Number(tokenAmount) - Number(remainingBalance));
+
+  const formattedVestedAmount = React.useMemo(() => {
+    if (!vestedAmount || !token) return;
+
+    switch (token?.toLowerCase()) {
+      case wethTokenContract:
+        return (
+          <FormattedEthWithConditionalTooltip
+            value={Number(vestedAmount)}
+            tokenSymbol="WETH"
+          />
+        );
+      case usdcTokenContract:
+        return (
+          <FormattedEthWithConditionalTooltip
+            value={Number(vestedAmount)}
+            currency="usdc"
+            decimals={2}
+            truncationDots={false}
+            tokenSymbol="USDC"
+            localeFormatting
+          />
+        );
+      default:
+        throw new Error("Unsupported token", token);
+    }
+  }, [vestedAmount, token, wethTokenContract, usdcTokenContract]);
+
+  const StreamEndDate = ({ stopTime }) => {
+    if (!stopTime) return <span></span>;
+    const ends = new Date(Number(stopTime) * 1000);
+    const endsString = ends < new Date() ? "Ended on" : "Ends on";
+
+    return (
+      <span>
+        {" "}
+        &middot; {endsString}{" "}
+        <FormattedDateWithTooltip
+          capitalize={false}
+          tinyRelative
+          relativeDayThreshold={7}
+          value={Number(stopTime) * 1000}
+          day="numeric"
+          month="short"
+          year={
+            getDateYear(Number(stopTime) * 1000) !== getDateYear(new Date())
+              ? "numeric"
+              : undefined
+          }
+        />
+      </span>
+    );
+  };
+
+  if (!token) return null;
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          fontSize: t.text.sizes.small,
+          color: t.colors.textDimmed,
+          a: {
+            color: "inherit",
+            textDecoration: "none",
+            "@media(hover: hover)": {
+              ":hover": { textDecoration: "underline" },
+            },
+          },
+        })
+      }
+    >
+      Stream{" "}
+      {formatPercentage(
+        Number(elapsedTime),
+        Number(stopTime) - Number(startTime),
+      )}{" "}
+      vested{" "}
+      <span>
+        (
+        <a
+          href={buildEtherscanLink(`/address/${streamContractAddress}`)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {formattedVestedAmount}
+        </a>
+        )
+      </span>
+      <StreamEndDate stopTime={stopTime} />
+    </div>
+  );
+};
 const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
 
