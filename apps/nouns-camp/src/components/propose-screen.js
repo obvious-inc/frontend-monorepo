@@ -195,10 +195,10 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
             if (e.message.startsWith("User rejected the request."))
               return Promise.reject(e);
 
+            console.error(e);
             alert(
               "Ops, looks like something went wrong submitting your proposal!",
             );
-            console.error(e);
             return Promise.reject(e);
           },
         )

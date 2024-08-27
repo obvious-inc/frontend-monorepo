@@ -262,7 +262,8 @@ export const useCastProposalVote = (
       {
         inputs: [
           { type: "uint256" },
-          { type: "uint8" } /*, { type: "uint32" }*/,
+          { type: "uint8" },
+          // { type: "uint32" },
         ],
         name: "castRefundableVote",
         outputs: [],
@@ -427,7 +428,7 @@ export const useCreateProposalWithSignatures = () => {
       unparseTransactions(transactions);
     // const clientId = getClientId(description);
 
-    return writeContract({
+    const hash = await writeContract({
       chainId: CHAIN_ID,
       address: contractAddress,
       abi: [
@@ -464,40 +465,36 @@ export const useCreateProposalWithSignatures = () => {
         description,
         // clientId,
       ],
-    })
-      .then((hash) => {
-        registerEvent("Proposal successfully created", {
-          account: accountAddress,
-          hash,
-          signatures: true,
-        });
-        return publicClient.waitForTransactionReceipt({ hash });
-      })
-      .then((receipt) => {
-        const eventLog = receipt.logs[1];
-        // const eventLog = receipt.logs.find(
-        //   (l) => l.address === contractAddress,
-        // );
-        const decodedEvent = decodeEventLog({
-          abi: [
-            {
-              inputs: [
-                { name: "id", type: "uint256" },
+    });
+    registerEvent("Proposal successfully created", {
+      account: accountAddress,
+      hash,
+      signatures: true,
+    });
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    const eventLog = receipt.logs[1];
+  // const eventLog = receipt.logs.filter(
+  //   (l) => l.address === contractAddress,
+  // )[1]; // ProposalCreatedWithRequirements is the second log
+    const decodedEvent = decodeEventLog({
+      abi: [
+        {
+          inputs: [
+            { name: "id", type: "uint256" },
                 // { name: "signers", type: "address[]" },
                 // { name: "updatePeriodEndBlock", type: "uint256" },
-                { name: "proposalThreshold", type: "uint256" },
-                { name: "quorumVotes", type: "uint256" },
+            { name: "proposalThreshold", type: "uint256" },
+            { name: "quorumVotes", type: "uint256" },
                 // { indexed: true, name: "clientId", type: "uint32" },
-              ],
-              name: "ProposalCreatedWithRequirements",
-              type: "event",
-            },
           ],
-          data: eventLog.data,
-          topics: eventLog.topics,
-        });
-        return decodedEvent.args;
-      });
+          name: "ProposalCreatedWithRequirements",
+          type: "event",
+        },
+      ],
+      data: eventLog.data,
+      topics: eventLog.topics,
+    });
+    return decodedEvent.args;
   };
 };
 

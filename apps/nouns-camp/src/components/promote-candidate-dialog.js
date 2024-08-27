@@ -60,9 +60,9 @@ const PromoteCandidateDialog = ({ isOpen, candidateId, dismiss }) => {
     activeProposerIds,
   });
 
-  const selectedSignatures = [...selectedSignerIds].map((id) =>
-    validSignatures.find((s) => s.signer.id === id),
-  );
+  const selectedSignatures = [...selectedSignerIds]
+    .map((id) => validSignatures.find((s) => s.signer.id === id))
+    .filter(Boolean);
 
   const selectedSponsorsVotingPower = arrayUtils.unique(
     selectedSignatures.flatMap((s) =>

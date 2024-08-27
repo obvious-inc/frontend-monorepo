@@ -20,6 +20,7 @@ import useBlockNumber from "./block-number.js";
 import { useWallet } from "./wallet.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
+// import abi from "../abis/nouns-dao-data.js";
 
 const { address: contractAddress } = resolveIdentifier("data");
 
@@ -184,7 +185,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
         },
       ],
       functionName: "createProposalCandidate",
-      value: votingPower > 0 || targetProposalId > 0 ? 0 : createCost,
+      value: votingPower > 0 ? 0 : createCost,
       args: [
         targets,
         values,

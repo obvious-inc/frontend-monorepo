@@ -120,6 +120,7 @@ const Content = ({ targetAddress, titleProps, dismiss }) => {
   return (
     <div
       css={css({
+        overflow: "auto",
         padding: "1.6rem",
         "@media (min-width: 600px)": {
           padding: "2rem",
