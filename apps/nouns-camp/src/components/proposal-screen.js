@@ -27,6 +27,7 @@ import {
   getLatestVersionBlock,
 } from "../utils/proposals.js";
 import {
+  useDelegate,
   useProposal,
   useProposalFetch,
   useProposalFeedItems,
@@ -48,9 +49,15 @@ import {
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import { useSubmitProposalCast } from "../hooks/farcaster.js";
+import {
+  useSubmitProposalCast,
+  useSubmitTransactionLike,
+  useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress,
+} from "../hooks/farcaster.js";
 import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
+import useFeatureFlag from "../hooks/feature-flag.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -126,6 +133,9 @@ const ProposalMainSection = ({
     version: latestProposalVersionBlock,
   });
 
+  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+  const currentVotingPower = connectedDelegate?.nounsRepresented.length ?? 0;
+
   const [castVoteCallSupportDetailed, setCastVoteCallSupportDetailed] =
     React.useState(null);
 
@@ -165,7 +175,20 @@ const ProposalMainSection = ({
       ? ["vote", "onchain-comment", "farcaster-comment"]
       : ["onchain-comment", "farcaster-comment"];
 
+  const enableLikes = useFeatureFlag("likes");
   const submitProposalCast = useSubmitProposalCast(proposalId);
+  const submitTransactionLike = useSubmitTransactionLike();
+
+  const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
+  const farcasterAccounts = useFarcasterAccountsWithVerifiedEthAddress(
+    connectedWalletAccountAddress,
+    { enabled: enableLikes },
+  );
+  const connectedFarcasterAccountFid = (() => {
+    if (connectedWalletAccountAddress == null) return null;
+    const firstAccountWithKey = farcasterAccounts?.find((a) => a.hasAccountKey);
+    return (firstAccountWithKey ?? farcasterAccounts?.[0])?.fid;
+  })();
 
   const defaultFormAction = possibleFormActions[0];
 
@@ -565,6 +588,19 @@ const ProposalMainSection = ({
     items: feedItems,
     onReply: currentFormAction === "farcaster-comment" ? null : onReply,
     onRepost: currentFormAction === "farcaster-comment" ? null : onRepost,
+    onLike: (() => {
+      if (!enableLikes || currentVotingPower === 0) return null;
+      if (connectedFarcasterAccountFid == null)
+        return () => openFarcasterSetupDialog({ context: "like" });
+      return async (itemId) => {
+        const item = feedItems.find((i) => i.id === itemId);
+        if (item == null) throw new Error(`Not found: [${itemId}]`);
+        await submitTransactionLike({
+          hash: item.transactionHash,
+          fid: connectedFarcasterAccountFid,
+        });
+      };
+    })(),
   };
 
   return (

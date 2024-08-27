@@ -3,14 +3,111 @@ import {
   FarcasterNetwork,
   Message,
   makeCastAdd,
+  makeReactionAdd,
   NobleEd25519Signer,
 } from "@farcaster/core";
 import { array as arrayUtils } from "@shades/common/utils";
 import { subgraphFetch } from "../../nouns-subgraph.js";
 
+const fetchAccounts = async (fids) => {
+  if (fids.length === 0) return [];
+
+  const response = await fetch(
+    `https://api.neynar.com/v2/farcaster/user/bulk?${new URLSearchParams({ fids: fids.join(",") })}`,
+    {
+      headers: {
+        accept: "application/json",
+        api_key: process.env.NEYNAR_API_KEY,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    console.error(await response.text());
+    throw new Error();
+  }
+
+  const { users } = await response.json();
+  return parseNeynarUsers(users);
+};
+
+export const fetchNounerLikesByTargetUrl = async (targetUrl) => {
+  const searchParams = new URLSearchParams({ url: targetUrl });
+  const response = await fetch(
+    `${process.env.FARCASTER_HUB_HTTP_ENDPOINT}/v1/reactionsByTarget?${searchParams}`,
+    {
+      method: "GET",
+      headers: {
+        api_key: process.env.NEYNAR_API_KEY,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    console.error(await response.text());
+    throw new Error();
+  }
+
+  const { messages } = await response.json();
+
+  const likes = messages
+    .filter((m) => m.data.type === "MESSAGE_TYPE_REACTION_ADD")
+    .map((m) => ({ fid: m.data.fid }));
+
+  const accounts = await fetchAccounts(likes.map((l) => l.fid));
+  const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
+
+  const nounerLikes = likes.reduce((acc, l) => {
+    const account = accountsByFid[l.fid];
+    if (account.nounerAddress == null) return acc;
+    acc.push(account);
+    return acc;
+  }, []);
+
+  return nounerLikes;
+};
+
 export const submitCastAdd = async (fid, privateAccountKey, body) => {
   const messageResult = await makeCastAdd(
     body,
+    { fid: Number(fid), network: FarcasterNetwork.MAINNET },
+    new NobleEd25519Signer(hexToBytes(privateAccountKey)),
+  );
+
+  return messageResult.match(
+    async (message) => {
+      const response = await fetch(
+        `${process.env.FARCASTER_HUB_HTTP_ENDPOINT}/v1/submitMessage`,
+        {
+          method: "POST",
+          body: Buffer.from(Message.encode(message).finish()),
+          headers: {
+            api_key: process.env.NEYNAR_API_KEY,
+            "Content-Type": "application/octet-stream",
+          },
+        },
+      );
+
+      const body = await response.json();
+
+      if (!response.ok) {
+        console.error(body);
+        throw new Error();
+      }
+
+      return body;
+    },
+    (error) => Promise.reject(error),
+  );
+};
+
+export const submitTargetLikeAdd = async (
+  fid,
+  privateAccountKey,
+  { targetUrl },
+) => {
+  const messageResult = await makeReactionAdd(
+    { type: 1, targetUrl },
     { fid: Number(fid), network: FarcasterNetwork.MAINNET },
     new NobleEd25519Signer(hexToBytes(privateAccountKey)),
   );
@@ -80,6 +177,7 @@ const parseNeynarUsers = async (users) => {
       query {
         delegates(where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }) {
           id
+          delegatedVotes
         }
       }`,
   });
@@ -96,7 +194,10 @@ const parseNeynarUsers = async (users) => {
 
     const delegate = delegates.find((d) => verifiedAddresses.includes(d.id));
 
-    if (delegate != null) account.nounerAddress = delegate.id;
+    if (delegate != null) {
+      account.nounerAddress = delegate.id;
+      account.votingPower = Number(delegate.delegatedVotes);
+    }
 
     return account;
   });

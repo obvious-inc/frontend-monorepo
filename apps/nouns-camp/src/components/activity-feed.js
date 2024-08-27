@@ -2,9 +2,11 @@ import getDateYear from "date-fns/getYear";
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
+import { useIsOnScreen } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Avatar from "@shades/ui-web/avatar";
+import * as Tooltip from "@shades/ui-web/tooltip";
 import { FarcasterGate as FarcasterGateIcon } from "@shades/ui-web/icons";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
@@ -12,6 +14,8 @@ import {
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import { useWallet } from "../hooks/wallet.js";
+import useAccountDisplayName from "../hooks/account-display-name.js";
+import useFeatureFlag from "../hooks/feature-flag.js";
 import { useNoun, useProposal, useProposalCandidate } from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
@@ -20,6 +24,7 @@ import MarkdownRichText from "./markdown-rich-text.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
+import { useTransactionLikes as useFarcasterTransactionLikes } from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import { isTransactionHash } from "../utils/transactions.js";
@@ -139,6 +144,15 @@ const ActivityFeed = ({
 const FeedItem = React.memo(
   ({ context, onReply, onRepost, onLike, ...item }) => {
     const { address: connectedAccount } = useWallet();
+
+    const containerRef = React.useRef();
+    const isOnScreen = useIsOnScreen(containerRef);
+
+    const enableLikes = useFeatureFlag("likes");
+    const likes = useFarcasterTransactionLikes(item.transactionHash, {
+      enabled: isOnScreen && enableLikes,
+    });
+
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
     const hasBody = item.body != null && item.body.trim() !== "";
     const hasReason = item.reason != null && item.reason.trim() !== "";
@@ -146,6 +160,8 @@ const FeedItem = React.memo(
     //   hasBody && item.body.trim().split("\n").length > 1;
 
     const hasReposts = item.reposts?.length > 0;
+    const hasLikes = likes?.length > 0;
+    const hasBeenReposted = item.repostingItems?.length > 0;
 
     const showReplyAction =
       onReply != null &&
@@ -159,16 +175,14 @@ const FeedItem = React.memo(
       ["vote", "feedback-post"].includes(item.type) &&
       hasReason;
 
-    const showLikeAction =
-      onLike != null &&
-      connectedAccount != null &&
-      ["vote", "feedback-post", "farcaster-cast"].includes(item.type);
+    const showLikeAction = onLike != null && item.transactionHash != null;
 
     const enableReplyAction = !item.isPending;
     const enableRepostAction = !item.isPending;
     const enableLikeAction = !item.isPending;
 
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
+    const showMeta = enableLikes && (hasLikes || hasBeenReposted);
 
     const renderTimestamp = (item) => {
       const timestampLink = buildTimestampLink(item);
@@ -218,7 +232,7 @@ const FeedItem = React.memo(
 
     return (
       <div
-        key={item.id}
+        ref={containerRef}
         id={item.id}
         role="listitem"
         data-pending={item.isPending}
@@ -363,9 +377,11 @@ const FeedItem = React.memo(
                     <QuotedVoteOrFeedbackPost
                       item={target}
                       href={
-                        context !== "proposal"
-                          ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
-                          : `#${target.id}`
+                        context === "proposal"
+                          ? `#${target.id}`
+                          : target.proposalId != null
+                            ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
+                            : null // TODO
                       }
                     />
                   </div>
@@ -543,17 +559,74 @@ const FeedItem = React.memo(
               )}
             </div>
           )}
-          {/* <div
-            css={(t) =>
-              css({
-                marginTop: "0.6rem",
-                color: t.colors.textDimmed,
-                fontSize: t.text.sizes.small,
-              })
-            }
-          >
-            2 revotes &middot; 12 likes
-          </div> */}
+          {showMeta && (
+            <div
+              css={(t) =>
+                css({
+                  marginTop: "0.6rem",
+                  color: t.colors.textDimmed,
+                  fontSize: t.text.sizes.small,
+                })
+              }
+            >
+              {!isOnScreen ? (
+                <>&nbsp;</>
+              ) : (
+                [
+                  item.repostingItems?.length > 0 && {
+                    key: "reposts",
+                    element: (
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {item.repostingItems.length}{" "}
+                          {item.repostingItems.length === 1
+                            ? "repost"
+                            : "reposts"}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content sideOffset={4}>
+                          {item.repostingItems.map((item, i) => (
+                            <React.Fragment key={item.id}>
+                              {i > 0 && <br />}
+                              <AccountDisplayName
+                                address={item.authorAccount}
+                              />
+                            </React.Fragment>
+                          ))}
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    ),
+                  },
+                  likes?.length > 0 && {
+                    key: "likes",
+                    element: (
+                      <Tooltip.Root>
+                        <Tooltip.Trigger>
+                          {likes.length} {likes.length === 1 ? "like" : "likes"}
+                        </Tooltip.Trigger>
+                        <Tooltip.Content sideOffset={4}>
+                          {likes.map((farcasterAccount, i) => (
+                            <React.Fragment key={farcasterAccount.fid}>
+                              {i > 0 && <br />}
+                              <AccountDisplayName
+                                address={farcasterAccount.nounerAddress}
+                              />
+                            </React.Fragment>
+                          ))}
+                        </Tooltip.Content>
+                      </Tooltip.Root>
+                    ),
+                  },
+                ]
+                  .filter(Boolean)
+                  .map(({ key, element }, index) => (
+                    <React.Fragment key={key}>
+                      {index > 0 && <> &middot; </>}
+                      {element}
+                    </React.Fragment>
+                  ))
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -648,8 +721,16 @@ const ItemTitle = ({ item, context }) => {
           : `${short ? proposalId : `Proposal ${proposalId}`}: ${
               proposal.title
             } `;
+
       return (
-        <NextLink prefetch href={`/proposals/${proposalId}`}>
+        <NextLink
+          prefetch
+          href={
+            ["vote", "feedback-post"].includes(item.type)
+              ? `/proposals/${proposalId}?tab=activity#${item.id}`
+              : `/proposals/${proposalId}`
+          }
+        >
           {children ?? title}
         </NextLink>
       );
@@ -659,12 +740,17 @@ const ItemTitle = ({ item, context }) => {
       const title =
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
+      const candidateUrl = `/candidates/${encodeURIComponent(
+        makeCandidateUrlId(candidateId),
+      )}`;
       return (
         <NextLink
           prefetch
-          href={`/candidates/${encodeURIComponent(
-            makeCandidateUrlId(candidateId),
-          )}`}
+          href={
+            ["vote", "feedback-post"].includes(item.type)
+              ? `${candidateUrl}?tab=activity#${item.id}`
+              : candidateUrl
+          }
         >
           {children ?? title}
         </NextLink>
@@ -1293,5 +1379,9 @@ const QuotedVoteOrFeedbackPost = ({ href, item }) => (
     />
   </div>
 );
+
+const AccountDisplayName = ({ address }) => {
+  return useAccountDisplayName(address);
+};
 
 export default ActivityFeed;
