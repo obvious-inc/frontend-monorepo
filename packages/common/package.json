@@ -22,7 +22,7 @@
     "reselect": "5.1.1"
   },
   "devDependencies": {
-    "@swc/core": "1.7.14",
+    "@swc/core": "1.7.18",
     "rollup": "4.21.0",
     "rollup-plugin-swc3": "0.11.2"
   }
