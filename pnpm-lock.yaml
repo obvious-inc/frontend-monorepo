@@ -159,7 +159,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.13.1
-        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.1.1(@swc/core@1.7.18(@swc/helpers@0.5.12)))(wrangler@3.72.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.1.2(@swc/core@1.7.18(@swc/helpers@0.5.12)))(wrangler@3.72.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -176,8 +176,8 @@ importers:
         specifier: 1.13.2
         version: 1.13.2(eslint@8.57.0)
       vercel:
-        specifier: 37.1.1
-        version: 37.1.1(@swc/core@1.7.18(@swc/helpers@0.5.12))
+        specifier: 37.1.2
+        version: 37.1.2(@swc/core@1.7.18(@swc/helpers@0.5.12))
       wrangler:
         specifier: 3.72.2
         version: 3.72.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
@@ -3311,9 +3311,6 @@ packages:
 
   '@types/node@18.15.13':
     resolution: {integrity: sha512-N+0kuo9KgrUQ1Sn/ifDXsvg0TTleP7rIy4zOBGECxAljqvqfqpTfzx0Q1NUedOixRMBfe2Whhb056a42cWs26Q==}
-
-  '@types/node@22.4.1':
-    resolution: {integrity: sha512-1tbpb9325+gPnKK0dMm+/LMriX0vKxf6RnB0SZUqfyVkQ4fMgUSySqhxE/y8Jvs4NyF1yHzTfG9KlnkIODxPKg==}
 
   '@types/node@22.5.0':
     resolution: {integrity: sha512-DkFrJOe+rfdHTqqMg0bSNlGlQ85hSoh2TPzZyhHsXnMtligRWpxUySiyw8FY14ITt24HVCiQPWxS3KO/QlGmWg==}
@@ -7514,9 +7511,6 @@ packages:
   undici-types@6.19.6:
     resolution: {integrity: sha512-e/vggGopEfTKSvj4ihnOLTsqhrKRN3LeO6qSN/GxohhuRv8qH9bNQ4B8W7e/vFL+0XTnmHPB4/kegunZGA4Org==}
 
-  undici-types@6.19.8:
-    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
-
   undici@6.19.2:
     resolution: {integrity: sha512-JfjKqIauur3Q6biAtHJ564e3bWa8VvT+7cSiOJHFbX4Erv6CLGDpg8z+Fmg/1OI/47RA+GI2QZaF48SSaLvyBA==}
     engines: {node: '>=18.17'}
@@ -7681,8 +7675,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vercel@37.1.1:
-    resolution: {integrity: sha512-QgdbZBCGQMl5utxR4KVsPaXDiexstV9yPTGXGna0cJD4kHOLURQoCsY0FnnmH5u+wPED65jqIITOUTbROKz2lQ==}
+  vercel@37.1.2:
+    resolution: {integrity: sha512-GhkaAwOhoy0xk+rkA/43cGSDuIMMzG71Gw1RZGsf5R1r//3BUqIyYqR5enQSw6php8wp2+HwTALyl31p+cJ4jw==}
     engines: {node: '>= 16'}
     hasBin: true
 
@@ -8962,7 +8956,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.1.1(@swc/core@1.7.18(@swc/helpers@0.5.12)))(wrangler@3.72.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.1.2(@swc/core@1.7.18(@swc/helpers@0.5.12)))(wrangler@3.72.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.12.1
       ast-types: 0.14.2
@@ -8976,7 +8970,7 @@ snapshots:
       package-manager-manager: 0.2.0
       pcre-to-regexp: 1.1.0
       semver: 7.6.3
-      vercel: 37.1.1(@swc/core@1.7.18(@swc/helpers@0.5.12))
+      vercel: 37.1.2(@swc/core@1.7.18(@swc/helpers@0.5.12))
       wrangler: 3.72.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
@@ -12091,7 +12085,7 @@ snapshots:
   '@types/glob@7.2.0':
     dependencies:
       '@types/minimatch': 5.1.2
-      '@types/node': 22.4.1
+      '@types/node': 22.5.0
 
   '@types/istanbul-lib-coverage@2.0.6': {}
 
@@ -12113,19 +12107,15 @@ snapshots:
 
   '@types/node-forge@1.3.11':
     dependencies:
-      '@types/node': 22.4.1
+      '@types/node': 22.5.0
 
   '@types/node@16.18.11': {}
 
   '@types/node@18.15.13': {}
 
-  '@types/node@22.4.1':
-    dependencies:
-      undici-types: 6.19.6
-
   '@types/node@22.5.0':
     dependencies:
-      undici-types: 6.19.8
+      undici-types: 6.19.6
 
   '@types/parse-json@4.0.2': {}
 
@@ -12283,7 +12273,7 @@ snapshots:
       estree-walker: 2.0.2
       glob: 7.2.3
       graceful-fs: 4.2.11
-      micromatch: 4.0.7
+      micromatch: 4.0.8
       node-gyp-build: 4.8.1
       resolve-from: 5.0.0
     transitivePeerDependencies:
@@ -17219,8 +17209,6 @@ snapshots:
 
   undici-types@6.19.6: {}
 
-  undici-types@6.19.8: {}
-
   undici@6.19.2: {}
 
   unenv-nightly@1.10.0-1717606461.a117952:
@@ -17341,7 +17329,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vercel@37.1.1(@swc/core@1.7.18(@swc/helpers@0.5.12)):
+  vercel@37.1.2(@swc/core@1.7.18(@swc/helpers@0.5.12)):
     dependencies:
       '@vercel/build-utils': 8.3.7
       '@vercel/fun': 1.1.0
