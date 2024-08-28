@@ -73,8 +73,8 @@ importers:
         specifier: 8.4.4
         version: 8.4.4(next@14.2.7(@babel/core@7.25.2)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(webpack@5.93.0(@swc/core@1.7.18(@swc/helpers@0.5.12))(esbuild@0.17.19))
       '@serwist/precaching':
-        specifier: 9.0.5
-        version: 9.0.5(typescript@4.9.5)
+        specifier: 9.0.7
+        version: 9.0.7(typescript@4.9.5)
       '@serwist/sw':
         specifier: 9.0.6
         version: 9.0.6(typescript@4.9.5)
@@ -3042,8 +3042,8 @@ packages:
     resolution: {integrity: sha512-2HUiDKRpHxNirH37UnIuLx6Zc6HaIAgpTE2qWT6BfzqX1Fbmn2Zk67tvBTfCITWemCw1/dUH8VzI1k6vC3XmtA==}
     deprecated: This package has been deprecated. Please use serwist instead.
 
-  '@serwist/precaching@9.0.5':
-    resolution: {integrity: sha512-7QPthehEomHiOdbQHcuXpBr86rv3N/flyuRH6ugwLmiMkedYgqn5WYOwlnPnEzwgAZiu0KEbTJ6yBPnfAI+Tfg==}
+  '@serwist/precaching@9.0.7':
+    resolution: {integrity: sha512-jaM5Gx9+7vWFwrargUh8kIDLUovs17TdvNUx1QlSt0s+8jdgh6AauV+nIV9e9Ap49xqax8RQYlPKLzTSoplO4Q==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -6983,16 +6983,16 @@ packages:
   server-only@0.0.1:
     resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
 
-  serwist@9.0.5:
-    resolution: {integrity: sha512-N2pf50MxsqHtL14FaLndXE2sbVvuBhyidruLvDrKIwGM0SOCTDBnWNnykLkgw1nDv4XEVgzqKtm8v1fdngPKtg==}
+  serwist@9.0.6:
+    resolution: {integrity: sha512-6rKivStBN3DCzAOVnHtg+cvma9Ay/veGF0H7BxJjJXpKQKXtZ0skE5Rt1CD7b1L/DieJD6wfmG8iYIlAtw4gcw==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
       typescript:
         optional: true
 
-  serwist@9.0.6:
-    resolution: {integrity: sha512-6rKivStBN3DCzAOVnHtg+cvma9Ay/veGF0H7BxJjJXpKQKXtZ0skE5Rt1CD7b1L/DieJD6wfmG8iYIlAtw4gcw==}
+  serwist@9.0.7:
+    resolution: {integrity: sha512-OcvOArMLFYhPWpK5LKqmSsyCS71Egn8SkUZQRBQVUJmAtsI3Aj+ixNDeEvUgyYtFArtvHsVRXgfdg4L5LkhAHA==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -11848,9 +11848,9 @@ snapshots:
       '@serwist/routing': 8.4.4
       '@serwist/strategies': 8.4.4
 
-  '@serwist/precaching@9.0.5(typescript@4.9.5)':
+  '@serwist/precaching@9.0.7(typescript@4.9.5)':
     dependencies:
-      serwist: 9.0.5(typescript@4.9.5)
+      serwist: 9.0.7(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
 
@@ -16687,13 +16687,13 @@ snapshots:
 
   server-only@0.0.1: {}
 
-  serwist@9.0.5(typescript@4.9.5):
+  serwist@9.0.6(typescript@4.9.5):
     dependencies:
       idb: 8.0.0
     optionalDependencies:
       typescript: 4.9.5
 
-  serwist@9.0.6(typescript@4.9.5):
+  serwist@9.0.7(typescript@4.9.5):
     dependencies:
       idb: 8.0.0
     optionalDependencies:
