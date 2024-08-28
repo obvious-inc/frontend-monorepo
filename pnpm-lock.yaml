@@ -76,8 +76,8 @@ importers:
         specifier: 9.0.5
         version: 9.0.5(typescript@4.9.5)
       '@serwist/sw':
-        specifier: 9.0.5
-        version: 9.0.5(typescript@4.9.5)
+        specifier: 9.0.6
+        version: 9.0.6(typescript@4.9.5)
       '@shades/common':
         specifier: workspace:0.0.0
         version: link:../../packages/common
@@ -3058,8 +3058,8 @@ packages:
     resolution: {integrity: sha512-Yr/wKD16vXUqVbyfHhLM25qRWTtWgNJnY8Bot0yjCV/BvHM81cOIkG3sE76FIjcUntCvfemhaN9Zx53fbRzLPQ==}
     deprecated: This package has been deprecated. Please use serwist instead.
 
-  '@serwist/sw@9.0.5':
-    resolution: {integrity: sha512-RwZsYu03hb8OUkV2z/T7DAVkO6yzOPmKaCPgDIkXelITBV4/MTZ0uWEOaN5Oxs1w69Y4+vo7KtzwM8JorsRbeQ==}
+  '@serwist/sw@9.0.6':
+    resolution: {integrity: sha512-gmTS2/csQlpLZYLCEc3u/dudvTahJM/aiuJNtxj1kT/rALI5xiyXIs/Uzx/mX7X00Bxq7tsoDxhdZiyQsCsAOw==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -6985,6 +6985,14 @@ packages:
 
   serwist@9.0.5:
     resolution: {integrity: sha512-N2pf50MxsqHtL14FaLndXE2sbVvuBhyidruLvDrKIwGM0SOCTDBnWNnykLkgw1nDv4XEVgzqKtm8v1fdngPKtg==}
+    peerDependencies:
+      typescript: '>=5.0.0'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
+  serwist@9.0.6:
+    resolution: {integrity: sha512-6rKivStBN3DCzAOVnHtg+cvma9Ay/veGF0H7BxJjJXpKQKXtZ0skE5Rt1CD7b1L/DieJD6wfmG8iYIlAtw4gcw==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -11854,9 +11862,9 @@ snapshots:
     dependencies:
       '@serwist/core': 8.4.4
 
-  '@serwist/sw@9.0.5(typescript@4.9.5)':
+  '@serwist/sw@9.0.6(typescript@4.9.5)':
     dependencies:
-      serwist: 9.0.5(typescript@4.9.5)
+      serwist: 9.0.6(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
 
@@ -16680,6 +16688,12 @@ snapshots:
   server-only@0.0.1: {}
 
   serwist@9.0.5(typescript@4.9.5):
+    dependencies:
+      idb: 8.0.0
+    optionalDependencies:
+      typescript: 4.9.5
+
+  serwist@9.0.6(typescript@4.9.5):
     dependencies:
       idb: 8.0.0
     optionalDependencies:
