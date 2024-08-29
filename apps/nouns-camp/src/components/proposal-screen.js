@@ -78,6 +78,8 @@ import { useStreamData } from "../hooks/stream-contract.js";
 import { resolveIdentifier } from "../contracts.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import getDateYear from "date-fns/getYear";
+import StreamsDialog from "./streams-dialog.js";
+import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -1363,7 +1365,9 @@ const RequestedAmounts = ({ amounts }) => (
 );
 
 const StreamStatus = ({ transaction }) => {
-  const { streamContractAddress, tokenAmount } = transaction;
+  const [, setSearchParams] = useSearchParams();
+  const { address: connectedWalletAccountAddress } = useWallet();
+  const { streamContractAddress, tokenAmount, receiverAddress } = transaction;
   const {
     token,
     startTime,
@@ -1428,8 +1432,12 @@ const StreamStatus = ({ transaction }) => {
 
   const StreamEndDate = ({ stopTime }) => {
     if (!stopTime) return <span></span>;
-    const ends = new Date(Number(stopTime) * 1000);
-    const endsString = ends < new Date() ? "Ended on" : "Ends on";
+    const stopDate = new Date(Number(stopTime) * 1000);
+    const dayDifference = datesDifferenceInDays(stopDate, new Date());
+    const relativeDayThreshold = 7;
+
+    let endsString = stopDate < new Date() ? "Ended" : "Ends";
+    if (Math.abs(dayDifference) > relativeDayThreshold) endsString += " on";
 
     return (
       <span>
@@ -1437,13 +1445,12 @@ const StreamStatus = ({ transaction }) => {
         &middot; {endsString}{" "}
         <FormattedDateWithTooltip
           capitalize={false}
-          tinyRelative
-          relativeDayThreshold={7}
-          value={Number(stopTime) * 1000}
+          relativeDayThreshold={relativeDayThreshold}
+          value={stopDate}
           day="numeric"
           month="short"
           year={
-            getDateYear(Number(stopTime) * 1000) !== getDateYear(new Date())
+            getDateYear(stopDate) !== getDateYear(new Date())
               ? "numeric"
               : undefined
           }
@@ -1451,6 +1458,12 @@ const StreamStatus = ({ transaction }) => {
       </span>
     );
   };
+
+  const isStreamRecipient =
+    connectedWalletAccountAddress?.toLowerCase() ===
+    receiverAddress?.toLowerCase();
+
+  const showWithdrawButton = isStreamRecipient && recipientActiveBalance > 0;
 
   if (!token) return null;
 
@@ -1490,6 +1503,24 @@ const StreamStatus = ({ transaction }) => {
         </span>
       )}
       <StreamEndDate stopTime={stopTime} />
+      {showWithdrawButton && (
+        <Button
+          size="tiny"
+          css={{ marginLeft: "1rem" }}
+          onClick={() =>
+            setSearchParams(
+              (p) => {
+                const newParams = new URLSearchParams(p);
+                newParams.set("streams", 1);
+                return newParams;
+              },
+              { replace: true },
+            )
+          }
+        >
+          Withdraw
+        </Button>
+      )}
     </div>
   );
 };
@@ -1528,6 +1559,11 @@ const ProposalScreen = ({ proposalId }) => {
 
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
+    { replace: true, prefetch: "true" },
+  );
+
+  const [isStreamsDialogOpen, toggleStreamsDialog] = useSearchParamToggleState(
+    "streams",
     { replace: true, prefetch: "true" },
   );
 
@@ -1659,6 +1695,17 @@ const ProposalScreen = ({ proposalId }) => {
               isOpen
               close={toggleEditDialog}
             />
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
+      {isStreamsDialogOpen && proposal != null && (
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <StreamsDialog isOpen close={toggleStreamsDialog} />
           </React.Suspense>
         </ErrorBoundary>
       )}

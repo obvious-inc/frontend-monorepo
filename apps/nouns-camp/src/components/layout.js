@@ -14,7 +14,7 @@ import {
   getChain as getSupportedChain,
   isTestnet as isTestnetChain,
 } from "../utils/chains.js";
-import { useAccount, useDelegate } from "../store.js";
+import { useAccount, useAccountStreams, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -113,6 +113,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const { open: openAccountDialog } = useDialog("account");
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
+  const { open: openStreamsDialog } = useDialog("streams");
   const { open: openSettingsDialog } = useDialog("settings");
   const [isTreasuryDialogOpen, toggleTreasuryDialog] =
     useSearchParamToggleState("treasury", { replace: true, prefetch: "true" });
@@ -137,6 +138,9 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const hasNouns = connectedAccount?.nouns?.length > 0;
   const hasVotingPower = connectedDelegate?.nounsRepresented?.length > 0;
 
+  const hasStreams =
+    useAccountStreams(connectedWalletAccountAddress).length > 0;
+
   const connectedAccountDisplayName = useAccountDisplayName(
     connectedWalletAccountAddress,
   );
@@ -155,6 +159,9 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         break;
       case "open-delegation-dialog":
         openDelegationDialog();
+        break;
+      case "open-streams-dialog":
+        openStreamsDialog();
         break;
       case "copy-account-address":
         navigator.clipboard.writeText(connectedWalletAccountAddress);
@@ -455,6 +462,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         (hasNouns || hasVotingPower) && {
                           id: "open-delegation-dialog",
                           label: "Manage delegation",
+                        },
+                        hasStreams && {
+                          id: "open-streams-dialog",
+                          label: "Streams",
                         },
                         {
                           id: "open-proposal-drafts-dialog",
