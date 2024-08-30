@@ -28,6 +28,12 @@ const streamDataAbi = [
   },
   {
     inputs: [],
+    name: "recipientCancelBalance",
+    outputs: [{ type: "uint256" }],
+    type: "function",
+  },
+  {
+    inputs: [],
     name: "remainingBalance",
     outputs: [{ type: "uint256" }],
     type: "function",
@@ -107,6 +113,13 @@ export const useStreamData = ({ streamContractAddress }) => {
         address: streamContractAddress,
         chainId: CHAIN_ID,
         abi: streamDataAbi,
+        functionName: "recipientCancelBalance",
+        args: [],
+      },
+      {
+        address: streamContractAddress,
+        chainId: CHAIN_ID,
+        abi: streamDataAbi,
         functionName: "token",
         args: [],
       },
@@ -121,6 +134,7 @@ export const useStreamData = ({ streamContractAddress }) => {
     elapsedTime,
     remainingBalance,
     recipientBalance,
+    recipientCancelBalance,
     token,
   ] = data.map((d) => d?.result);
 
@@ -130,6 +144,7 @@ export const useStreamData = ({ streamContractAddress }) => {
     elapsedTime,
     remainingBalance,
     recipientBalance,
+    recipientCancelBalance,
     token,
     queryKey,
   };
@@ -161,16 +176,29 @@ export const useStreamWithdraw = (streamAddress, amount) => {
 
 export const useStreamsRemainingBalances = (streamAddresses) => {
   const { data } = useReadContracts({
-    contracts: streamAddresses.map((address) => ({
-      address,
-      chainId: CHAIN_ID,
-      abi: streamDataAbi,
-      functionName: "remainingBalance",
-      args: [],
-    })),
+    contracts: streamAddresses.flatMap((address) => [
+      {
+        address,
+        chainId: CHAIN_ID,
+        abi: streamDataAbi,
+        functionName: "remainingBalance",
+        args: [],
+      },
+      {
+        address,
+        chainId: CHAIN_ID,
+        abi: streamDataAbi,
+        functionName: "recipientBalance",
+        args: [],
+      },
+    ]),
   });
 
   if (!data) return [];
 
-  return data.map((d) => d?.result);
+  // The data is returned in the order of the contracts passed in
+  return streamAddresses.map((_, i) => ({
+    remainingBalance: data[i * 2]?.result,
+    recipientBalance: data[i * 2 + 1]?.result,
+  }));
 };

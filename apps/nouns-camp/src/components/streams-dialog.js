@@ -68,8 +68,8 @@ const StreamStatusTag = ({
   remainingBalance,
 }) => {
   const streamState = React.useMemo(() => {
-    if (remainingBalance == 0) return "done";
     if (canceledBalance > 0) return "canceled";
+    if (remainingBalance == 0) return "done";
     if (remainingBalance > 0 && elapsedTime >= stopTime - startTime)
       return "vested";
 
@@ -159,7 +159,7 @@ const StreamWithdrawForm = ({ stream }) => {
     setPendingUpdate(true);
     setSuccessfulTransaction(false);
     try {
-      const res = await streamWithdraw();
+      await streamWithdraw();
       setSuccessfulTransaction(true);
 
       // invalidate query key
@@ -224,6 +224,7 @@ const StreamWithdrawForm = ({ stream }) => {
         })}
       >
         <Button
+          form={`withdraw-form-${streamContractAddress}`}
           type="submit"
           variant="primary"
           disabled={hasPendingUpdate || streamWithdraw == null}
@@ -233,7 +234,7 @@ const StreamWithdrawForm = ({ stream }) => {
         </Button>
       </footer>
       {submittedSuccessfulTransaction && (
-        <Callout variant="info" style={{ margin: "2rem 0 0" }}>
+        <Callout variant="info" style={{ margin: "2rem 0 2rem" }}>
           Transaction successful!
         </Callout>
       )}
@@ -250,6 +251,7 @@ const Stream = ({ stream }) => {
     elapsedTime,
     remainingBalance,
     recipientBalance,
+    recipientCancelBalance,
   } = useStreamData({
     streamContractAddress,
   });
@@ -271,6 +273,7 @@ const Stream = ({ stream }) => {
         totalBalance={tokenAmount}
         remainingBalance={remainingBalance}
         activeBalance={recipientBalance}
+        canceledBalance={recipientCancelBalance}
         css={css({ justifySelf: "center" })}
       />
 
@@ -309,9 +312,11 @@ const Content = ({ streams, titleProps, dismiss }) => {
   const streamAddresses = streams.map((stream) => stream.streamContractAddress);
   const remainingBalances = useStreamsRemainingBalances(streamAddresses);
 
-  const activeStreams = streams.filter((stream, index) => {
-    const remainingBalance = remainingBalances[index];
-    return remainingBalance > 0;
+  const activeStreams = streams.filter((_, index) => {
+    const streamInfo = remainingBalances[index];
+    const remainingBalance = streamInfo?.remainingBalance;
+    const recipientBalance = streamInfo?.recipientBalance;
+    return remainingBalance > 0 || recipientBalance > 0;
   });
 
   return (
@@ -381,7 +386,9 @@ const Content = ({ streams, titleProps, dismiss }) => {
             />
           ))
         ) : (
-          <p>No active streams</p>
+          <div css={css({ marginBottom: "2rem" })}>
+            <p>No active streams</p>
+          </div>
         )}
 
         <button
