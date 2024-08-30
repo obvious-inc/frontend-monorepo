@@ -22,7 +22,7 @@ const streamDataAbi = [
   },
   {
     inputs: [],
-    name: "recipientActiveBalance",
+    name: "recipientBalance",
     outputs: [{ type: "uint256" }],
     type: "function",
   },
@@ -100,7 +100,7 @@ export const useStreamData = ({ streamContractAddress }) => {
         address: streamContractAddress,
         chainId: CHAIN_ID,
         abi: streamDataAbi,
-        functionName: "recipientActiveBalance",
+        functionName: "recipientBalance",
         args: [],
       },
       {
@@ -120,7 +120,7 @@ export const useStreamData = ({ streamContractAddress }) => {
     stopTime,
     elapsedTime,
     remainingBalance,
-    recipientActiveBalance,
+    recipientBalance,
     token,
   ] = data.map((d) => d?.result);
 
@@ -129,7 +129,7 @@ export const useStreamData = ({ streamContractAddress }) => {
     stopTime,
     elapsedTime,
     remainingBalance,
-    recipientActiveBalance,
+    recipientBalance,
     token,
     queryKey,
   };
@@ -157,4 +157,20 @@ export const useStreamWithdraw = (streamAddress, amount) => {
     const hash = await writeContractAsync(simulationResult.request);
     return publicClient.waitForTransactionReceipt({ hash });
   };
+};
+
+export const useStreamsRemainingBalances = (streamAddresses) => {
+  const { data } = useReadContracts({
+    contracts: streamAddresses.map((address) => ({
+      address,
+      chainId: CHAIN_ID,
+      abi: streamDataAbi,
+      functionName: "remainingBalance",
+      args: [],
+    })),
+  });
+
+  if (!data) return [];
+
+  return data.map((d) => d?.result);
 };
