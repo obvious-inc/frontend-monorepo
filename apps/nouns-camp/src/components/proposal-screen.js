@@ -1374,7 +1374,7 @@ const StreamStatus = ({ transaction }) => {
     stopTime,
     elapsedTime,
     remainingBalance,
-    recipientActiveBalance,
+    recipientBalance,
   } = useStreamData({ streamContractAddress });
 
   const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
@@ -1400,8 +1400,7 @@ const StreamStatus = ({ transaction }) => {
   };
 
   const vestedAmount =
-    Number(recipientActiveBalance) +
-    (Number(tokenAmount) - Number(remainingBalance));
+    Number(recipientBalance) + (Number(tokenAmount) - Number(remainingBalance));
 
   const formattedVestedAmount = React.useMemo(() => {
     if (!vestedAmount || !token) return;
@@ -1463,7 +1462,7 @@ const StreamStatus = ({ transaction }) => {
     connectedWalletAccountAddress?.toLowerCase() ===
     receiverAddress?.toLowerCase();
 
-  const showWithdrawButton = isStreamRecipient && recipientActiveBalance > 0;
+  const showWithdrawButton = isStreamRecipient && recipientBalance > 0;
 
   const streamStartsInFuture = Number(startTime) * 1000 > Date.now();
 

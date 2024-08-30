@@ -406,7 +406,7 @@ const Content = ({ streams, titleProps, dismiss }) => {
           }
         >
           <Heading>
-            Stream history{" "}
+            History{" "}
             <span>
               <CaretDownIcon
                 style={{
