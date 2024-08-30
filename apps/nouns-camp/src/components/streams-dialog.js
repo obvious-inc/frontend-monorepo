@@ -68,6 +68,7 @@ const StreamStatusTag = ({
   remainingBalance,
 }) => {
   const streamState = React.useMemo(() => {
+    if (!startTime) return;
     if (canceledBalance > 0) return "canceled";
     if (remainingBalance == 0) return "done";
     if (remainingBalance > 0 && elapsedTime >= stopTime - startTime)
@@ -220,7 +221,7 @@ const StreamWithdrawForm = ({ stream }) => {
           display: "flex",
           justifyContent: "flex-end",
           gap: "1rem",
-          padding: "2rem 0 0",
+          padding: "2rem 0 2rem",
         })}
       >
         <Button
@@ -234,7 +235,7 @@ const StreamWithdrawForm = ({ stream }) => {
         </Button>
       </footer>
       {submittedSuccessfulTransaction && (
-        <Callout variant="info" style={{ margin: "2rem 0 2rem" }}>
+        <Callout variant="info" style={{ margin: "0 0 2rem" }}>
           Transaction successful!
         </Callout>
       )}
