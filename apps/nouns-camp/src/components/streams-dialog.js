@@ -277,7 +277,7 @@ const Stream = ({ stream }) => {
         css={css({ justifySelf: "center" })}
       />
 
-      <div css={css({ justifySelf: "center" })}>
+      <div css={css({ justifySelf: "end" })}>
         {stopTime && (
           <FormattedDateWithTooltip
             disableRelative
@@ -425,7 +425,7 @@ const Content = ({ streams, titleProps, dismiss }) => {
             <div data-label-row>
               <p>Proposal</p>
               <p css={css({ justifySelf: "center" })}>Status</p>
-              <p css={css({ justifySelf: "center" })}>End date</p>
+              <p css={css({ justifySelf: "end" })}>End date</p>
               <p css={css({ justifySelf: "end" })}>Total</p>
               <p css={css({ justifySelf: "end" })}>Remaining</p>
               <p css={css({ justifySelf: "end" })}>Available</p>

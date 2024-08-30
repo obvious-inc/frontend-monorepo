@@ -1465,6 +1465,8 @@ const StreamStatus = ({ transaction }) => {
 
   const showWithdrawButton = isStreamRecipient && recipientActiveBalance > 0;
 
+  const streamStartsInFuture = Number(startTime) * 1000 > Date.now();
+
   if (!token) return null;
 
   return (
@@ -1483,25 +1485,40 @@ const StreamStatus = ({ transaction }) => {
         })
       }
     >
-      Stream{" "}
-      {formatPercentage(
-        Number(elapsedTime),
-        Number(stopTime) - Number(startTime),
-      )}{" "}
-      vested{" "}
-      {vestedAmount != null && vestedAmount > 0 && (
-        <span>
-          (
-          <a
-            href={buildEtherscanLink(`/address/${streamContractAddress}`)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {formattedVestedAmount}
-          </a>
-          )
-        </span>
+      {streamStartsInFuture ? (
+        <>
+          Stream starts vesting on{" "}
+          <FormattedDateWithTooltip
+            disableRelative
+            month="short"
+            day="numeric"
+            value={Number(startTime) * 1000}
+          />
+        </>
+      ) : (
+        <>
+          Stream{" "}
+          {formatPercentage(
+            Number(elapsedTime),
+            Number(stopTime) - Number(startTime),
+          )}{" "}
+          vested{" "}
+          {vestedAmount != null && vestedAmount > 0 && (
+            <span>
+              (
+              <a
+                href={buildEtherscanLink(`/address/${streamContractAddress}`)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {formattedVestedAmount}
+              </a>
+              )
+            </span>
+          )}
+        </>
       )}
+
       <StreamEndDate stopTime={stopTime} />
       {showWithdrawButton && (
         <Button
