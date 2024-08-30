@@ -71,7 +71,7 @@ const StreamStatusTag = ({
     if (remainingBalance == 0) return "done";
     if (canceledBalance > 0) return "canceled";
     if (remainingBalance > 0 && elapsedTime >= stopTime - startTime)
-      return "pending";
+      return "vested";
 
     if (new Date(Number(startTime) * 1000) > new Date()) return "pending";
 
@@ -81,6 +81,7 @@ const StreamStatusTag = ({
   const variantByState = {
     active: "active",
     pending: "warning",
+    vested: "special",
     done: "success",
     canceled: "error",
   };
@@ -397,7 +398,7 @@ const Content = ({ streams, titleProps, dismiss }) => {
           }
         >
           <Heading>
-            All streams{" "}
+            Stream history{" "}
             <span>
               <CaretDownIcon
                 style={{
@@ -461,7 +462,6 @@ const FormattedAmount = React.memo(({ amount, token }) => {
         case wethTokenContract:
           return (
             <FormattedEthWithConditionalTooltip
-              decimals={2}
               value={Number(amount)}
               tokenSymbol="WETH"
               currencyDimmed={true}
