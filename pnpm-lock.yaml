@@ -34,8 +34,8 @@ importers:
         specifier: 11.13.3
         version: 11.13.3(react@18.3.1)
       '@farcaster/core':
-        specifier: 0.15.1
-        version: 0.15.1(bufferutil@4.0.8)(typescript@4.9.5)(utf-8-validate@5.0.10)(zod@3.23.8)
+        specifier: 0.15.2
+        version: 0.15.2(bufferutil@4.0.8)(typescript@4.9.5)(utf-8-validate@5.0.10)(zod@3.23.8)
       '@lilnounsdao/assets':
         specifier: 0.5.15
         version: 0.5.15
@@ -1380,8 +1380,8 @@ packages:
   '@ethersproject/wordlists@5.7.0':
     resolution: {integrity: sha512-S2TFNJNfHWVHNE6cNDjbVlZ6MgE17MIxMbMg2zv3wn+3XSJGosL1m9ZVv3GXCf/2ymSsQ+hRI5IzoMJTG6aoVA==}
 
-  '@farcaster/core@0.15.1':
-    resolution: {integrity: sha512-oBjjHyjBltALS7hgAByoJsp+wU9ZqQKQ+fZS6s9K8Hhq5jMrfSht09Mx8nhmhN2iukw2jyNulYsD5P5e6izRKw==}
+  '@farcaster/core@0.15.2':
+    resolution: {integrity: sha512-GvNnscadzT7OUxuL6iDAwL6j7GCNZsjilPudI52/x+Y6nMfXuyD7sRY0rgsAYePi77UHDxNs5Qi5MRFwTUIWhQ==}
 
   '@fastify/deepmerge@1.3.0':
     resolution: {integrity: sha512-J8TOSBq3SoZbDhM9+R/u77hP93gz/rajSA+K2kGyijPpORPWUXHUpTaleoj+92As0S9uPRP7Oi8IqMf0u+ro6A==}
@@ -9490,7 +9490,7 @@ snapshots:
       '@ethersproject/properties': 5.7.0
       '@ethersproject/strings': 5.7.0
 
-  '@farcaster/core@0.15.1(bufferutil@4.0.8)(typescript@4.9.5)(utf-8-validate@5.0.10)(zod@3.23.8)':
+  '@farcaster/core@0.15.2(bufferutil@4.0.8)(typescript@4.9.5)(utf-8-validate@5.0.10)(zod@3.23.8)':
     dependencies:
       '@noble/curves': 1.4.2
       '@noble/hashes': 1.4.0
