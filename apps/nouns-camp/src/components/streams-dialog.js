@@ -77,15 +77,18 @@ const StreamStatusTag = ({
     if (new Date(Number(startTime) * 1000) > new Date()) return "pending";
 
     return "active";
-  }, [elapsedTime, stopTime]);
+  }, [elapsedTime, stopTime, startTime, canceledBalance, remainingBalance]);
 
-  const variantByState = {
-    active: "active",
-    pending: "warning",
-    vested: "special",
-    done: "success",
-    canceled: "error",
-  };
+  const variantByState = React.useMemo(
+    () => ({
+      active: "active",
+      pending: "warning",
+      vested: "special",
+      done: "success",
+      canceled: "error",
+    }),
+    [],
+  );
 
   return (
     <Tag size="large" variant={variantByState[streamState]}>
@@ -98,7 +101,6 @@ const StaticField = ({ label, children }) => {
   return (
     <div>
       <label
-        htmlFor={label}
         css={(t) =>
           css({
             display: "inline-block",
@@ -457,14 +459,13 @@ const Heading = (props) => (
   />
 );
 
-const FormattedAmount = React.memo(({ amount, token }) => {
+const FormattedAmount = React.memo(({ amount = 0, token }) => {
   const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
   const wethTokenContract = resolveIdentifier("weth-token")?.address;
 
   const formattedAmount = React.useCallback(
     (amount) => {
       if (!token) return null;
-      if (!amount) amount = 0;
 
       switch (token?.toLowerCase()) {
         case wethTokenContract:
