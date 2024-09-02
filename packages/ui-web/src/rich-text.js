@@ -221,6 +221,8 @@ export const createCss = (t) => ({
   },
 
   table: {
+    display: "block",
+    overflow: "auto",
     fontSize: "0.875em",
     borderCollapse: "collapse",
     borderSpacing: 0,
@@ -228,9 +230,14 @@ export const createCss = (t) => ({
       padding: "0.5em 0.6428571429em",
       border: "0.1rem solid",
       borderColor: t.colors.borderLight,
+      minWidth: "7em",
     },
     "thead th, thead td": {
       fontWeight: t.text.weights.emphasis,
+    },
+    ".image": {
+      // Images with set widths will force tables to expand
+      width: "auto !important",
     },
   },
   "* + table": { marginTop: "var(--default-block-gap)" },
