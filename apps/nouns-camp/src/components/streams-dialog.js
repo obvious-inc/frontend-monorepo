@@ -219,7 +219,7 @@ const StreamWithdrawForm = ({ stream }) => {
           <FormattedAmount
             amount={recipientBalance}
             token={token}
-            hasMaxButton={true}
+            hasMaxButton={recipientBalance > 0 ? true : false}
             handleMaxButtonClick={() =>
               setWithdrawAmount(formatInputAmount(recipientBalance))
             }
@@ -427,7 +427,7 @@ const Content = ({ streams, titleProps, dismiss }) => {
           }
         >
           <Heading>
-            History{" "}
+            All{" "}
             <span>
               <CaretDownIcon
                 style={{
