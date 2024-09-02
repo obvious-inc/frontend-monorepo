@@ -16,7 +16,7 @@ import { FormattedEthWithConditionalTooltip } from "./transaction-list";
 import { useWallet } from "../hooks/wallet";
 import { useAccountStreams, useProposal } from "../store";
 import Link from "@shades/ui-web/link";
-import { parseUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { useQueryClient } from "@tanstack/react-query";
 import Tag from "./tag";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip";
@@ -152,6 +152,18 @@ const StreamWithdrawForm = ({ stream }) => {
     }
   };
 
+  const formatInputAmount = (amount) => {
+    if (!token || !amount) return 0;
+    switch (token.toLowerCase()) {
+      case wethTokenContract:
+        return formatUnits(amount, 18);
+      case usdcTokenContract:
+        return formatUnits(amount, 6);
+      default:
+        throw new Error("Unsupported token", token);
+    }
+  };
+
   const streamWithdraw = useStreamWithdraw(
     streamContractAddress,
     parsedWithdrawAmount(),
@@ -204,7 +216,14 @@ const StreamWithdrawForm = ({ stream }) => {
         </StaticField>
 
         <StaticField label="Available to Withdraw">
-          <FormattedAmount amount={recipientBalance} token={token} />
+          <FormattedAmount
+            amount={recipientBalance}
+            token={token}
+            hasMaxButton={true}
+            handleMaxButtonClick={() =>
+              setWithdrawAmount(formatInputAmount(recipientBalance))
+            }
+          />
         </StaticField>
 
         <Input
@@ -459,43 +478,70 @@ const Heading = (props) => (
   />
 );
 
-const FormattedAmount = React.memo(({ amount = 0, token }) => {
-  const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
-  const wethTokenContract = resolveIdentifier("weth-token")?.address;
+const FormattedAmount = React.memo(
+  ({ amount = 0, token, hasMaxButton, handleMaxButtonClick }) => {
+    const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
+    const wethTokenContract = resolveIdentifier("weth-token")?.address;
 
-  const formattedAmount = React.useCallback(
-    (amount) => {
-      if (!token) return null;
+    const formattedAmount = React.useCallback(
+      (amount) => {
+        if (!token) return null;
 
-      switch (token?.toLowerCase()) {
-        case wethTokenContract:
-          return (
-            <FormattedEthWithConditionalTooltip
-              value={Number(amount)}
-              tokenSymbol="WETH"
-              currencyDimmed={true}
-            />
-          );
-        case usdcTokenContract:
-          return (
-            <FormattedEthWithConditionalTooltip
-              value={Number(amount)}
-              currency="usdc"
-              decimals={2}
-              truncationDots={false}
-              tokenSymbol="USDC"
-              localeFormatting
-              currencyDimmed={true}
-            />
-          );
-        default:
-          throw new Error("Unsupported token", token);
-      }
-    },
-    [token, wethTokenContract, usdcTokenContract],
-  );
+        switch (token?.toLowerCase()) {
+          case wethTokenContract:
+            return (
+              <FormattedEthWithConditionalTooltip
+                value={Number(amount)}
+                tokenSymbol="WETH"
+              />
+            );
+          case usdcTokenContract:
+            return (
+              <FormattedEthWithConditionalTooltip
+                value={Number(amount)}
+                currency="usdc"
+                decimals={2}
+                truncationDots={false}
+                tokenSymbol="USDC"
+                localeFormatting
+              />
+            );
+          default:
+            throw new Error("Unsupported token", token);
+        }
+      },
+      [token, wethTokenContract, usdcTokenContract],
+    );
 
-  return formattedAmount(amount);
-});
+    if (hasMaxButton) {
+      return (
+        <div
+          css={css({
+            display: "grid",
+            gridTemplateColumns: "auto auto",
+            gap: "1rem",
+            justifyContent: "start",
+          })}
+        >
+          <>{formattedAmount(amount)}</>
+          <Button
+            type="button"
+            size="tiny"
+            onClick={handleMaxButtonClick}
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+              })
+            }
+          >
+            max
+          </Button>
+        </div>
+      );
+    }
+
+    return formattedAmount(amount);
+  },
+);
 
 export default StreamsDialog;
