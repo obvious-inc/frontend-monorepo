@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import Script from "next/script";
-import { get as getConfig } from "@vercel/edge-config";
+// import { get as getConfig } from "@vercel/edge-config";
 // import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../wagmi-config.js";
@@ -82,16 +82,16 @@ const beforeInteractive = () => {
 };
 
 const fetchConfig = async () => {
-  try {
-    const [canaryAccounts = [], betaAccounts = []] = await Promise.all([
-      getConfig("canary-accounts"),
-      getConfig("beta-accounts"),
-    ]);
-    return { canaryAccounts, betaAccounts };
-  } catch (e) {
-    console.error(e);
+  // try {
+  //   const [canaryAccounts = [], betaAccounts = []] = await Promise.all([
+  //     getConfig("canary-accounts"),
+  //     getConfig("beta-accounts"),
+  //   ]);
+  //   return { canaryAccounts, betaAccounts };
+  // } catch (e) {
+  //   console.error(e);
     return { canaryAccounts: [], betaAccounts: [] };
-  }
+  // }
 };
 
 export default async function RootLayout({ children }) {
