@@ -1,7 +1,9 @@
 // import { kv } from "@vercel/kv";
-// import { verifyMessage, isAddress } from "viem";
+// import { createPublicClient, http, isAddress } from "viem";
 // import { subgraphFetch } from "../../../nouns-subgraph.js";
 // import { CHAIN_ID, APP_URL } from "../../../constants/env.js";
+// import { getJsonRpcUrl } from "../../../wagmi-config.js";
+// import { getChain } from "../../../utils/chains.js";
 // import { makeUrlId as makeCandidateUrlId } from "../../../utils/candidates.js";
 // import {
 //   parseEpochTimestamp,
@@ -15,6 +17,8 @@
 // } from "../farcaster-utils.js";
 
 export const runtime = "edge";
+
+// const chain = getChain(CHAIN_ID);
 
 // const createCanonicalCandidateUrl = async (candidateId) => {
 //   const { proposalCandidate } = await subgraphFetch({
@@ -81,7 +85,12 @@ export async function POST(request) {
   if (new Date() + 10 * 60 * 1000 > new Date(timestamp))
     return jsonResponse(400, { error: "signature-expired" });
 
-  // const isValidSignature = await verifyMessage({
+  // const publicClient = createPublicClient({
+  //   chain,
+  //   transport: http(getJsonRpcUrl(chain.id)),
+  // });
+
+  // const isValidSignature = await publicClient.verifyMessage({
   //   address: ethAddress,
   //   message: buildCandidateCastSignatureMessage({
   //     text,
@@ -91,7 +100,7 @@ export async function POST(request) {
   //   }),
   //   signature: ethSignature,
   // });
-  //
+
   // if (!isValidSignature)
   //   return jsonResponse(401, { error: "invalid-signature" });
 

@@ -143,7 +143,6 @@ const ProposalActionForm = ({
               {connectedWalletAccountAddress.slice(-4)}) with the Farcaster
               account you wish to use.
             </p>
-            <p>You can verify addresses in the Warpcast app.</p>
           </>
         );
 
@@ -155,9 +154,9 @@ const ProposalActionForm = ({
       if (selectedAccount != null && selectedAccount.nounerAddress == null) {
         return (
           <>
-            Camp defaults to only show casts from accounts with past or present
-            voting power. Users that hasn’t opted out of this filter will not
-            see this cast.
+            Camp defaults to only show casts from accounts that have had onchain
+            interactions with Nouns. Users that hasn’t opted out of this filter
+            will not see this cast.
           </>
         );
       }
@@ -681,19 +680,12 @@ const ProposalActionForm = ({
                       </Button>
                     );
 
-                  if (farcasterAccounts.length === 0)
-                    return (
-                      <Button type="button" size={size} disabled>
-                        No account found
-                      </Button>
-                    );
-
                   const selectedAccount = farcasterAccounts.find(
                     (a) =>
                       String(a.fid) === String(selectedFarcasterAccountFid),
                   );
 
-                  if (!selectedAccount.hasAccountKey)
+                  if (selectedAccount == null || !selectedAccount.hasAccountKey)
                     return (
                       <Button
                         type="button"
@@ -702,7 +694,9 @@ const ProposalActionForm = ({
                           openFarcasterSetupDialog();
                         }}
                       >
-                        Setup account key to cast
+                        {selectedAccount == null
+                          ? "Setup account to cast"
+                          : "Setup account key to cast"}
                       </Button>
                     );
 

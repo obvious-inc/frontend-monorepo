@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.8] - 2024-09-03
+
+### 🚀 Features
+
+- Pull changes from upstream (#585)
+
+### 🐛 Bug Fixes
+
+- *(api)* Enable edge runtime for transaction likes
+
+### ⚙️ Miscellaneous Tasks
+
+- *(package)* Add funding information
+
 ## [1.3.0-alpha.7] - 2024-09-01
 
 ### 🐛 Bug Fixes

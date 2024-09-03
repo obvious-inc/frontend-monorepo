@@ -121,6 +121,22 @@ export const buildProposalFeed = (
     );
   }
 
+  const repostingItemsByTargetFeedItemId = voteAndFeedbackPostItems.reduce(
+    (acc, item) => {
+      if (item.reposts == null || item.reposts.length === 0) return acc;
+      for (const voteOrFeedback of item.reposts) {
+        acc[voteOrFeedback.id] = [...(acc[voteOrFeedback.id] ?? []), item];
+      }
+      return acc;
+    },
+    {},
+  );
+
+  for (const feedItem of voteAndFeedbackPostItems) {
+    const repostingItems = repostingItemsByTargetFeedItemId[feedItem.id];
+    if (repostingItems?.length > 0) feedItem.repostingItems = repostingItems;
+  }
+
   const propdateItems = [];
 
   if (includePropdateItems) {

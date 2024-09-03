@@ -1,6 +1,11 @@
 "use client";
 
 import React from "react";
+import {
+  useMutation as useTanstackMutation,
+  useQuery as useTanstackQuery,
+  useQueryClient as useTanstackQueryClient,
+} from "@tanstack/react-query";
 import { useSignMessage } from "wagmi";
 import {
   array as arrayUtils,
@@ -11,6 +16,7 @@ import { CHAIN_ID } from "../constants/env.js";
 import {
   buildProposalCastSignatureMessage,
   buildCandidateCastSignatureMessage,
+  buildTransactionLikeSignatureMessage,
 } from "../utils/farcaster.js";
 import { useWallet } from "./wallet.js";
 
@@ -203,6 +209,89 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
     casts.push(cast);
     return casts;
   }, []);
+};
+
+export const useTransactionLikes = (
+  transactionHash,
+  { enabled = true } = {},
+) => {
+  const { data: likes } = useTanstackQuery({
+    queryKey: ["farcaster-transaction-likes", transactionHash],
+    queryFn: async ({ queryKey: [, hash] }) => {
+      const response = await fetch(
+        `/api/farcaster-transaction-likes?${new URLSearchParams({
+          hash,
+        })}`,
+      );
+
+      if (!response.ok) {
+        console.log(
+          `Error fetching likes for: [${hash}]`,
+          await response.text(),
+        );
+        return;
+      }
+
+      const { likes } = await response.json();
+
+      // Only accounts with voting power for now
+      return likes.filter((l) => l.votingPower > 0);
+    },
+    enabled: enabled && transactionHash != null,
+  });
+  return likes;
+};
+
+export const useSubmitTransactionLike = () => {
+  const { address: connectedAccountAddress } = useWallet();
+  const { signMessageAsync: signMessage } = useSignMessage();
+
+  const queryClient = useTanstackQueryClient();
+
+  const { mutate } = useTanstackMutation({
+    mutationFn: async ({ hash, fid, timestamp, ethAddress, ethSignature }) => {
+      const response = await fetch("/api/farcaster-transaction-likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hash,
+          fid,
+          timestamp,
+          ethAddress,
+          ethSignature,
+        }),
+      });
+
+      if (!response.ok) throw new Error();
+    },
+    onSuccess: (_, { hash, ethAddress }) => {
+      queryClient.setQueryData(
+        ["farcaster-transaction-likes", hash],
+        (likes) => [...(likes ?? []), { nounerAddress: ethAddress }],
+      );
+    },
+  });
+
+  return React.useCallback(
+    async ({ hash, fid }) => {
+      const timestamp = new Date().toISOString();
+      const signature = await signMessage({
+        message: buildTransactionLikeSignatureMessage({
+          hash,
+          chainId: CHAIN_ID,
+          timestamp,
+        }),
+      });
+      return mutate({
+        hash,
+        fid,
+        timestamp,
+        ethAddress: connectedAccountAddress,
+        ethSignature: signature,
+      });
+    },
+    [mutate, signMessage, connectedAccountAddress],
+  );
 };
 
 export const useSubmitProposalCast = (proposalId) => {

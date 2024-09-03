@@ -1,38 +1,22 @@
 // import { kv } from "@vercel/kv";
 // import { createPublicClient, http, isAddress } from "viem";
-// import { CHAIN_ID, APP_URL } from "../../../constants/env.js";
+// import { CHAIN_ID } from "../../../constants/env.js";
 // import { getJsonRpcUrl } from "../../../wagmi-config.js";
-// import { subgraphFetch } from "../../../nouns-subgraph.js";
 // import { getChain } from "../../../utils/chains.js";
 // import {
 //   parseEpochTimestamp,
-//   buildProposalCastSignatureMessage,
+//   buildTransactionLikeSignatureMessage,
 // } from "../../../utils/farcaster.js";
 // import { createUri as createTransactionReceiptUri } from "../../../utils/erc-2400.js";
 // import {
-//   fetchCastsByParentUrl,
-//   submitCastAdd,
+//   fetchNounerLikesByTargetUrl,
 //   verifyEthAddress,
+//   submitTargetLikeAdd,
 // } from "../farcaster-utils.js";
 
-export const runtime = "edge";
+export const runtime = 'edge';
 
 // const chain = getChain(CHAIN_ID);
-
-// const createCanonicalProposalUrl = async (proposalId) => {
-//   const { proposal } = await subgraphFetch({
-//     query: `
-//       query {
-//         proposal(id: ${proposalId}) {
-//           createdTransactionHash
-//         }
-//       }`,
-//   });
-//
-//   if (proposal == null) throw new Error();
-//
-//   return createTransactionReceiptUri(CHAIN_ID, proposal.createdTransactionHash);
-// };
 
 const jsonResponse = (statusCode, body, headers) =>
   new Response(JSON.stringify(body), {
@@ -40,35 +24,30 @@ const jsonResponse = (statusCode, body, headers) =>
     headers: { "Content-Type": "application/json", ...headers },
   });
 
-// const fetchProposalCasts = async (proposalId) => {
-//   const url = await createCanonicalProposalUrl(proposalId);
-//   const { accounts, casts } = await fetchCastsByParentUrl(url);
-//   return { accounts, casts: casts.map((c) => ({ ...c, proposalId })) };
-// };
-
+// eslint-disable-next-line no-unused-vars
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const proposalId = searchParams.get("proposal");
+  // const { searchParams } = new URL(request.url);
+  // const hash = searchParams.get("hash");
 
-  if (proposalId == null)
-    return jsonResponse(400, { error: "proposal-required" });
+  // if (hash == null) return jsonResponse(400, { error: "hash-required" });
 
-  const { casts, accounts } = { casts:[], accounts: [] } // await fetchProposalCasts(proposalId);
+  // const likes = await fetchNounerLikesByTargetUrl(
+  //   createTransactionReceiptUri(CHAIN_ID, hash),
+  // );
 
   return jsonResponse(
     200,
-    { casts, accounts },
+    { likes: [] },
     { "Cache-Control": "max-age=10, stale-while-revalidate=20" },
   );
 }
 
 // eslint-disable-next-line no-unused-vars
 export async function POST(request) {
-  // const { proposalId, text, fid, timestamp, ethAddress, ethSignature } =
+  // const { hash, fid, timestamp, ethAddress, ethSignature } =
   //   await request.json();
 
-  // if (proposalId == null)
-  //   return jsonResponse(400, { error: "proposal-required" });
+  // if (hash == null) return jsonResponse(400, { error: "hash-required" });
   // if (fid == null) return jsonResponse(400, { error: "fid-required" });
   // if (timestamp == null)
   //   return jsonResponse(400, { error: "timestamp-required" });
@@ -88,9 +67,8 @@ export async function POST(request) {
 
   // const isValidSignature = await publicClient.verifyMessage({
   //   address: ethAddress,
-  //   message: buildProposalCastSignatureMessage({
-  //     text,
-  //     proposalId,
+  //   message: buildTransactionLikeSignatureMessage({
+  //     hash,
   //     chainId: CHAIN_ID,
   //     timestamp,
   //   }),
@@ -111,16 +89,15 @@ export async function POST(request) {
   //   return jsonResponse(401, { error: "no-account-key-for-eth-address" });
 
   // try {
-  //   const castMessage = await submitCastAdd(fid, privateAccountKey, {
-  //     text,
-  //     parentUrl: await createCanonicalProposalUrl(proposalId),
-  //     embeds: [{ url: `${APP_URL}/proposals/${proposalId}` }],
+  //   const reactionMessage = await submitTargetLikeAdd(fid, privateAccountKey, {
+  //     targetUrl: createTransactionReceiptUri(CHAIN_ID, hash),
   //   });
   //   return jsonResponse(201, {
-  //     hash: castMessage.hash,
-  //     fid: castMessage.data.fid,
-  //     timestamp: parseEpochTimestamp(castMessage.data.timestamp).toISOString(),
-  //     text: castMessage.data.castAddBody.text,
+  //     hash: reactionMessage.hash,
+  //     fid: reactionMessage.data.fid,
+  //     timestamp: parseEpochTimestamp(
+  //       reactionMessage.data.timestamp,
+  //     ).toISOString(),
   //   });
   // } catch (e) {
     return jsonResponse(500, { error: "submit-failed" });
