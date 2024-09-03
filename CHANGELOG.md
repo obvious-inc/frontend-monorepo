@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.10] - 2024-09-03
+
+### 🚜 Refactor
+
+- *(api)* Update `oethEth` fetch URL and parsing
+
 ## [1.3.0-alpha.9] - 2024-09-03
 
 ### 🚜 Refactor
