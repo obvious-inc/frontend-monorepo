@@ -7,8 +7,10 @@ import DialogHeader from "@shades/ui-web/dialog-header";
 import Avatar from "@shades/ui-web/avatar";
 import QRCode from "@shades/ui-web/qr-code";
 import { useWallet } from "../hooks/wallet.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "../hooks/farcaster.js";
 import LogoSymbol from "./logo-symbol.js";
+import ChainExplorerAddressLink from "./chain-explorer-address-link.js";
 
 const createFarcasterAccountKey = async () => {
   const res = await fetch("/api/farcaster-account-key", { method: "POST" });
@@ -46,6 +48,8 @@ const Content = ({ titleProps, dismiss }) => {
   const theme = useTheme();
 
   const { address: connectedWalletAccountAddress } = useWallet();
+  const { data: dialogData } = useDialog("farcaster-setup");
+  const dialogContext = dialogData?.context;
 
   const [isInitiatingKeyRequest, setInitiatingKeyRequest] =
     React.useState(false);
@@ -58,7 +62,7 @@ const Content = ({ titleProps, dismiss }) => {
     },
     {
       enabled: keyData != null,
-      fetchInterval: 2000,
+      fetchInterval: 3000,
     },
     [keyData?.key],
   );
@@ -67,9 +71,13 @@ const Content = ({ titleProps, dismiss }) => {
     connectedWalletAccountAddress,
     {
       // Long-poll to get account key data as the key request is approved
-      fetchInterval: 2000,
+      fetchInterval: 3000,
     },
   );
+
+  if (accounts == null) return null;
+
+  const hasVerifiedAddress = accounts.length > 0;
 
   return (
     <div
@@ -80,6 +88,11 @@ const Content = ({ titleProps, dismiss }) => {
           ".small": {
             fontSize: t.text.sizes.small,
             color: t.colors.textDimmed,
+            a: { color: "inherit" },
+          },
+          "p a": {
+            color: t.colors.link,
+            "&.plain": { color: "inherit", textDecoration: "none" },
           },
           b: { fontWeight: t.text.weights.emphasis },
           "@media (min-width: 600px)": { padding: "2rem" },
@@ -98,16 +111,57 @@ const Content = ({ titleProps, dismiss }) => {
         dismiss={keyData == null ? null : dismiss}
       />
       <main>
-        {keyData == null ? (
+        {!hasVerifiedAddress ? (
+          <>
+            {dialogContext === "like" && (
+              <p>
+                Likes on Camp are built on top of{" "}
+                <a
+                  href="https://docs.farcaster.xyz/learn/"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  Farcaster
+                </a>
+                .
+              </p>
+            )}
+            <p>
+              There’s unfortunately no Farcaster account associated with your
+              connected wallet address.
+            </p>
+            <p>
+              You can verify your address (
+              <ChainExplorerAddressLink
+                address={connectedWalletAccountAddress}
+                className="plain"
+              >
+                {connectedWalletAccountAddress.slice(0, 6)}...
+                {connectedWalletAccountAddress.slice(-4)}
+              </ChainExplorerAddressLink>
+              ) under {'"Verified addresses"'}, in the Warpcast app settings.
+            </p>
+            <p className="small">
+              If you don’t have a Farcaster account, you can create one using
+              the{" "}
+              <a href="https://warpcast.com/" target="_blank" rel="noreferrer">
+                Warpcast app
+              </a>
+              .
+            </p>
+          </>
+        ) : keyData == null ? (
           <>
             <p>
-              To cast from Camp, you need to issue an <em>account key</em> (aka
-              signer) that can write messages on your behalf.
+              To use your Farcaster account on Camp, you need to issue an{" "}
+              <em>account key</em> (aka signer) that can write messages on your
+              behalf.
             </p>
             <p>
               Issuing account keys does not put you at risk of losing access to
               your account, although it does authorize a set of actions, like
-              adding casts and likes.
+              submitting casts and likes.
             </p>
             <p className="small">
               You can revoke an account key at any time in the Warpcast app
@@ -241,24 +295,26 @@ const Content = ({ titleProps, dismiss }) => {
             <Button type="button" size="medium" onClick={dismiss}>
               Cancel
             </Button>
-            <Button
-              size="medium"
-              variant="primary"
-              type="button"
-              onClick={async () => {
-                setInitiatingKeyRequest(true);
-                try {
-                  const keyData = await createFarcasterAccountKey();
-                  setKeyData(keyData);
-                } finally {
-                  setInitiatingKeyRequest(false);
-                }
-              }}
-              disabled={isInitiatingKeyRequest}
-              isLoading={isInitiatingKeyRequest}
-            >
-              Got it &rarr;
-            </Button>
+            {hasVerifiedAddress && (
+              <Button
+                size="medium"
+                variant="primary"
+                type="button"
+                onClick={async () => {
+                  setInitiatingKeyRequest(true);
+                  try {
+                    const keyData = await createFarcasterAccountKey();
+                    setKeyData(keyData);
+                  } finally {
+                    setInitiatingKeyRequest(false);
+                  }
+                }}
+                disabled={isInitiatingKeyRequest}
+                isLoading={isInitiatingKeyRequest}
+              >
+                Got it &rarr;
+              </Button>
+            )}
           </div>
         </footer>
       )}

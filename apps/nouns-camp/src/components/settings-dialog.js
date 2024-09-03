@@ -37,7 +37,7 @@ const settingInputConfigByKey = {
     },
     hint: ({ value }) => {
       if (value !== "nouners") return null;
-      return "This setting will filter feeds to only show casts from accounts with past or present voting power.";
+      return "This setting will filter feeds to only show casts from accounts that have had onchain interactions with Nouns.";
     },
   },
   "xmas-effects-opt-out": {

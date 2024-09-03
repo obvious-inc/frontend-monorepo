@@ -10,12 +10,7 @@ export async function GET(request) {
   const ethAddress = searchParams.get("eth-address");
 
   if (!isAddress(ethAddress))
-    return new Response(JSON.stringify({ error: "invalid-eth-address" }), {
-      status: 400,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    return Response.json({ error: "invalid-eth-address" }, { status: 400 });
 
   const accounts = [] // await fetchAccountsWithVerifiedAddress(ethAddress);
 
@@ -28,10 +23,17 @@ export async function GET(request) {
     }),
   );
 
-  return new Response(JSON.stringify({ accounts: accountsWithKeyData }), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/json",
+  const hasAccountKey = accountsWithKeyData.some((a) => a.hasAccountKey);
+
+  // Don’t cache if no account key exists, 24 hours otherwise
+  const cacheTime = hasAccountKey ? 24 * 60 * 60 : 0;
+
+  return Response.json(
+    { accounts: accountsWithKeyData },
+    {
+      headers: {
+        "Cache-Control": `public, immutable, max-age=${cacheTime}`,
+      },
     },
-  });
+  );
 }
