@@ -149,12 +149,15 @@ export async function GET() {
 
         const oethEth = await (async () => {
           const res = await fetch(
-            "https://api.dexscreener.com/latest/dex/pairs/ethereum/0x52299416C469843F4e0d54688099966a6c7d720f",
+            "https://api.coingecko.com/api/v3/simple/price?ids=origin-ether&vs_currencies=eth",
           );
+
           if (!res.ok) throw new Error();
-          const { pairs } = await res.json();
-          const [oethWETH] = pairs;
-          return BigInt(oethWETH.priceNative * 10 ** 18);
+
+          const data = await res.json();
+          const oethPriceInEth = data["origin-ether"].eth;
+
+          return BigInt(oethPriceInEth * 10 ** 18);
         })();
 
         return ["convertionRates", { rethEth, usdcEth, oethEth }];
