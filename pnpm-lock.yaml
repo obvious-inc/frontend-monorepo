@@ -103,8 +103,8 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
       diff:
-        specifier: 5.2.0
-        version: 5.2.0
+        specifier: 6.0.0
+        version: 6.0.0
       is-hotkey:
         specifier: 0.2.0
         version: 0.2.0
@@ -4402,8 +4402,8 @@ packages:
     resolution: {integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==}
     engines: {node: '>=0.3.1'}
 
-  diff@5.2.0:
-    resolution: {integrity: sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==}
+  diff@6.0.0:
+    resolution: {integrity: sha512-NbGtgPSw7il+jeajji1H6iKjCk3r/ANQKw3FFUhGV50+MH5MKIMeUmi53piTr7jlkWcq9eS858qbkRzkehwe+w==}
     engines: {node: '>=0.3.1'}
 
   dijkstrajs@1.0.3:
@@ -13587,7 +13587,7 @@ snapshots:
 
   diff@4.0.2: {}
 
-  diff@5.2.0: {}
+  diff@6.0.0: {}
 
   dijkstrajs@1.0.3: {}
 
