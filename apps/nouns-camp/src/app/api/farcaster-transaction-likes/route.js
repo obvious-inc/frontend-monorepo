@@ -14,6 +14,8 @@
 //   submitTargetLikeAdd,
 // } from "../farcaster-utils.js";
 
+export const runtime = 'edge';
+
 // const chain = getChain(CHAIN_ID);
 
 const jsonResponse = (statusCode, body, headers) =>
