@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.9] - 2024-09-03
+
+### 🚜 Refactor
+
+- *(layout)* Comment out unused `getConfig` calls
+
 ## [1.3.0-alpha.8] - 2024-09-03
 
 ### 🚀 Features
