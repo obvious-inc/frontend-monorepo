@@ -159,8 +159,13 @@ const Content = ({ titleProps, dismiss }) => {
               size="medium"
               variant="primary"
               type="button"
-              onClick={() => {
-                authenticateConnectedAccount();
+              onClick={async () => {
+                try {
+                  await authenticateConnectedAccount();
+                } catch (e) {
+                  console.error(e);
+                  alert("Ops, looks like something went wrong");
+                }
               }}
               disabled={isAuthenticating}
               isLoading={isAuthenticating}
