@@ -90,10 +90,14 @@ const ActivityFeed = ({
   // const currentVotingPower = connectedDelegate?.nounsRepresented.length ?? 0;
   const submitTransactionLike = useSubmitTransactionLike();
   const submitCastLike = useSubmitCastLike();
-  const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
-  const { open: openAuthenticationDialog } = useDialog(
-    "account-authentication",
-  );
+  const {
+    open: openFarcasterSetupDialog,
+    preload: preloadFarcasterSetupDialog,
+  } = useDialog("farcaster-setup");
+  const {
+    open: openAuthenticationDialog,
+    preload: preloadAuthenticationDialog,
+  } = useDialog("account-authentication");
   const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
 
   const like = React.useCallback(
@@ -129,24 +133,44 @@ const ActivityFeed = ({
     ],
   );
 
+  // Enable the like action if there’s a delegate entry for the connected
+  // account, or if there’s a delegate entry for a verified address on the
+  // connected Farcaster account
+  const allowLikeAction =
+    connectedDelegate != null ||
+    connectedFarcasterAccount?.nounerAddress != null;
+
+  const hasFarcasterAccountKey =
+    connectedFarcasterAccount != null &&
+    connectedFarcasterAccount.hasAccountKey;
+
   const onLike = (() => {
-    // Enable the like action if there’s a delegate entry for the connected
-    // account, or if there’s a delegate entry for a verified address on the
-    // connected Farcaster account
-    if (
-      connectedDelegate == null &&
-      connectedFarcasterAccount?.nounerAddress == null
-    )
-      return null;
-    if (
-      connectedFarcasterAccount == null ||
-      !connectedFarcasterAccount.hasAccountKey
-    )
+    if (!allowLikeAction) return null;
+    if (!hasFarcasterAccountKey)
       return () => openFarcasterSetupDialog({ intent: "like" });
     if (!isAuthenticated)
       return () => openAuthenticationDialog({ intent: "like" });
     return like;
   })();
+
+  React.useEffect(() => {
+    if (!allowLikeAction) return;
+
+    if (!hasFarcasterAccountKey) {
+      preloadFarcasterSetupDialog();
+      return;
+    }
+    if (!isAuthenticated) {
+      preloadAuthenticationDialog();
+      return;
+    }
+  }, [
+    allowLikeAction,
+    hasFarcasterAccountKey,
+    isAuthenticated,
+    preloadFarcasterSetupDialog,
+    preloadAuthenticationDialog,
+  ]);
 
   return (
     <ul

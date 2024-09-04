@@ -1,39 +1,56 @@
 import React from "react";
 
+const ReactLazyWithPreload = (fetcher) => {
+  const LazyComponent = React.lazy(fetcher);
+  LazyComponent.preload = fetcher;
+  return LazyComponent;
+};
+
 const Context = React.createContext();
 
 const dialogs = [
   {
     key: "account",
-    component: React.lazy(() => import("../components/account-dialog.js")),
+    component: ReactLazyWithPreload(
+      () => import("../components/account-dialog.js"),
+    ),
   },
   {
     key: "delegation",
-    component: React.lazy(() => import("../components/delegation-dialog.js")),
+    component: ReactLazyWithPreload(
+      () => import("../components/delegation-dialog.js"),
+    ),
   },
   {
     key: "proposal-drafts",
-    component: React.lazy(
+    component: ReactLazyWithPreload(
       () => import("../components/proposal-drafts-dialog.js"),
     ),
   },
   {
     key: "settings",
-    component: React.lazy(() => import("../components/settings-dialog.js")),
+    component: ReactLazyWithPreload(
+      () => import("../components/settings-dialog.js"),
+    ),
   },
   {
     key: "account-authentication",
-    component: React.lazy(
+    component: ReactLazyWithPreload(
       () => import("../components/account-authentication-dialog.js"),
     ),
   },
   {
     key: "farcaster-setup",
-    component: React.lazy(
+    component: ReactLazyWithPreload(
       () => import("../components/farcaster-setup-dialog.js"),
     ),
   },
 ];
+
+const preload = (key) => {
+  const { component } = dialogs.find((d) => d.key === key);
+  return component.preload();
+};
 
 export const Provider = ({ children }) => {
   const [openDialogs, setOpenDialogs] = React.useState(new Map());
@@ -78,7 +95,7 @@ export const Provider = ({ children }) => {
   );
 
   const contextValue = React.useMemo(
-    () => ({ openDialogs, open, close, toggle }),
+    () => ({ openDialogs, open, close, toggle, preload }),
     [openDialogs, open, close, toggle],
   );
 
@@ -101,12 +118,14 @@ export const Provider = ({ children }) => {
 };
 
 export const useDialog = (key) => {
-  const { openDialogs, open, close, toggle } = React.useContext(Context);
+  const { openDialogs, open, close, toggle, preload } =
+    React.useContext(Context);
   return {
     isOpen: openDialogs.has(key),
     data: openDialogs.get(key),
     open: React.useCallback((data) => open(key, data), [open, key]),
     close: React.useCallback(() => close(key), [close, key]),
     toggle: React.useCallback(() => toggle(key), [toggle, key]),
+    preload: React.useCallback(() => preload(key), [preload, key]),
   };
 };
