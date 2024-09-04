@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
 import { parseProposal, subgraphFetch } from "../../../nouns-subgraph";
 import {
+  getState,
+  getStateLabel,
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
 } from "../../../utils/proposals";
@@ -344,90 +346,173 @@ const ProposalHeader = ({
   );
 };
 
-const Header = ({ styleProps, children }) => (
-  <p
-    style={{
-      fontSize: "1.4rem",
-      fontWeight: 700,
-      color: "hsl(0 0% 83%)",
-      lineHeight: 1.15,
-      textTransform: "uppercase",
-      whiteSpace: "pre",
-      ...styleProps,
-    }}
-  >
-    {children} |
-  </p>
-);
-
-const BigNumber = ({ children }) => (
-  <span
-    style={{
-      fontSize: "2.4rem",
-      fontWeight: 700,
-      color: "hsl(0 0% 94%)",
-    }}
-  >
-    {children}
-  </span>
-);
-
-const ProposalVoteStatus = ({ proposal }) => {
+const ProposalVotesProgress = ({ proposal }) => {
   const { forVotes, againstVotes, abstainVotes, quorumVotes } = proposal;
+  const totalVotes = forVotes + againstVotes + abstainVotes;
+  const forVotesPercentage = (forVotes / totalVotes) * 100;
+  const againstVotesPercentage = (againstVotes / totalVotes) * 100;
+  const abstainVotesPercentage = (abstainVotes / totalVotes) * 100;
+
+  console.log("votes", forVotes, againstVotes, abstainVotes, quorumVotes);
+  console.log(
+    "percentages",
+    forVotesPercentage,
+    againstVotesPercentage,
+    abstainVotesPercentage,
+  );
 
   return (
     <div
       style={{
         display: "flex",
-        flexDirection: "row",
-        gap: "6rem",
+        flexDirection: "column",
+        margin: 0,
+        padding: 0,
       }}
     >
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          justifyContent: "flex-end",
+          flexDirection: "row",
+          justifyContent: "space-between",
         }}
       >
-        <Header styleProps={{ color: "#41b579" }}>For</Header>
-        <BigNumber>{forVotes}</BigNumber>
+        <p
+          style={{
+            color: "#41b579",
+            fontWeight: 700,
+          }}
+        >
+          For {forVotes}
+        </p>
+        <>
+          <p
+            style={{
+              color: "hsl(0 0% 40%)",
+              fontWeight: 700,
+            }}
+          >
+            Abstain {abstainVotes}
+          </p>
+          <p style={{ whiteSpace: "pre" }}> &middot; </p>
+          <p
+            style={{
+              color: "#db5664",
+              fontWeight: 700,
+            }}
+          >
+            Against {againstVotes}
+          </p>
+        </>
       </div>
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          justifyContent: "flex-end",
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          borderRadius: "0.3rem",
         }}
       >
-        <Header styleProps={{ color: "#db5664" }}>Against</Header>
-        <BigNumber>{againstVotes}</BigNumber>
+        {forVotesPercentage > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: `${forVotesPercentage}%`,
+              backgroundColor: "#41b579",
+              padding: "0.4rem",
+            }}
+          />
+        )}
+
+        {abstainVotesPercentage > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: `${abstainVotesPercentage}%`,
+              backgroundColor: "hsl(0 0% 40%)",
+              padding: "0.4rem",
+            }}
+          />
+        )}
+
+        {againstVotesPercentage > 0 && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              width: `${againstVotesPercentage}%`,
+              backgroundColor: "#db5664",
+              padding: "0.4rem",
+            }}
+          />
+        )}
       </div>
       <div
         style={{
           display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          justifyContent: "flex-end",
+          flexDirection: "row",
+          justifyContent: "space-between",
         }}
       >
-        <Header>Abstain</Header>
-        <BigNumber>{abstainVotes}</BigNumber>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "flex-end",
-          justifyContent: "flex-end",
-        }}
-      >
-        <Header styleProps={{ color: "hsl(0 0% 60%)" }}>Quorum</Header>
-        <BigNumber>{quorumVotes}</BigNumber>
+        <p>Quorum {quorumVotes}</p>
       </div>
     </div>
+  );
+};
+
+const ProposalStateTag = ({ state }) => {
+  const variantByState = {
+    active: "active",
+    // "objection-period": "warning",
+    defeated: "error",
+    vetoed: "error",
+    succeeded: "success",
+    queued: "success",
+    executed: "success",
+  };
+
+  const colorByVariant = {
+    success: "#55c88d",
+    error: "#ff7281",
+    // warning: "hsl(40 100% 50%)",
+    active: "hsl(210 100% 60%)",
+  };
+
+  const backgroundByVariant = {
+    success: "#2b3b33",
+    error: "#3f2f32",
+    // warning: "hsl(40 100% 50% / 10%)",
+    active: "#253240",
+  };
+
+  return (
+    <span
+      style={{
+        width: "10rem",
+        justifyContent: "center",
+        backgroundColor: backgroundByVariant[variantByState[state]],
+        color: colorByVariant[variantByState[state]],
+        textTransform: "uppercase",
+        padding: "0.3rem",
+        borderRadius: "0.4rem",
+        lineHeight: 1.2,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        fontWeight: 500,
+      }}
+    >
+      {getStateLabel(state)}
+    </span>
   );
 };
 
@@ -452,6 +537,11 @@ export async function GET(request) {
     const proposalId = searchParams.get("proposal");
 
     const proposal = await fetchProposal(proposalId);
+    const currentBlockNumber = await publicClient.getBlockNumber();
+    const proposalState = getState(proposal, {
+      blockNumber: currentBlockNumber,
+    });
+
     const proposerEnsName = await publicClient.getEnsName({
       address: proposal.proposerId,
     });
@@ -501,14 +591,14 @@ export async function GET(request) {
     });
 
     const isFinalOrSucceededState =
-      isFinalProposalState(proposal.status.toLowerCase()) ||
-      isSucceededProposalState(proposal.status.toLowerCase());
+      isFinalProposalState(proposal.state) ||
+      isSucceededProposalState(proposal.state);
 
     return new ImageResponse(
       (
         <div
           style={{
-            backgroundColor: "hsl(0 0% 10%)",
+            backgroundColor: "rgb(26, 26, 26)",
             backgroundSize: "150px 150px",
             padding: "2rem",
             color: "hsl(0 0% 83%)",
@@ -516,25 +606,29 @@ export async function GET(request) {
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            justifyContent: "space-around",
+            justifyContent: "space-between",
           }}
         >
-          <ProposalHeader
-            title={proposal.title === null ? "Untitled" : proposal.title}
-            proposer={proposer}
-            createdAt={proposal.createdTimestamp}
-            updatedAt={proposal.lastUpdatedTimestamp}
-            transactions={proposal.transactions}
-            hasPassed={isFinalOrSucceededState}
-            sponsors={sponsors}
-          />
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <ProposalStateTag state={proposalState} />
+            <ProposalHeader
+              title={proposal.title === null ? "Untitled" : proposal.title}
+              proposer={proposer}
+              createdAt={proposal.createdTimestamp}
+              updatedAt={proposal.lastUpdatedTimestamp}
+              transactions={proposal.transactions}
+              hasPassed={isFinalOrSucceededState}
+              sponsors={sponsors}
+            />
+          </div>
 
-          <ProposalVoteStatus proposal={{ ...proposal, quorumVotes }} />
+          <ProposalVotesProgress proposal={proposal} />
         </div>
       ),
       {
-        width: 1200,
-        height: 630,
+        // debug: true,
+        width: 1000,
+        height: 525,
         fonts: [
           {
             data: robotoRegular,
