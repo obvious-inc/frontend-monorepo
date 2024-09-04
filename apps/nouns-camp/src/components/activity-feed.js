@@ -149,7 +149,12 @@ const ActivityFeed = ({
     if (!hasFarcasterAccountKey)
       return () => openFarcasterSetupDialog({ intent: "like" });
     if (!isAuthenticated)
-      return () => openAuthenticationDialog({ intent: "like" });
+      return (...args) => {
+        openAuthenticationDialog({
+          intent: "like",
+          onSuccess: () => like(...args),
+        });
+      };
     return like;
   })();
 

@@ -31,6 +31,7 @@ const Content = ({ titleProps, dismiss }) => {
   const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
   const { data: dialogData } = useDialog("account-authentication");
   const userIntent = dialogData?.intent;
+  const onSuccess = dialogData?.onSuccess;
 
   const isAuthenticating = authenticationState !== "idle";
 
@@ -162,6 +163,7 @@ const Content = ({ titleProps, dismiss }) => {
               onClick={async () => {
                 try {
                   await authenticateConnectedAccount();
+                  onSuccess?.();
                 } catch (e) {
                   console.error(e);
                   alert("Ops, looks like something went wrong");
