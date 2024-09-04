@@ -1,21 +1,17 @@
-import { kv } from "@vercel/kv";
-import { createPublicClient, http, isAddress } from "viem";
-import { CHAIN_ID, APP_URL } from "../../../constants/env.js";
-import { getJsonRpcUrl } from "../../../wagmi-config.js";
+import { isLoggedIn, isLoggedInAccountFid } from "@/app/api/auth-utils";
+import { CHAIN_ID, APP_PRODUCTION_URL } from "../../../constants/env.js";
 import { subgraphFetch } from "../../../nouns-subgraph.js";
-import { getChain } from "../../../utils/chains.js";
-import {
-  parseEpochTimestamp,
-  buildProposalCastSignatureMessage,
-} from "../../../utils/farcaster.js";
+import { parseEpochTimestamp } from "../../../utils/farcaster.js";
 import { createUri as createTransactionReceiptUri } from "../../../utils/erc-2400.js";
 import {
   fetchCastsByParentUrl,
+  fetchAccount,
   submitCastAdd,
-  verifyEthAddress,
 } from "../farcaster-utils.js";
-
-const chain = getChain(CHAIN_ID);
+import {
+  getAccountKeyForFid,
+  deleteAccountKeyForFid,
+} from "../farcaster-account-key-utils.js";
 
 const createCanonicalProposalUrl = async (proposalId) => {
   const { proposal } = await subgraphFetch({
@@ -32,12 +28,6 @@ const createCanonicalProposalUrl = async (proposalId) => {
   return createTransactionReceiptUri(CHAIN_ID, proposal.createdTransactionHash);
 };
 
-const jsonResponse = (statusCode, body, headers) =>
-  new Response(JSON.stringify(body), {
-    status: statusCode,
-    headers: { "Content-Type": "application/json", ...headers },
-  });
-
 const fetchProposalCasts = async (proposalId) => {
   const url = await createCanonicalProposalUrl(proposalId);
   const { accounts, casts } = await fetchCastsByParentUrl(url);
@@ -49,77 +39,67 @@ export async function GET(request) {
   const proposalId = searchParams.get("proposal");
 
   if (proposalId == null)
-    return jsonResponse(400, { error: "proposal-required" });
+    return Response.json({ error: "proposal-required" }, { status: 400 });
 
   const { casts, accounts } = await fetchProposalCasts(proposalId);
 
-  return jsonResponse(
-    200,
+  return Response.json(
     { casts, accounts },
-    { "Cache-Control": "max-age=10, stale-while-revalidate=20" },
+    {
+      headers: {
+        "Cache-Control": "max-age=10, stale-while-revalidate=20",
+      },
+    },
   );
 }
 
 export async function POST(request) {
-  const { proposalId, text, fid, timestamp, ethAddress, ethSignature } =
-    await request.json();
+  const { proposalId, text, fid } = await request.json();
 
-  if (proposalId == null)
-    return jsonResponse(400, { error: "proposal-required" });
-  if (fid == null) return jsonResponse(400, { error: "fid-required" });
-  if (timestamp == null)
-    return jsonResponse(400, { error: "timestamp-required" });
-  if (!isAddress(ethAddress))
-    return jsonResponse(400, { error: "eth-address-required" });
-  if (ethSignature == null)
-    return jsonResponse(400, { error: "eth-signature-required" });
+  if (!(await isLoggedIn()))
+    return Response.json({ error: "not-logged-in" }, { status: 401 });
 
-  // Allow up to 10 minute old signatures
-  if (new Date() + 10 * 60 * 1000 > new Date(timestamp))
-    return jsonResponse(400, { error: "signature-expired" });
+  if (!(await isLoggedInAccountFid(fid)))
+    return Response.json({ error: "address-not-verified" }, { status: 401 });
 
-  const publicClient = createPublicClient({
-    chain,
-    transport: http(getJsonRpcUrl(chain.id)),
-  });
-
-  const isValidSignature = await publicClient.verifyMessage({
-    address: ethAddress,
-    message: buildProposalCastSignatureMessage({
-      text,
-      proposalId,
-      chainId: CHAIN_ID,
-      timestamp,
-    }),
-    signature: ethSignature,
-  });
-
-  if (!isValidSignature)
-    return jsonResponse(401, { error: "invalid-signature" });
-
-  const isVerifiedEthAddress = await verifyEthAddress(fid, ethAddress);
-
-  if (!isVerifiedEthAddress)
-    return jsonResponse(401, { error: "invalid-address" });
-
-  const privateAccountKey = await kv.get(`fid:${fid}:account-key`);
+  const privateAccountKey = await getAccountKeyForFid(fid);
 
   if (privateAccountKey == null)
-    return jsonResponse(401, { error: "no-account-key-for-eth-address" });
+    return Response.json({ error: "no-account-key" }, { status: 401 });
+
+  if (proposalId == null)
+    return Response.json({ error: "proposal-required" }, { status: 400 });
+  if (text == null)
+    return Response.json({ error: "text-required" }, { status: 400 });
 
   try {
-    const castMessage = await submitCastAdd(fid, privateAccountKey, {
-      text,
-      parentUrl: await createCanonicalProposalUrl(proposalId),
-      embeds: [{ url: `${APP_URL}/proposals/${proposalId}` }],
-    });
-    return jsonResponse(201, {
-      hash: castMessage.hash,
-      fid: castMessage.data.fid,
-      timestamp: parseEpochTimestamp(castMessage.data.timestamp).toISOString(),
-      text: castMessage.data.castAddBody.text,
-    });
+    const account = await fetchAccount(fid);
+    const castMessage = await submitCastAdd(
+      { fid, privateAccountKey },
+      {
+        text,
+        parentUrl: await createCanonicalProposalUrl(proposalId),
+        embeds: [{ url: `${APP_PRODUCTION_URL}/proposals/${proposalId}` }],
+      },
+    );
+    return Response.json(
+      {
+        hash: castMessage.hash,
+        fid: castMessage.data.fid,
+        timestamp: parseEpochTimestamp(
+          castMessage.data.timestamp,
+        ).toISOString(),
+        text: castMessage.data.castAddBody.text,
+        account,
+      },
+      { status: 201 },
+    );
   } catch (e) {
-    return jsonResponse(500, { error: "submit-failed" });
+    // Delete revoked key
+    if (e.message === "invalid-account-key") {
+      await deleteAccountKeyForFid(fid);
+      return Response.json({ error: "invalid-account-key" }, { status: 401 });
+    }
+    return Response.json({ error: "submit-failed" }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import Script from "next/script";
 import { get as getConfig } from "@vercel/edge-config";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/react";
+import { getSession } from "@/utils/session";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
 import { getStateFromCookie as getWagmiStateFromCookie } from "../wagmi-config.js";
 import metaConfig from "../metadata-config.js";
@@ -10,6 +11,7 @@ import ConfigProvider from "../config-provider.js";
 import ThemeProvider from "../theme-provider.js";
 import WagmiProvider from "../wagmi-provider.js";
 import GlobalStylesWrapper from "../global-styles-wrapper.js";
+import SessionProvider from "../session-provider.js";
 import { Provider as StoreProvider } from "../store.js";
 import { Provider as FarcasterStateProvider } from "../hooks/farcaster.js";
 
@@ -91,7 +93,7 @@ const fetchConfig = async () => {
 };
 
 export default async function RootLayout({ children }) {
-  const config = await fetchConfig();
+  const [session, config] = await Promise.all([getSession(), fetchConfig()]);
   return (
     <html lang="en">
       <body>
@@ -112,11 +114,15 @@ export default async function RootLayout({ children }) {
                       headers().get("cookie"),
                     )}
                   >
-                    <StoreProvider>
-                      <FarcasterStateProvider>
-                        {children}
-                      </FarcasterStateProvider>
-                    </StoreProvider>
+                    <SessionProvider
+                      initialSession={{ address: session.address }}
+                    >
+                      <StoreProvider>
+                        <FarcasterStateProvider>
+                          {children}
+                        </FarcasterStateProvider>
+                      </StoreProvider>
+                    </SessionProvider>
                   </WagmiProvider>
                 </GlobalStylesWrapper>
               </ThemeProvider>

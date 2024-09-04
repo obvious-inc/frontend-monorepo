@@ -13,7 +13,7 @@ const themeMap = {
     colors: {
       ...lightTheme.colors,
       textPositive: "#0d924d",
-      textNegative: "#ce2547",
+      textNegative: "#d32335", // "#ce2547",
       textPositiveContrast: "#097045",
       textPositiveContrastBackgroundLight: "#e0f1e1",
       textNegativeContrast: "#aa2a38",
@@ -28,7 +28,7 @@ const themeMap = {
     colors: {
       ...darkTheme.colors,
       textPositive: "#41b579",
-      textNegative: "#db5664",
+      textNegative: "#f25666", // "#db5664",
       textPositiveContrast: "#55c88d",
       textPositiveContrastBackgroundLight: "#2b3b33",
       textNegativeContrast: "#ff7281",

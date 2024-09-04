@@ -7,9 +7,32 @@ import {
   createRepostExtractor,
 } from "../utils/votes-and-feedbacks.js";
 import { getSponsorSignatures as getCandidateSponsorSignatures } from "../utils/candidates.js";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster.js";
+
+const createFarcasterCastItem = (cast) => {
+  let displayName = pickFarcasterAccountDisplayName(cast.account);
+
+  if (displayName !== cast.account.username)
+    displayName += ` (@${cast.account.username})`;
+
+  return {
+    type: "farcaster-cast",
+    id: cast.hash,
+    castHash: cast.hash,
+    authorAccount: cast.account.nounerAddress,
+    authorFid: cast.account.fid,
+    authorAvatarUrl: cast.account.pfpUrl,
+    authorDisplayName: displayName,
+    authorUsername: cast.account.username,
+    body: cast.text,
+    timestamp: new Date(cast.timestamp),
+  };
+};
 
 const buildVoteAndFeedbackPostFeedItems = ({
   proposalId,
+  candidateId,
+  targetProposalId,
   votes = [],
   feedbackPosts = [],
 }) => {
@@ -25,7 +48,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
     ...filteredFeedbackPosts,
   ]);
 
-  return ascendingVotesAndFeedbackPosts.reduce((acc, p, postIndex) => {
+  const items = ascendingVotesAndFeedbackPosts.reduce((acc, p, postIndex) => {
     const previousItems = ascendingVotesAndFeedbackPosts.slice(0, postIndex);
     const extractReplies = createReplyExtractor(previousItems);
     const extractReposts = createRepostExtractor(previousItems);
@@ -43,7 +66,6 @@ const buildVoteAndFeedbackPostFeedItems = ({
       timestamp: p.createdTimestamp,
       transactionHash: p.createdTransactionHash,
       voteCount: p.votes,
-      proposalId,
       isPending: p.isPending,
       body: reasonWithStrippedRepliesAndReposts,
       replies,
@@ -51,12 +73,30 @@ const buildVoteAndFeedbackPostFeedItems = ({
       reason: p.reason,
     };
 
-    if (p.candidateId != null) item.candidateId = p.candidateId;
+    if (proposalId != null) item.proposalId = proposalId;
+    if (targetProposalId != null) item.targetProposalId = targetProposalId;
+    if (candidateId != null || p.candidateId != null)
+      item.candidateId = candidateId ?? p.candidateId;
 
     acc.push(item);
 
     return acc;
   }, []);
+
+  const repostingItemsByTargetFeedItemId = items.reduce((acc, item) => {
+    if (item.reposts == null || item.reposts.length === 0) return acc;
+    for (const voteOrFeedback of item.reposts) {
+      acc[voteOrFeedback.id] = [...(acc[voteOrFeedback.id] ?? []), item];
+    }
+    return acc;
+  }, {});
+
+  for (const feedItem of items) {
+    const repostingItems = repostingItemsByTargetFeedItemId[feedItem.id];
+    if (repostingItems?.length > 0) feedItem.repostingItems = repostingItems;
+  }
+
+  return items;
 };
 
 export const buildProposalFeed = (
@@ -84,26 +124,9 @@ export const buildProposalFeed = (
 
   const castItems =
     casts?.map((c) => {
-      let displayName =
-        c.account?.displayName ?? c.account?.username ?? `FID ${c.fid}`;
-
-      if (
-        c.account?.username != null &&
-        c.account.username !== c.account.displayName
-      )
-        displayName += ` (@${c.account.username})`;
-
-      return {
-        type: "farcaster-cast",
-        id: c.hash,
-        authorAccount: c.account?.nounerAddress,
-        authorAvatarUrl: c.account?.pfpUrl,
-        authorDisplayName: displayName,
-        authorUsername: c.account?.username,
-        body: c.text,
-        timestamp: new Date(c.timestamp),
-        proposalId: proposal.id,
-      };
+      const item = createFarcasterCastItem(c);
+      item.proposalId = proposal.id;
+      return item;
     }) ?? [];
 
   let voteAndFeedbackPostItems = buildVoteAndFeedbackPostFeedItems({
@@ -119,22 +142,6 @@ export const buildProposalFeed = (
     voteAndFeedbackPostItems = voteAndFeedbackPostItems.filter(
       (item) => item.candidateId == null,
     );
-  }
-
-  const repostingItemsByTargetFeedItemId = voteAndFeedbackPostItems.reduce(
-    (acc, item) => {
-      if (item.reposts == null || item.reposts.length === 0) return acc;
-      for (const voteOrFeedback of item.reposts) {
-        acc[voteOrFeedback.id] = [...(acc[voteOrFeedback.id] ?? []), item];
-      }
-      return acc;
-    },
-    {},
-  );
-
-  for (const feedItem of voteAndFeedbackPostItems) {
-    const repostingItems = repostingItemsByTargetFeedItemId[feedItem.id];
-    if (repostingItems?.length > 0) feedItem.repostingItems = repostingItems;
   }
 
   const propdateItems = [];
@@ -278,53 +285,21 @@ export const buildCandidateFeed = (
 
   if (candidate == null) return [];
 
-  const buildFeedbackPostItems = (candidate) => {
-    const targetProposalId = candidate.latestVersion?.targetProposalId;
-    const posts = candidate.feedbackPosts ?? [];
-    return posts.map((p) => ({
-      type: "feedback-post",
-      id: p.id,
-      authorAccount: p.voterId,
-      body: p.reason == null || p.reason.trim() === "" ? null : p.reason,
-      support: p.support,
-      voteCount: p.votes,
-      timestamp: p.createdTimestamp,
-      blockNumber: BigInt(p.createdBlock),
-      isPending: p.isPending,
-      candidateId: candidate.id,
-      targetProposalId,
-      transactionHash: p.id?.split("-")?.[0],
-    }));
-  };
-
   const targetProposalId = candidate.latestVersion?.targetProposalId;
 
   const castItems =
     casts?.map((c) => {
-      let displayName =
-        c.account?.displayName ?? c.account?.username ?? `FID ${c.fid}`;
-
-      if (
-        c.account?.username != null &&
-        c.account.username !== c.account.displayName
-      )
-        displayName += ` (@${c.account.username})`;
-
-      return {
-        type: "farcaster-cast",
-        id: c.hash,
-        authorAccount: c.account?.nounerAddress,
-        authorAvatarUrl: c.account?.pfpUrl,
-        authorDisplayName: displayName,
-        authorUsername: c.account?.username,
-        body: c.text,
-        timestamp: new Date(c.timestamp),
-        candidateId,
-      };
+      const item = createFarcasterCastItem(c);
+      item.candidateId = candidateId;
+      return item;
     }) ?? [];
 
   const feedbackPostItems = includeFeedbackPosts
-    ? buildFeedbackPostItems(candidate)
+    ? buildVoteAndFeedbackPostFeedItems({
+        candidateId,
+        targetProposalId: candidate.latestVersion?.targetProposalId,
+        feedbackPosts: candidate.feedbackPosts,
+      })
     : [];
 
   const updateEventItems =

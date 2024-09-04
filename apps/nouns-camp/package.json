@@ -35,6 +35,7 @@
     "abitype": "^1.0.6",
     "date-fns": "^2.29.3",
     "diff": "^5.2.0",
+    "iron-session": "^8.0.3",
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",
     "marked": "^14.0.0",

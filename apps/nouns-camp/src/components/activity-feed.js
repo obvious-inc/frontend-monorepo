@@ -1,7 +1,8 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
 import NextLink from "next/link";
-import { css } from "@emotion/react";
+import { css, keyframes } from "@emotion/react";
+import { array as arrayUtils } from "@shades/common/utils";
 import { useIsOnScreen } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
@@ -16,7 +17,13 @@ import {
 import { useWallet } from "../hooks/wallet.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import useFeatureFlag from "../hooks/feature-flag.js";
-import { useNoun, useProposal, useProposalCandidate } from "../store.js";
+import { useDialog } from "../hooks/global-dialogs.js";
+import {
+  useDelegate,
+  useNoun,
+  useProposal,
+  useProposalCandidate,
+} from "../store.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import AccountAvatar from "./account-avatar.js";
@@ -24,12 +31,30 @@ import MarkdownRichText from "./markdown-rich-text.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
-import { useTransactionLikes as useFarcasterTransactionLikes } from "../hooks/farcaster.js";
+import {
+  useConnectedFarcasterAccounts,
+  useSubmitTransactionLike,
+  useSubmitCastLike,
+  useTransactionLikes as useFarcasterTransactionLikes,
+  useCastLikes as useFarcasterCastLikes,
+} from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import { isTransactionHash } from "../utils/transactions.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
+
+const heartBounceAnimation = keyframes({
+  "0%": { transform: "scale(1)" },
+  "25%": { transform: "scale(1.2)" },
+  "50%": { transform: "scale(0.95)" },
+  "100%": { transform: "scale(1)" },
+});
+// const colorFadeAnimation = keyframes({
+//   "0%": { color: "var(--initial-color)" },
+//   "50%": { color: "var(--initial-color)" },
+//   "100%": { color: "var(--settle-color)" },
+// });
 
 const buildTimestampLink = (item) => {
   if (item.type === "farcaster-cast") {
@@ -58,100 +83,185 @@ const ActivityFeed = ({
   spacing = "2rem",
   onReply,
   onRepost,
-  onLike,
-}) => (
-  <ul
-    css={(t) =>
-      css({
-        lineHeight: "calc(20/14)", // 20px line height given font size if 14px
-        fontSize: t.text.sizes.base,
-        '[role="listitem"]': {
-          scrollMargin: "calc(3.2rem + 1.6rem) 0",
-        },
-        '[role="listitem"] + [role="listitem"]': {
-          marginTop: "var(--vertical-spacing)",
-        },
-        '[data-pending="true"]': { opacity: 0.6 },
-        "[data-nowrap]": { whiteSpace: "nowrap" },
-        "[data-header]": {
-          display: "grid",
-          gridTemplateColumns: "2rem minmax(0,1fr)",
-          gridGap: "0.6rem",
-          alignItems: "flex-start",
-          a: {
-            color: t.colors.textDimmed,
-            fontWeight: t.text.weights.emphasis,
-            textDecoration: "none",
-            "@media(hover: hover)": {
-              ":hover": { textDecoration: "underline" },
-            },
+  createReplyHref,
+  createRepostHref,
+}) => {
+  const { address: connectedAccountAddress, isAuthenticated } = useWallet();
+  const connectedDelegate = useDelegate(connectedAccountAddress);
+  // const currentVotingPower = connectedDelegate?.nounsRepresented.length ?? 0;
+  const enableLikes = useFeatureFlag("likes");
+  const submitTransactionLike = useSubmitTransactionLike();
+  const submitCastLike = useSubmitCastLike();
+  const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
+  const { open: openAuthenticationDialog } = useDialog(
+    "account-authentication",
+  );
+  const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
+
+  const like = React.useCallback(
+    async (itemId, action) => {
+      const item = items.find((i) => i.id === itemId);
+      try {
+        if (item.transactionHash != null) {
+          await submitTransactionLike({
+            transactionHash: item.transactionHash,
+            fid: connectedFarcasterAccount.fid,
+            action,
+          });
+        } else if (item.castHash != null) {
+          await submitCastLike({
+            targetCastId: { fid: item.authorFid, hash: item.castHash },
+            fid: connectedFarcasterAccount.fid,
+            action,
+          });
+        } else {
+          console.error("Invalid like target", item);
+          throw new Error();
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Ops, looks like something went wrong!");
+      }
+    },
+    [
+      items,
+      connectedFarcasterAccount?.fid,
+      submitTransactionLike,
+      submitCastLike,
+    ],
+  );
+
+  const onLike = (() => {
+    if (!enableLikes) return null;
+    // Enable the like action if there’s a delegate entry for the connected
+    // account, or if there’s a delegate entry for a verified address on the
+    // connected Farcaster account
+    if (
+      connectedDelegate == null &&
+      connectedFarcasterAccount?.nounerAddress == null
+    )
+      return null;
+    if (
+      connectedFarcasterAccount == null ||
+      !connectedFarcasterAccount.hasAccountKey
+    )
+      return () => openFarcasterSetupDialog({ intent: "like" });
+    if (!isAuthenticated)
+      return () => openAuthenticationDialog({ intent: "like" });
+    return like;
+  })();
+
+  return (
+    <ul
+      css={(t) =>
+        css({
+          lineHeight: "calc(20/14)", // 20px line height given font size if 14px
+          fontSize: t.text.sizes.base,
+          '[role="listitem"]': {
+            scrollMargin: "calc(3.2rem + 1.6rem) 0",
           },
-        },
-        "[data-avatar-button]": {
-          display: "block",
-          outline: "none",
-          ":focus-visible [data-avatar]": {
-            boxShadow: t.shadows.focus,
-            background: t.colors.backgroundModifierHover,
+          '[role="listitem"] + [role="listitem"]': {
+            marginTop: "var(--vertical-spacing)",
           },
-          "@media (hover: hover)": {
-            ":not(:disabled)": {
-              cursor: "pointer",
-              ":hover [data-avatar]": {
-                boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+          '[data-pending="true"]': { opacity: 0.6 },
+          "[data-nowrap]": { whiteSpace: "nowrap" },
+          "[data-header]": {
+            display: "grid",
+            gridTemplateColumns: "2rem minmax(0,1fr)",
+            gridGap: "0.6rem",
+            alignItems: "flex-start",
+            a: {
+              color: t.colors.textDimmed,
+              fontWeight: t.text.weights.emphasis,
+              textDecoration: "none",
+              "@media(hover: hover)": {
+                ":hover": { textDecoration: "underline" },
               },
             },
           },
-        },
-        "[data-timeline-symbol]": {
-          position: "relative",
-          height: "2rem",
-          width: "0.1rem",
-          background: t.colors.borderLight,
-          zIndex: -1,
-          margin: "auto",
-          ":after": {
-            content: '""',
-            position: "absolute",
-            width: "0.7rem",
-            height: "0.7rem",
-            background: t.colors.textMuted,
-            top: "50%",
-            left: "50%",
-            transform: "translateY(-50%) translateX(-50%)",
-            borderRadius: "50%",
-            border: "0.1rem solid",
-            borderColor: t.colors.backgroundPrimary,
+          "[data-avatar-button]": {
+            display: "block",
+            outline: "none",
+            ":focus-visible [data-avatar]": {
+              boxShadow: t.shadows.focus,
+              background: t.colors.backgroundModifierHover,
+            },
+            "@media (hover: hover)": {
+              ":not(:disabled)": {
+                cursor: "pointer",
+                ":hover [data-avatar]": {
+                  boxShadow: `0 0 0 0.2rem ${t.colors.backgroundModifierHover}`,
+                },
+              },
+            },
           },
-        },
-      })
-    }
-    style={{ "--vertical-spacing": spacing }}
-  >
-    {items.map((item) => (
-      <FeedItem
-        key={item.id}
-        {...item}
-        context={context}
-        onReply={onReply}
-        onRepost={onRepost}
-        onLike={onLike}
-      />
-    ))}
-  </ul>
-);
+          "[data-timeline-symbol]": {
+            position: "relative",
+            height: "2rem",
+            width: "0.1rem",
+            background: t.colors.borderLight,
+            zIndex: -1,
+            margin: "auto",
+            ":after": {
+              content: '""',
+              position: "absolute",
+              width: "0.7rem",
+              height: "0.7rem",
+              background: t.colors.textMuted,
+              top: "50%",
+              left: "50%",
+              transform: "translateY(-50%) translateX(-50%)",
+              borderRadius: "50%",
+              border: "0.1rem solid",
+              borderColor: t.colors.backgroundPrimary,
+            },
+          },
+        })
+      }
+      style={{ "--vertical-spacing": spacing }}
+    >
+      {items.map((item) => (
+        <FeedItem
+          key={item.id}
+          {...item}
+          context={context}
+          onReply={onReply}
+          onRepost={onRepost}
+          onLike={onLike}
+          createReplyHref={createReplyHref}
+          createRepostHref={createRepostHref}
+        />
+      ))}
+    </ul>
+  );
+};
 
 const FeedItem = React.memo(
-  ({ context, onReply, onRepost, onLike, ...item }) => {
+  ({
+    context,
+    onReply,
+    onRepost,
+    onLike,
+    createReplyHref,
+    createRepostHref,
+    ...item
+  }) => {
     const { address: connectedAccount } = useWallet();
+    const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
 
     const containerRef = React.useRef();
     const isOnScreen = useIsOnScreen(containerRef);
 
     const enableLikes = useFeatureFlag("likes");
-    const likes = useFarcasterTransactionLikes(item.transactionHash, {
+    const transactionLikes = useFarcasterTransactionLikes(
+      item.transactionHash,
+      { enabled: isOnScreen && enableLikes },
+    );
+    const castLikes = useFarcasterCastLikes(item.castHash, {
       enabled: isOnScreen && enableLikes,
     });
+
+    const likes = transactionLikes ?? castLikes;
 
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
     const hasBody = item.body != null && item.body.trim() !== "";
@@ -163,26 +273,40 @@ const FeedItem = React.memo(
     const hasLikes = likes?.length > 0;
     const hasBeenReposted = item.repostingItems?.length > 0;
 
-    const showReplyAction =
-      onReply != null &&
-      connectedAccount != null &&
-      ["vote", "feedback-post"].includes(item.type) &&
-      hasReason;
+    const hasLiked = likes?.some(
+      (l) =>
+        l.nounerAddress === connectedAccount ||
+        l.fid === connectedFarcasterAccount?.fid,
+    );
+
+    const showReplyAction = (() => {
+      if (connectedAccount == null) return false;
+      // Casts simply link to Warpcast for now
+      if (item.type === "farcaster-cast") return true;
+      if (onReply == null && createReplyHref == null) return false;
+      return ["vote", "feedback-post"].includes(item.type) && hasReason;
+    })();
 
     const showRepostAction =
-      onRepost != null &&
+      (onRepost != null || createRepostHref != null) &&
       connectedAccount != null &&
       ["vote", "feedback-post"].includes(item.type) &&
       hasReason;
 
-    const showLikeAction = onLike != null && item.transactionHash != null;
+    const showLikeAction = (() => {
+      if (onLike == null) return false;
+      if (item.type === "farcaster-cast") return true;
+      return item.transactionHash != null;
+    })();
 
     const enableReplyAction = !item.isPending;
     const enableRepostAction = !item.isPending;
     const enableLikeAction = !item.isPending;
 
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
-    const showMeta = enableLikes && (hasLikes || hasBeenReposted);
+    const showMeta =
+      (enableLikes && (hasLikes || hasBeenReposted)) ||
+      item.type === "farcaster-cast";
 
     const renderTimestamp = (item) => {
       const timestampLink = buildTimestampLink(item);
@@ -478,7 +602,7 @@ const FeedItem = React.memo(
                   display: "flex",
                   gap: "0.8rem",
                   margin: "0.6rem -0.4rem 0",
-                  button: {
+                  "& > button, & > a": {
                     padding: "0.4rem",
                     color: t.colors.textDimmed,
                     ":disabled": {
@@ -487,66 +611,102 @@ const FeedItem = React.memo(
                     "@media(hover: hover)": {
                       ":not(:disabled)": {
                         cursor: "pointer",
-                        ":hover": { color: t.colors.textAccent },
+                        ":hover": {
+                          color: t.colors.textAccent,
+                        },
                       },
                     },
                   },
                 })
               }
             >
-              {showReplyAction && (
-                <button
-                  onClick={() => {
-                    onReply(item.id);
-                  }}
-                  disabled={!enableReplyAction}
-                >
-                  <svg
-                    aria-label="Reply"
-                    role="img"
-                    viewBox="0 0 18 18"
-                    stroke="currentColor"
-                    fill="transparent"
-                    style={{ width: "1.4rem", height: "auto" }}
-                  >
-                    <path
-                      d="M15.376 13.2177L16.2861 16.7955L12.7106 15.8848C12.6781 15.8848 12.6131 15.8848 12.5806 15.8848C11.3779 16.5678 9.94767 16.8931 8.41995 16.7955C4.94194 16.5353 2.08152 13.7381 1.72397 10.2578C1.2689 5.63919 5.13697 1.76863 9.75264 2.22399C13.2307 2.58177 16.0261 5.41151 16.2861 8.92429C16.4161 10.453 16.0586 11.8841 15.376 13.0876C15.376 13.1526 15.376 13.1852 15.376 13.2177Z"
-                      strokeLinejoin="round"
-                      strokeWidth="1.25"
-                    />
-                  </svg>
-                </button>
-              )}
-              {showRepostAction && (
-                <button
-                  onClick={() => {
-                    onRepost(item.id);
-                  }}
-                  disabled={!enableRepostAction}
-                >
-                  <svg
-                    aria-label="Repost"
-                    viewBox="0 0 18 18"
-                    fill="currentColor"
-                    style={{ width: "1.4rem", height: "auto" }}
-                  >
-                    <path d="M6.41256 1.23531C6.6349 0.971277 7.02918 0.937481 7.29321 1.15982L9.96509 3.40982C10.1022 3.52528 10.1831 3.69404 10.1873 3.87324C10.1915 4.05243 10.1186 4.2248 9.98706 4.34656L7.31518 6.81971C7.06186 7.05419 6.66643 7.03892 6.43196 6.7856C6.19748 6.53228 6.21275 6.13685 6.46607 5.90237L7.9672 4.51289H5.20312C3.68434 4.51289 2.45312 5.74411 2.45312 7.26289V9.51289V11.7629C2.45312 13.2817 3.68434 14.5129 5.20312 14.5129C5.5483 14.5129 5.82812 14.7927 5.82812 15.1379C5.82812 15.4831 5.5483 15.7629 5.20312 15.7629C2.99399 15.7629 1.20312 13.972 1.20312 11.7629V9.51289V7.26289C1.20312 5.05375 2.99399 3.26289 5.20312 3.26289H7.85002L6.48804 2.11596C6.22401 1.89362 6.19021 1.49934 6.41256 1.23531Z" />
-                    <path d="M11.5874 17.7904C11.3651 18.0545 10.9708 18.0883 10.7068 17.8659L8.03491 15.6159C7.89781 15.5005 7.81687 15.3317 7.81267 15.1525C7.80847 14.9733 7.8814 14.801 8.01294 14.6792L10.6848 12.206C10.9381 11.9716 11.3336 11.9868 11.568 12.2402C11.8025 12.4935 11.7872 12.8889 11.5339 13.1234L10.0328 14.5129H12.7969C14.3157 14.5129 15.5469 13.2816 15.5469 11.7629V9.51286V7.26286C15.5469 5.74408 14.3157 4.51286 12.7969 4.51286C12.4517 4.51286 12.1719 4.23304 12.1719 3.88786C12.1719 3.54269 12.4517 3.26286 12.7969 3.26286C15.006 3.26286 16.7969 5.05373 16.7969 7.26286V9.51286V11.7629C16.7969 13.972 15.006 15.7629 12.7969 15.7629H10.15L11.512 16.9098C11.776 17.1321 11.8098 17.5264 11.5874 17.7904Z" />
-                  </svg>
-                </button>
-              )}
+              {showReplyAction &&
+                (() => {
+                  const [Component, props] =
+                    item.type === "farcaster-cast"
+                      ? [
+                          "a",
+                          {
+                            href: `https://warpcast.com/${item.authorUsername}/${item.castHash}`,
+                            target: "_blank",
+                            rel: "noreferrer",
+                          },
+                        ]
+                      : createReplyHref != null
+                        ? [NextLink, { href: createReplyHref(item) }]
+                        : ["button", { onClick: () => onReply(item.id) }];
+
+                  return (
+                    <Component {...props} disabled={!enableReplyAction}>
+                      <svg
+                        aria-label="Reply"
+                        role="img"
+                        viewBox="0 0 18 18"
+                        stroke="currentColor"
+                        fill="transparent"
+                        style={{ width: "1.4rem", height: "auto" }}
+                      >
+                        <path
+                          d="M15.376 13.2177L16.2861 16.7955L12.7106 15.8848C12.6781 15.8848 12.6131 15.8848 12.5806 15.8848C11.3779 16.5678 9.94767 16.8931 8.41995 16.7955C4.94194 16.5353 2.08152 13.7381 1.72397 10.2578C1.2689 5.63919 5.13697 1.76863 9.75264 2.22399C13.2307 2.58177 16.0261 5.41151 16.2861 8.92429C16.4161 10.453 16.0586 11.8841 15.376 13.0876C15.376 13.1526 15.376 13.1852 15.376 13.2177Z"
+                          strokeLinejoin="round"
+                          strokeWidth="1.25"
+                        />
+                      </svg>
+                    </Component>
+                  );
+                })()}
+              {showRepostAction &&
+                (() => {
+                  const [Component, props] =
+                    createRepostHref != null
+                      ? [NextLink, { href: createRepostHref(item) }]
+                      : ["button", { onClick: () => onRepost(item.id) }];
+
+                  return (
+                    <Component {...props} disabled={!enableRepostAction}>
+                      <svg
+                        aria-label="Repost"
+                        viewBox="0 0 18 18"
+                        fill="currentColor"
+                        style={{ width: "1.4rem", height: "auto" }}
+                      >
+                        <path d="M6.41256 1.23531C6.6349 0.971277 7.02918 0.937481 7.29321 1.15982L9.96509 3.40982C10.1022 3.52528 10.1831 3.69404 10.1873 3.87324C10.1915 4.05243 10.1186 4.2248 9.98706 4.34656L7.31518 6.81971C7.06186 7.05419 6.66643 7.03892 6.43196 6.7856C6.19748 6.53228 6.21275 6.13685 6.46607 5.90237L7.9672 4.51289H5.20312C3.68434 4.51289 2.45312 5.74411 2.45312 7.26289V9.51289V11.7629C2.45312 13.2817 3.68434 14.5129 5.20312 14.5129C5.5483 14.5129 5.82812 14.7927 5.82812 15.1379C5.82812 15.4831 5.5483 15.7629 5.20312 15.7629C2.99399 15.7629 1.20312 13.972 1.20312 11.7629V9.51289V7.26289C1.20312 5.05375 2.99399 3.26289 5.20312 3.26289H7.85002L6.48804 2.11596C6.22401 1.89362 6.19021 1.49934 6.41256 1.23531Z" />
+                        <path d="M11.5874 17.7904C11.3651 18.0545 10.9708 18.0883 10.7068 17.8659L8.03491 15.6159C7.89781 15.5005 7.81687 15.3317 7.81267 15.1525C7.80847 14.9733 7.8814 14.801 8.01294 14.6792L10.6848 12.206C10.9381 11.9716 11.3336 11.9868 11.568 12.2402C11.8025 12.4935 11.7872 12.8889 11.5339 13.1234L10.0328 14.5129H12.7969C14.3157 14.5129 15.5469 13.2816 15.5469 11.7629V9.51286V7.26286C15.5469 5.74408 14.3157 4.51286 12.7969 4.51286C12.4517 4.51286 12.1719 4.23304 12.1719 3.88786C12.1719 3.54269 12.4517 3.26286 12.7969 3.26286C15.006 3.26286 16.7969 5.05373 16.7969 7.26286V9.51286V11.7629C16.7969 13.972 15.006 15.7629 12.7969 15.7629H10.15L11.512 16.9098C11.776 17.1321 11.8098 17.5264 11.5874 17.7904Z" />
+                      </svg>
+                    </Component>
+                  );
+                })()}
               {showLikeAction && (
                 <button
-                  onClick={() => {
-                    onLike(item.id);
+                  data-liked={hasLiked}
+                  onClick={(e) => {
+                    onLike(item.id, hasLiked ? "remove" : "add");
+                    e.currentTarget.dataset.clicked = "true";
                   }}
                   disabled={!enableLikeAction}
+                  css={(t) =>
+                    css({
+                      '&[data-liked="true"]': {
+                        color: t.colors.red,
+                        "@media(hover: hover)": {
+                          ":not(:disabled):hover": {
+                            color: t.colors.red,
+                          },
+                        },
+                        '&[data-clicked="true"]': {
+                          animationName: heartBounceAnimation,
+                          animationDuration: "0.45s",
+                          animationTimingFunction: "ease-in-out",
+                        },
+                      },
+                    })
+                  }
                 >
                   <svg
                     aria-label="Like"
                     role="img"
                     viewBox="0 0 18 18"
-                    fill="transparent"
+                    fill={hasLiked ? "currentColor" : "transparent"}
                     stroke="currentColor"
                     style={{ width: "1.4rem", height: "auto" }}
                   >
@@ -566,6 +726,13 @@ const FeedItem = React.memo(
                   marginTop: "0.6rem",
                   color: t.colors.textDimmed,
                   fontSize: t.text.sizes.small,
+                  a: {
+                    color: "inherit",
+                    textDecoration: "none",
+                    "@media(hover: hover)": {
+                      "&:hover": { textDecoration: "underline" },
+                    },
+                  },
                 })
               }
             >
@@ -604,14 +771,41 @@ const FeedItem = React.memo(
                           {likes.length} {likes.length === 1 ? "like" : "likes"}
                         </Tooltip.Trigger>
                         <Tooltip.Content sideOffset={4}>
-                          {likes.map((farcasterAccount, i) => (
-                            <React.Fragment key={farcasterAccount.fid}>
-                              {i > 0 && <br />}
-                              <AccountDisplayName
-                                address={farcasterAccount.nounerAddress}
-                              />
-                            </React.Fragment>
-                          ))}
+                          {arrayUtils
+                            .sortBy(
+                              {
+                                value: (a) =>
+                                  a.votingPower == null
+                                    ? Infinity
+                                    : a.votingPower,
+                                order: "desc",
+                              },
+                              likes,
+                            )
+                            .map((farcasterAccount, i) => (
+                              <React.Fragment key={farcasterAccount.fid}>
+                                <span
+                                  data-voting-power={
+                                    farcasterAccount.votingPower
+                                  }
+                                  css={(t) =>
+                                    css({
+                                      '&[data-voting-power="0"]': {
+                                        color: t.colors.textDimmed,
+                                      },
+                                    })
+                                  }
+                                >
+                                  {i > 0 && <br />}
+                                  <AccountDisplayName
+                                    address={farcasterAccount.nounerAddress}
+                                  />
+                                  {farcasterAccount.votingPower != null && (
+                                    <> ({farcasterAccount.votingPower})</>
+                                  )}
+                                </span>
+                              </React.Fragment>
+                            ))}
                         </Tooltip.Content>
                       </Tooltip.Root>
                     ),

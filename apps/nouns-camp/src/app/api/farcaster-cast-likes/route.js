@@ -1,9 +1,8 @@
-import { CHAIN_ID } from "@/constants/env";
+import { fromHex } from "viem";
 import { parseEpochTimestamp } from "@/utils/farcaster";
-import { createUri as createTransactionReceiptUri } from "@/utils/erc-2400";
 import { isLoggedIn, isLoggedInAccountFid } from "@/app/api/auth-utils";
 import {
-  fetchNounerLikesByTargetUrl,
+  fetchNounerLikesByCast,
   submitReactionAdd,
   submitReactionRemove,
 } from "@/app/api/farcaster-utils";
@@ -19,9 +18,7 @@ export async function GET(request) {
   if (hash == null)
     return Response.json({ error: "hash-required" }, { status: 400 });
 
-  const likes = await fetchNounerLikesByTargetUrl(
-    createTransactionReceiptUri(CHAIN_ID, hash),
-  );
+  const likes = await fetchNounerLikesByCast(hash);
 
   // // Only accounts with voting power for now
   // const filteredLikes = likes.filter((l) => l.votingPower > 0);
@@ -37,7 +34,7 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
-  const { transactionHash, fid, action } = await request.json();
+  const { targetCastId, fid, action } = await request.json();
 
   if (!(await isLoggedIn()))
     return Response.json({ error: "not-logged-in" }, { status: 401 });
@@ -50,12 +47,8 @@ export async function POST(request) {
   if (privateAccountKey == null)
     return Response.json({ error: "no-account-key" }, { status: 401 });
 
-  if (transactionHash == null)
-    return Response.json(
-      { error: "transaction-hash-required" },
-      { status: 400 },
-    );
-
+  if (targetCastId == null)
+    return Response.json({ error: "cast-id-required" }, { status: 400 });
   if (action == null)
     return Response.json({ error: "action-required" }, { status: 400 });
 
@@ -67,7 +60,10 @@ export async function POST(request) {
       { fid, privateAccountKey },
       {
         type: 1,
-        targetUrl: createTransactionReceiptUri(CHAIN_ID, transactionHash),
+        targetCastId: {
+          fid: targetCastId.fid,
+          hash: fromHex(targetCastId.hash, "bytes"),
+        },
       },
     );
     return Response.json(

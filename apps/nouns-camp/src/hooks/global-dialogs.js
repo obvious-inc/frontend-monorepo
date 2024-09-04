@@ -2,7 +2,40 @@ import React from "react";
 
 const Context = React.createContext();
 
-export const Provider = ({ dialogs, children }) => {
+const dialogs = [
+  {
+    key: "account",
+    component: React.lazy(() => import("../components/account-dialog.js")),
+  },
+  {
+    key: "delegation",
+    component: React.lazy(() => import("../components/delegation-dialog.js")),
+  },
+  {
+    key: "proposal-drafts",
+    component: React.lazy(
+      () => import("../components/proposal-drafts-dialog.js"),
+    ),
+  },
+  {
+    key: "settings",
+    component: React.lazy(() => import("../components/settings-dialog.js")),
+  },
+  {
+    key: "account-authentication",
+    component: React.lazy(
+      () => import("../components/account-authentication-dialog.js"),
+    ),
+  },
+  {
+    key: "farcaster-setup",
+    component: React.lazy(
+      () => import("../components/farcaster-setup-dialog.js"),
+    ),
+  },
+];
+
+export const Provider = ({ children }) => {
   const [openDialogs, setOpenDialogs] = React.useState(new Map());
 
   const open = React.useCallback(
