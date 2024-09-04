@@ -271,7 +271,9 @@ const FeedItem = React.memo(
     const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
 
     const containerRef = React.useRef();
-    const isOnScreen = useIsOnScreen(containerRef);
+    const isOnScreen = useIsOnScreen(containerRef, {
+      rootMargin: "0px 0px 200%",
+    });
 
     const transactionLikes = useFarcasterTransactionLikes(
       item.transactionHash,
