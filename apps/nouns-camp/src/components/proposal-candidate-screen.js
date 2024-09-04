@@ -1519,7 +1519,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
-          { to: "/?tab=candidates", label: "Candidates", desktopOnly: true },
+          { to: "/candidates", label: "Candidates", desktopOnly: true },
           {
             to: `/candidates/${encodeURIComponent(candidateId)}`,
             label: (
