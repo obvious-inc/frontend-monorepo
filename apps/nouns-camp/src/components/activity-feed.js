@@ -531,7 +531,7 @@ const FeedItem = React.memo(
                           ? `#${target.id}`
                           : target.proposalId != null
                             ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
-                            : null // TODO
+                            : `/` // TODO
                       }
                     />
                   </div>
