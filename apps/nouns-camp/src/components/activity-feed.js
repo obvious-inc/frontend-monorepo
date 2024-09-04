@@ -16,7 +16,6 @@ import {
 } from "../utils/candidates.js";
 import { useWallet } from "../hooks/wallet.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
-import useFeatureFlag from "../hooks/feature-flag.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import {
   useDelegate,
@@ -89,7 +88,6 @@ const ActivityFeed = ({
   const { address: connectedAccountAddress, isAuthenticated } = useWallet();
   const connectedDelegate = useDelegate(connectedAccountAddress);
   // const currentVotingPower = connectedDelegate?.nounsRepresented.length ?? 0;
-  const enableLikes = useFeatureFlag("likes");
   const submitTransactionLike = useSubmitTransactionLike();
   const submitCastLike = useSubmitCastLike();
   const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
@@ -132,7 +130,6 @@ const ActivityFeed = ({
   );
 
   const onLike = (() => {
-    if (!enableLikes) return null;
     // Enable the like action if there’s a delegate entry for the connected
     // account, or if there’s a delegate entry for a verified address on the
     // connected Farcaster account
@@ -252,13 +249,12 @@ const FeedItem = React.memo(
     const containerRef = React.useRef();
     const isOnScreen = useIsOnScreen(containerRef);
 
-    const enableLikes = useFeatureFlag("likes");
     const transactionLikes = useFarcasterTransactionLikes(
       item.transactionHash,
-      { enabled: isOnScreen && enableLikes },
+      { enabled: isOnScreen },
     );
     const castLikes = useFarcasterCastLikes(item.castHash, {
-      enabled: isOnScreen && enableLikes,
+      enabled: isOnScreen,
     });
 
     const likes = transactionLikes ?? castLikes;
@@ -305,8 +301,7 @@ const FeedItem = React.memo(
 
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
     const showMeta =
-      (enableLikes && (hasLikes || hasBeenReposted)) ||
-      item.type === "farcaster-cast";
+      hasLikes || hasBeenReposted || item.type === "farcaster-cast";
 
     const renderTimestamp = (item) => {
       const timestampLink = buildTimestampLink(item);
