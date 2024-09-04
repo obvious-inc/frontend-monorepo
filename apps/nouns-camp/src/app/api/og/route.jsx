@@ -103,11 +103,7 @@ const SimpleFormattedDate = ({ value, ...options }) => {
     typeof value === "string" ? parseFloat(value) : value,
   );
 
-  return (
-    <span>
-      <p>{formattedDate}</p>
-    </span>
-  );
+  return <span>{formattedDate}</span>;
 };
 
 const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
@@ -120,7 +116,7 @@ const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
 
   if (ensAvatar != null) {
     return (
-      <div style={{ display: "flex" }}>
+      <>
         <img
           src={ensAvatar}
           style={{
@@ -130,13 +126,13 @@ const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
           }}
         />{" "}
         {displayName}
-      </div>
+      </>
     );
   }
 
   if (seedUrl != null) {
     return (
-      <div style={{ display: "flex" }}>
+      <>
         <img
           src={seedUrl}
           style={{
@@ -146,7 +142,7 @@ const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
           }}
         />{" "}
         {displayName}
-      </div>
+      </>
     );
   }
 
@@ -240,6 +236,12 @@ const ProposalHeader = ({
   hasPassed,
 }) => {
   const requestedAmounts = extractAmounts(transactions);
+  const maxTitleLength = 60;
+  const trimmedTitle =
+    title.length > maxTitleLength
+      ? title.substring(0, maxTitleLength) + "..."
+      : title;
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <h1
@@ -251,7 +253,7 @@ const ProposalHeader = ({
           lineHeight: 1.15,
         }}
       >
-        {title}
+        {trimmedTitle}
       </h1>
 
       <div
@@ -261,6 +263,7 @@ const ProposalHeader = ({
           color: "hsl(0 0% 60%)",
           fontSize: "1.4rem",
           whiteSpace: "pre",
+          flexWrap: "wrap",
         }}
       >
         Proposed{" "}
@@ -302,13 +305,7 @@ const ProposalHeader = ({
           </>
         )}
         {updatedAt != null && updatedAt.getTime() !== createdAt.getTime() && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-            }}
-          >
+          <>
             , last edited{" "}
             <SimpleFormattedDate
               value={updatedAt}
@@ -320,7 +317,7 @@ const ProposalHeader = ({
                   : undefined
               }
             />
-          </div>
+          </>
         )}
       </div>
 
@@ -328,7 +325,6 @@ const ProposalHeader = ({
         <div
           style={{
             display: "flex",
-            // flexDirection: "row",
             alignItems: "center",
             padding: "0 1.6rem",
             backgroundColor: "hsl(0, 0%, 100%, 0.055)",
@@ -336,6 +332,7 @@ const ProposalHeader = ({
             whiteSpace: "pre",
             color: "hsl(0 0% 83%)",
             fontSize: "1.4rem",
+            marginTop: "1.6rem",
           }}
         >
           <>{hasPassed ? "Requested" : "Requesting"} </>
@@ -353,21 +350,15 @@ const ProposalVotesProgress = ({ proposal }) => {
   const againstVotesPercentage = (againstVotes / totalVotes) * 100;
   const abstainVotesPercentage = (abstainVotes / totalVotes) * 100;
 
-  console.log("votes", forVotes, againstVotes, abstainVotes, quorumVotes);
-  console.log(
-    "percentages",
-    forVotesPercentage,
-    againstVotesPercentage,
-    abstainVotesPercentage,
-  );
+  if (totalVotes === 0) {
+    return null;
+  }
 
   return (
     <div
       style={{
         display: "flex",
         flexDirection: "column",
-        margin: 0,
-        padding: 0,
       }}
     >
       <div
@@ -478,6 +469,7 @@ const ProposalStateTag = ({ state }) => {
     succeeded: "success",
     queued: "success",
     executed: "success",
+    updatable: "active",
   };
 
   const colorByVariant = {
@@ -497,7 +489,7 @@ const ProposalStateTag = ({ state }) => {
   return (
     <span
       style={{
-        width: "10rem",
+        width: "12rem",
         justifyContent: "center",
         backgroundColor: backgroundByVariant[variantByState[state]],
         color: colorByVariant[variantByState[state]],
@@ -574,22 +566,6 @@ export async function GET(request) {
       }),
     );
 
-    const { address: contractAddress } = resolveIdentifier("dao");
-    const quorumVotes = await publicClient.readContract({
-      address: contractAddress,
-      chainId: CHAIN_ID,
-      abi: [
-        {
-          inputs: [{ type: "uint256" }],
-          name: "quorumVotes",
-          outputs: [{ type: "uint256" }],
-          type: "function",
-        },
-      ],
-      functionName: "quorumVotes",
-      args: [proposalId],
-    });
-
     const isFinalOrSucceededState =
       isFinalProposalState(proposal.state) ||
       isSucceededProposalState(proposal.state);
@@ -610,7 +586,25 @@ export async function GET(request) {
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <ProposalStateTag state={proposalState} />
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <ProposalStateTag state={proposalState} />
+              <p
+                style={{
+                  fontWeight: 500,
+                  fontSize: "1.4rem",
+                  color: "hsl(0 0% 40%)",
+                }}
+              >
+                {proposal.id}
+              </p>
+            </div>
+
             <ProposalHeader
               title={proposal.title === null ? "Untitled" : proposal.title}
               proposer={proposer}
@@ -629,6 +623,7 @@ export async function GET(request) {
         // debug: true,
         width: 1000,
         height: 525,
+        emoji: "twemoji",
         fonts: [
           {
             data: robotoRegular,
