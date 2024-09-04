@@ -123,6 +123,7 @@ export default {
   },
   colors: {
     pink: "#e588f8",
+    red: "#ef4456",
     primary,
     secondary: "#d89900",
     primaryModifierHover: primaryTintDarker,

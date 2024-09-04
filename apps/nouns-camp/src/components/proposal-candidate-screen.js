@@ -24,6 +24,7 @@ import {
   getSponsorSignatures,
   getSignals,
 } from "../utils/candidates.js";
+import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
 import {
   useProposalCandidate,
   useProposalCandidateVotingPower,
@@ -35,7 +36,11 @@ import {
   useActiveProposalsFetch,
   useCandidateFeedItems,
 } from "../store.js";
-import { useNavigate, useSearchParamToggleState } from "../hooks/navigation.js";
+import {
+  useNavigate,
+  useSearchParamToggleState,
+  useSearchParams,
+} from "../hooks/navigation.js";
 import {
   useProposalThreshold,
   useCancelSignature,
@@ -91,15 +96,19 @@ const ProposalCandidateScreenContent = ({
 }) => {
   const proposerId = candidateId.split("-")[0];
   const slug = extractSlugFromCandidateId(candidateId);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isDesktopLayout = useMatchDesktopLayout();
+  const selectedTab =
+    searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
 
   const {
     address: connectedWalletAccountAddress,
     requestAccess: requestWalletAccess,
   } = useWallet();
 
-  const isDesktopLayout = useMatchDesktopLayout();
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
+  const actionFormInputRef = React.useRef();
 
   const proposalThreshold = useProposalThreshold();
 
@@ -113,19 +122,10 @@ const ProposalCandidateScreenContent = ({
   const [formAction, setFormAction] = React.useState("onchain-comment");
   const availableFormActions = ["onchain-comment", "farcaster-comment"];
 
-  const [pendingFeedback, setPendingFeedback] = React.useState("");
+  const [pendingComment, setPendingComment] = React.useState("");
   const [pendingSupport, setPendingSupport] = React.useState(null);
 
   const submitCandidateCast = useSubmitCandidateCast(candidateId);
-
-  const sendCandidateFeedback = useSendProposalCandidateFeedback(
-    proposerId,
-    slug,
-    {
-      support: pendingSupport,
-      reason: pendingFeedback.trim(),
-    },
-  );
 
   const [isProposalUpdateDiffDialogOpen, toggleProposalUpdateDiffDialog] =
     useSearchParamToggleState("diff", { prefetch: true });
@@ -151,12 +151,133 @@ const ProposalCandidateScreenContent = ({
       candidate?.latestVersion.targetProposalId == null,
   });
 
+  const [
+    pendingRepliesByTargetFeedItemId,
+    setPendingRepliesByTargetFeedItemId,
+  ] = React.useState(() => {
+    const initialReplyTargetId = searchParams.get("reply-target");
+    if (initialReplyTargetId == null) return {};
+    return { [initialReplyTargetId]: "" };
+  });
+  const setReply = React.useCallback((targetFeedItemId, reply) => {
+    setPendingRepliesByTargetFeedItemId((s) => ({
+      ...s,
+      [targetFeedItemId]: reply,
+    }));
+  }, []);
+  const [pendingReplyTargetFeedItemIds, setPendingReplyTargetFeedItemIds] =
+    React.useState(() => Object.keys(pendingRepliesByTargetFeedItemId));
+  const [pendingRepostTargetFeedItemIds, setPendingRepostTargetFeedItemIds] =
+    React.useState(() => {
+      const initialRepostTargetId = searchParams.get("repost-target");
+      if (initialRepostTargetId == null) return [];
+      return [initialRepostTargetId];
+    });
+
+  const replyTargetFeedItems = React.useMemo(() => {
+    if (formAction === "farcaster-comment") return [];
+    return pendingReplyTargetFeedItemIds.map((targetFeedItemId) =>
+      feedItems.find((i) => i.id === targetFeedItemId),
+    );
+  }, [formAction, feedItems, pendingReplyTargetFeedItemIds]);
+
+  const repostTargetFeedItems = React.useMemo(() => {
+    if (formAction === "farcaster-comment") return [];
+    return pendingRepostTargetFeedItemIds
+      .map((id) => feedItems.find((i) => i.id === id))
+      .filter(Boolean);
+  }, [formAction, feedItems, pendingRepostTargetFeedItemIds]);
+
+  const reasonWithRepostsAndReplies = React.useMemo(() => {
+    const replyMarkedQuotesAndReplyText = replyTargetFeedItems.map((item) => {
+      const replyText = pendingRepliesByTargetFeedItemId[item.id];
+      return formatReply({
+        body: replyText,
+        target: {
+          voterId: item.authorAccount,
+          reason: item.reason,
+        },
+      });
+    });
+    const repostMarkedQuotes = repostTargetFeedItems.map((item) =>
+      formatRepost(item.reason),
+    );
+    return [
+      replyMarkedQuotesAndReplyText.join("\n\n"),
+      pendingComment.trim(),
+      repostMarkedQuotes.join("\n\n"),
+    ].join("\n\n");
+  }, [
+    pendingComment,
+    repostTargetFeedItems,
+    replyTargetFeedItems,
+    pendingRepliesByTargetFeedItemId,
+  ]);
+
+  const sendCandidateFeedback = useSendProposalCandidateFeedback(
+    proposerId,
+    slug,
+    {
+      support: pendingSupport,
+      reason: reasonWithRepostsAndReplies,
+    },
+  );
+
   useProposalCandidateFetch(candidateId);
   useProposalFetch(candidate.latestVersion.targetProposalId);
 
   useScrollToHash();
 
   const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
+
+  const onReply = React.useCallback((postId) => {
+    setPendingReplyTargetFeedItemIds((ids) =>
+      ids.includes(postId) ? ids : [...ids, postId],
+    );
+
+    const input = actionFormInputRef.current;
+    input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    input.focus();
+    setTimeout(() => {
+      input.selectionStart = 0;
+      input.selectionEnd = 0;
+    }, 0);
+  }, []);
+
+  const cancelReply = React.useCallback((id) => {
+    setPendingReplyTargetFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
+    actionFormInputRef.current.focus();
+  }, []);
+
+  const onRepost = React.useCallback(
+    (postId) => {
+      setPendingRepostTargetFeedItemIds((ids) =>
+        ids.includes(postId) ? ids : [...ids, postId],
+      );
+
+      const targetPost = feedItems.find((i) => i.id === postId);
+
+      if (targetPost != null)
+        setPendingSupport((support) => {
+          if (support != null) return support;
+          return targetPost.support;
+        });
+
+      const input = actionFormInputRef.current;
+      input.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      input.focus();
+      setTimeout(() => {
+        input.selectionStart = 0;
+        input.selectionEnd = 0;
+      }, 0);
+    },
+    [feedItems],
+  );
+
+  const cancelRepost = React.useCallback((id) => {
+    setPendingRepostTargetFeedItemIds((ids) => ids.filter((id_) => id_ !== id));
+    actionFormInputRef.current.focus();
+  }, []);
 
   if (candidate?.latestVersion.content.description == null) return null;
 
@@ -204,7 +325,7 @@ const ProposalCandidateScreenContent = ({
   const handleFormSubmit = async (data) => {
     switch (formAction) {
       case "onchain-comment":
-        // A contract simulation  takes a second to to do its thing after every
+        // A contract simulation takes a second to do its thing after every
         // argument change, so this might be null. This seems like a nicer
         // behavior compared to disabling the submit button on every keystroke
         if (sendCandidateFeedback == null) return;
@@ -212,15 +333,40 @@ const ProposalCandidateScreenContent = ({
         break;
 
       case "farcaster-comment":
-        await submitCandidateCast({ fid: data.fid, text: pendingFeedback });
+        await submitCandidateCast({ fid: data.fid, text: pendingComment });
         break;
 
       default:
         throw new Error();
     }
 
-    setPendingFeedback("");
+    setPendingComment("");
     setPendingSupport(null);
+  };
+
+  const actionFormProps = {
+    inputRef: actionFormInputRef,
+    mode: formAction,
+    setMode: setFormAction,
+    availableModes: availableFormActions,
+    reason: pendingComment,
+    setReason: setPendingComment,
+    support: pendingSupport,
+    setSupport: setPendingSupport,
+    setReply,
+    onSubmit: handleFormSubmit,
+    cancelReply,
+    cancelRepost,
+    replyTargetFeedItems,
+    repostTargetFeedItems,
+    repliesByTargetFeedItemId: pendingRepliesByTargetFeedItemId,
+  };
+
+  const activityFeedProps = {
+    context: "candidate",
+    items: feedItems,
+    onReply: formAction === "farcaster-comment" ? null : onReply,
+    onRepost: formAction === "farcaster-comment" ? null : onRepost,
   };
 
   const sponsorStatusCallout = (
@@ -357,7 +503,17 @@ const ProposalCandidateScreenContent = ({
 
               <Tabs.Root
                 aria-label="Candidate info"
-                defaultSelectedKey="activity"
+                selectedKey={selectedTab}
+                onSelectionChange={(key) => {
+                  setSearchParams(
+                    (p) => {
+                      const newParams = new URLSearchParams(p);
+                      newParams.set("tab", key);
+                      return newParams;
+                    },
+                    { replace: true },
+                  );
+                }}
                 css={(t) =>
                   css({
                     position: "sticky",
@@ -370,21 +526,12 @@ const ProposalCandidateScreenContent = ({
               >
                 <Tabs.Item key="activity" title="Activity">
                   <div style={{ padding: "3.2rem 0 4rem" }}>
-                    <ProposalActionForm
-                      mode={formAction}
-                      setMode={setFormAction}
-                      availableModes={availableFormActions}
-                      reason={pendingFeedback}
-                      setReason={setPendingFeedback}
-                      support={pendingSupport}
-                      setSupport={setPendingSupport}
-                      onSubmit={handleFormSubmit}
-                    />
+                    <ProposalActionForm {...actionFormProps} />
                   </div>
 
                   {feedItems.length !== 0 && (
                     <React.Suspense fallback={null}>
-                      <ActivityFeed context="candidate" items={feedItems} />
+                      <ActivityFeed {...activityFeedProps} />
                     </React.Suspense>
                   )}
                 </Tabs.Item>
@@ -600,7 +747,26 @@ const ProposalCandidateScreenContent = ({
               <Tabs.Root
                 ref={mobileTabContainerRef}
                 aria-label="Candidate sections"
-                defaultSelectedKey="description"
+                selectedKey={selectedTab}
+                onSelectionChange={(key) => {
+                  const tabAnchorRect =
+                    mobileTabAnchorRef.current.getBoundingClientRect();
+                  const tabContainerRect =
+                    mobileTabContainerRef.current.getBoundingClientRect();
+                  if (tabContainerRect.top > tabAnchorRect.top)
+                    scrollContainerRef.current.scrollTo({
+                      top: mobileTabAnchorRef.current.offsetTop,
+                    });
+
+                  setSearchParams(
+                    (p) => {
+                      const newParams = new URLSearchParams(p);
+                      newParams.set("tab", key);
+                      return newParams;
+                    },
+                    { replace: true },
+                  );
+                }}
                 css={(t) =>
                   css({
                     position: "sticky",
@@ -611,16 +777,6 @@ const ProposalCandidateScreenContent = ({
                     "[role=tab]": { fontSize: t.text.sizes.base },
                   })
                 }
-                onSelectionChange={() => {
-                  const tabAnchorRect =
-                    mobileTabAnchorRef.current.getBoundingClientRect();
-                  const tabContainerRect =
-                    mobileTabContainerRef.current.getBoundingClientRect();
-                  if (tabContainerRect.top > tabAnchorRect.top)
-                    scrollContainerRef.current.scrollTo({
-                      top: mobileTabAnchorRef.current.offsetTop,
-                    });
-                }}
               >
                 <Tabs.Item key="description" title="Description">
                   <div style={{ padding: "3.2rem 0 6.4rem" }}>
@@ -642,14 +798,7 @@ const ProposalCandidateScreenContent = ({
                         <>
                           <ProposalActionForm
                             size="small"
-                            mode={formAction}
-                            setMode={setFormAction}
-                            availableModes={availableFormActions}
-                            reason={pendingFeedback}
-                            setReason={setPendingFeedback}
-                            support={pendingSupport}
-                            setSupport={setPendingSupport}
-                            onSubmit={handleFormSubmit}
+                            {...actionFormProps}
                           />
                         </>
                       )}
@@ -684,21 +833,11 @@ const ProposalCandidateScreenContent = ({
                     }}
                   >
                     <div style={{ marginBottom: "3.2rem" }}>
-                      <ProposalActionForm
-                        size="small"
-                        mode={formAction}
-                        setMode={setFormAction}
-                        availableModes={availableFormActions}
-                        reason={pendingFeedback}
-                        setReason={setPendingFeedback}
-                        support={pendingSupport}
-                        setSupport={setPendingSupport}
-                        onSubmit={handleFormSubmit}
-                      />
+                      <ProposalActionForm size="small" {...actionFormProps} />
                     </div>
 
                     {feedItems.length !== 0 && (
-                      <ActivityFeed context="candidate" items={feedItems} />
+                      <ActivityFeed {...activityFeedProps} />
                     )}
                   </div>
                 </Tabs.Item>
@@ -1066,7 +1205,7 @@ const SignCandidateButton = ({ candidateId, expirationDate, ...props }) => {
             expirationTimestamp,
           });
         } catch (e) {
-          if (e.message.startsWith("User rejected the request.")) return;
+          if (e.message.includes("User rejected the request.")) return;
 
           console.error(e);
           alert("Oh noes, looks like something went wrong!");
@@ -1094,7 +1233,7 @@ const CancelSignatureButton = ({ signature, ...props }) => {
         setPending(true);
         cancelSignature()
           .catch((e) => {
-            if (e.message.startsWith("User rejected the request.")) return;
+            if (e.message.includes("User rejected the request.")) return;
 
             console.error(e);
             alert("Oh noes, looks like something went wrong!");

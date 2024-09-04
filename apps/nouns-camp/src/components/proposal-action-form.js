@@ -8,12 +8,13 @@ import Select from "@shades/ui-web/select";
 import Avatar from "@shades/ui-web/avatar";
 import { CHAIN_ID } from "../constants/env.js";
 import { getChain } from "../utils/chains.js";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
 import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
 } from "../utils/proposals.js";
 import { useProposal, useDelegate } from "../store.js";
-import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "../hooks/farcaster.js";
+import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -53,6 +54,7 @@ const ProposalActionForm = ({
     requestAccess: requestWalletAccess,
     switchToTargetChain: requestWalletNetworkSwitchToTargetChain,
     isLoading: hasPendingWalletAction,
+    isAuthenticated,
   } = useWallet();
 
   const chain = getChain(CHAIN_ID);
@@ -63,10 +65,9 @@ const ProposalActionForm = ({
     selectedFarcasterAccountFidByWalletAccountAddress,
     setSelectedFarcasterAccount,
   ] = React.useState({});
-  const farcasterAccounts = useFarcasterAccountsWithVerifiedEthAddress(
-    connectedWalletAccountAddress,
-    { enabled: mode === "farcaster-comment" },
-  );
+  const farcasterAccounts = useConnectedFarcasterAccounts({
+    enabled: mode === "farcaster-comment",
+  });
 
   const selectedFarcasterAccountFid = (() => {
     if (connectedWalletAccountAddress == null) return null;
@@ -78,12 +79,13 @@ const ProposalActionForm = ({
 
     if (selectedFid != null) return selectedFid;
 
-    const firstAccountWithKey = farcasterAccounts?.find((a) => a.hasAccountKey);
-
-    return (firstAccountWithKey ?? farcasterAccounts?.[0])?.fid;
+    return farcasterAccounts?.[0]?.fid;
   })();
 
   const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
+  const { open: openAuthenticationDialog } = useDialog(
+    "account-authentication",
+  );
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
 
   const proposal = useProposal(proposalId);
@@ -245,7 +247,9 @@ const ProposalActionForm = ({
                           String(a.fid) === String(selectedFarcasterAccountFid),
                       );
 
-                      const { displayName, username, pfpUrl } = selectedAccount;
+                      const { username, pfpUrl } = selectedAccount;
+                      const displayName =
+                        pickFarcasterAccountDisplayName(selectedAccount);
 
                       return (
                         <>
@@ -261,14 +265,8 @@ const ProposalActionForm = ({
                               })}
                             />
                           )}
-                          <em>
-                            {displayName ??
-                              username ??
-                              `FID ${selectedAccount.fid}`}
-                          </em>
-                          {username != null && username !== displayName && (
-                            <> (@{username})</>
-                          )}
+                          <em>{displayName}</em>
+                          {username !== displayName && <> (@{username})</>}
                         </>
                       );
                     }
@@ -697,6 +695,19 @@ const ProposalActionForm = ({
                         {selectedAccount == null
                           ? "Setup account to cast"
                           : "Setup account key to cast"}
+                      </Button>
+                    );
+
+                  if (!isAuthenticated)
+                    return (
+                      <Button
+                        type="button"
+                        size={size}
+                        onClick={() => {
+                          openAuthenticationDialog({ intent: "cast" });
+                        }}
+                      >
+                        Log in to cast
                       </Button>
                     );
 
