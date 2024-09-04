@@ -19,6 +19,7 @@ import { truncateAddress } from "../../../../../../packages/common/src/utils/eth
 import { normalize } from "viem/ens";
 import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
+import { resolveIdentifier } from "../../../contracts";
 
 export const runtime = "edge";
 
@@ -343,6 +344,93 @@ const ProposalHeader = ({
   );
 };
 
+const Header = ({ styleProps, children }) => (
+  <p
+    style={{
+      fontSize: "1.4rem",
+      fontWeight: 700,
+      color: "hsl(0 0% 83%)",
+      lineHeight: 1.15,
+      textTransform: "uppercase",
+      whiteSpace: "pre",
+      ...styleProps,
+    }}
+  >
+    {children} |
+  </p>
+);
+
+const BigNumber = ({ children }) => (
+  <span
+    style={{
+      fontSize: "2.4rem",
+      fontWeight: 700,
+      color: "hsl(0 0% 94%)",
+    }}
+  >
+    {children}
+  </span>
+);
+
+const ProposalVoteStatus = ({ proposal }) => {
+  const { forVotes, againstVotes, abstainVotes, quorumVotes } = proposal;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: "6rem",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Header styleProps={{ color: "#41b579" }}>For</Header>
+        <BigNumber>{forVotes}</BigNumber>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Header styleProps={{ color: "#db5664" }}>Against</Header>
+        <BigNumber>{againstVotes}</BigNumber>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Header>Abstain</Header>
+        <BigNumber>{abstainVotes}</BigNumber>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "flex-end",
+          justifyContent: "flex-end",
+        }}
+      >
+        <Header styleProps={{ color: "hsl(0 0% 60%)" }}>Quorum</Header>
+        <BigNumber>{quorumVotes}</BigNumber>
+      </div>
+    </div>
+  );
+};
+
 export async function GET(request) {
   const robotoRegularResp = await fetch(
     new URL("../../../assets/fonts/Roboto-Regular.woff", import.meta.url),
@@ -364,7 +452,6 @@ export async function GET(request) {
     const proposalId = searchParams.get("proposal");
 
     const proposal = await fetchProposal(proposalId);
-    const { forVotes, againstVotes, abstainVotes } = proposal;
     const proposerEnsName = await publicClient.getEnsName({
       address: proposal.proposerId,
     });
@@ -397,6 +484,22 @@ export async function GET(request) {
       }),
     );
 
+    const { address: contractAddress } = resolveIdentifier("dao");
+    const quorumVotes = await publicClient.readContract({
+      address: contractAddress,
+      chainId: CHAIN_ID,
+      abi: [
+        {
+          inputs: [{ type: "uint256" }],
+          name: "quorumVotes",
+          outputs: [{ type: "uint256" }],
+          type: "function",
+        },
+      ],
+      functionName: "quorumVotes",
+      args: [proposalId],
+    });
+
     const isFinalOrSucceededState =
       isFinalProposalState(proposal.status.toLowerCase()) ||
       isSucceededProposalState(proposal.status.toLowerCase());
@@ -413,8 +516,7 @@ export async function GET(request) {
             width: "100%",
             display: "flex",
             flexDirection: "column",
-            flexWrap: "nowrap",
-            gap: "0rem",
+            justifyContent: "space-around",
           }}
         >
           <ProposalHeader
@@ -426,9 +528,8 @@ export async function GET(request) {
             hasPassed={isFinalOrSucceededState}
             sponsors={sponsors}
           />
-          <p>For: {forVotes}</p>
-          <p>Against: {againstVotes}</p>
-          <p>Abstain: {abstainVotes}</p>
+
+          <ProposalVoteStatus proposal={{ ...proposal, quorumVotes }} />
         </div>
       ),
       {
