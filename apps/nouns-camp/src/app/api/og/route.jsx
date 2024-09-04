@@ -115,33 +115,45 @@ const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
 
   if (ensAvatar != null) {
     return (
-      <>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <img
           src={ensAvatar}
           style={{
-            width: "2rem",
-            height: "2rem",
+            width: "1.5rem",
+            height: "1.5rem",
             borderRadius: "0.3rem",
           }}
         />{" "}
         {displayName}
-      </>
+      </div>
     );
   }
 
   if (seedUrl != null) {
     return (
-      <>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <img
           src={seedUrl}
           style={{
-            width: "2rem",
-            height: "2rem",
+            width: "1.5rem",
+            height: "1.5rem",
             borderRadius: "0.3rem",
           }}
         />{" "}
         {displayName}
-      </>
+      </div>
     );
   }
 
@@ -367,14 +379,18 @@ const ProposalVotesProgress = ({ proposal }) => {
           justifyContent: "space-between",
         }}
       >
-        <p
-          style={{
-            color: "#41b579",
-            fontWeight: 700,
-          }}
-        >
-          For {forVotes}
-        </p>
+        <>
+          <p
+            style={{
+              color: "#41b579",
+              fontWeight: 700,
+            }}
+          >
+            For {forVotes}
+          </p>
+          <p style={{ whiteSpace: "pre" }}> &middot; </p>
+          <p style={{ fontWeight: 700 }}>Quorum {quorumVotes}</p>
+        </>
         <>
           <p
             style={{
@@ -445,15 +461,6 @@ const ProposalVotesProgress = ({ proposal }) => {
             }}
           />
         )}
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          justifyContent: "space-between",
-        }}
-      >
-        <p>Quorum {quorumVotes}</p>
       </div>
     </div>
   );
