@@ -285,6 +285,7 @@ const ProposalCandidateScreenContent = ({
     connectedWalletAccountAddress != null &&
     candidate.proposerId.toLowerCase() === connectedWalletAccountAddress;
   const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
+  const hasBeenPromoted = candidate.latestVersion.proposalId != null;
 
   const proposerDelegateNounIds =
     proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
@@ -489,9 +490,11 @@ const ProposalCandidateScreenContent = ({
                     </span>
                   </div>
 
-                  <div style={{ margin: "0 0 4.8rem" }}>
-                    {sponsorStatusCallout}
-                  </div>
+                  {!hasBeenPromoted && (
+                    <div style={{ margin: "0 0 4.8rem" }}>
+                      {sponsorStatusCallout}
+                    </div>
+                  )}
 
                   {feedbackVoteCountExcludingAbstained > 0 && (
                     <div style={{ marginBottom: "4rem" }}>
@@ -603,7 +606,7 @@ const ProposalCandidateScreenContent = ({
               </p>
             </Callout>
           )}
-          {candidate.latestVersion.proposalId != null ? (
+          {hasBeenPromoted ? (
             <Callout
               compact
               variant="info"
@@ -871,9 +874,11 @@ const ProposalCandidateScreenContent = ({
                             controlled by proposer
                           </Callout>
                         )}
-                        <div style={{ margin: "0 0 3.2rem" }}>
-                          {sponsorStatusCallout}
-                        </div>
+                        {!hasBeenPromoted && (
+                          <div style={{ margin: "0 0 3.2rem" }}>
+                            {sponsorStatusCallout}
+                          </div>
+                        )}
                         <SponsorsTabMainContent
                           candidateId={candidateId}
                           toggleSponsorDialog={toggleSponsorDialog}
