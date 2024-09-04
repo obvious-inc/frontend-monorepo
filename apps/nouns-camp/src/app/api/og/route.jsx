@@ -21,7 +21,6 @@ import { truncateAddress } from "../../../../../../packages/common/src/utils/eth
 import { normalize } from "viem/ens";
 import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
-import { resolveIdentifier } from "../../../contracts";
 
 export const runtime = "edge";
 
