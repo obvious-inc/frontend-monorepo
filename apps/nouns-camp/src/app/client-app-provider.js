@@ -18,33 +18,6 @@ import {
 import { Provider as GlobalDialogsProvider } from "../hooks/global-dialogs.js";
 import AppUpdateBanner from "../components/app-update-banner.js";
 
-const dialogs = [
-  {
-    key: "account",
-    component: React.lazy(() => import("../components/account-dialog.js")),
-  },
-  {
-    key: "delegation",
-    component: React.lazy(() => import("../components/delegation-dialog.js")),
-  },
-  {
-    key: "proposal-drafts",
-    component: React.lazy(
-      () => import("../components/proposal-drafts-dialog.js"),
-    ),
-  },
-  {
-    key: "settings",
-    component: React.lazy(() => import("../components/settings-dialog.js")),
-  },
-  {
-    key: "farcaster-setup",
-    component: React.lazy(
-      () => import("../components/farcaster-setup-dialog.js"),
-    ),
-  },
-];
-
 const GlobalClientFetcher = () => {
   const { address: connectedAccountAddress } = useWallet();
 
@@ -79,7 +52,7 @@ export default function ClientAppProvider({ children }) {
     <I18nProvider locale="en-US">
       <Tooltip.Provider delayDuration={300}>
         <ConnectWalletDialogProvider>
-          <GlobalDialogsProvider dialogs={dialogs}>
+          <GlobalDialogsProvider>
             <AppUpdateBanner />
             {children}
             <GlobalClientFetcher />

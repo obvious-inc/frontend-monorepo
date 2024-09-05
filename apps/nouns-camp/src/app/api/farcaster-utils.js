@@ -1,9 +1,12 @@
+import { kv } from "@vercel/kv";
 import { hexToBytes } from "viem";
 import {
   FarcasterNetwork,
   Message,
   makeCastAdd,
+  makeCastRemove,
   makeReactionAdd,
+  makeReactionRemove,
   NobleEd25519Signer,
 } from "@farcaster/core";
 import { array as arrayUtils } from "@shades/common/utils";
@@ -29,6 +32,15 @@ const fetchAccounts = async (fids) => {
 
   const { users } = await response.json();
   return parseNeynarUsers(users);
+};
+
+export const getAccountKey = (fid) => kv.get(`fid:${fid}:account-key`);
+
+export const deleteAccountKey = (fid) => kv.del(`fid:${fid}:account-key`);
+
+export const fetchAccount = async (fid) => {
+  const [account] = await fetchAccounts([fid]);
+  return account;
 };
 
 export const fetchNounerLikesByTargetUrl = async (targetUrl) => {
@@ -64,16 +76,64 @@ export const fetchNounerLikesByTargetUrl = async (targetUrl) => {
     return acc;
   }, []);
 
-  return nounerLikes;
+  // Only count one Farcaster account per nouner ethereum address
+  return arrayUtils.unique(
+    (a1, a2) => a1.nounerAddress === a2.nounerAddress,
+    nounerLikes,
+  );
 };
 
-export const submitCastAdd = async (fid, privateAccountKey, body) => {
-  const messageResult = await makeCastAdd(
+export const fetchNounerLikesByCast = async (hash) => {
+  const response = await fetch(
+    `https://api.neynar.com/v2/farcaster/reactions/cast?${new URLSearchParams({
+      hash,
+      types: "likes",
+      limit: 100,
+    })}`,
+    {
+      headers: {
+        accept: "application/json",
+        api_key: process.env.NEYNAR_API_KEY,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    console.error(await response.text());
+    throw new Error();
+  }
+
+  const { reactions } = await response.json();
+
+  const likes = reactions.map((r) => ({ fid: r.user.fid }));
+
+  const accounts = await fetchAccounts(likes.map((l) => l.fid));
+  const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
+
+  const nounerLikes = likes.reduce((acc, l) => {
+    const account = accountsByFid[l.fid];
+    if (account.nounerAddress == null) return acc;
+    acc.push(account);
+    return acc;
+  }, []);
+
+  // Only count one Farcaster account per nouner ethereum address
+  return arrayUtils.unique(
+    (a1, a2) => a1.nounerAddress === a2.nounerAddress,
+    nounerLikes,
+  );
+};
+
+const submitMessage = async (
+  buildMessage,
+  { fid, privateAccountKey },
+  body,
+) => {
+  const messageResult = await buildMessage(
     body,
     { fid: Number(fid), network: FarcasterNetwork.MAINNET },
     new NobleEd25519Signer(hexToBytes(privateAccountKey)),
   );
-
   return messageResult.match(
     async (message) => {
       const response = await fetch(
@@ -92,6 +152,11 @@ export const submitCastAdd = async (fid, privateAccountKey, body) => {
 
       if (!response.ok) {
         console.error(body);
+        if (
+          body.errCode === "bad_request.validation_failure" &&
+          body.details.startsWith("invalid signer")
+        )
+          throw new Error("invalid-account-key");
         throw new Error();
       }
 
@@ -101,43 +166,29 @@ export const submitCastAdd = async (fid, privateAccountKey, body) => {
   );
 };
 
-export const submitTargetLikeAdd = async (
-  fid,
-  privateAccountKey,
-  { targetUrl },
-) => {
-  const messageResult = await makeReactionAdd(
-    { type: 1, targetUrl },
-    { fid: Number(fid), network: FarcasterNetwork.MAINNET },
-    new NobleEd25519Signer(hexToBytes(privateAccountKey)),
-  );
+export const submitCastAdd = async (data, body) =>
+  submitMessage(makeCastAdd, data, body);
 
-  return messageResult.match(
-    async (message) => {
-      const response = await fetch(
-        `${process.env.FARCASTER_HUB_HTTP_ENDPOINT}/v1/submitMessage`,
-        {
-          method: "POST",
-          body: Buffer.from(Message.encode(message).finish()),
-          headers: {
-            api_key: process.env.NEYNAR_API_KEY,
-            "Content-Type": "application/octet-stream",
-          },
-        },
-      );
+export const submitCastRemove = async (data, { targetHash }) =>
+  submitMessage(makeCastRemove, data, { targetHash });
 
-      const body = await response.json();
+export const submitReactionAdd = async (
+  data,
+  {
+    type, // 1 = like, 2 = recast
+    targetCastId,
+    targetUrl,
+  },
+) => submitMessage(makeReactionAdd, data, { type, targetCastId, targetUrl });
 
-      if (!response.ok) {
-        console.error(body);
-        throw new Error();
-      }
-
-      return body;
-    },
-    (error) => Promise.reject(error),
-  );
-};
+export const submitReactionRemove = async (
+  data,
+  {
+    type, // 1 = like, 2 = recast
+    targetCastId,
+    targetUrl,
+  },
+) => submitMessage(makeReactionRemove, data, { type, targetCastId, targetUrl });
 
 const fetchVerificiation = async (fid, address) => {
   const searchParams = new URLSearchParams({ fid, address });
@@ -227,7 +278,11 @@ export const fetchAccountsWithVerifiedAddress = async (address) => {
     return Promise.reject(new Error("unexpected-response"));
   }
 
-  const neynarUsers = body[address] ?? [];
+  // Neynar sometimes return duplicate users
+  const neynarUsers = arrayUtils.unique(
+    (u1, u2) => u1.fid === u2.fid,
+    body[address] ?? [],
+  );
 
   if (neynarUsers.length === 0) return [];
 
@@ -259,6 +314,12 @@ export const fetchCastsByParentUrl = async (
       },
     },
   );
+
+  if (!response.ok) {
+    console.error(await response.text());
+    throw new Error();
+  }
+
   const { casts: rawCasts } = await response.json();
 
   // TODO: Recursively fetch all casts

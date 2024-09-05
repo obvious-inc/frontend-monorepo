@@ -16,8 +16,9 @@ import {
 } from "../utils/chains.js";
 import { useAccount, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
-import { useWallet } from "../hooks/wallet.js";
+import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
+import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
@@ -114,6 +115,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
   const { open: openSettingsDialog } = useDialog("settings");
+  const { open: openAccountAuthenticationDialog } = useDialog(
+    "account-authentication",
+  );
+  const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
   const [isTreasuryDialogOpen, toggleTreasuryDialog] =
     useSearchParamToggleState("treasury", { replace: true, prefetch: "true" });
 
@@ -123,8 +128,18 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     requestAccess: requestWalletAccess,
     disconnect: disconnectWallet,
     switchToTargetChain: switchWalletToTargetChain,
+    isAuthenticated: isConnectedWalletAccountAuthenticated,
     isLoading: isLoadingWallet,
   } = useWallet();
+  const {
+    signIn: signInConnectedWalletAccount,
+    signOut: signOutActiveAccountSession,
+  } = useWalletAuthentication();
+  const connectedFarcasterAccounts = useConnectedFarcasterAccounts();
+  const hasVerifiedFarcasterAccount = connectedFarcasterAccounts?.length > 0;
+  const hasFarcasterAccountKey =
+    hasVerifiedFarcasterAccount &&
+    connectedFarcasterAccounts.some((a) => a.hasAccountKey);
 
   const isTestnet = isTestnetChain(CHAIN_ID);
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
@@ -145,7 +160,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     ? actions
     : actions.filter((a) => !a.desktopOnly);
 
-  const handleDropDownAction = (key) => {
+  const handleDropDownAction = async (key) => {
     switch (key) {
       case "open-account-dialog":
         openAccountDialog();
@@ -183,6 +198,30 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       case "open-treasury-dialog":
         toggleTreasuryDialog();
         break;
+      case "setup-farcaster":
+        openFarcasterSetupDialog();
+        break;
+      case "sign-in": {
+        try {
+          openAccountAuthenticationDialog();
+          await signInConnectedWalletAccount();
+          // TODO alert success
+        } catch (e) {
+          console.error(e);
+          alert("Ops, seems like something went wrong!");
+        }
+        break;
+      }
+      case "sign-out": {
+        try {
+          await signOutActiveAccountSession();
+          alert("You have been logged out");
+        } catch (e) {
+          console.error(e);
+          alert("Ops, seems like something went wrong!");
+        }
+        break;
+      }
       case "disconnect-wallet":
         disconnectWallet();
         break;
@@ -460,6 +499,19 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                           id: "open-proposal-drafts-dialog",
                           label: "Proposal drafts",
                         },
+                        !hasVerifiedFarcasterAccount
+                          ? null
+                          : !hasFarcasterAccountKey
+                            ? {
+                                id: "setup-farcaster",
+                                label: "Setup Farcaster",
+                              }
+                            : !isConnectedWalletAccountAuthenticated
+                              ? {
+                                  id: "sign-in",
+                                  label: "Authenticate account",
+                                }
+                              : null,
                       ].filter(Boolean),
                     },
                     daoSection,
@@ -468,11 +520,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     {
                       id: "disconnect",
                       children: [
+                        isConnectedWalletAccountAuthenticated && {
+                          id: "sign-out",
+                          label: "Log out",
+                        },
                         {
                           id: "disconnect-wallet",
                           label: "Disconnect wallet",
                         },
-                      ],
+                      ].filter(Boolean),
                     },
                   ],
                   buttonProps: {

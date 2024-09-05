@@ -5,10 +5,12 @@ import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Avatar from "@shades/ui-web/avatar";
+import Spinner from "@shades/ui-web/spinner";
 import QRCode from "@shades/ui-web/qr-code";
-import { useWallet } from "../hooks/wallet.js";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
+import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
-import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "../hooks/farcaster.js";
+import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import LogoSymbol from "./logo-symbol.js";
 import ChainExplorerAddressLink from "./chain-explorer-address-link.js";
 
@@ -47,9 +49,16 @@ const FarcasterSetupDialog = ({ isOpen, close }) => (
 const Content = ({ titleProps, dismiss }) => {
   const theme = useTheme();
 
-  const { address: connectedWalletAccountAddress } = useWallet();
+  const { address: connectedWalletAccountAddress, isAuthenticated } =
+    useWallet();
+  const { signIn: authenticateConnectedAccount, state: authenticationState } =
+    useWalletAuthentication();
+
+  const isAuthenticating = authenticationState !== "idle";
+
   const { data: dialogData } = useDialog("farcaster-setup");
-  const dialogContext = dialogData?.context;
+
+  const userIntent = dialogData?.intent;
 
   const [isInitiatingKeyRequest, setInitiatingKeyRequest] =
     React.useState(false);
@@ -67,17 +76,17 @@ const Content = ({ titleProps, dismiss }) => {
     [keyData?.key],
   );
 
-  const accounts = useFarcasterAccountsWithVerifiedEthAddress(
-    connectedWalletAccountAddress,
-    {
-      // Long-poll to get account key data as the key request is approved
-      fetchInterval: 3000,
-    },
-  );
+  const accounts = useConnectedFarcasterAccounts({
+    // Long-poll to get account key data as the key request is approved
+    refetchInterval: 2500,
+  });
 
   if (accounts == null) return null;
 
   const hasVerifiedAddress = accounts.length > 0;
+  const isSetupComplete =
+    (hasVerifiedAddress && accounts.every((a) => a.hasAccountKey)) ||
+    keyData?.fid != null;
 
   return (
     <div
@@ -101,11 +110,15 @@ const Content = ({ titleProps, dismiss }) => {
     >
       <DialogHeader
         title={
-          keyData == null
-            ? "Setup Farcaster"
-            : keyData.fid == null
-              ? "Approve key request"
-              : "Key request approved"
+          isSetupComplete && isAuthenticated ? (
+            <>All done 🎉</>
+          ) : keyData == null ? (
+            "Setup Farcaster"
+          ) : keyData.fid == null ? (
+            "Approve key request"
+          ) : (
+            "Key request approved"
+          )
         }
         titleProps={titleProps}
         dismiss={keyData == null ? null : dismiss}
@@ -113,7 +126,7 @@ const Content = ({ titleProps, dismiss }) => {
       <main>
         {!hasVerifiedAddress ? (
           <>
-            {dialogContext === "like" && (
+            {userIntent === "like" && (
               <p>
                 Likes on Camp are built on top of{" "}
                 <a
@@ -129,10 +142,7 @@ const Content = ({ titleProps, dismiss }) => {
             )}
             <p>
               There’s unfortunately no Farcaster account associated with your
-              connected wallet address.
-            </p>
-            <p>
-              You can verify your address (
+              connected address (
               <ChainExplorerAddressLink
                 address={connectedWalletAccountAddress}
                 className="plain"
@@ -140,7 +150,12 @@ const Content = ({ titleProps, dismiss }) => {
                 {connectedWalletAccountAddress.slice(0, 6)}...
                 {connectedWalletAccountAddress.slice(-4)}
               </ChainExplorerAddressLink>
-              ) under {'"Verified addresses"'}, in the Warpcast app settings.
+              )
+            </p>
+            <p>
+              You can verify your address under <i>Verified addresses</i>, in
+              the Warpcast app settings. Your verification will appear here as
+              soon as it is accepted.
             </p>
             <p className="small">
               If you don’t have a Farcaster account, you can create one using
@@ -151,62 +166,88 @@ const Content = ({ titleProps, dismiss }) => {
               .
             </p>
           </>
-        ) : keyData == null ? (
+        ) : isSetupComplete ? (
           <>
-            <p>
-              To use your Farcaster account on Camp, you need to issue an{" "}
-              <em>account key</em> (aka signer) that can write messages on your
-              behalf.
-            </p>
-            <p>
-              Issuing account keys does not put you at risk of losing access to
-              your account, although it does authorize a set of actions, like
-              submitting casts and likes.
-            </p>
-            <p className="small">
-              You can revoke an account key at any time in the Warpcast app
-              under {'"connected apps"'}, in settings.
-            </p>
-          </>
-        ) : keyData.fid != null ? (
-          <>
-            <p>All done! 🎉</p>
             {(() => {
               if (accounts == null) return null;
-              const account = accounts.find(
-                (a) => String(keyData.fid) === String(a.fid),
-              );
+              const account =
+                keyData == null
+                  ? accounts.find((a) => a.hasAccountKey)
+                  : accounts.find((a) => String(keyData.fid) === String(a.fid));
 
-              if (account == null)
+              if (keyData != null && account == null) {
                 return (
                   <p>You can now cast from Camp with FID {keyData.fid}.</p>
                 );
+              }
 
-              const { displayName, username, pfpUrl } = account;
+              const displayName = pickFarcasterAccountDisplayName(account);
+
+              if (isAuthenticated)
+                return (
+                  <>
+                    <p>
+                      You can now cast and like stuff with your Farcaster
+                      account (
+                      {account.pfpUrl != null && (
+                        <Avatar
+                          url={account.pfpUrl}
+                          size="1.2em"
+                          css={css({
+                            display: "inline-block",
+                            marginRight: "0.3em",
+                            verticalAlign: "sub",
+                          })}
+                        />
+                      )}
+                      <b>{displayName}</b>) from Camp.
+                    </p>
+                    <p className="small">
+                      If you wish to log out, there’s an option for that in the
+                      account menu up in the top right corner.
+                    </p>
+                  </>
+                );
+
               return (
-                <p>
-                  You can now cast from Camp as{" "}
-                  {pfpUrl != null && (
-                    <Avatar
-                      url={pfpUrl}
-                      size="1.2em"
-                      css={css({
-                        display: "inline-block",
-                        marginRight: "0.3em",
-                        verticalAlign: "sub",
-                      })}
-                    />
-                  )}
-                  <b>{displayName ?? username ?? `FID ${account.fid}`}</b>
-                  {username != null && username !== displayName && (
-                    <> (@{username})</>
-                  )}
-                  .
-                </p>
+                <>
+                  <p>
+                    Nice! An account key for{" "}
+                    {account.pfpUrl != null && (
+                      <Avatar
+                        url={account.pfpUrl}
+                        size="1.2em"
+                        css={css({
+                          display: "inline-block",
+                          marginRight: "0.3em",
+                          verticalAlign: "sub",
+                        })}
+                      />
+                    )}
+                    <b>{displayName}</b> is set up.
+                  </p>
+                  <p>
+                    Now we just need a quick authentication signature, and then
+                    we’re good to go.
+                  </p>
+                  <p className="small">
+                    Camp will prompt you to sign a little message according to
+                    the{" "}
+                    <a
+                      href="https://eips.ethereum.org/EIPS/eip-4361"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Sign-In with Ethereum
+                    </a>{" "}
+                    standard. This signature proves that you are in control of
+                    your connected wallet account.
+                  </p>
+                </>
               );
             })()}
           </>
-        ) : (
+        ) : keyData != null ? (
           <>
             <div
               css={(t) =>
@@ -271,51 +312,135 @@ const Content = ({ titleProps, dismiss }) => {
               </Button>
             </div>
           </>
+        ) : (
+          <>
+            {(() => {
+              // Note that there is a slight risk that this account is not the
+              // one the user intends to use
+              const { pfpUrl } = accounts[0];
+              const displayName = pickFarcasterAccountDisplayName(accounts[0]);
+              return (
+                <p>
+                  To {userIntent === "like" ? "like stuff" : "cast"} as{" "}
+                  {pfpUrl != null && (
+                    <Avatar
+                      url={pfpUrl}
+                      size="1.2em"
+                      css={css({
+                        display: "inline-block",
+                        marginRight: "0.3em",
+                        verticalAlign: "sub",
+                      })}
+                    />
+                  )}
+                  <b>{displayName}</b> on Camp, you need to issue an{" "}
+                  <em>account key</em> (aka signer) that can write messages on
+                  your behalf.
+                </p>
+              );
+            })()}
+            <p>
+              Issuing account keys does not put you at risk of losing access to
+              your account, although it does authorize a set of actions, like
+              submitting casts and likes.
+            </p>
+            <p className="small">
+              You can revoke an account key at any time in the Warpcast app
+              under <i>connected apps</i>, in settings.
+            </p>
+          </>
         )}
       </main>
       {keyData == null && (
         <footer
           css={css({
             display: "flex",
-            justifyContent: "flex-end",
+            justifyContent: "space-between",
+            alignItems: "center",
             paddingTop: "2.5rem",
             "@media (min-width: 600px)": {
               paddingTop: "3rem",
             },
           })}
         >
-          <div
-            css={css({
-              display: "grid",
-              gridAutoFlow: "column",
-              gridAutoColumns: "minmax(0,1fr)",
-              gridGap: "1rem",
-            })}
-          >
-            <Button type="button" size="medium" onClick={dismiss}>
-              Cancel
-            </Button>
-            {hasVerifiedAddress && (
-              <Button
-                size="medium"
-                variant="primary"
-                type="button"
-                onClick={async () => {
-                  setInitiatingKeyRequest(true);
-                  try {
-                    const keyData = await createFarcasterAccountKey();
-                    setKeyData(keyData);
-                  } finally {
-                    setInitiatingKeyRequest(false);
-                  }
-                }}
-                disabled={isInitiatingKeyRequest}
-                isLoading={isInitiatingKeyRequest}
+          <div>
+            {!hasVerifiedAddress && (
+              <div
+                css={(t) =>
+                  css({
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.8rem",
+                    color: t.colors.textMuted,
+                    fontSize: t.text.sizes.small,
+                  })
+                }
               >
-                Got it &rarr;
-              </Button>
+                <Spinner size="1.4rem" />
+                <div>Checking verifications...</div>
+              </div>
             )}
           </div>
+          {(() => {
+            if (isSetupComplete)
+              return (
+                <div css={css({ display: "flex", gap: "1rem" })}>
+                  <Button type="button" size="medium" onClick={dismiss}>
+                    Close
+                  </Button>
+                  {!isAuthenticated && (
+                    <Button
+                      size="medium"
+                      variant="primary"
+                      type="button"
+                      onClick={async () => {
+                        await authenticateConnectedAccount();
+                        dismiss();
+                      }}
+                      disabled={isAuthenticating}
+                      isLoading={isAuthenticating}
+                    >
+                      Authenticate account
+                    </Button>
+                  )}
+                </div>
+              );
+
+            return (
+              <div
+                css={css({
+                  display: "grid",
+                  gridAutoFlow: "column",
+                  gridAutoColumns: "minmax(0,1fr)",
+                  gridGap: "1rem",
+                })}
+              >
+                <Button type="button" size="medium" onClick={dismiss}>
+                  Close
+                </Button>
+                {hasVerifiedAddress && (
+                  <Button
+                    size="medium"
+                    variant="primary"
+                    type="button"
+                    onClick={async () => {
+                      setInitiatingKeyRequest(true);
+                      try {
+                        const keyData = await createFarcasterAccountKey();
+                        setKeyData(keyData);
+                      } finally {
+                        setInitiatingKeyRequest(false);
+                      }
+                    }}
+                    disabled={isInitiatingKeyRequest}
+                    isLoading={isInitiatingKeyRequest}
+                  >
+                    Got it &rarr;
+                  </Button>
+                )}
+              </div>
+            );
+          })()}
         </footer>
       )}
     </div>

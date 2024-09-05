@@ -17,11 +17,14 @@
         "ETHERSCAN_API_KEY",
         "TENDERLY_API_KEY",
         "TENDERLY_PROJECT_SLUG",
+        "SESSION_SEAL_SECRET",
         "EDGE_CONFIG",
         "KV_REST_API_READ_ONLY_TOKEN",
         "KV_REST_API_TOKEN",
         "KV_REST_API_URL",
-        "KV_URL"
+        "KV_URL",
+        "APP_HOST",
+        "APP_PRODUCTION_URL"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
@@ -30,5 +33,6 @@
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalEnv": ["CI_LINT"]
 }

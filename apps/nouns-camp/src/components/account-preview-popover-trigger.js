@@ -10,6 +10,7 @@ import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
 import Avatar from "@shades/ui-web/avatar";
 import { CHAIN_ID } from "../constants/env.js";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
 import { useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -363,15 +364,16 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                             }
                           >
                             {(() => {
-                              const { fid, username, displayName, pfpUrl } =
-                                farcasterAccount;
+                              const { username, pfpUrl } = farcasterAccount;
+                              const displayName =
+                                pickFarcasterAccountDisplayName(
+                                  farcasterAccount,
+                                );
                               return (
                                 <span
                                   title={[
-                                    displayName ?? username ?? `FID ${fid}`,
-                                    username != null &&
-                                      username !== displayName &&
-                                      `(@${username})`,
+                                    displayName,
+                                    username != displayName && `(@${username})`,
                                   ]
                                     .filter(Boolean)
                                     .join(" ")}
@@ -387,11 +389,10 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                                       })}
                                     />
                                   )}
-                                  {displayName ?? username ?? `FID ${fid}`}
-                                  {username != null &&
-                                    username !== displayName && (
-                                      <> (@{username})</>
-                                    )}
+                                  {displayName}
+                                  {username !== displayName && (
+                                    <> (@{username})</>
+                                  )}
                                 </span>
                               );
                             })()}

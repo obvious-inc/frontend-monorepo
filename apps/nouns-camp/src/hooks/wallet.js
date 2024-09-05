@@ -7,12 +7,16 @@ import {
   useConnectors,
   useSwitchChain,
 } from "wagmi";
-import { array as arrayUtils } from "@shades/common/utils";
+import { array as arrayUtils, invariant } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
-import { CHAIN_ID } from "../constants/env.js";
-// import { useConfig } from "../config-provider.js";
+import { CHAIN_ID } from "@/constants/env";
+// import { useConfig } from "@/config-provider";
+import {
+  useState as useSessionState,
+  useActions as useSessionActions,
+} from "@/session-provider";
 
 const impersonationAddress =
   typeof location === "undefined"
@@ -191,10 +195,14 @@ export const useWallet = () => {
   } = useAccount();
   const { connect, isPending: isConnecting, reset } = useConnect();
   const connectors = useConnectorsWithReadyState();
-  const { disconnectAsync: disconnect } = useDisconnect();
+  const { disconnectAsync: disconnectWallet } = useDisconnect();
   const { isLoading: isSwitchingNetwork, switchChainAsync: switchChain } =
     useSwitchChain();
+
   const { canaryAccounts, betaAccounts } = { canaryAccounts: [], betaAccounts:[] } /*useConfig()*/;
+
+  const { address: authenticatedAccountAddress } = useSessionState();
+  const { destroy: destroyAccountSession } = useSessionActions();
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
@@ -211,19 +219,13 @@ export const useWallet = () => {
     impersonationAddress ?? connectedAccountAddress
   )?.toLowerCase();
 
-  const isLoading =
-    isConnecting ||
-    isConnectingAccount ||
-    isReconnectingAccount ||
-    isSwitchingNetwork;
+  const disconnect = React.useCallback(async () => {
+    disconnectWallet();
+    destroyAccountSession();
+  }, [disconnectWallet, destroyAccountSession]);
 
-  return {
-    address: isConnected || impersonationAddress != null ? address : null,
-    chainId: connectedChainId,
-    requestAccess: hasReadyConnector ? requestAccess : null,
-    disconnect,
-    reset,
-    switchToTargetChain: () =>
+  const switchToTargetChain = React.useCallback(
+    () =>
       new Promise((resolve, reject) => {
         // Some wallets switch network without responding
         const timeoutHandle = setTimeout(() => {
@@ -236,9 +238,50 @@ export const useWallet = () => {
             clearTimeout(timeoutHandle);
           });
       }),
+    [switchChain],
+  );
+
+  const isLoading =
+    isConnecting ||
+    isConnectingAccount ||
+    isReconnectingAccount ||
+    isSwitchingNetwork;
+
+  return {
+    address: isConnected || impersonationAddress != null ? address : null,
+    chainId: connectedChainId,
+    requestAccess: hasReadyConnector ? requestAccess : null,
+    disconnect,
+    reset,
+    switchToTargetChain,
+    isAuthenticated: authenticatedAccountAddress === address,
     isLoading,
     isConnectedToTargetChain: connectedChainId === CHAIN_ID,
     isCanaryAccount: canaryAccounts.includes(address),
     isBetaAccount: betaAccounts.includes(address),
+  };
+};
+
+export const useWalletAuthentication = () => {
+  const { address: connectedAccountAddress, isConnected } = useAccount();
+  const {
+    address: authenticatedAccountAddress,
+    createSessionState: createAccountSessionState,
+  } = useSessionState();
+  const { create: createAccountSession, destroy: destroyAccountSession } =
+    useSessionActions();
+
+  const signIn = React.useCallback(async () => {
+    invariant(connectedAccountAddress != null, "Connected address required");
+    return createAccountSession({ address: connectedAccountAddress });
+  }, [connectedAccountAddress, createAccountSession]);
+
+  if (!isConnected) return {};
+
+  return {
+    authenticatedAddress: authenticatedAccountAddress,
+    signIn,
+    signOut: destroyAccountSession,
+    state: createAccountSessionState,
   };
 };
