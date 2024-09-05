@@ -21,6 +21,8 @@ import { truncateAddress } from "../../../../../../packages/common/src/utils/eth
 import { normalize } from "viem/ens";
 import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
+import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
+import { date as dateUtils } from "@shades/common/utils";
 
 export const runtime = "edge";
 
@@ -95,6 +97,23 @@ const fetchProposal = async (id) => {
   if (data?.proposal == null) return null;
   return parseProposal(data.proposal);
 };
+
+const SimpleCallout = ({ children }) => (
+  <div
+    style={{
+      display: "flex",
+      backgroundColor: "hsl(0, 0%, 100%, 0.055)",
+      borderRadius: "0.3rem",
+      whiteSpace: "pre",
+      color: "hsl(0 0% 83%)",
+      fontSize: "1.4rem",
+      marginTop: "1.6rem",
+      padding: "1rem 1.6rem",
+    }}
+  >
+    {children}
+  </div>
+);
 
 const SimpleFormattedDate = ({ value, ...options }) => {
   const formatter = new Intl.DateTimeFormat(undefined, options);
@@ -228,10 +247,10 @@ const RequestedAmounts = ({ amounts }) => (
       };
 
       return (
-        <p key={currency}>
+        <span key={currency}>
           {i !== 0 && ` + `}
           <span style={{ fontWeight: 700 }}>{formattedAmount()}</span>
-        </p>
+        </span>
       );
     })}
   </>
@@ -333,22 +352,10 @@ const ProposalHeader = ({
       </div>
 
       {requestedAmounts.length !== 0 && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "0 1.6rem",
-            backgroundColor: "hsl(0, 0%, 100%, 0.055)",
-            borderRadius: "0.3rem",
-            whiteSpace: "pre",
-            color: "hsl(0 0% 83%)",
-            fontSize: "1.4rem",
-            marginTop: "1.6rem",
-          }}
-        >
+        <SimpleCallout>
           <>{hasPassed ? "Requested" : "Requesting"} </>
           <RequestedAmounts amounts={requestedAmounts} />
-        </div>
+        </SimpleCallout>
       )}
     </div>
   );
@@ -366,16 +373,28 @@ const VotesHeader = ({ label, votes, styleProps }) => (
   </p>
 );
 
+const VotesProgressBar = ({ votes, totalVotes, styleProps }) => {
+  if (!votes) return null;
+  const votesPercentage = (votes / totalVotes) * 100;
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0.4rem",
+        width: `${votesPercentage}%`,
+        ...styleProps,
+      }}
+    />
+  );
+};
+
 const ProposalVotesProgress = ({ proposal }) => {
   const { forVotes, againstVotes, abstainVotes, quorumVotes } = proposal;
   const totalVotes = forVotes + againstVotes + abstainVotes;
-  const forVotesPercentage = (forVotes / totalVotes) * 100;
-  const againstVotesPercentage = (againstVotes / totalVotes) * 100;
-  const abstainVotesPercentage = (abstainVotes / totalVotes) * 100;
-
-  if (totalVotes === 0) {
-    return null;
-  }
 
   return (
     <div
@@ -441,47 +460,29 @@ const ProposalVotesProgress = ({ proposal }) => {
           borderRadius: "0.3rem",
         }}
       >
-        {forVotesPercentage > 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              width: `${forVotesPercentage}%`,
-              backgroundColor: "#41b579",
-              padding: "0.4rem",
-            }}
-          />
-        )}
+        <VotesProgressBar
+          votes={forVotes}
+          totalVotes={totalVotes}
+          styleProps={{
+            backgroundColor: "#41b579",
+          }}
+        />
 
-        {abstainVotesPercentage > 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              width: `${abstainVotesPercentage}%`,
-              backgroundColor: "hsl(0 0% 40%)",
-              padding: "0.4rem",
-            }}
-          />
-        )}
+        <VotesProgressBar
+          votes={abstainVotes}
+          totalVotes={totalVotes}
+          styleProps={{
+            backgroundColor: "hsl(0 0% 40%)",
+          }}
+        />
 
-        {againstVotesPercentage > 0 && (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              width: `${againstVotesPercentage}%`,
-              backgroundColor: "#db5664",
-              padding: "0.4rem",
-            }}
-          />
-        )}
+        <VotesProgressBar
+          votes={againstVotes}
+          totalVotes={totalVotes}
+          styleProps={{
+            backgroundColor: "#db5664",
+          }}
+        />
       </div>
     </div>
   );
@@ -490,36 +491,42 @@ const ProposalVotesProgress = ({ proposal }) => {
 const ProposalStateTag = ({ state }) => {
   const variantByState = {
     active: "active",
-    // "objection-period": "warning",
+    "objection-period": "warning",
     defeated: "error",
     vetoed: "error",
     succeeded: "success",
     queued: "success",
     executed: "success",
     updatable: "active",
+    canceled: "error",
   };
 
   const colorByVariant = {
     success: "#55c88d",
     error: "#ff7281",
-    // warning: "hsl(40 100% 50%)",
+    // TODO: warning: ...,
     active: "hsl(210 100% 60%)",
   };
 
   const backgroundByVariant = {
     success: "#2b3b33",
     error: "#3f2f32",
-    // warning: "hsl(40 100% 50% / 10%)",
+    // TODO: warning: ...,
     active: "#253240",
   };
+
+  const backgroundColor =
+    backgroundByVariant?.[variantByState?.[state]] ?? "hsl(0, 0%, 100%, 0.055)";
+  const textColor =
+    colorByVariant?.[variantByState?.[state]] ?? "hsl(0 0% 83%)";
 
   return (
     <span
       style={{
         width: "12rem",
         justifyContent: "center",
-        backgroundColor: backgroundByVariant[variantByState[state]],
-        color: colorByVariant[variantByState[state]],
+        backgroundColor: backgroundColor,
+        color: textColor,
         textTransform: "uppercase",
         padding: "0.3rem",
         borderRadius: "0.4rem",
@@ -533,6 +540,86 @@ const ProposalStateTag = ({ state }) => {
       {getStateLabel(state)}
     </span>
   );
+};
+
+const renderProposalStateText = ({ proposal, latestBlockNumber }) => {
+  switch (proposal.state) {
+    case "updatable":
+    case "pending": {
+      const referenceBlock = {
+        number: latestBlockNumber,
+        timestamp: new Date(),
+      };
+
+      const startDate = approximateBlockTimestamp(
+        proposal.startBlock,
+        referenceBlock,
+      );
+
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        startDate,
+        new Date(),
+      );
+
+      if (minutes < 5) return <>Voting starts in a few minutes</>;
+
+      if (hours === 0)
+        return (
+          <>
+            Voting starts in {Math.max(minutes, 0)} {minutes}
+          </>
+        );
+
+      if (days <= 1)
+        return <>Voting starts in {Math.round(minutes / 60)} hours</>;
+
+      return <>Voting starts in {Math.round(hours / 24)} days</>;
+    }
+
+    case "vetoed":
+    case "canceled":
+    case "executed":
+    case "defeated":
+    case "succeeded":
+    case "expired":
+    case "queued":
+      return "";
+
+    case "active":
+    case "objection-period": {
+      const referenceBlock = {
+        number: latestBlockNumber,
+        timestamp: new Date(),
+      };
+
+      const endDate = approximateBlockTimestamp(
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock,
+        referenceBlock,
+      );
+
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        endDate,
+        new Date(),
+      );
+
+      if (minutes < 5) return <>Voting ends in a few minutes</>;
+
+      if (hours <= 1)
+        return (
+          <>
+            Voting ends in {Math.max(minutes, 0)} {minutes}
+          </>
+        );
+
+      if (days <= 1)
+        return <>Voting ends in {Math.round(minutes / 60)} hours</>;
+
+      return <>Voting ends in {Math.round(hours / 24)} days</>;
+    }
+    default: {
+      throw new Error();
+    }
+  }
 };
 
 export async function GET(request) {
@@ -594,8 +681,11 @@ export async function GET(request) {
     );
 
     const isFinalOrSucceededState =
-      isFinalProposalState(proposal.state) ||
-      isSucceededProposalState(proposal.state);
+      isFinalProposalState(proposalState) ||
+      isSucceededProposalState(proposalState);
+
+    const hasVotes =
+      proposal.forVotes + proposal.againstVotes + proposal.abstainVotes > 0;
 
     return new ImageResponse(
       (
@@ -620,7 +710,28 @@ export async function GET(request) {
                 alignItems: "center",
               }}
             >
-              <ProposalStateTag state={proposalState} />
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "row",
+                  gap: "1rem",
+                  alignItems: "center",
+                  justifyContent: "flex-start",
+                }}
+              >
+                <ProposalStateTag state={proposalState} />
+                <p
+                  style={{
+                    fontSize: "1rem",
+                    color: "hsl(0 0% 60%)",
+                  }}
+                >
+                  {renderProposalStateText({
+                    proposal: { ...proposal, state: proposalState },
+                    latestBlockNumber: currentBlockNumber,
+                  })}
+                </p>
+              </div>
               <p
                 style={{
                   fontWeight: 500,
@@ -642,8 +753,7 @@ export async function GET(request) {
               sponsors={sponsors}
             />
           </div>
-
-          <ProposalVotesProgress proposal={proposal} />
+          {hasVotes && <ProposalVotesProgress proposal={proposal} />}
         </div>
       ),
       {
