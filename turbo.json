@@ -62,5 +62,6 @@
       "cache": false,
       "persistent": true
     }
-  }
+  },
+  "globalEnv": ["CI_LINT"]
 }
