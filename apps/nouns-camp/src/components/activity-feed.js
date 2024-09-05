@@ -323,6 +323,7 @@ const FeedItem = React.memo(
     const showLikeAction = (() => {
       if (onLike == null) return false;
       if (item.type === "farcaster-cast") return true;
+      if (["vote", "feedback-post"].includes(item.type)) return hasReason;
       return item.transactionHash != null;
     })();
 
