@@ -8,6 +8,7 @@ const PROPDATE_FIELDS = `
     admin
     blockNumber
     blockTimestamp
+    transactionHash
     prop {
       id
     }
@@ -19,6 +20,7 @@ const parseUpdate = (u) => ({
   markedCompleted: u.isCompleted,
   blockNumber: BigInt(u.blockNumber),
   blockTimestamp: new Date(parseInt(u.blockTimestamp) * 1000),
+  transactionHash: u.transactionHash,
   authorAccount: u.admin,
   proposalId: u.prop.id,
 });

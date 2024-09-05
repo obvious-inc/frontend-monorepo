@@ -192,7 +192,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
             }
           },
           (e) => {
-            if (e.message.startsWith("User rejected the request."))
+            if (e.message.includes("User rejected the request."))
               return Promise.reject(e);
 
             console.error(e);

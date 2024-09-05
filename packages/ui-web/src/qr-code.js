@@ -77,7 +77,7 @@ const QRCode = ({ image, uri, color = "black" }) => {
                   cy={j * cellSize + cellSize / 2}
                   fill={color}
                   key={`circle-${i}-${j}`}
-                  r={cellSize / 3} // calculate size of single dots
+                  r={cellSize / 2} // calculate size of single dots
                 />,
               );
             }

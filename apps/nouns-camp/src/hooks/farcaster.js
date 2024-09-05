@@ -6,18 +6,11 @@ import {
   useQuery as useTanstackQuery,
   useQueryClient as useTanstackQueryClient,
 } from "@tanstack/react-query";
-import { useSignMessage } from "wagmi";
 import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
-import { CHAIN_ID } from "../constants/env.js";
-import {
-  buildProposalCastSignatureMessage,
-  buildCandidateCastSignatureMessage,
-  buildTransactionLikeSignatureMessage,
-} from "../utils/farcaster.js";
 import { useWallet } from "./wallet.js";
 
 const isFiltered = (filter, cast) => {
@@ -25,7 +18,7 @@ const isFiltered = (filter, cast) => {
     case "none":
       return false;
     case "nouners":
-      return cast.account.nounerAddress == null;
+      return cast.account?.nounerAddress == null;
     case "disabled":
       return true;
     default:
@@ -52,46 +45,32 @@ export const Provider = ({ children }) => {
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
 };
 
-export const useAccountsWithVerifiedEthAddress = (
-  ethAddress_,
-  { enabled = true, fetchInterval } = {},
-) => {
-  const {
-    state: { accountsByFid, fidsByEthAddress },
-    setState,
-  } = React.useContext(Context);
-
-  const ethAddress = ethAddress_?.toLowerCase();
-
-  const fids = ethAddress == null ? null : fidsByEthAddress[ethAddress];
-
-  const accounts = fids == null ? null : fids.map((fid) => accountsByFid[fid]);
-
-  useFetch(
-    async () => {
-      const res = await fetch(
-        `/api/farcaster-accounts?eth-address=${ethAddress}`,
-      );
-      if (!res.ok) return;
+export const useAccountsWithVerifiedEthAddress = (address, queryOptions) => {
+  const { data: accounts } = useTanstackQuery({
+    queryKey: ["verified-farcaster-accounts", address],
+    queryFn: async () => {
+      const res = await fetch(`/api/farcaster-accounts?eth-address=${address}`);
+      if (!res.ok) throw new Error();
       const { accounts } = await res.json();
-      const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
-
-      setState((s) => ({
-        ...s,
-        accountsByFid: objectUtils.merge(
-          (a1, a2) => ({ ...a1, ...a2 }),
-          s.accountsByFid,
-          accountsByFid,
-        ),
-        fidsByEthAddress: {
-          ...s.fidsByEthAddress,
-          [ethAddress]: Object.keys(accountsByFid),
-        },
-      }));
+      return accounts;
     },
-    { enabled: enabled && ethAddress != null, fetchInterval },
-    [ethAddress],
+    enabled: address != null,
+    ...queryOptions,
+  });
+
+  if (address == null || accounts == null) return null;
+
+  return arrayUtils.sortBy((a) => a.hasAccountKey, accounts);
+};
+
+export const useConnectedFarcasterAccounts = (queryOptions) => {
+  const { address: connectedAccountAddress } = useWallet();
+  const accounts = useAccountsWithVerifiedEthAddress(
+    connectedAccountAddress,
+    queryOptions,
   );
+
+  if (connectedAccountAddress == null) return null;
 
   return accounts;
 };
@@ -213,7 +192,7 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
 
 export const useTransactionLikes = (
   transactionHash,
-  { enabled = true } = {},
+  { enabled = true, ...queryOptions } = {},
 ) => {
   const { data: likes } = useTanstackQuery({
     queryKey: ["farcaster-transaction-likes", transactionHash],
@@ -233,108 +212,147 @@ export const useTransactionLikes = (
       }
 
       const { likes } = await response.json();
-
-      // Only accounts with voting power for now
-      return likes.filter((l) => l.votingPower > 0);
+      return likes;
     },
+    staleTime: 1000 * 30,
     enabled: enabled && transactionHash != null,
+    ...queryOptions,
+  });
+  return likes;
+};
+
+export const useCastLikes = (
+  castHash,
+  { enabled = true, ...queryOptions } = {},
+) => {
+  const { data: likes } = useTanstackQuery({
+    queryKey: ["farcaster-cast-likes", castHash],
+    queryFn: async ({ queryKey: [, hash] }) => {
+      const response = await fetch(
+        `/api/farcaster-cast-likes?${new URLSearchParams({ hash })}`,
+      );
+
+      if (!response.ok) {
+        console.log(
+          `Error fetching likes for: [${hash}]`,
+          await response.text(),
+        );
+        return;
+      }
+
+      const { likes } = await response.json();
+      return likes;
+    },
+    enabled: enabled && castHash != null,
+    staleTime: 1000 * 30,
+    ...queryOptions,
   });
   return likes;
 };
 
 export const useSubmitTransactionLike = () => {
-  const { address: connectedAccountAddress } = useWallet();
-  const { signMessageAsync: signMessage } = useSignMessage();
-
   const queryClient = useTanstackQueryClient();
+  const { address: nounerAddress } = useWallet();
 
-  const { mutate } = useTanstackMutation({
-    mutationFn: async ({ hash, fid, timestamp, ethAddress, ethSignature }) => {
+  const { mutateAsync } = useTanstackMutation({
+    mutationFn: async (body) => {
       const response = await fetch("/api/farcaster-transaction-likes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          hash,
-          fid,
-          timestamp,
-          ethAddress,
-          ethSignature,
-        }),
+        body: JSON.stringify(body),
       });
-
       if (!response.ok) throw new Error();
     },
-    onSuccess: (_, { hash, ethAddress }) => {
+    onMutate: ({ fid, transactionHash, action }) => {
       queryClient.setQueryData(
-        ["farcaster-transaction-likes", hash],
-        (likes) => [...(likes ?? []), { nounerAddress: ethAddress }],
+        ["farcaster-transaction-likes", transactionHash],
+        (likes_) => {
+          const likes = likes_ ?? [];
+          return action === "remove"
+            ? likes.filter((l) => l.fid !== fid)
+            : [...likes, { fid, nounerAddress }];
+        },
+      );
+    },
+    onError: (_, { fid, transactionHash, action }) => {
+      queryClient.setQueryData(
+        ["farcaster-transaction-likes", transactionHash],
+        (likes_) => {
+          const likes = likes_ ?? [];
+          return action === "remove"
+            ? [...likes, { fid, nounerAddress }]
+            : likes.filter((l) => l.fid !== fid);
+        },
       );
     },
   });
 
-  return React.useCallback(
-    async ({ hash, fid }) => {
-      const timestamp = new Date().toISOString();
-      const signature = await signMessage({
-        message: buildTransactionLikeSignatureMessage({
-          hash,
-          chainId: CHAIN_ID,
-          timestamp,
-        }),
+  return mutateAsync;
+};
+
+export const useSubmitCastLike = () => {
+  const queryClient = useTanstackQueryClient();
+  const { address: nounerAddress } = useWallet();
+
+  const { mutateAsync } = useTanstackMutation({
+    mutationFn: async (body) => {
+      const response = await fetch("/api/farcaster-cast-likes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
-      return mutate({
-        hash,
-        fid,
-        timestamp,
-        ethAddress: connectedAccountAddress,
-        ethSignature: signature,
-      });
+      if (!response.ok) throw new Error();
     },
-    [mutate, signMessage, connectedAccountAddress],
-  );
+    onMutate: ({ fid, targetCastId, action }) => {
+      queryClient.setQueryData(
+        ["farcaster-cast-likes", targetCastId.hash],
+        (likes_) => {
+          const likes = likes_ ?? [];
+          return action === "remove"
+            ? likes.filter((l) => l.fid !== fid)
+            : [...likes, { fid, nounerAddress }];
+        },
+      );
+    },
+    onError: (_, { fid, transactionHash, action }) => {
+      queryClient.setQueryData(
+        ["farcaster-cast-likes", transactionHash],
+        (likes_) => {
+          const likes = likes_ ?? [];
+          return action === "remove"
+            ? [...likes, { fid, nounerAddress }]
+            : likes.filter((l) => l.fid !== fid);
+        },
+      );
+    },
+  });
+
+  return mutateAsync;
 };
 
 export const useSubmitProposalCast = (proposalId) => {
-  const { address: connectedAccountAddress } = useWallet();
-  const { signMessageAsync: signMessage } = useSignMessage();
-
   const { setState } = React.useContext(Context);
 
   return React.useCallback(
     async ({ fid, text }) => {
-      const timestamp = new Date().toISOString();
-      const signature = await signMessage({
-        message: buildProposalCastSignatureMessage({
-          text,
-          proposalId,
-          chainId: CHAIN_ID,
-          timestamp,
-        }),
-      });
-
       const response = await fetch("/api/farcaster-proposal-casts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          proposalId,
-          text,
-          fid,
-          timestamp,
-          ethAddress: connectedAccountAddress,
-          ethSignature: signature,
-        }),
+        body: JSON.stringify({ proposalId, text, fid }),
       });
 
-      if (!response.ok) return; // TODO
+      if (!response.ok) {
+        console.error(await response.text());
+        alert("Ops, looks like something went wrong!");
+        return; // TODO
+      }
 
       const cast = await response.json();
 
       setState((s) => ({
         ...s,
-        castsByHash: {
-          ...s.castsByHash,
-          [cast.hash]: { ...cast, authorAccount: { fid } },
-        },
+        accountsByFid: { ...s.accountsByFid, [cast.fid]: cast.account },
+        castsByHash: { ...s.castsByHash, [cast.hash]: cast },
         castHashesByProposalId: {
           ...s.castHashesByProposalId,
           [proposalId]: [
@@ -344,51 +362,33 @@ export const useSubmitProposalCast = (proposalId) => {
         },
       }));
     },
-    [setState, signMessage, proposalId, connectedAccountAddress],
+    [setState, proposalId],
   );
 };
 
 export const useSubmitCandidateCast = (candidateId) => {
-  const { address: connectedAccountAddress } = useWallet();
-  const { signMessageAsync: signMessage } = useSignMessage();
-
   const { setState } = React.useContext(Context);
 
   return React.useCallback(
     async ({ fid, text }) => {
-      const timestamp = new Date().toISOString();
-      const signature = await signMessage({
-        message: buildCandidateCastSignatureMessage({
-          text,
-          candidateId,
-          chainId: CHAIN_ID,
-          timestamp,
-        }),
-      });
-
       const response = await fetch("/api/farcaster-candidate-casts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          candidateId,
-          text,
-          fid,
-          timestamp,
-          ethAddress: connectedAccountAddress,
-          ethSignature: signature,
-        }),
+        body: JSON.stringify({ candidateId, text, fid }),
       });
 
-      if (!response.ok) return; // TODO
+      if (!response.ok) {
+        console.error(await response.text());
+        alert("Ops, looks like something went wrong!");
+        return; // TODO
+      }
 
       const cast = await response.json();
 
       setState((s) => ({
         ...s,
-        castsByHash: {
-          ...s.castsByHash,
-          [cast.hash]: { ...cast, authorAccount: { fid } },
-        },
+        accountsByFid: { ...s.accountsByFid, [cast.fid]: cast.account },
+        castsByHash: { ...s.castsByHash, [cast.hash]: cast },
         castHashesByCandidateId: {
           ...s.castHashesByCandidatelId,
           [candidateId]: [
@@ -398,7 +398,7 @@ export const useSubmitCandidateCast = (candidateId) => {
         },
       }));
     },
-    [setState, signMessage, candidateId, connectedAccountAddress],
+    [setState, candidateId],
   );
 };
 

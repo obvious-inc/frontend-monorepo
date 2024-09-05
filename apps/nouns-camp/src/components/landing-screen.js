@@ -28,6 +28,7 @@ import {
   // getScore as getCandidateScore,
   getForYouGroup as getCandidateForYouGroup,
   hadRecentActivity as candidateHadRecentActivity,
+  makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import useBlockNumber from "../hooks/block-number.js";
 import { useSearchParams } from "../hooks/navigation.js";
@@ -955,9 +956,39 @@ const TruncatedActivityFeed = ({ items }) => {
   const [page, setPage] = React.useState(2);
   const visibleItems = items.slice(0, FEED_PAGE_ITEM_COUNT * page);
 
+  const allowItemActions = (item) =>
+    ["vote", "feedback-post"].includes(item.type) &&
+    item.reason != null &&
+    item.reason.trim() !== "";
+
+  const createItemOriginUrl = (item) => {
+    if (item.proposalId != null) return `/proposals/${item.proposalId}`;
+
+    const candidateUrlId = encodeURIComponent(
+      makeCandidateUrlId(item.candidateId),
+    );
+    return `/candidates/${candidateUrlId}`;
+  };
+
   return (
     <>
-      <ActivityFeed items={visibleItems} />
+      <ActivityFeed
+        items={visibleItems}
+        createReplyHref={(item) => {
+          if (!allowItemActions) return null;
+          return `${createItemOriginUrl(item)}?${new URLSearchParams({
+            tab: "activity",
+            "reply-target": item.id,
+          })}`;
+        }}
+        createRepostHref={(item) => {
+          if (!allowItemActions) return null;
+          return `${createItemOriginUrl(item)}?${new URLSearchParams({
+            tab: "activity",
+            "repost-target": item.id,
+          })}`;
+        }}
+      />
 
       {items.length > visibleItems.length && (
         <div css={{ textAlign: "center", padding: "3.2rem 0" }}>

@@ -1,4 +1,4 @@
-import { APP_URL } from "./constants/env.js";
+import { APP_HOST } from "./constants/env.js";
 
 export default {
   viewportLightThemeColor: "#ffffff",
@@ -6,9 +6,9 @@ export default {
   appTitle: "Lil Nouns Camp",
   appDescription: "A Lil Nouns governance client",
   titleTemplate: "%s - Lil Nouns Camp",
-  canonicalAppBasename: APP_URL,
+  canonicalAppBasename: `https://${APP_HOST}`,
   openGraphType: "website",
-  openGraphSiteName: "lilnouns.camp",
+  openGraphSiteName: APP_HOST,
   twitterCard: "summary",
   appleWebAppStatusBarStyle: "default",
 };

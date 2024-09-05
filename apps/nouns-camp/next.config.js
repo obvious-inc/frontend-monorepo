@@ -4,10 +4,13 @@ const dotenv = require("dotenv");
 const webpack = require("webpack");
 const { withSentryConfig } = require("@sentry/nextjs");
 
+// `next lint` runs this file
+const isLintJob = process.env.CI_LINT != null;
+
 // Assert environment variables are setup correctly
-(() => {
-  // Skip this check in CI lint jobs (`next lint` runs this file)
-  if (process.env.CI_LINT != null) return;
+const assertEnvironment = () => {
+  // Skip this check in CI lint jobs
+  if (isLintJob) return;
 
   const templateFile = readFileSync(path.join(__dirname, ".env.template"));
   const whitelistedKeys = Object.keys(dotenv.parse(templateFile));
@@ -22,7 +25,14 @@ const { withSentryConfig } = require("@sentry/nextjs");
   //   if (key.startsWith("NEXT_PUBLIC_") && !whitelistedKeys.includes(key))
   //     throw new Error(`${key} is not allowed`);
   }
-})();
+};
+
+try {
+  assertEnvironment();
+} catch (e) {
+  if (process.env.NODE_ENV === "production") throw e;
+  console.warn("Incomplete environment", e);
+}
 
 const withSerwist = require("@serwist/next").default({
   swSrc: "src/app/service-worker.js",
@@ -60,6 +70,21 @@ const withSentry = (config) =>
   );
 
 const BUILD_ID = process.env.CF_PAGES_COMMIT_SHA?.slice(0, 7) ?? "dev";
+const APP_HOST = (() => {
+  if (process.env.APP_HOST != null) return process.env.APP_HOST;
+  if (process.env.VERCEL == null && !isLintJob)
+    throw new Error("`APP_HOST` not set");
+  return {
+    production: process.env.VERCEL_PROJECT_PRODUCTION_URL,
+    preview: process.env.VERCEL_BRANCH_URL,
+  }[process.env.VERCEL_ENV];
+})();
+const APP_PRODUCTION_URL = (() => {
+  if (process.env.APP_PRODUCTION_URL != null)
+    return process.env.APP_PRODUCTION_URL;
+  if (process.env.VERCEL == null) return `https://${APP_HOST}`;
+  return process.env.VERCEL_PROJECT_PRODUCTION_URL;
+})();
 
 const ignoredModules = [
   // @nouns/sdk
@@ -107,6 +132,8 @@ module.exports = withSentry(
         ...config.plugins,
         new webpack.DefinePlugin({
           "process.env.BUILD_ID": JSON.stringify(BUILD_ID),
+          "process.env.APP_HOST": JSON.stringify(APP_HOST),
+          "process.env.APP_PRODUCTION_URL": JSON.stringify(APP_PRODUCTION_URL),
         }),
       ];
 
