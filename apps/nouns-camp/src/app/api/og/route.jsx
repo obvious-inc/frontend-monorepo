@@ -781,11 +781,11 @@ export async function GET(request) {
             style: "normal",
           },
         ],
-        // headers: {
-        //   // TODO: might need to tweak the max-age accordingly
-        //   // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
-        //   "cache-control": "public, immutable, no-transform, max-age=60",
-        // },
+        headers: {
+          // TODO: might need to tweak the max-age accordingly
+          // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
+          "cache-control": "public, immutable, no-transform, max-age=60",
+        },
       },
     );
   } catch (e) {
