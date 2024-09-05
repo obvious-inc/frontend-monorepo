@@ -123,6 +123,15 @@ export default withSentry(
           source: "/:path*",
           headers: [{ key: "x-camp-build-id", value: BUILD_ID }],
         },
+        {
+          source: "/api/og",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "public, immutable, no-transform, max-age=60",
+            },
+          ],
+        },
       ];
     },
     webpack(config) {
