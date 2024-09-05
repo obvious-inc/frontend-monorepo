@@ -70,10 +70,9 @@ const buildTimestampLink = (item) => {
     return `https://www.updates.wtf/update/${propdateId}`;
   }
 
-  const txHash = item.transactionHash ?? item.txHash;
-  if (!isTransactionHash(txHash)) return null;
+  if (!isTransactionHash(item.transactionHash)) return null;
 
-  return buildEtherscanLink(`/tx/${txHash}`);
+  return buildEtherscanLink(`/tx/${item.transactionHash}`);
 };
 
 const ActivityFeed = ({
