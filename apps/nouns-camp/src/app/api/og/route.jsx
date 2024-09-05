@@ -354,6 +354,18 @@ const ProposalHeader = ({
   );
 };
 
+const VotesHeader = ({ label, votes, styleProps }) => (
+  <p
+    style={{
+      fontSize: "1.4rem",
+      fontWeight: 700,
+      ...styleProps,
+    }}
+  >
+    {label} {votes}
+  </p>
+);
+
 const ProposalVotesProgress = ({ proposal }) => {
   const { forVotes, againstVotes, abstainVotes, quorumVotes } = proposal;
   const totalVotes = forVotes + againstVotes + abstainVotes;
@@ -380,35 +392,44 @@ const ProposalVotesProgress = ({ proposal }) => {
         }}
       >
         <>
+          <VotesHeader
+            label="For"
+            votes={forVotes}
+            styleProps={{ color: "#41b579" }}
+          />
           <p
             style={{
-              color: "#41b579",
-              fontWeight: 700,
+              fontSize: "1.4rem",
+              fontWeight: "700",
+              whiteSpace: "pre",
             }}
           >
-            For {forVotes}
+            {" "}
+            &middot;{" "}
           </p>
-          <p style={{ whiteSpace: "pre" }}> &middot; </p>
-          <p style={{ fontWeight: 700 }}>Quorum {quorumVotes}</p>
+          <VotesHeader label="Quorum" votes={quorumVotes} />
         </>
         <>
+          <VotesHeader
+            label="Abstain"
+            votes={abstainVotes}
+            styleProps={{ color: "hsl(0 0% 40%)" }}
+          />
           <p
             style={{
-              color: "hsl(0 0% 40%)",
-              fontWeight: 700,
+              fontSize: "1.4rem",
+              fontWeight: "700",
+              whiteSpace: "pre",
             }}
           >
-            Abstain {abstainVotes}
+            {" "}
+            &middot;{" "}
           </p>
-          <p style={{ whiteSpace: "pre" }}> &middot; </p>
-          <p
-            style={{
-              color: "#db5664",
-              fontWeight: 700,
-            }}
-          >
-            Against {againstVotes}
-          </p>
+          <VotesHeader
+            label="Against"
+            votes={againstVotes}
+            styleProps={{ color: "#db5664" }}
+          />
         </>
       </div>
       <div
