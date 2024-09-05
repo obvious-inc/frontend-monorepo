@@ -77,7 +77,7 @@ const buildTimestampLink = (item) => {
 };
 
 const ActivityFeed = ({
-  context,
+  context, // "proposal" | "candidate" | null
   items = [],
   spacing = "2rem",
   onReply,
@@ -526,13 +526,17 @@ const FeedItem = React.memo(
                   <div css={css({ fontSize: "0.875em" })}>
                     <QuotedVoteOrFeedbackPost
                       item={target}
-                      href={
-                        context === "proposal"
-                          ? `#${target.id}`
-                          : target.proposalId != null
-                            ? `/proposals/${target.proposalId}?tab=activity#${target.id}`
-                            : `/` // TODO
-                      }
+                      href={(() => {
+                        if (isIsolatedContext) return `#${target.id}`;
+                        if (target.proposalId != null)
+                          return `/proposals/${target.proposalId}?tab=activity#${target.id}`;
+                        if (target.candidateId != null)
+                          return `/candidates/${encodeURIComponent(
+                            makeCandidateUrlId(target.candidateId),
+                          )}?tab=activity${target.id}`;
+                        console.error("Invalid reply target", target);
+                        return null;
+                      })()}
                     />
                   </div>
                   <div className="reply-area">
@@ -577,11 +581,20 @@ const FeedItem = React.memo(
                 <li key={voteOrFeedbackPost.id}>
                   <QuotedVoteOrFeedbackPost
                     item={voteOrFeedbackPost}
-                    href={
-                      context !== "proposal"
-                        ? `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity#${voteOrFeedbackPost.id}`
-                        : `#${voteOrFeedbackPost.id}`
-                    }
+                    href={(() => {
+                      if (isIsolatedContext) return `#${voteOrFeedbackPost.id}`;
+                      if (voteOrFeedbackPost.proposalId != null)
+                        return `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity#${voteOrFeedbackPost.id}`;
+                      if (voteOrFeedbackPost.candidateId != null)
+                        return `/candidates/${encodeURIComponent(
+                          makeCandidateUrlId(voteOrFeedbackPost.candidateId),
+                        )}?tab=activity${voteOrFeedbackPost.id}`;
+                      console.error(
+                        "Invalid repost target",
+                        voteOrFeedbackPost,
+                      );
+                      return null;
+                    })()}
                   />
                 </li>
               ))}
@@ -1541,10 +1554,12 @@ const QuotedVoteOrFeedbackPost = ({ href, item }) => (
       })
     }
   >
-    <NextLink
-      href={href}
-      style={{ display: "block", position: "absolute", inset: 0 }}
-    />
+    {href != null && (
+      <NextLink
+        href={href}
+        style={{ display: "block", position: "absolute", inset: 0 }}
+      />
+    )}
     <AccountPreviewPopoverTrigger
       showAvatar
       accountAddress={item.voterId}
