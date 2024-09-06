@@ -8,6 +8,7 @@
     "lint": "next lint && prettier . --check"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.0.0",
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.8",
