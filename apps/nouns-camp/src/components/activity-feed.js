@@ -15,6 +15,7 @@ import {
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useState as useSessionState } from "@/session-provider";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import {
@@ -31,7 +32,7 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useSaleInfo } from "../hooks/sales.js";
 import {
-  useConnectedFarcasterAccounts,
+  useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress,
   useSubmitTransactionLike,
   useSubmitCastLike,
   useTransactionLikes as useFarcasterTransactionLikes,
@@ -84,9 +85,10 @@ const ActivityFeed = ({
   createReplyHref,
   createRepostHref,
 }) => {
-  const { address: connectedAccountAddress, isAuthenticated } = useWallet();
-  const connectedDelegate = useDelegate(connectedAccountAddress);
-  // const currentVotingPower = connectedDelegate?.nounsRepresented.length ?? 0;
+  const { address: connectedAccountAddress } = useWallet();
+  const { address: loggedInAccountAddress } = useSessionState();
+  const userAccountAddress = connectedAccountAddress ?? loggedInAccountAddress;
+  const userAccountDelegate = useDelegate(userAccountAddress);
   const submitTransactionLike = useSubmitTransactionLike();
   const submitCastLike = useSubmitCastLike();
   const {
@@ -97,7 +99,8 @@ const ActivityFeed = ({
     open: openAuthenticationDialog,
     preload: preloadAuthenticationDialog,
   } = useDialog("account-authentication");
-  const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
+  const userFarcasterAccount =
+    useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
 
   const like = React.useCallback(
     async (itemId, action) => {
@@ -106,13 +109,13 @@ const ActivityFeed = ({
         if (item.transactionHash != null) {
           await submitTransactionLike({
             transactionHash: item.transactionHash,
-            fid: connectedFarcasterAccount.fid,
+            fid: userFarcasterAccount.fid,
             action,
           });
         } else if (item.castHash != null) {
           await submitCastLike({
             targetCastId: { fid: item.authorFid, hash: item.castHash },
-            fid: connectedFarcasterAccount.fid,
+            fid: userFarcasterAccount.fid,
             action,
           });
         } else {
@@ -124,30 +127,29 @@ const ActivityFeed = ({
         alert("Ops, looks like something went wrong!");
       }
     },
-    [
-      items,
-      connectedFarcasterAccount?.fid,
-      submitTransactionLike,
-      submitCastLike,
-    ],
+    [items, userFarcasterAccount?.fid, submitTransactionLike, submitCastLike],
   );
 
-  // Enable the like action if there’s a delegate entry for the connected
+  // Enable the like action if there’s a delegate entry for the user’s
   // account, or if there’s a delegate entry for a verified address on the
-  // connected Farcaster account
+  // user’s Farcaster account
   const allowLikeAction =
-    connectedDelegate != null ||
-    connectedFarcasterAccount?.nounerAddress != null;
+    userAccountDelegate != null || userFarcasterAccount?.nounerAddress != null;
 
   const hasFarcasterAccountKey =
-    connectedFarcasterAccount != null &&
-    connectedFarcasterAccount.hasAccountKey;
+    userFarcasterAccount != null && userFarcasterAccount.hasAccountKey;
+  const requireAuthentication =
+    loggedInAccountAddress == null ||
+    // If the user is connected and logged in with different addresses they
+    // likely want to like as the connected one
+    (connectedAccountAddress != null &&
+      connectedAccountAddress !== loggedInAccountAddress);
 
   const onLike = (() => {
     if (!allowLikeAction) return null;
     if (!hasFarcasterAccountKey)
       return () => openFarcasterSetupDialog({ intent: "like" });
-    if (!isAuthenticated)
+    if (requireAuthentication)
       return (...args) => {
         openAuthenticationDialog({
           intent: "like",
@@ -164,14 +166,14 @@ const ActivityFeed = ({
       preloadFarcasterSetupDialog();
       return;
     }
-    if (!isAuthenticated) {
+    if (requireAuthentication) {
       preloadAuthenticationDialog();
       return;
     }
   }, [
     allowLikeAction,
     hasFarcasterAccountKey,
-    isAuthenticated,
+    requireAuthentication,
     preloadFarcasterSetupDialog,
     preloadAuthenticationDialog,
   ]);
@@ -271,8 +273,11 @@ const FeedItem = React.memo(
     createRepostHref,
     ...item
   }) => {
-    const { address: connectedAccount } = useWallet();
-    const connectedFarcasterAccount = useConnectedFarcasterAccounts()?.[0];
+    const { address: connectedAccount_ } = useWallet();
+    const { address: loggedInAccount } = useSessionState();
+    const userAccountAddress = connectedAccount_ ?? loggedInAccount;
+    const userFarcasterAccount =
+      useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
 
     const containerRef = React.useRef();
     const isOnScreen = useIsOnScreen(containerRef, {
@@ -301,12 +306,11 @@ const FeedItem = React.memo(
 
     const hasLiked = likes?.some(
       (l) =>
-        l.nounerAddress === connectedAccount ||
-        l.fid === connectedFarcasterAccount?.fid,
+        l.nounerAddress === userAccountAddress ||
+        l.fid === userFarcasterAccount?.fid,
     );
 
     const showReplyAction = (() => {
-      if (connectedAccount == null) return false;
       // Casts simply link to Warpcast for now
       if (item.type === "farcaster-cast") return true;
       if (onReply == null && createReplyHref == null) return false;
@@ -315,7 +319,6 @@ const FeedItem = React.memo(
 
     const showRepostAction =
       (onRepost != null || createRepostHref != null) &&
-      connectedAccount != null &&
       ["vote", "feedback-post"].includes(item.type) &&
       hasReason;
 

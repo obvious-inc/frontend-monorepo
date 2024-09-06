@@ -17,6 +17,10 @@ import {
 import { useAccount, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
+import {
+  useState as useSessionState,
+  useActions as useSessionActions,
+} from "@/session-provider";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -131,30 +135,30 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     isAuthenticated: isConnectedWalletAccountAuthenticated,
     isLoading: isLoadingWallet,
   } = useWallet();
-  const {
-    signIn: signInConnectedWalletAccount,
-    signOut: signOutActiveAccountSession,
-  } = useWalletAuthentication();
+  const { signIn: signInConnectedWalletAccount } = useWalletAuthentication();
+  const { address: loggedInAccountAddress } = useSessionState();
+  const { destroy: signOut } = useSessionActions();
   const connectedFarcasterAccounts = useConnectedFarcasterAccounts();
   const hasVerifiedFarcasterAccount = connectedFarcasterAccounts?.length > 0;
   const hasFarcasterAccountKey =
     hasVerifiedFarcasterAccount &&
     connectedFarcasterAccounts.some((a) => a.hasAccountKey);
 
+  const userAccountAddress =
+    connectedWalletAccountAddress ?? loggedInAccountAddress;
+
   const isTestnet = isTestnetChain(CHAIN_ID);
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
 
   const chain = getSupportedChain(CHAIN_ID);
 
-  const connectedAccount = useAccount(connectedWalletAccountAddress);
-  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+  const userAccount = useAccount(userAccountAddress);
+  const userDelegate = useDelegate(userAccountAddress);
 
-  const hasNouns = connectedAccount?.nouns?.length > 0;
-  const hasVotingPower = connectedDelegate?.nounsRepresented?.length > 0;
+  const hasNouns = userAccount?.nouns?.length > 0;
+  const hasVotingPower = userDelegate?.nounsRepresented?.length > 0;
 
-  const connectedAccountDisplayName = useAccountDisplayName(
-    connectedWalletAccountAddress,
-  );
+  const userAccountDisplayName = useAccountDisplayName(userAccountAddress);
 
   const visibleActions = isDesktop
     ? actions
@@ -172,7 +176,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         openDelegationDialog();
         break;
       case "copy-account-address":
-        navigator.clipboard.writeText(connectedWalletAccountAddress);
+        navigator.clipboard.writeText(userAccountAddress);
         break;
       case "open-auction":
         window.open("https://nouns.wtf", "_blank");
@@ -214,7 +218,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       }
       case "sign-out": {
         try {
-          await signOutActiveAccountSession();
+          await signOut();
           alert("You have been logged out");
         } catch (e) {
           console.error(e);
@@ -472,7 +476,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 if (connectedWalletAccountAddress == null)
                   return {
                     type: "dropdown",
-                    items: [daoSection, externalSection, settingsSection],
+                    items: [
+                      daoSection,
+                      externalSection,
+                      settingsSection,
+                      loggedInAccountAddress != null && {
+                        id: "disconnect",
+                        children: [{ id: "sign-out", label: "Log out" }],
+                      },
+                    ].filter(Boolean),
                     buttonProps: {
                       icon: (
                         <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
@@ -520,11 +532,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     {
                       id: "disconnect",
                       children: [
-                        isConnectedWalletAccountAuthenticated && {
+                        loggedInAccountAddress != null && {
                           id: "sign-out",
                           label: "Log out",
                         },
-                        {
+                        connectedWalletAccountAddress != null && {
                           id: "disconnect-wallet",
                           label: "Disconnect wallet",
                         },
@@ -552,13 +564,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                             "@media(max-width: 600px)": { display: "none" },
                           })}
                         >
-                          {connectedAccountDisplayName}
+                          {userAccountDisplayName}
                         </div>
                       )}
-                      <AccountAvatar
-                        address={connectedWalletAccountAddress}
-                        size="2rem"
-                      />
+                      <AccountAvatar address={userAccountAddress} size="2rem" />
                     </div>
                   ),
                 };

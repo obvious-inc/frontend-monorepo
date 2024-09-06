@@ -206,9 +206,11 @@ const ProposalMainSection = ({
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (currentFormAction === "farcaster-comment") return [];
-    return pendingReplyTargetFeedItemIds.map((targetFeedItemId) =>
-      feedItems.find((i) => i.id === targetFeedItemId),
-    );
+    return pendingReplyTargetFeedItemIds
+      .map((targetFeedItemId) =>
+        feedItems.find((i) => i.id === targetFeedItemId),
+      )
+      .filter(Boolean);
   }, [currentFormAction, feedItems, pendingReplyTargetFeedItemIds]);
 
   const repostTargetFeedItems = React.useMemo(() => {
