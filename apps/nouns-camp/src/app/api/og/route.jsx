@@ -785,8 +785,8 @@ export async function GET(request) {
           // TODO: might need to tweak the max-age accordingly
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
           "Cache-Control": "no-transform, max-age=60, public, immutable",
-          //   "Vercel-CDN-Cache-Control":
-          //     "no-transform, s-maxage=60, max-age=60, public, immutable",
+          "Vercel-CDN-Cache-Control":
+            "no-transform, max-age=60, public, immutable",
           "CDN-Cache-Control": "no-transform, max-age=60, public, immutable",
         },
       },
