@@ -143,7 +143,7 @@ export default withSentry(
       return config;
     },
     // https://github.com/farcasterxyz/hub-monorepo/issues/2031
-    // swcMinify: false,
+    swcMinify: false,
     experimental: {
       turbo: {
         // Ignoring modules is not a thing yet

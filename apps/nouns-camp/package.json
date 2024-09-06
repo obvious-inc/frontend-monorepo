@@ -16,7 +16,6 @@
   "dependencies": {
     "@emotion/cache": "^11.13.1",
     "@emotion/react": "^11.13.3",
-    "@faker-js/faker": "^9.0.0",
     "@farcaster/core": "^0.15.2",
     "@nouns/assets": "^0.8.0",
     "@nouns/contracts": "^0.3.0",

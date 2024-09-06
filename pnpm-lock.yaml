@@ -244,9 +244,6 @@ importers:
       '@emotion/react':
         specifier: ^11.13.3
         version: 11.13.3(react@18.3.1)
-      '@faker-js/faker':
-        specifier: ^9.0.0
-        version: 9.0.0
       '@farcaster/core':
         specifier: ^0.15.2
         version: 0.15.2(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
@@ -1434,10 +1431,6 @@ packages:
 
   '@ethersproject/wordlists@5.7.0':
     resolution: {integrity: sha512-S2TFNJNfHWVHNE6cNDjbVlZ6MgE17MIxMbMg2zv3wn+3XSJGosL1m9ZVv3GXCf/2ymSsQ+hRI5IzoMJTG6aoVA==}
-
-  '@faker-js/faker@9.0.0':
-    resolution: {integrity: sha512-dTDHJSmz6c1OJ6HO7jiUiIb4sB20Dlkb3pxYsKm0qTXm2Bmj97rlXIhlvaFsW2rvCi+OLlwKLVSS6ZxFUVZvjQ==}
-    engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
   '@farcaster/core@0.15.2':
     resolution: {integrity: sha512-GvNnscadzT7OUxuL6iDAwL6j7GCNZsjilPudI52/x+Y6nMfXuyD7sRY0rgsAYePi77UHDxNs5Qi5MRFwTUIWhQ==}
@@ -9179,8 +9172,6 @@ snapshots:
       '@ethersproject/logger': 5.7.0
       '@ethersproject/properties': 5.7.0
       '@ethersproject/strings': 5.7.0
-
-  '@faker-js/faker@9.0.0': {}
 
   '@farcaster/core@0.15.2(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)':
     dependencies:
