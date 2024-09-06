@@ -244,6 +244,9 @@ importers:
       '@emotion/react':
         specifier: ^11.13.3
         version: 11.13.3(react@18.3.1)
+      '@faker-js/faker':
+        specifier: ^9.0.0
+        version: 9.0.0
       '@farcaster/core':
         specifier: ^0.15.2
         version: 0.15.2(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
@@ -359,9 +362,6 @@ importers:
         specifier: ^4.5.5
         version: 4.5.5(immer@10.1.1)(react@18.3.1)
     devDependencies:
-      '@faker-js/faker':
-        specifier: ^9.0.0
-        version: 9.0.0
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
