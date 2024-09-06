@@ -133,7 +133,7 @@ export const parse = (data) => {
         functionInputs,
         functionInputTypes,
         receiverAddress: functionInputs[0].toLowerCase(),
-        token: tokenContract.token,
+        token: tokenContract?.token,
         tokenAmount: functionInputs[1],
         tokenContractAddress,
         startDate: new Date(Number(functionInputs[3]) * 1000),
