@@ -2492,12 +2492,12 @@ export const useAccountStreams = (accountAddress) => {
     return proposals
       .filter(
         (p) =>
-          p.status.toLowerCase() === "executed" &&
+          p.status?.toLowerCase() === "executed" &&
           p.transactions?.some(isStreamReceiverTransaction),
       )
       .map((p) => ({
         proposalId: p.id,
         ...p.transactions.find(isStreamReceiverTransaction),
       }));
-  }, [proposalsById, accountAddress]);
+  }, [isStreamReceiverTransaction, proposalsById, accountAddress]);
 };
