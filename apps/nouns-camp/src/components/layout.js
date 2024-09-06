@@ -14,7 +14,7 @@ import {
   getChain as getSupportedChain,
   isTestnet as isTestnetChain,
 } from "../utils/chains.js";
-import { useAccount, useDelegate } from "../store.js";
+import { useAccount, useAccountStreams, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
 import {
@@ -118,6 +118,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const { open: openAccountDialog } = useDialog("account");
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
+  const { open: openStreamsDialog } = useDialog("streams");
   const { open: openSettingsDialog } = useDialog("settings");
   const { open: openAccountAuthenticationDialog } = useDialog(
     "account-authentication",
@@ -160,6 +161,9 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   const userAccountDisplayName = useAccountDisplayName(userAccountAddress);
 
+  const hasStreams =
+    useAccountStreams(connectedWalletAccountAddress).length > 0;
+
   const visibleActions = isDesktop
     ? actions
     : actions.filter((a) => !a.desktopOnly);
@@ -174,6 +178,9 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         break;
       case "open-delegation-dialog":
         openDelegationDialog();
+        break;
+      case "open-streams-dialog":
+        openStreamsDialog();
         break;
       case "copy-account-address":
         navigator.clipboard.writeText(userAccountAddress);
@@ -506,6 +513,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         (hasNouns || hasVotingPower) && {
                           id: "open-delegation-dialog",
                           label: "Manage delegation",
+                        },
+                        hasStreams && {
+                          id: "open-streams-dialog",
+                          label: "Streams",
                         },
                         {
                           id: "open-proposal-drafts-dialog",

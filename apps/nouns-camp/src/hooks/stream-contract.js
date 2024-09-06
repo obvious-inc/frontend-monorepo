@@ -1,5 +1,11 @@
-import { useReadContracts } from "wagmi";
+import {
+  usePublicClient,
+  useReadContracts,
+  useSimulateContract,
+  useWriteContract,
+} from "wagmi";
 import { CHAIN_ID } from "../constants/env.js";
+import { isAddress } from "viem";
 
 const streamDataAbi = [
   {
@@ -16,7 +22,13 @@ const streamDataAbi = [
   },
   {
     inputs: [],
-    name: "recipientActiveBalance",
+    name: "recipientBalance",
+    outputs: [{ type: "uint256" }],
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "recipientCancelBalance",
     outputs: [{ type: "uint256" }],
     type: "function",
   },
@@ -50,10 +62,17 @@ const streamDataAbi = [
     outputs: [{ type: "uint256" }],
     type: "function",
   },
+  {
+    inputs: [{ internalType: "uint256", name: "amount", type: "uint256" }],
+    name: "withdraw",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ];
 
 export const useStreamData = ({ streamContractAddress }) => {
-  const { data } = useReadContracts({
+  const { data, queryKey } = useReadContracts({
     contracts: [
       {
         address: streamContractAddress,
@@ -87,7 +106,14 @@ export const useStreamData = ({ streamContractAddress }) => {
         address: streamContractAddress,
         chainId: CHAIN_ID,
         abi: streamDataAbi,
-        functionName: "recipientActiveBalance",
+        functionName: "recipientBalance",
+        args: [],
+      },
+      {
+        address: streamContractAddress,
+        chainId: CHAIN_ID,
+        abi: streamDataAbi,
+        functionName: "recipientCancelBalance",
         args: [],
       },
       {
@@ -107,7 +133,8 @@ export const useStreamData = ({ streamContractAddress }) => {
     stopTime,
     elapsedTime,
     remainingBalance,
-    recipientActiveBalance,
+    recipientBalance,
+    recipientCancelBalance,
     token,
   ] = data.map((d) => d?.result);
 
@@ -116,7 +143,62 @@ export const useStreamData = ({ streamContractAddress }) => {
     stopTime,
     elapsedTime,
     remainingBalance,
-    recipientActiveBalance,
+    recipientBalance,
+    recipientCancelBalance,
     token,
+    queryKey,
   };
+};
+
+export const useStreamWithdraw = (streamAddress, amount) => {
+  const publicClient = usePublicClient();
+  const { writeContractAsync } = useWriteContract();
+
+  const { data: simulationResult, isSuccess: simulationSuccessful } =
+    useSimulateContract({
+      address: streamAddress,
+      chainId: CHAIN_ID,
+      abi: streamDataAbi,
+      functionName: "withdraw",
+      args: [amount],
+      query: {
+        enabled: isAddress(streamAddress) && amount > 0,
+      },
+    });
+
+  if (!simulationSuccessful) return null;
+
+  return async () => {
+    const hash = await writeContractAsync(simulationResult.request);
+    return publicClient.waitForTransactionReceipt({ hash });
+  };
+};
+
+export const useStreamsRemainingBalances = (streamAddresses) => {
+  const { data } = useReadContracts({
+    contracts: streamAddresses.flatMap((address) => [
+      {
+        address,
+        chainId: CHAIN_ID,
+        abi: streamDataAbi,
+        functionName: "remainingBalance",
+        args: [],
+      },
+      {
+        address,
+        chainId: CHAIN_ID,
+        abi: streamDataAbi,
+        functionName: "recipientBalance",
+        args: [],
+      },
+    ]),
+  });
+
+  if (!data) return [];
+
+  // The data is returned in the order of the contracts passed in
+  return streamAddresses.map((_, i) => ({
+    remainingBalance: data[i * 2]?.result,
+    recipientBalance: data[i * 2 + 1]?.result,
+  }));
 };
