@@ -45,6 +45,12 @@ const dialogs = [
       () => import("../components/farcaster-setup-dialog.js"),
     ),
   },
+  {
+    key: "streams",
+    component: ReactLazyWithPreload(
+      () => import("../components/streams-dialog.js"),
+    ),
+  },
 ];
 
 const preload = (key) => {

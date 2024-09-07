@@ -8,6 +8,7 @@ import { useAccount, useDelegate } from "../store.js";
 import { useNavigate } from "../hooks/navigation.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import { useWallet } from "../hooks/wallet.js";
+import { useState as useSessionState } from "@/session-provider";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useEnsName from "../hooks/ens-name.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -32,7 +33,10 @@ const AccountDialog = ({ isOpen, close }) => (
 const Content = ({ titleProps, dismiss }) => {
   const navigate = useNavigate();
 
-  const { address: accountAddress } = useWallet();
+  const { address: connectedAccountAddress } = useWallet();
+  const { address: loggedInAccountAddress } = useSessionState();
+  const accountAddress = connectedAccountAddress ?? loggedInAccountAddress;
+
   const displayName = useAccountDisplayName(accountAddress);
   const ensName = useEnsName(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(

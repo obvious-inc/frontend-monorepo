@@ -143,7 +143,10 @@ module.exports = withSentry(
       turbo: {
         // Ignoring modules is not a thing yet
         resolveAlias: Object.fromEntries(
-          ignoredModules.map((n) => [n, "@shades/common"]),
+          ignoredModules.map((n) => [
+            n,
+            { browser: "@shades/common/empty-module" },
+          ]),
         ),
       },
       instrumentationHook: process.env.NODE_ENV === 'production',
