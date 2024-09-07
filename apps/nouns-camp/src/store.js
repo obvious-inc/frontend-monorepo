@@ -1156,6 +1156,10 @@ const createStore = ({ initialState, publicClient }) =>
                 executionETA
                 proposer { id }
               # signers { id }
+                targets
+                values
+                signatures
+                calldatas
               }
             # proposalCandidates(
             #   orderBy: createdBlock,
@@ -2473,4 +2477,30 @@ export const useMainFeedItems = (filter, { enabled = true }) => {
       [enabled, filter, casts, latestBlockNumber],
     ),
   );
+};
+
+export const useAccountStreams = (accountAddress) => {
+  const proposalsById = useStore((s) => s.proposalsById);
+
+  const isStreamReceiverTransaction = React.useCallback(
+    (t) =>
+      t.type === "stream" &&
+      t.receiverAddress.toLowerCase() === accountAddress.toLowerCase(),
+    [accountAddress],
+  );
+
+  return React.useMemo(() => {
+    if (accountAddress == null) return [];
+    const proposals = Object.values(proposalsById);
+    return proposals
+      .filter(
+        (p) =>
+          p.status?.toLowerCase() === "executed" &&
+          p.transactions?.some(isStreamReceiverTransaction),
+      )
+      .map((p) => ({
+        proposalId: p.id,
+        ...p.transactions.find(isStreamReceiverTransaction),
+      }));
+  }, [isStreamReceiverTransaction, proposalsById, accountAddress]);
 };

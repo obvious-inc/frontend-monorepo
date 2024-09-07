@@ -202,7 +202,6 @@ export const useWallet = () => {
   const { canaryAccounts, betaAccounts } = { canaryAccounts: [], betaAccounts:[] } /*useConfig()*/;
 
   const { address: authenticatedAccountAddress } = useSessionState();
-  const { destroy: destroyAccountSession } = useSessionActions();
 
   const hasReadyConnector = connectors.some((c) => c.ready);
 
@@ -218,11 +217,6 @@ export const useWallet = () => {
   const address = (
     impersonationAddress ?? connectedAccountAddress
   )?.toLowerCase();
-
-  const disconnect = React.useCallback(async () => {
-    disconnectWallet();
-    destroyAccountSession();
-  }, [disconnectWallet, destroyAccountSession]);
 
   const switchToTargetChain = React.useCallback(
     () =>
@@ -251,7 +245,7 @@ export const useWallet = () => {
     address: isConnected || impersonationAddress != null ? address : null,
     chainId: connectedChainId,
     requestAccess: hasReadyConnector ? requestAccess : null,
-    disconnect,
+    disconnect: disconnectWallet,
     reset,
     switchToTargetChain,
     isAuthenticated: authenticatedAccountAddress === address,

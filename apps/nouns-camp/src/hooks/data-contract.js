@@ -185,7 +185,8 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
         },
       ],
       functionName: "createProposalCandidate",
-      value: votingPower > 0 ? 0 : createCost,
+      // Free for accounts with voting power and updates
+      value: votingPower > 0 || targetProposalId > 0 ? 0 : createCost,
       args: [
         targets,
         values,
