@@ -8,6 +8,7 @@ import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster.js";
+import { reportError } from "@/utils/monitoring.js";
 
 const AccountAuthenticationDialog = ({ isOpen, close }) => {
   const { isAuthenticated } = useWallet();
@@ -166,6 +167,7 @@ const Content = ({ titleProps, dismiss }) => {
                   onSuccess?.();
                 } catch (e) {
                   console.error(e);
+                  reportError(e);
                   alert("Ops, looks like something went wrong");
                 }
               }}
