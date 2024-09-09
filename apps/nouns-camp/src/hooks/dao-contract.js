@@ -487,6 +487,45 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
 
   const { writeContractAsync: writeContract } = useWriteContract();
 
+  const { data: proposal } = useRead({
+    functionName: "proposalsV3",
+    abi: [
+      {
+        name: "proposalsV3",
+        type: "function",
+        inputs: [{ name: "proposalId", type: "uint256" }],
+        outputs: [
+          {
+            type: "tuple",
+            components: [
+              { name: "id", type: "uint256" },
+              { name: "proposer", type: "address" },
+              { name: "proposalThreshold", type: "uint256" },
+              { name: "quorumVotes", type: "uint256" },
+              { name: "eta", type: "uint256" },
+              { name: "startBlock", type: "uint256" },
+              { name: "endBlock", type: "uint256" },
+              { name: "forVotes", type: "uint256" },
+              { name: "againstVotes", type: "uint256" },
+              { name: "abstainVotes", type: "uint256" },
+              { name: "canceled", type: "bool" },
+              { name: "vetoed", type: "bool" },
+              { name: "executed", type: "bool" },
+              { name: "totalSupply", type: "uint256" },
+              { name: "creationBlock", type: "uint256" },
+              { name: "signers", type: "address[]" },
+              { name: "updatePeriodEndBlock", type: "uint256" },
+              { name: "objectionPeriodEndBlock", type: "uint256" },
+              { name: "executeOnTimelockV1", type: "bool" },
+            ],
+          },
+        ],
+      },
+    ],
+    args: [proposalId],
+  });
+  if (proposal == null) return null;
+
   return async ({
     description,
     transactions,
@@ -495,6 +534,15 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
   }) => {
     const { targets, values, signatures, calldatas } =
       unparseTransactions(transactions);
+
+    const sortedProposerSignatures = proposal.signers.map((checksumAddress) => {
+      const signature = proposerSignatures.find(
+        (s) => s.signer.address.toLowerCase() === checksumAddress.toLowerCase(),
+      );
+      if (signature == null)
+        throw new Error(`No signature from "${checksumAddress}"`);
+      return signature;
+    });
 
     return writeContract({
       chainId: CHAIN_ID,
@@ -527,7 +575,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
       functionName: "updateProposalBySigs",
       args: [
         proposalId,
-        proposerSignatures,
+        sortedProposerSignatures,
         targets,
         values,
         signatures,
