@@ -194,9 +194,10 @@ const StreamWithdrawForm = ({ stream }) => {
         onSubmit={handleSubmit}
         css={css({
           display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
+          gridTemplateColumns: "repeat(2, auto) 25%",
           rowGap: "1.6rem",
           columnGap: "2rem",
+          position: "relative",
         })}
       >
         <StaticField label="Stream">
@@ -215,7 +216,7 @@ const StreamWithdrawForm = ({ stream }) => {
           </a>
         </StaticField>
 
-        <StaticField label="Available to Withdraw">
+        <StaticField label="Available to withdraw">
           <FormattedAmount
             amount={recipientBalance}
             token={token}
@@ -227,7 +228,7 @@ const StreamWithdrawForm = ({ stream }) => {
         </StaticField>
 
         <Input
-          label="Amount to Withdraw"
+          label="Amount to withdraw"
           type="number"
           value={withdrawAmount}
           disabled={hasPendingUpdate}
