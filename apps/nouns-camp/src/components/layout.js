@@ -450,6 +450,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     },
                     {
                       id: "open-warpcast",
+                      textValue: "Farcaster",
                       label: (
                         <>
                           <span style={{ flex: 1, marginRight: "0.8rem" }}>
@@ -468,6 +469,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     { id: "open-settings-dialog", label: "Settings" },
                     {
                       id: "open-changelog",
+                      textValue: "Changelog",
                       label: (
                         <>
                           <span style={{ flex: 1, marginRight: "0.8rem" }}>
