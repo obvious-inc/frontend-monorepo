@@ -537,7 +537,7 @@ export const useUpdateSponsoredProposalWithSignatures = (proposalId) => {
 
     const sortedProposerSignatures = proposal.signers.map((checksumAddress) => {
       const signature = proposerSignatures.find(
-        (s) => s.signer.address.toLowerCase() === checksumAddress.toLowerCase(),
+        (s) => s.signer.toLowerCase() === checksumAddress.toLowerCase(),
       );
       if (signature == null)
         throw new Error(`No signature from "${checksumAddress}"`);
