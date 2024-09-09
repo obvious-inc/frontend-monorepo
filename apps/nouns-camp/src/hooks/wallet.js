@@ -38,7 +38,13 @@ export const Provider = ({ children }) => {
       {children}
       <Dialog isOpen={isOpen} onRequestClose={closeDialog} width="36rem">
         {({ titleProps }) => (
-          <ConnectDialog titleProps={titleProps} dismiss={closeDialog} />
+          <ConnectDialogContent
+            titleProps={titleProps}
+            dismiss={closeDialog}
+            onSuccess={() => {
+              closeDialog();
+            }}
+          />
         )}
       </Dialog>
     </Context.Provider>
@@ -90,14 +96,9 @@ export const useConnectorsWithReadyState = () => {
   );
 };
 
-const ConnectDialog = ({ titleProps, dismiss }) => {
+export const ConnectDialogContent = ({ titleProps, onSuccess }) => {
   const { connectAsync: connect, isPending, reset } = useConnect();
   const connectors = useConnectorsWithReadyState();
-
-  const init = async (connector) => {
-    await connect({ connector });
-    dismiss();
-  };
 
   if (isPending)
     return (
@@ -117,7 +118,6 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
         <Button
           onClick={() => {
             reset();
-            dismiss();
           }}
         >
           Cancel
@@ -130,15 +130,20 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
       css={(t) =>
         css({
           padding: "1.6rem",
-          "@media (min-width: 600px)": {
-            padding: "3.2rem",
-          },
-          h1: {
-            fontSize: t.text.sizes.base,
-            fontWeight: "400",
-            color: t.colors.textDimmed,
-            textAlign: "center",
+          textAlign: "center",
+          header: {
             margin: "0 0 1.6rem",
+            h1: { fontSize: t.text.sizes.larger },
+            ".subheading": {
+              fontSize: t.text.sizes.base,
+              fontWeight: "400",
+              color: t.colors.textDimmed,
+            },
+          },
+          footer: {
+            color: t.colors.textDimmed,
+            margin: "1.6rem 0 0",
+            fontSize: t.text.sizes.small,
           },
           em: { fontStyle: "normal", fontWeight: t.text.weights.emphasis },
           "[data-small]": {
@@ -146,10 +151,18 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
             color: t.colors.textDimmed,
             lineHeight: 1.4,
           },
+          "@media (min-width: 600px)": {
+            padding: "3.2rem",
+            header: { margin: "0 0 2.4rem" },
+            footer: { margin: "2.4rem 0 0" },
+          },
         })
       }
     >
-      <h1 {...titleProps}>Pick connect method</h1>
+      <header>
+        <h1 {...titleProps}>Connect wallet</h1>
+        <p className="subheading">Pick connect method below</p>
+      </header>
       <main
         css={css({ display: "flex", flexDirection: "column", gap: "1rem" })}
       >
@@ -160,26 +173,31 @@ const ConnectDialog = ({ titleProps, dismiss }) => {
             { value: (c) => c.type === "injected" },
             connectors,
           )
-          .map((c) => {
+          .map((connector) => {
             return (
-              <div key={c.uid}>
+              <div key={connector.uid}>
                 <Button
                   fullWidth
-                  onClick={() => {
-                    init(c);
+                  onClick={async () => {
+                    await connect({ connector });
+                    onSuccess?.();
                   }}
-                  disabled={!c.ready}
+                  disabled={!connector.ready}
                 >
-                  {c.id === "injected" ? (
+                  {connector.id === "injected" ? (
                     "Injected wallet (EIP-1193)"
                   ) : (
-                    <em>{c.name}</em>
+                    <em>{connector.name}</em>
                   )}
                 </Button>
               </div>
             );
           })}
       </main>
+      <footer>
+        If you use a browser extension wallet, you might need to enable the
+        extension for it to show up here.
+      </footer>
     </div>
   );
 };
