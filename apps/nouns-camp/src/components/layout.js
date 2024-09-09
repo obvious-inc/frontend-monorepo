@@ -305,52 +305,63 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               ),
             },
             ...navigationStack,
-          ].map((item, index) => (
-            <React.Fragment key={item.to}>
-              {index > 0 && (
-                <span
+          ].map((item, index) => {
+            const [Component, componentProps] =
+              item.component != null
+                ? [item.component, item.props]
+                : [
+                    NextLink,
+                    {
+                      prefetch: true,
+                      href: item.to,
+                    },
+                  ];
+            return (
+              <React.Fragment key={item.to}>
+                {index > 0 && (
+                  <span
+                    data-index={index}
+                    data-desktop-only={item.desktopOnly}
+                    css={(t) =>
+                      css({
+                        color: t.colors.textMuted,
+                        fontSize: t.text.sizes.base,
+                      })
+                    }
+                  >
+                    {"/"}
+                  </span>
+                )}
+                <Component
+                  {...componentProps}
                   data-index={index}
+                  // data-disabled={pathname === item.to}
                   data-desktop-only={item.desktopOnly}
                   css={(t) =>
                     css({
-                      color: t.colors.textMuted,
-                      fontSize: t.text.sizes.base,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      fontSize: t.fontSizes.base,
+                      color: t.colors.textNormal,
+                      padding: "0.3rem 0.5rem",
+                      borderRadius: "0.4rem",
+                      textDecoration: "none",
+                      '&[data-index="0"]': { minWidth: "max-content" },
+                      '&[data-disabled="true"]': { pointerEvents: "none" },
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                        ":hover": {
+                          background: t.colors.backgroundModifierHover,
+                        },
+                      },
                     })
                   }
                 >
-                  {"/"}
-                </span>
-              )}
-              <NextLink
-                prefetch
-                href={item.to}
-                data-index={index}
-                // data-disabled={pathname === item.to}
-                data-desktop-only={item.desktopOnly}
-                css={(t) =>
-                  css({
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontSize: t.fontSizes.base,
-                    color: t.colors.textNormal,
-                    padding: "0.3rem 0.5rem",
-                    borderRadius: "0.4rem",
-                    textDecoration: "none",
-                    '&[data-index="0"]': { minWidth: "max-content" },
-                    '&[data-disabled="true"]': { pointerEvents: "none" },
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": {
-                        background: t.colors.backgroundModifierHover,
-                      },
-                    },
-                  })
-                }
-              >
-                {item.label}
-              </NextLink>
-            </React.Fragment>
-          ))}
+                  {item.label}
+                </Component>
+              </React.Fragment>
+            );
+          })}
         </div>
         <div
           css={(t) =>
