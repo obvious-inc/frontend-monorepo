@@ -553,7 +553,7 @@ const ProposalStateTag = ({ state }) => {
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
-        fontWeight: theme.text.weights.smallTextEmphasis,
+        fontWeight: theme.text.weights.smallHeader,
         fontSize: theme.text.sizes.tiny,
       }}
     >
