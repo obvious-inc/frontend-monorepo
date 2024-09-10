@@ -646,19 +646,24 @@ const getFonts = async () => {
   const fontName = "Inter";
 
   const regularResp = await fetch(
-    new URL("../../../assets/fonts/Inter-Regular.ttf", import.meta.url),
+    new URL("../../../assets/fonts/Inter-Regular.woff", import.meta.url),
   );
   const regularFontArray = await regularResp.arrayBuffer();
 
   const boldResp = await fetch(
-    new URL("../../../assets/fonts/Inter-Bold.ttf", import.meta.url),
+    new URL("../../../assets/fonts/Inter-Bold.woff", import.meta.url),
   );
   const boldFontArray = await boldResp.arrayBuffer();
 
   const mediumResp = await fetch(
-    new URL("../../../assets/fonts/Inter-Medium.ttf", import.meta.url),
+    new URL("../../../assets/fonts/Inter-Medium.woff", import.meta.url),
   );
   const mediumFontArray = await mediumResp.arrayBuffer();
+
+  const semiBoldResp = await fetch(
+    new URL("../../../assets/fonts/Inter-SemiBold.woff", import.meta.url),
+  );
+  const semiBoldFontArray = await semiBoldResp.arrayBuffer();
 
   return [
     {
@@ -671,6 +676,12 @@ const getFonts = async () => {
       data: mediumFontArray,
       name: fontName,
       weight: 500,
+      style: "normal",
+    },
+    {
+      data: semiBoldFontArray,
+      name: fontName,
+      weight: 600,
       style: "normal",
     },
     {
