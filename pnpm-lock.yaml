@@ -103,8 +103,8 @@ importers:
         specifier: 3.6.0
         version: 3.6.0
       diff:
-        specifier: 6.0.0
-        version: 6.0.0
+        specifier: 7.0.0
+        version: 7.0.0
       iron-session:
         specifier: 8.0.3
         version: 8.0.3
@@ -4360,8 +4360,8 @@ packages:
     resolution: {integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==}
     engines: {node: '>=0.3.1'}
 
-  diff@6.0.0:
-    resolution: {integrity: sha512-NbGtgPSw7il+jeajji1H6iKjCk3r/ANQKw3FFUhGV50+MH5MKIMeUmi53piTr7jlkWcq9eS858qbkRzkehwe+w==}
+  diff@7.0.0:
+    resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
     engines: {node: '>=0.3.1'}
 
   dijkstrajs@1.0.3:
@@ -13497,7 +13497,7 @@ snapshots:
 
   diff@4.0.2: {}
 
-  diff@6.0.0: {}
+  diff@7.0.0: {}
 
   dijkstrajs@1.0.3: {}
 

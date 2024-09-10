@@ -44,7 +44,7 @@
     "@vercel/kv": "2.0.0",
     "abitype": "1.0.6",
     "date-fns": "3.6.0",
-    "diff": "6.0.0",
+    "diff": "7.0.0",
     "is-hotkey": "0.2.0",
     "iron-session": "8.0.3",
     "lodash.throttle": "4.1.1",
