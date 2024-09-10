@@ -23,6 +23,7 @@ import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
 import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
 import { date as dateUtils } from "@shades/common/utils";
+import { dark as darkTheme } from "@shades/ui-web/theme";
 
 export const runtime = "edge";
 
@@ -31,6 +32,23 @@ const publicClient = createPublicClient({
   chain,
   transport: http(getJsonRpcUrl(chain.id)),
 });
+
+const theme = {
+  ...darkTheme,
+  colors: {
+    ...darkTheme.colors,
+    backgroundModifierNormal: "hsl(0, 0%, 100%, 0.055)",
+    textPositive: "#41b579",
+    textNegative: "#f25666",
+    textPositiveContrast: "#55c88d",
+    textPositiveContrastBackgroundLight: "#2b3b33",
+    textNegativeContrast: "#ff7281",
+    textNegativeContrastBackgroundLight: "#3f2f32",
+    textSpecialContrast: "#d388e6",
+    textSpecialContrastBackgroundLight: "#3d2f40",
+    textPrimaryBackgroundLight: "#253240",
+  },
+};
 
 const fetchProposal = async (id) => {
   const data = await subgraphFetch({
@@ -102,11 +120,9 @@ const SimpleCallout = ({ children }) => (
   <div
     style={{
       display: "flex",
-      backgroundColor: "hsl(0, 0%, 100%, 0.055)",
+      backgroundColor: theme.colors.backgroundModifierNormal,
       borderRadius: "0.3rem",
       whiteSpace: "pre",
-      color: "hsl(0 0% 83%)",
-      fontSize: "1.4rem",
       marginTop: "1.6rem",
       padding: "1rem 1.6rem",
     }}
@@ -129,7 +145,9 @@ const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
   const truncatedAddress = isAddress ? truncateAddress(address) : null;
 
   const displayName = (
-    <span style={{ fontWeight: 500 }}>{ensName ?? truncatedAddress}</span>
+    <span style={{ fontWeight: theme.text.weights.smallHeader }}>
+      {ensName ?? truncatedAddress}
+    </span>
   );
 
   if (ensAvatar != null) {
@@ -249,7 +267,9 @@ const RequestedAmounts = ({ amounts }) => (
       return (
         <span key={currency}>
           {i !== 0 && ` + `}
-          <span style={{ fontWeight: 700 }}>{formattedAmount()}</span>
+          <span style={{ fontWeight: theme.text.weights.header }}>
+            {formattedAmount()}
+          </span>
         </span>
       );
     })}
@@ -276,9 +296,9 @@ const ProposalHeader = ({
     <div style={{ display: "flex", flexDirection: "column" }}>
       <h1
         style={{
-          fontSize: "3.2rem",
-          fontWeight: 700,
-          color: "hsl(0 0% 94%)",
+          fontSize: theme.text.sizes.huge,
+          fontWeight: theme.text.weights.header,
+          color: theme.colors.textHeader,
           margin: "0 0 0.3rem",
           lineHeight: 1.15,
         }}
@@ -290,8 +310,7 @@ const ProposalHeader = ({
         style={{
           display: "flex",
           alignItems: "center",
-          color: "hsl(0 0% 60%)",
-          fontSize: "1.4rem",
+          color: theme.colors.textDimmed,
           whiteSpace: "pre",
           flexWrap: "wrap",
         }}
@@ -364,8 +383,7 @@ const ProposalHeader = ({
 const VotesHeader = ({ label, votes, styleProps }) => (
   <p
     style={{
-      fontSize: "1.4rem",
-      fontWeight: 700,
+      fontWeight: theme.text.weights.emphasis,
       ...styleProps,
     }}
   >
@@ -414,12 +432,12 @@ const ProposalVotesProgress = ({ proposal }) => {
           <VotesHeader
             label="For"
             votes={forVotes}
-            styleProps={{ color: "#41b579" }}
+            styleProps={{ color: theme.colors.textPositive }}
           />
           <p
             style={{
-              fontSize: "1.4rem",
-              fontWeight: "700",
+              fontWeight: theme.text.weights.emphasis,
+              color: theme.colors.textDimmed,
               whiteSpace: "pre",
             }}
           >
@@ -432,12 +450,12 @@ const ProposalVotesProgress = ({ proposal }) => {
           <VotesHeader
             label="Abstain"
             votes={abstainVotes}
-            styleProps={{ color: "hsl(0 0% 40%)" }}
+            styleProps={{ color: theme.colors.textDimmed }}
           />
           <p
             style={{
-              fontSize: "1.4rem",
-              fontWeight: "700",
+              fontWeight: theme.text.weights.emphasis,
+              color: theme.colors.textDimmed,
               whiteSpace: "pre",
             }}
           >
@@ -447,7 +465,7 @@ const ProposalVotesProgress = ({ proposal }) => {
           <VotesHeader
             label="Against"
             votes={againstVotes}
-            styleProps={{ color: "#db5664" }}
+            styleProps={{ color: theme.colors.textNegative }}
           />
         </>
       </div>
@@ -464,7 +482,7 @@ const ProposalVotesProgress = ({ proposal }) => {
           votes={forVotes}
           totalVotes={totalVotes}
           styleProps={{
-            backgroundColor: "#41b579",
+            backgroundColor: theme.colors.textPositive,
           }}
         />
 
@@ -472,7 +490,7 @@ const ProposalVotesProgress = ({ proposal }) => {
           votes={abstainVotes}
           totalVotes={totalVotes}
           styleProps={{
-            backgroundColor: "hsl(0 0% 40%)",
+            backgroundColor: theme.colors.textDimmed,
           }}
         />
 
@@ -480,7 +498,7 @@ const ProposalVotesProgress = ({ proposal }) => {
           votes={againstVotes}
           totalVotes={totalVotes}
           styleProps={{
-            backgroundColor: "#db5664",
+            backgroundColor: theme.colors.textNegative,
           }}
         />
       </div>
@@ -502,23 +520,24 @@ const ProposalStateTag = ({ state }) => {
   };
 
   const colorByVariant = {
-    success: "#55c88d",
-    error: "#ff7281",
+    success: theme.colors.textPositiveContrast,
+    error: theme.colors.textNegativeContrast,
     // TODO: warning: ...,
-    active: "hsl(210 100% 60%)",
+    active: theme.colors.textPrimary,
   };
 
   const backgroundByVariant = {
-    success: "#2b3b33",
-    error: "#3f2f32",
+    success: theme.colors.textPositiveContrastBackgroundLight,
+    error: theme.colors.textNegativeContrastBackgroundLight,
     // TODO: warning: ...,
-    active: "#253240",
+    active: theme.colors.textPrimaryBackgroundLight,
   };
 
   const backgroundColor =
-    backgroundByVariant?.[variantByState?.[state]] ?? "hsl(0, 0%, 100%, 0.055)";
+    backgroundByVariant?.[variantByState?.[state]] ??
+    theme.colors.backgroundModifierNormal;
   const textColor =
-    colorByVariant?.[variantByState?.[state]] ?? "hsl(0 0% 83%)";
+    colorByVariant?.[variantByState?.[state]] ?? theme.colors.textNormal;
 
   return (
     <span
@@ -528,13 +547,14 @@ const ProposalStateTag = ({ state }) => {
         backgroundColor: backgroundColor,
         color: textColor,
         textTransform: "uppercase",
-        padding: "0.3rem",
+        padding: "0.2em 0.3em 0.1em",
         borderRadius: "0.4rem",
         lineHeight: 1.2,
         whiteSpace: "nowrap",
         overflow: "hidden",
         textOverflow: "ellipsis",
-        fontWeight: 500,
+        fontWeight: theme.text.weights.smallTextEmphasis,
+        fontSize: theme.text.sizes.tiny,
       }}
     >
       {getStateLabel(state)}
@@ -640,6 +660,11 @@ const getFonts = async () => {
   );
   const mediumFontArray = await mediumResp.arrayBuffer();
 
+  const semiBoldResp = await fetch(
+    new URL("../../../assets/fonts/Inter-SemiBold.ttf", import.meta.url),
+  );
+  const semiBoldFontArray = await semiBoldResp.arrayBuffer();
+
   return [
     {
       data: regularFontArray,
@@ -651,6 +676,12 @@ const getFonts = async () => {
       data: mediumFontArray,
       name: fontName,
       weight: 500,
+      style: "normal",
+    },
+    {
+      data: semiBoldFontArray,
+      name: fontName,
+      weight: 600,
       style: "normal",
     },
     {
@@ -718,15 +749,16 @@ export async function GET(request) {
       (
         <div
           style={{
-            backgroundColor: "rgb(26, 26, 26)",
+            backgroundColor: theme.colors.backgroundPrimary,
             backgroundSize: "150px 150px",
             padding: "2rem",
-            color: "hsl(0 0% 83%)",
             height: "100%",
             width: "100%",
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
+            color: theme.colors.textNormal,
+            fontSize: theme.text.sizes.large,
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -735,6 +767,7 @@ export async function GET(request) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                paddingBottom: "1rem",
               }}
             >
               <div
@@ -749,8 +782,9 @@ export async function GET(request) {
                 <ProposalStateTag state={proposalState} />
                 <p
                   style={{
-                    fontSize: "1rem",
-                    color: "hsl(0 0% 60%)",
+                    margin: 0,
+                    fontSize: theme.text.sizes.tiny,
+                    color: theme.colors.textDimmed,
                   }}
                 >
                   {renderProposalStateText({
@@ -761,9 +795,9 @@ export async function GET(request) {
               </div>
               <p
                 style={{
-                  fontWeight: 500,
-                  fontSize: "1.4rem",
-                  color: "hsl(0 0% 40%)",
+                  margin: 0,
+                  fontWeight: theme.text.weights.smallTextEmphasis,
+                  color: theme.colors.textMuted,
                 }}
               >
                 {proposal.id}
