@@ -660,11 +660,6 @@ const getFonts = async () => {
   );
   const mediumFontArray = await mediumResp.arrayBuffer();
 
-  const semiBoldResp = await fetch(
-    new URL("../../../assets/fonts/Inter-SemiBold.ttf", import.meta.url),
-  );
-  const semiBoldFontArray = await semiBoldResp.arrayBuffer();
-
   return [
     {
       data: regularFontArray,
@@ -676,12 +671,6 @@ const getFonts = async () => {
       data: mediumFontArray,
       name: fontName,
       weight: 500,
-      style: "normal",
-    },
-    {
-      data: semiBoldFontArray,
-      name: fontName,
-      weight: 600,
       style: "normal",
     },
     {
