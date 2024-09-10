@@ -31,6 +31,7 @@ import {
   useProposalCandidateCreateCost,
 } from "../hooks/data-contract.js";
 import { useCurrentVotes } from "../hooks/token-contract.js";
+import { useDialog } from "../hooks/global-dialogs.js";
 import {
   isNodeEmpty as isRichTextEditorNodeEmpty,
   toMessageBlocks as richTextToMessageBlocks,
@@ -69,6 +70,8 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   // const accountProposalCandidates = useAccountProposalCandidates(
   //   connectedAccountAddress,
   // );
+
+  const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
 
   // const isTitleEmpty = draft.name.trim() === "";
   // const isBodyEmpty =
@@ -219,7 +222,16 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
-          { to: "/?tab=drafts", label: "Drafts", desktopOnly: true },
+          {
+            label: "Drafts",
+            component: "button",
+            desktopOnly: true,
+            props: {
+              onClick: () => {
+                openProposalDraftsDialog();
+              },
+            },
+          },
           { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
         ]}
         actions={[]}

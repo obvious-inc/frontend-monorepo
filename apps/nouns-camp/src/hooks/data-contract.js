@@ -185,8 +185,16 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
         },
       ],
       functionName: "createProposalCandidate",
-      // Free for accounts with voting power and updates
-      value: votingPower > 0 || targetProposalId > 0 ? 0 : createCost,
+      value:
+        CHAIN_ID !== 11155111
+          ? // Free for accounts with voting power and updates
+            // value: votingPower > 0 || targetProposalId > 0 ? 0 : createCost,
+            votingPower > 0 || targetProposalId > 0
+            ? 0
+            : createCost
+          : // Current sepolia deployment don’t have free updates
+            // (TODO: deploy new data contract)
+            createCost,
       args: [
         targets,
         values,
