@@ -8,7 +8,11 @@ import Avatar from "@shades/ui-web/avatar";
 import Spinner from "@shades/ui-web/spinner";
 import QRCode from "@shades/ui-web/qr-code";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
-import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
+import {
+  useWallet,
+  useWalletAuthentication,
+  ConnectDialogContent,
+} from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import LogoSymbol from "./logo-symbol.js";
@@ -34,19 +38,27 @@ const getFarcasterAccountKey = async (publicKey) => {
   return res.json();
 };
 
-const FarcasterSetupDialog = ({ isOpen, close }) => (
-  <Dialog
-    isOpen={isOpen}
-    onRequestClose={() => {
-      close();
-    }}
-    width="40rem"
-  >
-    {(props) => <Content dismiss={close} {...props} />}
-  </Dialog>
-);
+const FarcasterSetupDialog = ({ isOpen, close }) => {
+  const { address: connectedAccountAddress } = useWallet();
 
-const Content = ({ titleProps, dismiss }) => {
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      width="40rem"
+    >
+      {(props) => {
+        if (connectedAccountAddress == null)
+          return <ConnectDialogContent {...props} />;
+        return <FarcasterSetupContent dismiss={close} {...props} />;
+      }}
+    </Dialog>
+  );
+};
+
+const FarcasterSetupContent = ({ titleProps, dismiss }) => {
   const theme = useTheme();
 
   const { address: connectedWalletAccountAddress, isAuthenticated } =
@@ -84,9 +96,9 @@ const Content = ({ titleProps, dismiss }) => {
   if (accounts == null) return null;
 
   const hasVerifiedAddress = accounts.length > 0;
-  const isSetupComplete =
-    (hasVerifiedAddress && accounts.every((a) => a.hasAccountKey)) ||
-    keyData?.fid != null;
+  const hasAccountKey =
+    hasVerifiedAddress && accounts.every((a) => a.hasAccountKey);
+  const hasFinishedAccountKeySetup = hasAccountKey && keyData?.fid != null;
 
   return (
     <div
@@ -110,8 +122,10 @@ const Content = ({ titleProps, dismiss }) => {
     >
       <DialogHeader
         title={
-          isSetupComplete && isAuthenticated ? (
+          hasAccountKey && isAuthenticated ? (
             <>All done 🎉</>
+          ) : hasAccountKey ? (
+            "Authenticate account"
           ) : keyData == null ? (
             "Setup Farcaster"
           ) : keyData.fid == null ? (
@@ -166,7 +180,7 @@ const Content = ({ titleProps, dismiss }) => {
               .
             </p>
           </>
-        ) : isSetupComplete ? (
+        ) : hasAccountKey ? (
           <>
             {(() => {
               if (accounts == null) return null;
@@ -211,21 +225,23 @@ const Content = ({ titleProps, dismiss }) => {
 
               return (
                 <>
-                  <p>
-                    Nice! An account key for{" "}
-                    {account.pfpUrl != null && (
-                      <Avatar
-                        url={account.pfpUrl}
-                        size="1.2em"
-                        css={css({
-                          display: "inline-block",
-                          marginRight: "0.3em",
-                          verticalAlign: "sub",
-                        })}
-                      />
-                    )}
-                    <b>{displayName}</b> is set up.
-                  </p>
+                  {hasFinishedAccountKeySetup && (
+                    <p>
+                      Nice! An account key for{" "}
+                      {account.pfpUrl != null && (
+                        <Avatar
+                          url={account.pfpUrl}
+                          size="1.2em"
+                          css={css({
+                            display: "inline-block",
+                            marginRight: "0.3em",
+                            verticalAlign: "sub",
+                          })}
+                        />
+                      )}
+                      <b>{displayName}</b> is set up.
+                    </p>
+                  )}
                   <p>
                     Now we just need a quick authentication signature, and then
                     we’re good to go.
@@ -382,7 +398,7 @@ const Content = ({ titleProps, dismiss }) => {
             )}
           </div>
           {(() => {
-            if (isSetupComplete)
+            if (hasAccountKey)
               return (
                 <div css={css({ display: "flex", gap: "1rem" })}>
                   <Button type="button" size="medium" onClick={dismiss}>

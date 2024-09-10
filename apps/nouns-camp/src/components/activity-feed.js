@@ -146,7 +146,8 @@ const ActivityFeed = ({
       connectedAccountAddress !== loggedInAccountAddress);
 
   const onLike = (() => {
-    if (!allowLikeAction) return null;
+    // Wait for a wallet connection before we rule out likes
+    if (connectedAccountAddress != null && !allowLikeAction) return null;
     if (!hasFarcasterAccountKey)
       return () => openFarcasterSetupDialog({ intent: "like" });
     if (requireAuthentication)
