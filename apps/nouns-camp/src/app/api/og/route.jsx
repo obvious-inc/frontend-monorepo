@@ -286,7 +286,7 @@ const ProposalHeader = ({
   hasPassed,
 }) => {
   const requestedAmounts = extractAmounts(transactions);
-  const maxTitleLength = 60;
+  const maxTitleLength = 50;
   const trimmedTitle =
     title.length > maxTitleLength
       ? title.substring(0, maxTitleLength) + "..."
@@ -299,7 +299,7 @@ const ProposalHeader = ({
           fontSize: theme.text.sizes.huge,
           fontWeight: theme.text.weights.header,
           color: theme.colors.textHeader,
-          margin: "0 0 0.3rem",
+          margin: "0 0 0.5rem",
           lineHeight: 1.15,
         }}
       >
@@ -516,7 +516,6 @@ const ProposalStateTag = ({ state }) => {
     queued: "success",
     executed: "success",
     updatable: "active",
-    canceled: "error",
   };
 
   const colorByVariant = {
@@ -547,7 +546,7 @@ const ProposalStateTag = ({ state }) => {
         backgroundColor: backgroundColor,
         color: textColor,
         textTransform: "uppercase",
-        padding: "0.2em 0.3em 0.1em",
+        padding: "0.3em 0.3em 0.2em",
         borderRadius: "0.4rem",
         lineHeight: 1.2,
         whiteSpace: "nowrap",
