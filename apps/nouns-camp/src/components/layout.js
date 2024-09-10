@@ -14,9 +14,13 @@ import {
   getChain as getSupportedChain,
   isTestnet as isTestnetChain,
 } from "../utils/chains.js";
-import { useAccount, useDelegate } from "../store.js";
+import { useAccount, useAccountStreams, useDelegate } from "../store.js";
 import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
 import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
+import {
+  useState as useSessionState,
+  useActions as useSessionActions,
+} from "@/session-provider";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -114,6 +118,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const { open: openAccountDialog } = useDialog("account");
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
+  const { open: openStreamsDialog } = useDialog("streams");
   const { open: openSettingsDialog } = useDialog("settings");
   const { open: openAccountAuthenticationDialog } = useDialog(
     "account-authentication",
@@ -131,30 +136,33 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     isAuthenticated: isConnectedWalletAccountAuthenticated,
     isLoading: isLoadingWallet,
   } = useWallet();
-  const {
-    signIn: signInConnectedWalletAccount,
-    signOut: signOutActiveAccountSession,
-  } = useWalletAuthentication();
+  const { signIn: signInConnectedWalletAccount } = useWalletAuthentication();
+  const { address: loggedInAccountAddress } = useSessionState();
+  const { destroy: signOut } = useSessionActions();
   const connectedFarcasterAccounts = useConnectedFarcasterAccounts();
   const hasVerifiedFarcasterAccount = connectedFarcasterAccounts?.length > 0;
   const hasFarcasterAccountKey =
     hasVerifiedFarcasterAccount &&
     connectedFarcasterAccounts.some((a) => a.hasAccountKey);
 
+  const userAccountAddress =
+    connectedWalletAccountAddress ?? loggedInAccountAddress;
+
   const isTestnet = isTestnetChain(CHAIN_ID);
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
 
   const chain = getSupportedChain(CHAIN_ID);
 
-  const connectedAccount = useAccount(connectedWalletAccountAddress);
-  const connectedDelegate = useDelegate(connectedWalletAccountAddress);
+  const userAccount = useAccount(userAccountAddress);
+  const userDelegate = useDelegate(userAccountAddress);
 
-  const hasNouns = connectedAccount?.nouns?.length > 0;
-  const hasVotingPower = connectedDelegate?.nounsRepresented?.length > 0;
+  const hasNouns = userAccount?.nouns?.length > 0;
+  const hasVotingPower = userDelegate?.nounsRepresented?.length > 0;
 
-  const connectedAccountDisplayName = useAccountDisplayName(
-    connectedWalletAccountAddress,
-  );
+  const userAccountDisplayName = useAccountDisplayName(userAccountAddress);
+
+  const hasStreams =
+    useAccountStreams(connectedWalletAccountAddress).length > 0;
 
   const visibleActions = isDesktop
     ? actions
@@ -171,8 +179,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       case "open-delegation-dialog":
         openDelegationDialog();
         break;
+      case "open-streams-dialog":
+        openStreamsDialog();
+        break;
       case "copy-account-address":
-        navigator.clipboard.writeText(connectedWalletAccountAddress);
+        navigator.clipboard.writeText(userAccountAddress);
         break;
       case "open-auction":
         window.open("https://nouns.wtf", "_blank");
@@ -214,7 +225,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       }
       case "sign-out": {
         try {
-          await signOutActiveAccountSession();
+          await signOut();
           alert("You have been logged out");
         } catch (e) {
           console.error(e);
@@ -294,52 +305,63 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
               ),
             },
             ...navigationStack,
-          ].map((item, index) => (
-            <React.Fragment key={item.to}>
-              {index > 0 && (
-                <span
+          ].map((item, index) => {
+            const [Component, componentProps] =
+              item.component != null
+                ? [item.component, item.props]
+                : [
+                    NextLink,
+                    {
+                      prefetch: true,
+                      href: item.to,
+                    },
+                  ];
+            return (
+              <React.Fragment key={item.to}>
+                {index > 0 && (
+                  <span
+                    data-index={index}
+                    data-desktop-only={item.desktopOnly}
+                    css={(t) =>
+                      css({
+                        color: t.colors.textMuted,
+                        fontSize: t.text.sizes.base,
+                      })
+                    }
+                  >
+                    {"/"}
+                  </span>
+                )}
+                <Component
+                  {...componentProps}
                   data-index={index}
+                  // data-disabled={pathname === item.to}
                   data-desktop-only={item.desktopOnly}
                   css={(t) =>
                     css({
-                      color: t.colors.textMuted,
-                      fontSize: t.text.sizes.base,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      fontSize: t.fontSizes.base,
+                      color: t.colors.textNormal,
+                      padding: "0.3rem 0.5rem",
+                      borderRadius: "0.4rem",
+                      textDecoration: "none",
+                      '&[data-index="0"]': { minWidth: "max-content" },
+                      '&[data-disabled="true"]': { pointerEvents: "none" },
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                        ":hover": {
+                          background: t.colors.backgroundModifierHover,
+                        },
+                      },
                     })
                   }
                 >
-                  {"/"}
-                </span>
-              )}
-              <NextLink
-                prefetch
-                href={item.to}
-                data-index={index}
-                // data-disabled={pathname === item.to}
-                data-desktop-only={item.desktopOnly}
-                css={(t) =>
-                  css({
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontSize: t.fontSizes.base,
-                    color: t.colors.textNormal,
-                    padding: "0.3rem 0.5rem",
-                    borderRadius: "0.4rem",
-                    textDecoration: "none",
-                    '&[data-index="0"]': { minWidth: "max-content" },
-                    '&[data-disabled="true"]': { pointerEvents: "none" },
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": {
-                        background: t.colors.backgroundModifierHover,
-                      },
-                    },
-                  })
-                }
-              >
-                {item.label}
-              </NextLink>
-            </React.Fragment>
-          ))}
+                  {item.label}
+                </Component>
+              </React.Fragment>
+            );
+          })}
         </div>
         <div
           css={(t) =>
@@ -439,6 +461,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     },
                     {
                       id: "open-warpcast",
+                      textValue: "Farcaster",
                       label: (
                         <>
                           <span style={{ flex: 1, marginRight: "0.8rem" }}>
@@ -457,6 +480,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     { id: "open-settings-dialog", label: "Settings" },
                     {
                       id: "open-changelog",
+                      textValue: "Changelog",
                       label: (
                         <>
                           <span style={{ flex: 1, marginRight: "0.8rem" }}>
@@ -472,7 +496,15 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 if (connectedWalletAccountAddress == null)
                   return {
                     type: "dropdown",
-                    items: [daoSection, externalSection, settingsSection],
+                    items: [
+                      daoSection,
+                      externalSection,
+                      settingsSection,
+                      loggedInAccountAddress != null && {
+                        id: "disconnect",
+                        children: [{ id: "sign-out", label: "Log out" }],
+                      },
+                    ].filter(Boolean),
                     buttonProps: {
                       icon: (
                         <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
@@ -494,6 +526,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         (hasNouns || hasVotingPower) && {
                           id: "open-delegation-dialog",
                           label: "Manage delegation",
+                        },
+                        hasStreams && {
+                          id: "open-streams-dialog",
+                          label: "Streams",
                         },
                         {
                           id: "open-proposal-drafts-dialog",
@@ -520,11 +556,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     {
                       id: "disconnect",
                       children: [
-                        isConnectedWalletAccountAuthenticated && {
+                        loggedInAccountAddress != null && {
                           id: "sign-out",
                           label: "Log out",
                         },
-                        {
+                        connectedWalletAccountAddress != null && {
                           id: "disconnect-wallet",
                           label: "Disconnect wallet",
                         },
@@ -552,13 +588,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                             "@media(max-width: 600px)": { display: "none" },
                           })}
                         >
-                          {connectedAccountDisplayName}
+                          {userAccountDisplayName}
                         </div>
                       )}
-                      <AccountAvatar
-                        address={connectedWalletAccountAddress}
-                        size="2rem"
-                      />
+                      <AccountAvatar address={userAccountAddress} size="2rem" />
                     </div>
                   ),
                 };

@@ -16,11 +16,12 @@
     "./ethereum-react": "./dist/ethereum-react/index.js",
     "./nouns": "./dist/nouns/index.js",
     "./emoji": "./dist/emoji.js",
-    "./custom-emoji": "./dist/custom-emoji.js"
+    "./custom-emoji": "./dist/custom-emoji.js",
+    "./empty-module": "./dist/empty-module.js"
   },
   "devDependencies": {
-    "@swc/core": "^1.7.21",
+    "@swc/core": "^1.7.23",
     "rollup": "^3.21.0",
-    "rollup-plugin-swc3": "^0.8.1"
+    "rollup-plugin-swc3": "^0.11.2"
   }
 }

@@ -71,6 +71,8 @@ import { useStreamData } from "../hooks/stream-contract.js";
 import { resolveIdentifier } from "../contracts.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import getDateYear from "date-fns/getYear";
+import StreamsDialog from "./streams-dialog.js";
+import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -206,9 +208,11 @@ const ProposalMainSection = ({
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (currentFormAction === "farcaster-comment") return [];
-    return pendingReplyTargetFeedItemIds.map((targetFeedItemId) =>
-      feedItems.find((i) => i.id === targetFeedItemId),
-    );
+    return pendingReplyTargetFeedItemIds
+      .map((targetFeedItemId) =>
+        feedItems.find((i) => i.id === targetFeedItemId),
+      )
+      .filter(Boolean);
   }, [currentFormAction, feedItems, pendingReplyTargetFeedItemIds]);
 
   const repostTargetFeedItems = React.useMemo(() => {
@@ -1335,14 +1339,16 @@ const RequestedAmounts = ({ amounts }) => (
 );
 
 const StreamStatus = ({ transaction }) => {
-  const { streamContractAddress, tokenAmount } = transaction;
+  const [, setSearchParams] = useSearchParams();
+  const { address: connectedWalletAccountAddress } = useWallet();
+  const { streamContractAddress, tokenAmount, receiverAddress } = transaction;
   const {
     token,
     startTime,
     stopTime,
     elapsedTime,
     remainingBalance,
-    recipientActiveBalance,
+    recipientBalance,
   } = useStreamData({ streamContractAddress });
 
   const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
@@ -1368,8 +1374,7 @@ const StreamStatus = ({ transaction }) => {
   };
 
   const vestedAmount =
-    Number(recipientActiveBalance) +
-    (Number(tokenAmount) - Number(remainingBalance));
+    Number(recipientBalance) + (Number(tokenAmount) - Number(remainingBalance));
 
   const formattedVestedAmount = React.useMemo(() => {
     if (!vestedAmount || !token) return;
@@ -1400,8 +1405,12 @@ const StreamStatus = ({ transaction }) => {
 
   const StreamEndDate = ({ stopTime }) => {
     if (!stopTime) return <span></span>;
-    const ends = new Date(Number(stopTime) * 1000);
-    const endsString = ends < new Date() ? "Ended on" : "Ends on";
+    const stopDate = new Date(Number(stopTime) * 1000);
+    const dayDifference = datesDifferenceInDays(stopDate, new Date());
+    const relativeDayThreshold = 7;
+
+    let endsString = stopDate < new Date() ? "Ended" : "Ends";
+    if (Math.abs(dayDifference) > relativeDayThreshold) endsString += " on";
 
     return (
       <span>
@@ -1409,13 +1418,12 @@ const StreamStatus = ({ transaction }) => {
         &middot; {endsString}{" "}
         <FormattedDateWithTooltip
           capitalize={false}
-          tinyRelative
-          relativeDayThreshold={7}
-          value={Number(stopTime) * 1000}
+          relativeDayThreshold={relativeDayThreshold}
+          value={stopDate}
           day="numeric"
           month="short"
           year={
-            getDateYear(Number(stopTime) * 1000) !== getDateYear(new Date())
+            getDateYear(stopDate) !== getDateYear(new Date())
               ? "numeric"
               : undefined
           }
@@ -1423,6 +1431,14 @@ const StreamStatus = ({ transaction }) => {
       </span>
     );
   };
+
+  const isStreamRecipient =
+    connectedWalletAccountAddress?.toLowerCase() ===
+    receiverAddress?.toLowerCase();
+
+  const showWithdrawButton = isStreamRecipient && recipientBalance > 0;
+
+  const streamStartsInFuture = Number(startTime) * 1000 > Date.now();
 
   if (!token) return null;
 
@@ -1442,26 +1458,59 @@ const StreamStatus = ({ transaction }) => {
         })
       }
     >
-      Stream{" "}
-      {formatPercentage(
-        Number(elapsedTime),
-        Number(stopTime) - Number(startTime),
-      )}{" "}
-      vested{" "}
-      {vestedAmount != null && vestedAmount > 0 && (
-        <span>
-          (
-          <a
-            href={buildEtherscanLink(`/address/${streamContractAddress}`)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            {formattedVestedAmount}
-          </a>
-          )
-        </span>
+      {streamStartsInFuture ? (
+        <>
+          Stream starts vesting on{" "}
+          <FormattedDateWithTooltip
+            disableRelative
+            month="short"
+            day="numeric"
+            value={Number(startTime) * 1000}
+          />
+        </>
+      ) : (
+        <>
+          Stream{" "}
+          {formatPercentage(
+            Number(elapsedTime),
+            Number(stopTime) - Number(startTime),
+          )}{" "}
+          vested{" "}
+          {vestedAmount != null && vestedAmount > 0 && (
+            <span>
+              (
+              <a
+                href={buildEtherscanLink(`/address/${streamContractAddress}`)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {formattedVestedAmount}
+              </a>
+              )
+            </span>
+          )}
+        </>
       )}
+
       <StreamEndDate stopTime={stopTime} />
+      {showWithdrawButton && (
+        <Button
+          size="tiny"
+          css={{ marginLeft: "1rem" }}
+          onClick={() =>
+            setSearchParams(
+              (p) => {
+                const newParams = new URLSearchParams(p);
+                newParams.set("streams", 1);
+                return newParams;
+              },
+              { replace: true },
+            )
+          }
+        >
+          Withdraw
+        </Button>
+      )}
     </div>
   );
 };
@@ -1500,6 +1549,11 @@ const ProposalScreen = ({ proposalId }) => {
 
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
+    { replace: true, prefetch: "true" },
+  );
+
+  const [isStreamsDialogOpen, toggleStreamsDialog] = useSearchParamToggleState(
+    "streams",
     { replace: true, prefetch: "true" },
   );
 
@@ -1631,6 +1685,17 @@ const ProposalScreen = ({ proposalId }) => {
               isOpen
               close={toggleEditDialog}
             />
+          </React.Suspense>
+        </ErrorBoundary>
+      )}
+      {isStreamsDialogOpen && proposal != null && (
+        <ErrorBoundary
+          onError={() => {
+            reloadPageOnce();
+          }}
+        >
+          <React.Suspense fallback={null}>
+            <StreamsDialog isOpen close={toggleStreamsDialog} />
           </React.Suspense>
         </ErrorBoundary>
       )}

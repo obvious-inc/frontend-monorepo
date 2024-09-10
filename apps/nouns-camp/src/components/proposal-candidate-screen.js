@@ -295,6 +295,8 @@ const ProposalCandidateScreenContent = ({
     excludeInvalid: true,
     activeProposerIds,
   });
+
+  // Signers will naturally have an active proposal here (the update target prop)
   const validSignaturesIncludingActiveProposers = getSponsorSignatures(
     candidate,
     {
@@ -692,22 +694,15 @@ const ProposalCandidateScreenContent = ({
                               transactions:
                                 candidate.latestVersion.content.transactions,
                               proposerSignatures:
-                                updateTargetProposal.signers.map((signer) => {
-                                  const signature =
-                                    validSignaturesIncludingActiveProposers.find(
-                                      (s) =>
-                                        s.signer.id.toLowerCase() ===
-                                        signer.id.toLowerCase(),
-                                    );
-
-                                  return {
+                                validSignaturesIncludingActiveProposers.map(
+                                  (signature) => ({
                                     sig: signature.sig,
                                     signer: signature.signer.id,
                                     expirationTimestamp:
                                       signature.expirationTimestamp.getTime() /
                                       1000,
-                                  };
-                                }),
+                                  }),
+                                ),
                             });
                           } finally {
                             setPendingProposalUpdate(false);

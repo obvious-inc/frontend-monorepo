@@ -59,6 +59,7 @@ const entrypoints = [
   },
   { file: "emoji.js" },
   { file: "custom-emoji.js" },
+  { file: "empty-module.js" },
 ];
 
 export default entrypoints.map(createConfig);
