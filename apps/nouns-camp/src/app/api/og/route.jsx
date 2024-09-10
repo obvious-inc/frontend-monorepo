@@ -622,21 +622,48 @@ const renderProposalStateText = ({ proposal, latestBlockNumber }) => {
   }
 };
 
+const getFonts = async () => {
+  const fontName = "Inter";
+
+  const regularResp = await fetch(
+    new URL("../../../assets/fonts/Inter-Regular.ttf", import.meta.url),
+  );
+  const regularFontArray = await regularResp.arrayBuffer();
+
+  const boldResp = await fetch(
+    new URL("../../../assets/fonts/Inter-Bold.ttf", import.meta.url),
+  );
+  const boldFontArray = await boldResp.arrayBuffer();
+
+  const mediumResp = await fetch(
+    new URL("../../../assets/fonts/Inter-Medium.ttf", import.meta.url),
+  );
+  const mediumFontArray = await mediumResp.arrayBuffer();
+
+  return [
+    {
+      data: regularFontArray,
+      name: fontName,
+      weight: 400,
+      style: "normal",
+    },
+    {
+      data: mediumFontArray,
+      name: fontName,
+      weight: 500,
+      style: "normal",
+    },
+    {
+      data: boldFontArray,
+      name: fontName,
+      weight: 700,
+      style: "normal",
+    },
+  ];
+};
+
 export async function GET(request) {
-  const robotoRegularResp = await fetch(
-    new URL("../../../assets/fonts/Roboto-Regular.woff", import.meta.url),
-  );
-  const robotoRegular = await robotoRegularResp.arrayBuffer();
-
-  const robotoBoldResp = await fetch(
-    new URL("../../../assets/fonts/Roboto-Bold.woff", import.meta.url),
-  );
-  const robotoBold = await robotoBoldResp.arrayBuffer();
-
-  const robotoMediumResp = await fetch(
-    new URL("../../../assets/fonts/Roboto-Medium.woff", import.meta.url),
-  );
-  const robotoMedium = await robotoMediumResp.arrayBuffer();
+  const fonts = await getFonts();
 
   try {
     const { searchParams } = new URL(request.url);
@@ -761,26 +788,7 @@ export async function GET(request) {
         width: 1000,
         height: 525,
         emoji: "twemoji",
-        fonts: [
-          {
-            data: robotoRegular,
-            name: "Roboto",
-            weight: 400,
-            style: "normal",
-          },
-          {
-            data: robotoBold,
-            name: "Roboto",
-            weight: 700,
-            style: "normal",
-          },
-          {
-            data: robotoMedium,
-            name: "Roboto",
-            weight: 500,
-            style: "normal",
-          },
-        ],
+        fonts: fonts,
         headers: {
           // TODO: might need to tweak the max-age accordingly
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
