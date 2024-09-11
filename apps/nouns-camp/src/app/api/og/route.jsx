@@ -132,6 +132,7 @@ const SimpleCallout = ({ children }) => (
 );
 
 const SimpleFormattedDate = ({ value, ...options }) => {
+  if (!value) return null;
   const formatter = new Intl.DateTimeFormat(undefined, options);
   const formattedDate = formatter.format(
     typeof value === "string" ? parseFloat(value) : value,
@@ -313,23 +314,18 @@ const ProposalHeader = ({
           color: theme.colors.textDimmed,
           whiteSpace: "pre",
           flexWrap: "wrap",
+          lineHeight: 1.2,
         }}
       >
         Proposed{" "}
-        {createdAt != null && (
-          <>
-            <SimpleFormattedDate
-              value={createdAt}
-              day="numeric"
-              month="short"
-              year={
-                createdAt.getYear() !== new Date().getYear()
-                  ? "numeric"
-                  : undefined
-              }
-            />
-          </>
-        )}{" "}
+        <SimpleFormattedDate
+          value={createdAt}
+          day="numeric"
+          month="short"
+          year={
+            createdAt.getYear() !== new Date().getYear() ? "numeric" : undefined
+          }
+        />{" "}
         by{" "}
         <SimpleAccountPreview
           address={proposer.id}
@@ -341,7 +337,7 @@ const ProposalHeader = ({
           <>
             , sponsored by{" "}
             {sponsors.map((id, i) => (
-              <span key={id}>
+              <React.Fragment key={id}>
                 {i !== 0 && <>, </>}
                 <SimpleAccountPreview
                   address={sponsors[i]?.id}
@@ -349,7 +345,7 @@ const ProposalHeader = ({
                   ensAvatar={sponsors[i]?.ensAvatar}
                   seedUrl={sponsors[i]?.seedUrl}
                 />
-              </span>
+              </React.Fragment>
             ))}
           </>
         )}
