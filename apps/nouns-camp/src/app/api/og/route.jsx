@@ -866,7 +866,7 @@ export async function GET(request) {
             />
           </div>
           {hasVotes && <ProposalVotesProgress proposal={proposal} />}
-          <p>Cache: {cacheTimeSeconds}s</p>
+          <p>Optimal cache: {cacheTimeSeconds}s</p>
         </div>
       ),
       {
@@ -877,12 +877,12 @@ export async function GET(request) {
         fonts: fonts,
         headers: {
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
-          "Cache-Control":
-            "public, immutable, no-transform, s-maxage=60, max-age=60",
+          "cache-control":
+            "s-maxage=60, max-age=60, public, immutable, no-transform",
           "Vercel-CDN-Cache-Control":
-            "public, immutable, no-transform, s-maxage=60, max-age=60",
+            "s-maxage=60, max-age=60, public, immutable, no-transform",
           "CDN-Cache-Control":
-            "public, immutable, no-transform, s-maxage=60, max-age=60",
+            "s-maxage=60, max-age=60, public, immutable, no-transform",
         },
       },
     );
