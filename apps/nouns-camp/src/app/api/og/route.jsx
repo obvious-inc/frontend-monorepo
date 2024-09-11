@@ -877,12 +877,9 @@ export async function GET(request) {
         fonts: fonts,
         headers: {
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
-          "cache-control":
-            "s-maxage=60, max-age=60, public, immutable, no-transform",
-          "Vercel-CDN-Cache-Control":
-            "s-maxage=60, max-age=60, public, immutable, no-transform",
-          "CDN-Cache-Control":
-            "s-maxage=60, max-age=60, public, immutable, no-transform",
+          "Cache-Control": "no-store, no-transform",
+          //   "Vercel-CDN-Cache-Control": "no-store, no-transform",
+          //   "CDN-Cache-Control": "no-store, no-transform",
         },
       },
     );
