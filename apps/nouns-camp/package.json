@@ -15,7 +15,7 @@
     "eslint-config-next": "14.2.9",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-next-on-pages": "1.13.2",
-    "vercel": "37.4.0",
+    "vercel": "37.4.1",
     "wrangler": "3.75.0"
   },
   "dependencies": {
