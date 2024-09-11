@@ -301,7 +301,7 @@ const ProposalHeader = ({
           fontWeight: theme.text.weights.header,
           color: theme.colors.textHeader,
           margin: "0 0 0.5rem",
-          lineHeight: 1.15,
+          lineHeight: 1.2,
         }}
       >
         {trimmedTitle}
@@ -314,7 +314,7 @@ const ProposalHeader = ({
           color: theme.colors.textDimmed,
           whiteSpace: "pre",
           flexWrap: "wrap",
-          lineHeight: 1.2,
+          lineHeight: 1.4,
         }}
       >
         Proposed{" "}
