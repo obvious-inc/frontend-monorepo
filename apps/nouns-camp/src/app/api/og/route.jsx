@@ -866,7 +866,6 @@ export async function GET(request) {
             />
           </div>
           {hasVotes && <ProposalVotesProgress proposal={proposal} />}
-          <p>Optimal cache: {cacheTimeSeconds}s</p>
         </div>
       ),
       {
@@ -877,8 +876,8 @@ export async function GET(request) {
         fonts: fonts,
         headers: {
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
-          "cache-control": "no-store, no-transform",
-          "cdn-cache-control": "no-store, no-transform",
+          "cache-control": `public, immutable, no-transform, s-maxage=${cacheTimeSeconds}, max-age=${cacheTimeSeconds}`,
+          "cdn-cache-control": `public, immutable, no-transform, s-maxage=${cacheTimeSeconds}, max-age=${cacheTimeSeconds}`,
         },
       },
     );
