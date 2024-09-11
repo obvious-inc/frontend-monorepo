@@ -825,7 +825,7 @@ export async function GET(request) {
                 <p
                   style={{
                     margin: 0,
-                    fontSize: theme.text.sizes.tiny,
+                    fontSize: theme.text.sizes.small,
                     color: theme.colors.textDimmed,
                   }}
                 >
