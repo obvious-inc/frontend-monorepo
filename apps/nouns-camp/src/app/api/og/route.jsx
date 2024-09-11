@@ -688,6 +688,57 @@ const getFonts = async () => {
   ];
 };
 
+const getCacheTimeSeconds = ({ proposal, latestBlockNumber }) => {
+  if (isFinalProposalState(proposal.state)) return 60 * 60 * 24 * 365;
+
+  const referenceBlock = {
+    number: latestBlockNumber,
+    timestamp: new Date(),
+  };
+
+  switch (proposal.state) {
+    case "updatable":
+    case "pending": {
+      const startDate = approximateBlockTimestamp(
+        proposal.startBlock,
+        referenceBlock,
+      );
+
+      const { minutes, hours, days } = dateUtils.differenceUnits(
+        startDate,
+        new Date(),
+      );
+
+      if (minutes < 5) return 60;
+      if (hours === 0) return 60 * 5;
+      if (days <= 1) return 60 * 30;
+      return 60 * 60;
+    }
+
+    case "active":
+    case "objection-period": {
+      const endDate = approximateBlockTimestamp(
+        proposal.objectionPeriodEndBlock ?? proposal.endBlock,
+        referenceBlock,
+      );
+
+      const { minutes } = dateUtils.differenceUnits(endDate, new Date());
+
+      if (minutes < 2) return 10;
+      if (minutes < 5) return 30;
+      return 60;
+    }
+
+    case "succeeded":
+    case "queued":
+      return 60 * 60;
+
+    default: {
+      return 60;
+    }
+  }
+};
+
 export async function GET(request) {
   const fonts = await getFonts();
 
@@ -739,6 +790,11 @@ export async function GET(request) {
 
     const hasVotes =
       proposal.forVotes + proposal.againstVotes + proposal.abstainVotes > 0;
+
+    const cacheTimeSeconds = getCacheTimeSeconds({
+      proposal: { ...proposal, state: proposalState },
+      latestBlockNumber: currentBlockNumber,
+    });
 
     return new ImageResponse(
       (
@@ -819,14 +875,10 @@ export async function GET(request) {
         emoji: "twemoji",
         fonts: fonts,
         headers: {
-          // TODO: might need to tweak the max-age accordingly
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
-          "cache-control":
-            "no-transform, s-maxage=60, max-age=60, public, immutable",
-          "Vercel-CDN-Cache-Control":
-            "no-transform, s-maxage=60, max-age=60, public, immutable",
-          "CDN-Cache-Control":
-            "no-transform, s-maxage=60, max-age=60, public, immutable",
+          "Cache-Control": `no-transform, s-maxage=${cacheTimeSeconds}, max-age=${cacheTimeSeconds}, public, immutable`,
+          "Vercel-CDN-Cache-Control": `no-transform, s-maxage=${cacheTimeSeconds}, max-age=${cacheTimeSeconds}, public, immutable`,
+          "CDN-Cache-Control": `no-transform, s-maxage=${cacheTimeSeconds}, max-age=${cacheTimeSeconds}, public, immutable`,
         },
       },
     );
