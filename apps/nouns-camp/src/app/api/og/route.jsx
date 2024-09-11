@@ -866,6 +866,7 @@ export async function GET(request) {
             />
           </div>
           {hasVotes && <ProposalVotesProgress proposal={proposal} />}
+          <p>Cache: {cacheTimeSeconds}s</p>
         </div>
       ),
       {
