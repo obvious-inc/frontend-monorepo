@@ -825,8 +825,7 @@ export async function GET(request) {
                 <p
                   style={{
                     margin: 0,
-                    fontSize: theme.text.sizes.small,
-                    color: theme.colors.textDimmed,
+                    color: theme.colors.textMuted,
                   }}
                 >
                   {renderProposalStateText({
@@ -838,6 +837,7 @@ export async function GET(request) {
               <p
                 style={{
                   margin: 0,
+                  fontSize: theme.text.sizes.larger,
                   fontWeight: theme.text.weights.smallTextEmphasis,
                   color: theme.colors.textMuted,
                 }}
