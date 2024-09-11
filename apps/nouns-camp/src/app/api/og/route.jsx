@@ -579,11 +579,7 @@ const renderProposalStateText = ({ proposal, latestBlockNumber }) => {
       if (minutes < 5) return <>Voting starts in a few minutes</>;
 
       if (hours === 0)
-        return (
-          <>
-            Voting starts in {Math.max(minutes, 0)} {minutes}
-          </>
-        );
+        return <>Voting starts in {Math.max(minutes, 0)} minutes</>;
 
       if (days <= 1)
         return <>Voting starts in {Math.round(minutes / 60)} hours</>;
@@ -619,12 +615,7 @@ const renderProposalStateText = ({ proposal, latestBlockNumber }) => {
 
       if (minutes < 5) return <>Voting ends in a few minutes</>;
 
-      if (hours <= 1)
-        return (
-          <>
-            Voting ends in {Math.max(minutes, 0)} {minutes}
-          </>
-        );
+      if (hours <= 1) return <>Voting ends in {Math.max(minutes, 0)} minutes</>;
 
       if (days <= 1)
         return <>Voting ends in {Math.round(minutes / 60)} hours</>;
