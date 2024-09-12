@@ -18,7 +18,6 @@ import { getChain } from "../../../utils/chains";
 import { getJsonRpcUrl } from "../../../wagmi-config";
 import { CHAIN_ID } from "../../../constants/env";
 import { truncateAddress } from "../../../../../../packages/common/src/utils/ethereum";
-import { normalize } from "viem/ens";
 import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
 import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
