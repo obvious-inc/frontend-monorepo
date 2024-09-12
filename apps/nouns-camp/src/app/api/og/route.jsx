@@ -29,7 +29,6 @@ export const runtime = "edge";
 
 const chain = getChain(CHAIN_ID);
 const publicClient = createPublicClient({
-  cacheTime: 60_000, // average response cache time is 60s
   chain,
   transport: http(getJsonRpcUrl(chain.id)),
   batch: {
@@ -140,7 +139,7 @@ const SimpleFormattedDate = ({ value, ...options }) => {
   return <span>{formattedDate}</span>;
 };
 
-const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
+const SimpleAccountPreview = ({ address, ensName, seedUrl }) => {
   const isAddress = address != null && isEthereumAccountAddress(address);
   const truncatedAddress = isAddress ? truncateAddress(address) : null;
 
@@ -149,28 +148,6 @@ const SimpleAccountPreview = ({ address, ensName, ensAvatar, seedUrl }) => {
       {ensName ?? truncatedAddress}
     </span>
   );
-
-  if (ensAvatar != null) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <img
-          src={ensAvatar}
-          style={{
-            width: "1.5rem",
-            height: "1.5rem",
-            borderRadius: "0.3rem",
-          }}
-        />{" "}
-        {displayName}
-      </div>
-    );
-  }
 
   if (seedUrl != null) {
     return (
@@ -329,7 +306,6 @@ const ProposalHeader = ({
         <SimpleAccountPreview
           address={proposer.id}
           ensName={proposer.ensName}
-          ensAvatar={proposer.ensAvatar}
           seedUrl={proposer.seedUrl}
         />
         {sponsors.length !== 0 && (
@@ -341,7 +317,6 @@ const ProposalHeader = ({
                 <SimpleAccountPreview
                   address={sponsors[i]?.id}
                   ensName={sponsors[i]?.ensName}
-                  ensAvatar={sponsors[i]?.ensAvatar}
                   seedUrl={sponsors[i]?.seedUrl}
                 />
               </React.Fragment>
@@ -733,16 +708,12 @@ const getBatchEnsInfo = async (addresses) => {
   const info = await Promise.all(
     addresses.map(async (address) => {
       const ensName = await publicClient.getEnsName({ address });
-      const ensAvatar = await publicClient.getEnsAvatar({
-        name: normalize(ensName),
-      });
-
-      return { address, ensName, ensAvatar };
+      return { address, ensName };
     }),
   );
 
-  return info.reduce((acc, { address, ensName, ensAvatar }) => {
-    acc[address] = { ensName, ensAvatar };
+  return info.reduce((acc, { address, ensName }) => {
+    acc[address] = { ensName };
     return acc;
   }, {});
 };
@@ -776,15 +747,13 @@ export async function GET(request) {
       id: proposal.proposerId,
       seedUrl: proposerSeedUrl,
       ensName: ensInfoByAddress[proposal.proposerId]?.ensName,
-      ensAvatar: ensInfoByAddress[proposal.proposerId]?.ensAvatar,
     };
 
     const sponsors = proposal.signers.map((signer) => {
       const ensName = ensInfoByAddress[signer.id]?.ensName;
-      const ensAvatar = ensInfoByAddress[signer.id]?.ensAvatar;
       const firstNoun = signer.nounsRepresented?.[0];
       const seedUrl = firstNoun ? buildDataUriFromSeed(firstNoun?.seed) : null;
-      return { id: signer.id, ensName, ensAvatar, seedUrl };
+      return { id: signer.id, ensName, seedUrl };
     });
 
     const isFinalOrSucceededState =
