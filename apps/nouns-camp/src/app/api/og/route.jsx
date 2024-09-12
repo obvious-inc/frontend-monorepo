@@ -29,8 +29,14 @@ export const runtime = "edge";
 
 const chain = getChain(CHAIN_ID);
 const publicClient = createPublicClient({
+  cacheTime: 60_000, // average response cache time is 60s
   chain,
   transport: http(getJsonRpcUrl(chain.id)),
+  batch: {
+    multicall: {
+      wait: 250,
+    },
+  },
 });
 
 const theme = {
@@ -66,12 +72,6 @@ const fetchProposal = async (id) => {
             endBlock
             updatePeriodEndBlock
             objectionPeriodEndBlock
-            canceledBlock
-            canceledTimestamp
-            queuedBlock
-            queuedTimestamp
-            executedBlock
-            executedTimestamp
             forVotes
             againstVotes
             abstainVotes
@@ -80,7 +80,6 @@ const fetchProposal = async (id) => {
             signatures
             calldatas
             values
-            executionETA
             proposer {
               id
               nounsRepresented {
@@ -730,6 +729,24 @@ const getCacheTimeSeconds = ({ proposal, latestBlockNumber }) => {
   }
 };
 
+const getBatchEnsInfo = async (addresses) => {
+  const info = await Promise.all(
+    addresses.map(async (address) => {
+      const ensName = await publicClient.getEnsName({ address });
+      const ensAvatar = await publicClient.getEnsAvatar({
+        name: normalize(ensName),
+      });
+
+      return { address, ensName, ensAvatar };
+    }),
+  );
+
+  return info.reduce((acc, { address, ensName, ensAvatar }) => {
+    acc[address] = { ensName, ensAvatar };
+    return acc;
+  }, {});
+};
+
 export async function GET(request) {
   const fonts = await getFonts();
 
@@ -743,37 +760,32 @@ export async function GET(request) {
       blockNumber: currentBlockNumber,
     });
 
-    const proposerEnsName = await publicClient.getEnsName({
-      address: proposal.proposerId,
-    });
-    const proposerEnsAvatar = await publicClient.getEnsAvatar({
-      name: normalize(proposerEnsName),
-    });
     const proposerFirstNoun = proposal.proposer.nounsRepresented?.[0];
     const proposerSeedUrl = proposerFirstNoun
       ? buildDataUriFromSeed(proposerFirstNoun?.seed)
       : null;
 
+    const signersIds = proposal.signers.map((signer) => signer.id);
+
+    const ensInfoByAddress = await getBatchEnsInfo([
+      proposal.proposerId,
+      ...signersIds,
+    ]);
+
     const proposer = {
       id: proposal.proposerId,
-      ensName: proposerEnsName,
-      ensAvatar: proposerEnsAvatar,
       seedUrl: proposerSeedUrl,
+      ensName: ensInfoByAddress[proposal.proposerId]?.ensName,
+      ensAvatar: ensInfoByAddress[proposal.proposerId]?.ensAvatar,
     };
 
-    const sponsors = await Promise.all(
-      proposal.signers.map(async (signer) => {
-        const ensName = await publicClient.getEnsName({ address: signer.id });
-        const ensAvatar = await publicClient.getEnsAvatar({
-          name: normalize(ensName),
-        });
-        const firstNoun = signer.nounsRepresented?.[0];
-        const seedUrl = firstNoun
-          ? buildDataUriFromSeed(firstNoun?.seed)
-          : null;
-        return { id: signer.id, ensName, ensAvatar, seedUrl };
-      }),
-    );
+    const sponsors = proposal.signers.map((signer) => {
+      const ensName = ensInfoByAddress[signer.id]?.ensName;
+      const ensAvatar = ensInfoByAddress[signer.id]?.ensAvatar;
+      const firstNoun = signer.nounsRepresented?.[0];
+      const seedUrl = firstNoun ? buildDataUriFromSeed(firstNoun?.seed) : null;
+      return { id: signer.id, ensName, ensAvatar, seedUrl };
+    });
 
     const isFinalOrSucceededState =
       isFinalProposalState(proposalState) ||
