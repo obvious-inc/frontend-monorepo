@@ -18,7 +18,6 @@ import { getChain } from "../../../utils/chains";
 import { getJsonRpcUrl } from "../../../wagmi-config";
 import { CHAIN_ID } from "../../../constants/env";
 import { truncateAddress } from "../../../../../../packages/common/src/utils/ethereum";
-import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
 import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
 import { date as dateUtils } from "@shades/common/utils";
@@ -402,7 +401,7 @@ const ProposalStateTag = ({ state }) => {
     <span
       style={{
         // width: "12rem",
-        backgroundColor: backgroundColor,
+        backgroundColor,
         color: textColor,
         textTransform: "uppercase",
         padding: "0.3rem 0.5rem",
@@ -594,11 +593,6 @@ export async function GET(request) {
       blockNumber: currentBlockNumber,
     });
 
-    const proposerFirstNoun = proposal.proposer.nounsRepresented?.[0];
-    const proposerSeedUrl = proposerFirstNoun
-      ? buildDataUriFromSeed(proposerFirstNoun?.seed)
-      : null;
-
     const signersIds = proposal.signers.map((signer) => signer.id);
 
     const ensInfoByAddress = await getBatchEnsInfo([
@@ -608,15 +602,12 @@ export async function GET(request) {
 
     const proposer = {
       id: proposal.proposerId,
-      seedUrl: proposerSeedUrl,
       ensName: ensInfoByAddress[proposal.proposerId]?.ensName,
     };
 
     const sponsors = proposal.signers.map((signer) => {
       const ensName = ensInfoByAddress[signer.id]?.ensName;
-      const firstNoun = signer.nounsRepresented?.[0];
-      const seedUrl = firstNoun ? buildDataUriFromSeed(firstNoun?.seed) : null;
-      return { id: signer.id, ensName, seedUrl };
+      return { id: signer.id, ensName };
     });
 
     const isFinalOrSucceededState =
