@@ -589,6 +589,12 @@ export async function GET(request) {
     const proposalId = searchParams.get("proposal");
 
     const proposal = await fetchProposal(proposalId);
+    if (!proposal) {
+      return new Response(`Proposal ${proposalId} not found`, {
+        status: 404,
+      });
+    }
+
     const currentBlockNumber = await publicClient.getBlockNumber();
     const proposalState = getState(proposal, {
       blockNumber: currentBlockNumber,
