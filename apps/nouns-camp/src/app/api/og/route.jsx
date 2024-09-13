@@ -22,7 +22,9 @@ import { buildDataUriFromSeed } from "@shades/common/nouns";
 import { extractAmounts } from "../../../utils/transactions";
 import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
 import { date as dateUtils } from "@shades/common/utils";
-import { dark as darkTheme } from "@shades/ui-web/theme";
+import { getTheme } from "@/theme";
+
+const theme = getTheme("light");
 
 export const runtime = "edge";
 
@@ -36,23 +38,6 @@ const publicClient = createPublicClient({
     },
   },
 });
-
-const theme = {
-  ...darkTheme,
-  colors: {
-    ...darkTheme.colors,
-    backgroundModifierNormal: "hsl(0, 0%, 100%, 0.055)",
-    textPositive: "#41b579",
-    textNegative: "#f25666",
-    textPositiveContrast: "#55c88d",
-    textPositiveContrastBackgroundLight: "#2b3b33",
-    textNegativeContrast: "#ff7281",
-    textNegativeContrastBackgroundLight: "#3f2f32",
-    textSpecialContrast: "#d388e6",
-    textSpecialContrastBackgroundLight: "#3d2f40",
-    textPrimaryBackgroundLight: "#253240",
-  },
-};
 
 const fetchProposal = async (id) => {
   const data = await subgraphFetch({
@@ -82,29 +67,10 @@ const fetchProposal = async (id) => {
               id
               nounsRepresented {
                 id
-                seed {
-                    id
-                    background
-                    body
-                    accessory
-                    head
-                    glasses 
-                    }
-                }
+              }
             }
             signers {
               id
-              nounsRepresented {
-                id
-                seed {
-                    id
-                    background
-                    body
-                    accessory
-                    head
-                    glasses 
-                    }
-                }
             }
           }
         }`,
@@ -117,60 +83,28 @@ const SimpleCallout = ({ children }) => (
   <div
     style={{
       display: "flex",
-      backgroundColor: theme.colors.backgroundModifierNormal,
-      borderRadius: "0.3rem",
+      backgroundColor: theme.colors.backgroundModifierStrong,
+      borderRadius: "0.5rem",
       whiteSpace: "pre",
-      marginTop: "1.6rem",
-      padding: "1rem 1.6rem",
+      padding: "1.6rem",
     }}
   >
     {children}
   </div>
 );
 
-const SimpleFormattedDate = ({ value, ...options }) => {
+const formatDate = ({ value, ...options }) => {
   if (!value) return null;
   const formatter = new Intl.DateTimeFormat(undefined, options);
-  const formattedDate = formatter.format(
+  return formatter.format(
     typeof value === "string" ? parseFloat(value) : value,
   );
-
-  return <span>{formattedDate}</span>;
 };
 
-const SimpleAccountPreview = ({ address, ensName, seedUrl }) => {
+const displayName = ({ address, ensName }) => {
   const isAddress = address != null && isEthereumAccountAddress(address);
   const truncatedAddress = isAddress ? truncateAddress(address) : null;
-
-  const displayName = (
-    <span style={{ fontWeight: theme.text.weights.smallHeader }}>
-      {ensName ?? truncatedAddress}
-    </span>
-  );
-
-  if (seedUrl != null) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <img
-          src={seedUrl}
-          style={{
-            width: "1.5rem",
-            height: "1.5rem",
-            borderRadius: "0.3rem",
-          }}
-        />{" "}
-        {displayName}
-      </div>
-    );
-  }
-
-  return displayName;
+  return ensName ?? truncatedAddress;
 };
 
 const FormattedAmount = ({
@@ -243,9 +177,7 @@ const RequestedAmounts = ({ amounts }) => (
       return (
         <span key={currency}>
           {i !== 0 && ` + `}
-          <span style={{ fontWeight: theme.text.weights.header }}>
-            {formattedAmount()}
-          </span>
+          <span style={{ fontWeight: "700" }}>{formattedAmount()}</span>
         </span>
       );
     })}
@@ -255,7 +187,6 @@ const RequestedAmounts = ({ amounts }) => (
 const ProposalHeader = ({
   title,
   createdAt,
-  updatedAt,
   proposer,
   sponsors = [],
   transactions = [],
@@ -268,76 +199,53 @@ const ProposalHeader = ({
       ? title.substring(0, maxTitleLength) + "..."
       : title;
 
+  const subtitle = (() => {
+    let text = `Proposed ${formatDate({
+      value: createdAt,
+      day: "numeric",
+      month: "short",
+      year:
+        createdAt.getYear() !== new Date().getYear() ? "numeric" : undefined,
+    })} by ${displayName({ address: proposer.id, ensName: proposer.ensName })}`;
+
+    if (sponsors.length !== 0)
+      text += `, sponsored by ${displayName({
+        address: sponsors[0]?.id,
+        ensName: sponsors[0]?.ensName,
+      })}`;
+
+    if (sponsors.length >= 2)
+      text += `, ${sponsors
+        .slice(1)
+        .map((s) => displayName({ address: s.id, ensName: s.ensName }))
+        .join(", ")}`;
+
+    return text;
+  })();
+
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <h1
         style={{
           fontSize: theme.text.sizes.huge,
-          fontWeight: theme.text.weights.header,
+          fontWeight: "700",
           color: theme.colors.textHeader,
-          margin: "0 0 0.5rem",
-          lineHeight: 1.2,
+          margin: 0,
+          lineHeight: 1,
         }}
       >
         {trimmedTitle}
       </h1>
 
-      <div
+      <p
         style={{
-          display: "flex",
-          alignItems: "center",
+          margin: "0.8rem 0 1.4rem",
           color: theme.colors.textDimmed,
-          whiteSpace: "pre",
-          flexWrap: "wrap",
           lineHeight: 1.4,
         }}
       >
-        Proposed{" "}
-        <SimpleFormattedDate
-          value={createdAt}
-          day="numeric"
-          month="short"
-          year={
-            createdAt.getYear() !== new Date().getYear() ? "numeric" : undefined
-          }
-        />{" "}
-        by{" "}
-        <SimpleAccountPreview
-          address={proposer.id}
-          ensName={proposer.ensName}
-          seedUrl={proposer.seedUrl}
-        />
-        {sponsors.length !== 0 && (
-          <>
-            , sponsored by{" "}
-            {sponsors.map((id, i) => (
-              <React.Fragment key={id}>
-                {i !== 0 && <>, </>}
-                <SimpleAccountPreview
-                  address={sponsors[i]?.id}
-                  ensName={sponsors[i]?.ensName}
-                  seedUrl={sponsors[i]?.seedUrl}
-                />
-              </React.Fragment>
-            ))}
-          </>
-        )}
-        {updatedAt != null && updatedAt.getTime() !== createdAt.getTime() && (
-          <>
-            , last edited{" "}
-            <SimpleFormattedDate
-              value={updatedAt}
-              day="numeric"
-              month="short"
-              year={
-                updatedAt.getYear() !== new Date().getYear()
-                  ? "numeric"
-                  : undefined
-              }
-            />
-          </>
-        )}
-      </div>
+        {subtitle}
+      </p>
 
       {requestedAmounts.length !== 0 && (
         <SimpleCallout>
@@ -349,21 +257,13 @@ const ProposalHeader = ({
   );
 };
 
-const VotesHeader = ({ label, votes, styleProps }) => (
-  <p
-    style={{
-      fontWeight: theme.text.weights.emphasis,
-      ...styleProps,
-    }}
-  >
+const VotesHeader = ({ label, votes, style }) => (
+  <p style={style}>
     {label} {votes}
   </p>
 );
 
-const VotesProgressBar = ({ votes, totalVotes, styleProps }) => {
-  if (!votes) return null;
-  const votesPercentage = (votes / totalVotes) * 100;
-
+const VotesProgressBar = ({ style }) => {
   return (
     <div
       style={{
@@ -371,9 +271,7 @@ const VotesProgressBar = ({ votes, totalVotes, styleProps }) => {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: "0.4rem",
-        width: `${votesPercentage}%`,
-        ...styleProps,
+        ...style,
       }}
     />
   );
@@ -381,15 +279,9 @@ const VotesProgressBar = ({ votes, totalVotes, styleProps }) => {
 
 const ProposalVotesProgress = ({ proposal }) => {
   const { forVotes, againstVotes, abstainVotes, quorumVotes } = proposal;
-  const totalVotes = forVotes + againstVotes + abstainVotes;
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
+    <div style={{ display: "flex", flexDirection: "column" }}>
       <div
         style={{
           display: "flex",
@@ -401,7 +293,7 @@ const ProposalVotesProgress = ({ proposal }) => {
           <VotesHeader
             label="For"
             votes={forVotes}
-            styleProps={{ color: theme.colors.textPositive }}
+            style={{ color: theme.colors.textPositive }}
           />
           <p
             style={{
@@ -419,22 +311,16 @@ const ProposalVotesProgress = ({ proposal }) => {
           <VotesHeader
             label="Abstain"
             votes={abstainVotes}
-            styleProps={{ color: theme.colors.textDimmed }}
+            style={{ color: theme.colors.textDimmed }}
           />
-          <p
-            style={{
-              fontWeight: theme.text.weights.emphasis,
-              color: theme.colors.textDimmed,
-              whiteSpace: "pre",
-            }}
-          >
+          <p style={{ color: theme.colors.textDimmed, whiteSpace: "pre" }}>
             {" "}
             &middot;{" "}
           </p>
           <VotesHeader
             label="Against"
             votes={againstVotes}
-            styleProps={{ color: theme.colors.textNegative }}
+            style={{ color: theme.colors.textNegative }}
           />
         </>
       </div>
@@ -442,31 +328,36 @@ const ProposalVotesProgress = ({ proposal }) => {
         style={{
           display: "flex",
           flexDirection: "row",
-          alignItems: "center",
+          alignItems: "stretch",
           justifyContent: "center",
-          borderRadius: "0.3rem",
+          borderRadius: "2px",
+          overflow: "hidden",
+          height: "1.2rem",
+          gap: "3px",
         }}
       >
         <VotesProgressBar
-          votes={forVotes}
-          totalVotes={totalVotes}
-          styleProps={{
-            backgroundColor: theme.colors.textPositive,
+          style={{ flex: forVotes, backgroundColor: theme.colors.textPositive }}
+        />
+        {quorumVotes > forVotes && (
+          <VotesProgressBar
+            style={{
+              flex: quorumVotes - forVotes,
+              backgroundColor: theme.colors.backgroundModifierStrong,
+            }}
+          />
+        )}
+
+        <VotesProgressBar
+          style={{
+            flex: abstainVotes,
+            backgroundColor: theme.colors.textMuted,
           }}
         />
 
         <VotesProgressBar
-          votes={abstainVotes}
-          totalVotes={totalVotes}
-          styleProps={{
-            backgroundColor: theme.colors.textDimmed,
-          }}
-        />
-
-        <VotesProgressBar
-          votes={againstVotes}
-          totalVotes={totalVotes}
-          styleProps={{
+          style={{
+            flex: againstVotes,
             backgroundColor: theme.colors.textNegative,
           }}
         />
@@ -503,26 +394,21 @@ const ProposalStateTag = ({ state }) => {
 
   const backgroundColor =
     backgroundByVariant?.[variantByState?.[state]] ??
-    theme.colors.backgroundModifierNormal;
+    theme.colors.backgroundModifierStrong;
   const textColor =
     colorByVariant?.[variantByState?.[state]] ?? theme.colors.textNormal;
 
   return (
     <span
       style={{
-        width: "12rem",
-        justifyContent: "center",
+        // width: "12rem",
         backgroundColor: backgroundColor,
         color: textColor,
         textTransform: "uppercase",
-        padding: "0.3em 0.3em 0.2em",
+        padding: "0.3rem 0.5rem",
         borderRadius: "0.4rem",
         lineHeight: 1.2,
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-        fontWeight: theme.text.weights.smallHeader,
-        fontSize: theme.text.sizes.tiny,
+        fontSize: theme.text.sizes.small,
       }}
     >
       {getStateLabel(state)}
@@ -604,43 +490,21 @@ const renderProposalStateText = ({ proposal, latestBlockNumber }) => {
 const getFonts = async () => {
   const fontName = "Inter";
 
-  const regularResp = await fetch(
-    new URL("../../../assets/fonts/Inter-Regular.woff", import.meta.url),
+  const semiBoldResp = await fetch(
+    new URL("../../../assets/fonts/Inter-SemiBold.woff", import.meta.url),
   );
-  const regularFontArray = await regularResp.arrayBuffer();
+  const semiBoldFontArray = await semiBoldResp.arrayBuffer();
 
   const boldResp = await fetch(
     new URL("../../../assets/fonts/Inter-Bold.woff", import.meta.url),
   );
   const boldFontArray = await boldResp.arrayBuffer();
 
-  const mediumResp = await fetch(
-    new URL("../../../assets/fonts/Inter-Medium.woff", import.meta.url),
-  );
-  const mediumFontArray = await mediumResp.arrayBuffer();
-
-  const semiBoldResp = await fetch(
-    new URL("../../../assets/fonts/Inter-SemiBold.woff", import.meta.url),
-  );
-  const semiBoldFontArray = await semiBoldResp.arrayBuffer();
-
   return [
-    {
-      data: regularFontArray,
-      name: fontName,
-      weight: 400,
-      style: "normal",
-    },
-    {
-      data: mediumFontArray,
-      name: fontName,
-      weight: 500,
-      style: "normal",
-    },
     {
       data: semiBoldFontArray,
       name: fontName,
-      weight: 600,
+      weight: 400,
       style: "normal",
     },
     {
@@ -781,6 +645,7 @@ export async function GET(request) {
             justifyContent: "space-between",
             color: theme.colors.textNormal,
             fontSize: theme.text.sizes.large,
+            // fontWeight: "500",
           }}
         >
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -789,41 +654,33 @@ export async function GET(request) {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                paddingBottom: "1rem",
+                marginBottom: "1.2rem",
               }}
             >
               <div
                 style={{
                   display: "flex",
                   flexDirection: "row",
-                  gap: "1rem",
+                  gap: "1.2rem",
                   alignItems: "center",
                   justifyContent: "flex-start",
                 }}
               >
                 <ProposalStateTag state={proposalState} />
-                <p
-                  style={{
-                    margin: 0,
-                    color: theme.colors.textMuted,
-                  }}
-                >
-                  {renderProposalStateText({
-                    proposal: { ...proposal, state: proposalState },
-                    latestBlockNumber: currentBlockNumber,
-                  })}
-                </p>
+                {["active", "objection-period"].includes(proposalState) && (
+                  <p
+                    style={{
+                      margin: 0,
+                      color: theme.colors.textDimmed,
+                    }}
+                  >
+                    {renderProposalStateText({
+                      proposal: { ...proposal, state: proposalState },
+                      latestBlockNumber: currentBlockNumber,
+                    })}
+                  </p>
+                )}
               </div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: theme.text.sizes.larger,
-                  fontWeight: theme.text.weights.smallTextEmphasis,
-                  color: theme.colors.textMuted,
-                }}
-              >
-                {proposal.id}
-              </p>
             </div>
 
             <ProposalHeader
@@ -836,7 +693,21 @@ export async function GET(request) {
               sponsors={sponsors}
             />
           </div>
-          {hasVotes && <ProposalVotesProgress proposal={proposal} />}
+          {["updatable", "pending"].includes(proposalState) ? (
+            <p
+              style={{
+                margin: 0,
+                color: theme.colors.textDimmed,
+              }}
+            >
+              {renderProposalStateText({
+                proposal: { ...proposal, state: proposalState },
+                latestBlockNumber: currentBlockNumber,
+              })}
+            </p>
+          ) : hasVotes ? (
+            <ProposalVotesProgress proposal={proposal} />
+          ) : null}
         </div>
       ),
       {
@@ -844,7 +715,7 @@ export async function GET(request) {
         width: 1000,
         height: 525,
         emoji: "twemoji",
-        fonts: fonts,
+        fonts,
         headers: {
           // https://docs.farcaster.xyz/developers/frames/advanced#making-the-initial-frame-image-dynamic
           "cache-control": `public, immutable, no-transform, s-maxage=${cacheTimeSeconds}, max-age=${cacheTimeSeconds}`,
