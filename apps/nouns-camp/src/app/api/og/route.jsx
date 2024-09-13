@@ -50,6 +50,7 @@ const fetchProposal = async (id) => {
             createdTimestamp
             lastUpdatedBlock
             lastUpdatedTimestamp
+            executionETA
             startBlock
             endBlock
             updatePeriodEndBlock
@@ -108,7 +109,7 @@ const displayName = ({ address, ensName }) => {
 
 const FormattedAmount = ({
   value,
-  currency,
+  currency = "eth",
   tokenSymbol = "ETH",
   truncate = true,
   decimals = 3,
@@ -154,7 +155,7 @@ const RequestedAmounts = ({ amounts }) => (
             return <FormattedAmount value={amount} currency="eth" />;
 
           case "weth":
-            return <>weth: {amount}</>;
+            return <FormattedAmount value={amount} tokenSymbol="WETH" />;
 
           case "usdc":
             return (
