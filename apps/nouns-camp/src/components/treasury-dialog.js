@@ -849,6 +849,9 @@ const Heading = (props) => (
         color: t.colors.textDimmed,
         margin: "0 0 1rem",
         "* + &": { marginTop: "2.8rem" },
+        justifyContent: "space-between",
+        display: "flex",
+        alignItems: "center",
       })
     }
     {...props}
