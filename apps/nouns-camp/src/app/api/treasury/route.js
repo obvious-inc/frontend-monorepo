@@ -7,6 +7,8 @@ import { getJsonRpcUrl } from "../../../wagmi-config.js";
 
 export const runtime = "edge";
 
+const ONE_HOUR_IN_SECONDS = 60 * 60;
+
 const chain = getChain(CHAIN_ID);
 
 const publicClient = createPublicClient({
@@ -189,6 +191,9 @@ export async function GET() {
     ]),
   );
 
+  // 30 min cache
+  const cacheTime = ONE_HOUR_IN_SECONDS / 2;
+
   return Response.json(
     {
       balances: {
@@ -213,8 +218,7 @@ export async function GET() {
     },
     {
       headers: {
-        // 30 min cache
-        "Cache-Control": `public, immutable, max-age=${60 * 30}, stale-while-revalidate=${60 * 60}`,
+        "Cache-Control": `max-age=${cacheTime}, s-max-age=${cacheTime}, stale-while-revalidate=${cacheTime * 2}`,
       },
     },
   );

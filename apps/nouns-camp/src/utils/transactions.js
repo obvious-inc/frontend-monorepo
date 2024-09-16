@@ -67,6 +67,7 @@ export const parse = (data) => {
   const nounsExecutorContract = resolveIdentifier("executor");
   const nounsTokenContract = resolveIdentifier("token");
   const wethTokenContract = resolveIdentifier("weth-token");
+  const stethTokenContract = resolveIdentifier("steth-token");
   const usdcTokenContract = resolveIdentifier("usdc-token");
 
   const transactions = data.targets.map((target, i) => ({
@@ -187,6 +188,22 @@ export const parse = (data) => {
     }
 
     if (
+      target === stethTokenContract.address &&
+      normalizeSignature(signature) ===
+        normalizeSignature("transfer(address,uint256)")
+    ) {
+      return {
+        type: "steth-transfer",
+        target,
+        functionName,
+        functionInputs,
+        functionInputTypes,
+        receiverAddress: functionInputs[0],
+        stethAmount: BigInt(functionInputs[1]),
+      };
+    }
+
+    if (
       target === usdcTokenContract.address &&
       signature === "approve(address,uint256)"
     ) {
@@ -289,6 +306,7 @@ export const unparse = (transactions) => {
   const nounsExecutorContract = resolveIdentifier("executor");
   const nounsTokenContract = resolveIdentifier("token");
   const wethTokenContract = resolveIdentifier("weth-token");
+  const stethTokenContract = resolveIdentifier("steth-token");
   const nounsPayerContract = resolveIdentifier("payer");
   const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
   const nounsStreamFactoryContract = resolveIdentifier("stream-factory");
@@ -349,6 +367,17 @@ export const unparse = (transactions) => {
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
               [t.receiverAddress, t.wethAmount],
+            ),
+          });
+
+        case "steth-transfer":
+          return append({
+            target: stethTokenContract.address,
+            value: "0",
+            signature: "transfer(address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "uint256" }],
+              [t.receiverAddress, t.stethAmount],
             ),
           });
 
@@ -483,12 +512,18 @@ export const extractAmounts = (parsedTransactions) => {
       t.type === "weth-approval" ||
       t.type === "weth-stream-funding",
   );
+
+  const stEthTransfers = parsedTransactions.filter(
+    (t) => t.type === "steth-transfer",
+  );
+
   const usdcTransfers = parsedTransactions.filter(
     (t) =>
       t.type === "usdc-approval" ||
       t.type === "usdc-transfer-via-payer" ||
       t.type === "usdc-stream-funding-via-payer",
   );
+
   const treasuryNounTransferNounIds = parsedTransactions
     .filter((t) => t.type === "treasury-noun-transfer")
     .map((t) => t.nounId);
@@ -504,6 +539,11 @@ export const extractAmounts = (parsedTransactions) => {
     (sum, t) => sum + t.wethAmount,
     BigInt(0),
   );
+  const stEthAmount = stEthTransfers.reduce(
+    (sum, t) => sum + t.stethAmount,
+    BigInt(0),
+  );
+
   const usdcAmount = usdcTransfers.reduce(
     (sum, t) => sum + t.usdcAmount,
     BigInt(0),
@@ -512,6 +552,7 @@ export const extractAmounts = (parsedTransactions) => {
   return [
     { currency: "eth", amount: ethAmount },
     { currency: "weth", amount: wethAmount },
+    { currency: "steth", amount: stEthAmount },
     { currency: "usdc", amount: usdcAmount },
     {
       currency: "nouns",
