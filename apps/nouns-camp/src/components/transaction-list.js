@@ -132,6 +132,7 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
       case "weth-deposit":
       case "weth-approval":
       case "weth-stream-funding":
+      case "steth-transfer":
       case "usdc-stream-funding-via-payer":
       case "payer-top-up":
       case "stream":
@@ -225,6 +226,7 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
       case "unparsed-payable-function-call":
       case "transfer":
       case "weth-transfer":
+      case "steth-transfer":
       case "weth-deposit":
       case "weth-approval":
       case "stream":
@@ -240,6 +242,7 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
   const renderExpandedContent = () => {
     switch (t.type) {
       case "weth-transfer":
+      case "steth-transfer":
       case "weth-deposit":
       case "weth-approval":
       case "usdc-approval":
@@ -586,6 +589,23 @@ export const TransactionExplanation = ({ transaction: t }) => {
             <FormattedEthWithConditionalTooltip
               value={t.wethAmount}
               tokenSymbol="WETH"
+            />
+          </em>{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>
+        </>
+      );
+
+    case "steth-transfer":
+      return (
+        <>
+          Transfer{" "}
+          <em>
+            <FormattedEthWithConditionalTooltip
+              value={t.stethAmount}
+              tokenSymbol="stETH"
             />
           </em>{" "}
           to{" "}
