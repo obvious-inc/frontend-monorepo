@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.16] - 2024-09-16
+
+### 🚀 Features
+
+- *(camp)* Add shared cache directives where appropriate
+- *(camp)* Add stETH transfer support
+
+### 🐛 Bug Fixes
+
+- *(ci)* Add Sentry auth token to turbo env
+
 ## [1.3.0-alpha.15] - 2024-09-16
 
 ### 🐛 Bug Fixes

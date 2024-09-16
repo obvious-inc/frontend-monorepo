@@ -50,7 +50,7 @@ export async function GET(request) {
     { casts, accounts },
     {
       headers: {
-        "Cache-Control": "max-age=10, stale-while-revalidate=20",
+        "Cache-Control": "max-age=10, s-max-age=10, stale-while-revalidate=20",
       },
     },
   );
