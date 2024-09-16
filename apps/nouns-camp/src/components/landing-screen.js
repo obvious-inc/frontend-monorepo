@@ -2,7 +2,8 @@
 
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
-import { formatEther } from "viem";
+import { formatEther, isAddress, getAddress as checksumEncodeAddress } from "viem";
+import { normalize as normalizeEns } from 'viem/ens'
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
@@ -12,6 +13,7 @@ import { useCachedState } from "@shades/common/app";
 import {
   array as arrayUtils,
   object as objectUtils,
+  ethereum as ethereumUtils,
   searchRecords,
 } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
@@ -866,6 +868,9 @@ const BrowseScreen = () => {
               {deferredQuery !== "" ? (
                 // Search results
                 <div css={css({ marginTop: "2rem" })}>
+                  <div css={css({ marginBottom: "1rem" })}>
+                    <VoterSearchResult query={deferredQuery} />
+                  </div>
                   <ProposalList
                     items={
                       page == null
@@ -903,6 +908,39 @@ const BrowseScreen = () => {
         </div>
       </Layout>
     </>
+  );
+};
+
+const safeNormalizeEns = (input) => {
+  try {
+    return normalizeEns(input);
+  } catch (_) {}
+};
+
+const VoterSearchResult = ({ query }) => {
+  const normalizedEns = safeNormalizeEns(query);
+
+  if (!isAddress(query) && !normalizedEns?.endsWith(".eth")) return;
+
+  let voter = "";
+  let voterDisplay = "";
+  if (normalizedEns?.endsWith(".eth")) {
+    voter = normalizedEns;
+    voterDisplay = normalizedEns;
+  } else {
+    voter = checksumEncodeAddress(query);
+    voterDisplay = ethereumUtils.truncateAddress(voter);
+  }
+
+  return (
+    <Button
+      size="default"
+      component={NextLink}
+      prefetch
+      href={`/voters/${voter}`}
+    >
+      View {voterDisplay} voter profile
+    </Button>
   );
 };
 
