@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.18] - 2024-09-17
+
+### 🚀 Features
+
+- *(camp)* Make time range select filters clearer
+
+### 🐛 Bug Fixes
+
+- *(camp)* Remove unnecessary signature normalization
+
 ## [1.3.0-alpha.17] - 2024-09-17
 
 ### ⚙️ Miscellaneous Tasks
