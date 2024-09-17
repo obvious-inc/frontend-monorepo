@@ -43,7 +43,7 @@
     "@vercel/edge-config": "1.3.0",
     "@vercel/kv": "2.0.0",
     "abitype": "1.0.6",
-    "date-fns": "4.0.0",
+    "date-fns": "4.1.0",
     "diff": "7.0.0",
     "is-hotkey": "0.2.0",
     "iron-session": "8.0.3",
