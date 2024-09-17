@@ -26,8 +26,8 @@ const baseStyles = (t, { align }) => ({
 
 const textDangerHoverModifier = "rgb(235 87 87 / 10%)";
 
-const stylesByVariant = (t, { danger }) => ({
-  default: {
+const stylesByVariant = (t, { danger }) => {
+  const defaultStyles = {
     color: danger ? t.colors.textDanger : t.colors.textNormal,
     border: "1px solid",
     borderColor: danger ? t.colors.borderDanger : t.colors.borderLight,
@@ -38,42 +38,50 @@ const stylesByVariant = (t, { danger }) => ({
           : t.colors.backgroundModifierNormal,
       },
     },
-  },
-  opaque: {
-    color: t.colors.textNormal,
-    background: t.colors.backgroundModifierNormal,
-    "@media (hover: hover)": {
-      "&:not([disabled]):hover": {
-        color: t.colors.textAccent,
+  };
+  return {
+    default: defaultStyles,
+    opaque: {
+      color: t.colors.textNormal,
+      background: t.colors.backgroundModifierNormal,
+      "@media (hover: hover)": {
+        "&:not([disabled]):hover": {
+          color: t.colors.textAccent,
+        },
       },
     },
-  },
-  transparent: {
-    color: danger ? t.colors.textDanger : t.colors.textNormal,
-    background: "none",
-    "@media (hover: hover)": {
-      "&:not([disabled]):hover": {
-        color: danger ? t.colors.textDanger : t.colors.textAccent,
-        background: danger
-          ? textDangerHoverModifier
-          : t.colors.backgroundModifierNormal,
+    transparent: {
+      color: danger ? t.colors.textDanger : t.colors.textNormal,
+      background: "none",
+      "@media (hover: hover)": {
+        "&:not([disabled]):hover": {
+          color: danger ? t.colors.textDanger : t.colors.textAccent,
+          background: danger
+            ? textDangerHoverModifier
+            : t.colors.backgroundModifierNormal,
+        },
       },
     },
-  },
-  primary: {
-    color: "white",
-    background: t.colors.primary,
-    border: "1px solid transparent",
-    "&:focus-visible": {
-      boxShadow: `0 0 0 0.3rem ${t.colors.primaryTransparent}`,
-    },
-    "@media (hover: hover)": {
-      "&:not([disabled]):hover": {
-        background: t.colors.primaryModifierHover,
+    primary: {
+      color: "white",
+      background: t.colors.primary,
+      border: "1px solid transparent",
+      "&:focus-visible": {
+        boxShadow: `0 0 0 0.3rem ${t.colors.primaryTransparent}`,
+      },
+      "@media (hover: hover)": {
+        "&:not([disabled]):hover": {
+          background: t.colors.primaryModifierHover,
+        },
       },
     },
-  },
-});
+    tag: {
+      ...defaultStyles,
+      textTransform: "uppercase",
+      fontWeight: t.text.weights.emphasis,
+    },
+  };
+};
 
 export const heightBySize = {
   default: "3.2rem",
