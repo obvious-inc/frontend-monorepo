@@ -20,11 +20,6 @@ const decimalsByCurrency = {
   usdc: 6,
 };
 
-const normalizeSignature = (s) => {
-  if (s == null) return null;
-  return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
-};
-
 export const createSignature = ({ functionName, inputTypes }) => {
   const stringifyTuple = ({ components }) =>
     `(${components.map(stringifyType).join(",")})`;
@@ -78,11 +73,7 @@ export const parse = (data) => {
   }));
 
   const predictedStreamContractAddresses = transactions
-    .filter(
-      (t) =>
-        normalizeSignature(t.signature) ===
-        normalizeSignature(CREATE_STREAM_SIGNATURE),
-    )
+    .filter((t) => t.signature === CREATE_STREAM_SIGNATURE)
     .map((t) => {
       const { inputs } = decodeCalldataWithSignature({
         signature: t.signature,
@@ -121,10 +112,7 @@ export const parse = (data) => {
         error: "calldata-decoding-failed",
       };
 
-    if (
-      normalizeSignature(signature) ===
-      normalizeSignature(CREATE_STREAM_SIGNATURE)
-    ) {
+    if (signature === CREATE_STREAM_SIGNATURE) {
       const tokenContractAddress = functionInputs[2].toLowerCase();
       const tokenContract = resolveAddress(tokenContractAddress);
       return {
@@ -168,8 +156,7 @@ export const parse = (data) => {
 
     if (
       target === wethTokenContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature("transfer(address,uint256)")
+      signature === "transfer(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
@@ -189,8 +176,7 @@ export const parse = (data) => {
 
     if (
       target === stethTokenContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature("transfer(address,uint256)")
+      signature === "transfer(address,uint256)"
     ) {
       return {
         type: "steth-transfer",
@@ -220,8 +206,7 @@ export const parse = (data) => {
 
     if (
       target === nounsPayerContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature("sendOrRegisterDebt(address,uint256)")
+      signature === "sendOrRegisterDebt(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
@@ -243,10 +228,8 @@ export const parse = (data) => {
 
     if (
       target === nounsTokenContract.address &&
-      (normalizeSignature(signature) ===
-        normalizeSignature("transferFrom(address,address,uint256)") ||
-        normalizeSignature(signature) ===
-          normalizeSignature("safeTransferFrom(address,address,uint256)")) &&
+      (signature === "transferFrom(address,address,uint256)" ||
+        signature === "safeTransferFrom(address,address,uint256)") &&
       functionInputs[0].toLowerCase() ===
         nounsExecutorContract.address.toLowerCase()
     )
@@ -254,9 +237,7 @@ export const parse = (data) => {
         type: "treasury-noun-transfer",
         nounId: parseInt(functionInputs[2]),
         receiverAddress: functionInputs[1],
-        safe:
-          normalizeSignature(signature) ===
-          normalizeSignature("safeTransferFrom(address,address,uint256)"),
+        safe: signature === "safeTransferFrom(address,address,uint256)",
         target,
         functionName,
         functionInputs,
@@ -265,10 +246,8 @@ export const parse = (data) => {
 
     if (
       target === nounsGovernanceContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature(
-          "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
-        )
+      signature ===
+        "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)"
     ) {
       return {
         type: "escrow-noun-transfer",

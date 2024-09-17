@@ -6,6 +6,7 @@ import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import Select from "@shades/ui-web/select";
 import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import {
   parse as parseTransactions,
@@ -17,7 +18,6 @@ import { useSearchParams } from "../hooks/navigation.js";
 import useTreasuryData from "../hooks/treasury-data.js";
 import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import NativeSelect from "./native-select.js";
 import FormattedNumber from "./formatted-number.js";
 import ExplorerAddressLink from "./chain-explorer-address-link.js";
 import Link from "@shades/ui-web/link";
@@ -477,26 +477,25 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
           ))}
         </Dl>
         <Heading>
-          Activity last{" "}
-          <NativeSelect
+          Activity
+          <Select
+            size="tiny"
+            variant="tag"
+            aria-label="Activity day count"
             value={activityDayCount}
             options={[7, 14, 30, 60, 90, 365].map((count) => ({
               value: count,
               label: `${count} days`,
             }))}
-            css={(t) =>
-              css({
-                display: "inline-block",
-                border: "0.1rem solid",
-                borderColor: t.colors.borderLighter,
-                borderRadius: "0.3rem",
-                padding: "0 0.4rem",
-                margin: "0 0.1em",
-              })
-            }
-            onChange={(e) => {
-              setActivityDayCount(e.target.value);
+            onChange={(value) => {
+              setActivityDayCount(value);
             }}
+            fullWidth={false}
+            width="max-content"
+            buttonProps={{
+              style: { color: "inherit", margin: "-0.1rem 0.5em" },
+            }}
+            renderTriggerContent={(value) => <>Last {value} days</>}
           />
         </Heading>
         <Dl>
@@ -623,26 +622,32 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
           </dd>
         </Dl>
         <Heading>
-          Inflow projection for{" "}
-          <NativeSelect
+          Inflow projection
+          <Select
+            size="tiny"
+            variant="tag"
+            aria-label="Inflow projection day count"
             value={inflowProjectionDayCount}
             options={[
               { value: 30, label: "1 month" },
               { value: 180, label: "6 months" },
               { value: 365, label: "1 year" },
             ]}
-            css={(t) =>
-              css({
-                display: "inline-block",
-                border: "0.1rem solid",
-                borderColor: t.colors.borderLighter,
-                borderRadius: "0.3rem",
-                padding: "0 0.4rem",
-                margin: "0 0.1em",
-              })
-            }
-            onChange={(e) => {
-              setInflowProjectionDayCount(Number(e.target.value));
+            onChange={(value) => {
+              setInflowProjectionDayCount(value);
+            }}
+            fullWidth={false}
+            width="max-content"
+            buttonProps={{
+              style: { color: "inherit", margin: "-0.1rem 0.5em" },
+            }}
+            renderTriggerContent={(value) => {
+              const filterLabel = {
+                30: "1 month",
+                180: "6 months",
+                365: "1 year",
+              }[value];
+              return <>For {filterLabel}</>;
             }}
           />
         </Heading>
