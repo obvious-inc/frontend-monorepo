@@ -457,7 +457,8 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
         <Heading>
           Activity
           <Select
-            size="small"
+            size="tiny"
+            variant="tag"
             aria-label="Activity day count"
             value={activityDayCount}
             options={[7, 14, 30, 60, 90, 365].map((count) => ({
@@ -469,23 +470,10 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
             }}
             fullWidth={false}
             width="max-content"
-            renderTriggerContent={(value) => {
-              return (
-                <>
-                  Last:{" "}
-                  <em
-                    css={(t) =>
-                      css({
-                        fontStyle: "normal",
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    {value} days
-                  </em>
-                </>
-              );
+            buttonProps={{
+              style: { color: "inherit", margin: "-0.1rem 0.5em" },
             }}
+            renderTriggerContent={(value) => <>Last {value} days</>}
           />
         </Heading>
         <Dl>
@@ -614,7 +602,8 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
         <Heading>
           Inflow projection
           <Select
-            size="small"
+            size="tiny"
+            variant="tag"
             aria-label="Inflow projection day count"
             value={inflowProjectionDayCount}
             options={[
@@ -627,27 +616,16 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
             }}
             fullWidth={false}
             width="max-content"
+            buttonProps={{
+              style: { color: "inherit", margin: "-0.1rem 0.5em" },
+            }}
             renderTriggerContent={(value) => {
               const filterLabel = {
                 30: "1 month",
                 180: "6 months",
                 365: "1 year",
               }[value];
-              return (
-                <>
-                  For:{" "}
-                  <em
-                    css={(t) =>
-                      css({
-                        fontStyle: "normal",
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    {filterLabel}
-                  </em>
-                </>
-              );
+              return <>For {filterLabel}</>;
             }}
           />
         </Heading>
@@ -849,9 +827,6 @@ const Heading = (props) => (
         color: t.colors.textDimmed,
         margin: "0 0 1rem",
         "* + &": { marginTop: "2.8rem" },
-        justifyContent: "space-between",
-        display: "flex",
-        alignItems: "center",
       })
     }
     {...props}
