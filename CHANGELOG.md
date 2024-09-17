@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.17] - 2024-09-17
+
+### ⚙️ Miscellaneous Tasks
+
+- *(env)* Add Sentry config variables
+
 ## [1.3.0-alpha.16] - 2024-09-16
 
 ### 🚀 Features
