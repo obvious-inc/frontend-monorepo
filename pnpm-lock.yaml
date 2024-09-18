@@ -171,7 +171,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.13.1
-        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.4.2(@swc/core@1.7.26(@swc/helpers@0.5.13)))(wrangler@3.78.3(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.4.2(@swc/core@1.7.26(@swc/helpers@0.5.13)))(wrangler@3.78.4(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -191,8 +191,8 @@ importers:
         specifier: 37.4.2
         version: 37.4.2(@swc/core@1.7.26(@swc/helpers@0.5.13))
       wrangler:
-        specifier: 3.78.3
-        version: 3.78.3(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+        specifier: 3.78.4
+        version: 3.78.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
 
   packages/common:
     dependencies:
@@ -7811,8 +7811,8 @@ packages:
     engines: {node: '>=16'}
     hasBin: true
 
-  wrangler@3.78.3:
-    resolution: {integrity: sha512-IRQ0HCmaVGeQVsW+4kqJfYuA1uBIAtjSCu8/aLRBXzdpiQ+0VSSj/uQ54wBRS08n4twFXTLiPAsYiNVF1aHyyA==}
+  wrangler@3.78.4:
+    resolution: {integrity: sha512-tIzfqg9yLk1mCxD2jwczN24vVK1W5CQ+xDCBZPxI24qWyGH5nE0n5xMnS6eknXNw0bhKaHCN7bzfxpE3DP4lPg==}
     engines: {node: '>=16.17.0'}
     hasBin: true
     peerDependencies:
@@ -8925,7 +8925,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.4.2(@swc/core@1.7.26(@swc/helpers@0.5.13)))(wrangler@3.78.3(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.4.2(@swc/core@1.7.26(@swc/helpers@0.5.13)))(wrangler@3.78.4(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.12.1
       ast-types: 0.14.2
@@ -8940,7 +8940,7 @@ snapshots:
       pcre-to-regexp: 1.1.0
       semver: 7.6.3
       vercel: 37.4.2(@swc/core@1.7.26(@swc/helpers@0.5.13))
-      wrangler: 3.78.3(bufferutil@4.0.8)(utf-8-validate@5.0.10)
+      wrangler: 3.78.4(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -17544,7 +17544,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20240909.0
       '@cloudflare/workerd-windows-64': 1.20240909.0
 
-  wrangler@3.78.3(bufferutil@4.0.8)(utf-8-validate@5.0.10):
+  wrangler@3.78.4(bufferutil@4.0.8)(utf-8-validate@5.0.10):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.3.4
       '@cloudflare/workers-shared': 0.5.3
