@@ -48,12 +48,19 @@ const decodeHtmlEntities = (string) => {
 const parseChildren = (token, parse, context_ = {}) => {
   const { list, ...context } = context_;
   const children = list ? token.items : token.tokens;
-  return children.reduce((parsedChildren, token) => {
-    const parsedChild = parse(token, context);
-    if (parsedChild == null) return parsedChildren;
-    if (Array.isArray(parsedChild)) return [...parsedChildren, ...parsedChild];
-    return [...parsedChildren, parsedChild];
-  }, []);
+  return children
+    .filter((t) => t.type !== "space")
+    .reduce((parsedChildren, token, index, tokens) => {
+      const parsedChild = parse(token, {
+        ...context,
+        index,
+        tokens,
+        depth: context.depth + 1,
+      });
+      if (Array.isArray(parsedChild))
+        return [...parsedChildren, ...parsedChild];
+      return [...parsedChildren, parsedChild];
+    }, []);
 };
 
 const parseToken = (token, context = {}) => {
@@ -94,7 +101,24 @@ const parseToken = (token, context = {}) => {
         children: parseChildren(token, parseToken, context),
       };
 
-    case "list":
+    case "list": {
+      // Edge case pattern that is rarely intend as a list
+      if (
+        // Top level
+        context.depth === 0 &&
+        // Last block
+        context.tokens.indexOf(token) === context.tokens.length - 1 &&
+        // Single item list
+        token.items.length === 1
+      )
+        return {
+          type: "paragraph",
+          children: [
+            { type: "text", text: "- " },
+            ...parseChildren(token.items[0], parseToken, context),
+          ],
+        };
+
       return {
         type: token.ordered ? "numbered-list" : "bulleted-list",
         start: token.start,
@@ -103,6 +127,7 @@ const parseToken = (token, context = {}) => {
           list: true,
         }),
       };
+    }
 
     case "list_item":
       return {
@@ -281,8 +306,15 @@ const parseToken = (token, context = {}) => {
 export const toMessageBlocks = (text, { displayImages = true } = {}) => {
   const tokens = marked.lexer(text);
   return tokens
-    .map((t, index) => parseToken(t, { displayImages, index }))
-    .filter(Boolean);
+    .filter((t) => t.type !== "space")
+    .map((token, index, tokens) =>
+      parseToken(token, {
+        displayImages,
+        index,
+        tokens,
+        depth: 0,
+      }),
+    );
 };
 
 export const getFirstParagraph = (string) => {
