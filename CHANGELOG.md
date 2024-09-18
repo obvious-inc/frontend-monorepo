@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.19] - 2024-09-18
+
+### 🚀 Features
+
+- *(camp)* Use @vercel/og to create static fc:frames for props without images
+
+### 🐛 Bug Fixes
+
+- *(env)* Default `APP_HOST` to `CF_PAGES_URL`
+
 ## [1.3.0-alpha.18] - 2024-09-17
 
 ### 🚀 Features
