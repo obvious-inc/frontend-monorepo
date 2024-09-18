@@ -7,7 +7,7 @@ const primaryTransparentSoft = createPrimary({ opacity: 0.15 });
 const textNormal = "hsl(45deg 8% 20%)";
 const textDimmed = "hsl(45deg 2% 46%)";
 const textDimmedModifierHover = "hsl(45deg 2% 52%)";
-const textMuted = "hsl(45deg 1% 54%)";
+const textMuted = "hsl(45, 1%, 54%)";
 const textMutedAlpha = "hsl(45deg 8% 20% / 50%)";
 const textAccent = "hsl(0 0% 6%)";
 const backgroundNormal = "hsl(0 0% 100%)";
@@ -16,8 +16,8 @@ const backgroundDarker = "hsl(60deg 11% 94%)";
 const backgroundDarkest = "hsl(60deg 11% 88%)";
 
 const backgroundModifierLight = "hsl(60deg 12% 30% / 3%)";
-const backgroundModifierNormal = "hsl(60deg 12% 30% / 7%)";
-const backgroundModifierStrong = "hsl(60deg 12% 30% / 12%)";
+const backgroundModifierNormal = "hsl(60, 12%, 30%, 0.07)";
+const backgroundModifierStrong = "hsl(60, 12%, 30%, 0.12)";
 const backgroundModifierContrast = "hsl(60deg 12% 30% / 36%)";
 const backgroundModifierSelected = createPrimary({
   lightness: 0.7,
@@ -70,7 +70,7 @@ export default {
     linkModifierHover: primaryText,
     borderLight: "hsl(0 0% 0% / 15%)",
     borderLightModifierHover: "hsl(0 0% 0% / 18%)",
-    borderLighter: "hsl(0 0% 0% / 12%)",
+    borderLighter: "hsl(0, 0%, 0%, 0.12)",
     toolbarBackground: backgroundNormal,
     buttonHover: backgroundModifierNormal,
     borderDanger: "hsl(6deg 71% 72%)",

@@ -28,8 +28,8 @@ const backgroundLighter = "hsl(0 0% 17%)";
 const backgroundLightest = "hsl(0 0% 23%)";
 
 const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
-const backgroundModifierNormal = "hsl(0 0% 100% / 5.5%)";
-const backgroundModifierStrong = "hsl(0 0% 100% / 8%)";
+const backgroundModifierNormal = "hsl(0, 0%, 100%, 0.055)";
+const backgroundModifierStrong = "hsl(0, 0%, 100%, 0.08)";
 const backgroundModifierContrast = "hsl(0 0% 100% / 26%)";
 const backgroundModifierSelected = createPrimary({
   lightness: 0.4,
@@ -148,8 +148,8 @@ export default {
     link: primaryTintLighter,
     linkModifierHover: createPrimary({ saturation: 1, lightness: 0.65 }),
     borderNormal: "hsl(0 0% 100% / 20%)",
-    borderLight: "hsl(0 0% 100% / 16%)",
-    borderLighter: "hsl(0 0% 100% / 10%)",
+    borderLight: "hsl(0, 0%, 100%, 0.16)",
+    borderLighter: "hsl(0, 0%, 100%, 0.1)",
     borderDanger: "rgb(110, 54, 48)",
     backgroundPrimary: backgroundDark,
     backgroundSecondary: backgroundNormal,
