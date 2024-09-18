@@ -90,7 +90,7 @@ export async function generateMetadata({ params }) {
       images: firstImage?.url ?? "/opengraph-image.png",
     },
     other: firstImage?.url
-      ? {} // start by showing frame only for proposals without og:image
+      ? {} // start by showing frame only for proposals without images
       : {
           "fc:frame": "vNext",
           "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
