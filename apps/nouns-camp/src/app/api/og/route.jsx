@@ -1,4 +1,4 @@
-import { ImageResponse } from "@cloudflare/pages-plugin-vercel-og/api";
+import { ImageResponse } from "next/og";
 import { parseProposal, subgraphFetch } from "../../../nouns-subgraph";
 import {
   getState,
