@@ -19,6 +19,7 @@
     "wrangler": "3.78.3"
   },
   "dependencies": {
+    "@cloudflare/pages-plugin-vercel-og": "^0.1.2",
     "@emotion/cache": "11.13.1",
     "@emotion/react": "11.13.3",
     "@farcaster/core": "0.15.3",

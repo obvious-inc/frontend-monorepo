@@ -48,13 +48,13 @@ const fetchProposal = async (id) => {
             status
             createdBlock
             createdTimestamp
-            lastUpdatedBlock
-            lastUpdatedTimestamp
+          # lastUpdatedBlock
+          # lastUpdatedTimestamp
             executionETA
             startBlock
             endBlock
-            updatePeriodEndBlock
-            objectionPeriodEndBlock
+          # updatePeriodEndBlock
+          # objectionPeriodEndBlock
             forVotes
             againstVotes
             abstainVotes
@@ -69,9 +69,9 @@ const fetchProposal = async (id) => {
                 id
               }
             }
-            signers {
-              id
-            }
+          # signers {
+          #  id
+          # }
           }
         }`,
   });
@@ -600,7 +600,7 @@ export async function GET(request) {
       blockNumber: currentBlockNumber,
     });
 
-    const signersIds = proposal.signers.map((signer) => signer.id);
+    const signersIds = [] // proposal.signers.map((signer) => signer.id);
 
     const ensInfoByAddress = await getBatchEnsInfo([
       proposal.proposerId,
@@ -612,10 +612,10 @@ export async function GET(request) {
       ensName: ensInfoByAddress[proposal.proposerId]?.ensName,
     };
 
-    const sponsors = proposal.signers.map((signer) => {
+    const sponsors = [] /*proposal.signers.map((signer) => {
       const ensName = ensInfoByAddress[signer.id]?.ensName;
       return { id: signer.id, ensName };
-    });
+    });*/
 
     const isFinalOrSucceededState =
       isFinalProposalState(proposalState) ||
