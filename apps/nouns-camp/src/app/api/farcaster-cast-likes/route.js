@@ -28,7 +28,9 @@ export async function GET(request) {
     { likes: filteredLikes },
     {
       status: 200,
-      headers: { "Cache-Control": "max-age=10, stale-while-revalidate=20" },
+      headers: {
+        "Cache-Control": "max-age=10, s-max-age=10, stale-while-revalidate=20",
+      },
     },
   );
 }

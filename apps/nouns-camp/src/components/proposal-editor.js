@@ -888,6 +888,7 @@ const ActionListItem = ({
       case "transfer":
       case "usdc-approval":
       case "weth-transfer":
+      case "steth-transfer":
       case "weth-approval":
       case "payer-top-up":
       case "treasury-noun-transfer":

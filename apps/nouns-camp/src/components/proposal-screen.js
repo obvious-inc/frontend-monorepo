@@ -948,6 +948,7 @@ export const ProposalHeader = ({
         switch (currency) {
           case "eth":
           case "weth":
+          case "steth":
             return sum + amount;
           case "usdc":
             return sum + usdcToEth(amount);
@@ -1305,6 +1306,14 @@ const RequestedAmounts = ({ amounts }) => (
               <FormattedEthWithConditionalTooltip
                 value={amount}
                 tokenSymbol="WETH"
+              />
+            );
+
+          case "steth":
+            return (
+              <FormattedEthWithConditionalTooltip
+                value={amount}
+                tokenSymbol="stETH"
               />
             );
 

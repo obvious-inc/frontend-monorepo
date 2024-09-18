@@ -20,11 +20,6 @@ const decimalsByCurrency = {
   usdc: 6,
 };
 
-const normalizeSignature = (s) => {
-  if (s == null) return null;
-  return s.replace(/\s+/g, " ").replace(/,\s*/g, ", ");
-};
-
 export const createSignature = ({ functionName, inputTypes }) => {
   const stringifyTuple = ({ components }) =>
     `(${components.map(stringifyType).join(",")})`;
@@ -67,6 +62,7 @@ export const parse = (data) => {
   const nounsExecutorContract = resolveIdentifier("executor");
   const nounsTokenContract = resolveIdentifier("token");
   const wethTokenContract = resolveIdentifier("weth-token");
+  const stethTokenContract = resolveIdentifier("steth-token");
   const usdcTokenContract = resolveIdentifier("usdc-token");
 
   const transactions = data.targets.map((target, i) => ({
@@ -77,11 +73,7 @@ export const parse = (data) => {
   }));
 
   const predictedStreamContractAddresses = transactions
-    .filter(
-      (t) =>
-        normalizeSignature(t.signature) ===
-        normalizeSignature(CREATE_STREAM_SIGNATURE),
-    )
+    .filter((t) => t.signature === CREATE_STREAM_SIGNATURE)
     .map((t) => {
       const { inputs } = decodeCalldataWithSignature({
         signature: t.signature,
@@ -120,10 +112,7 @@ export const parse = (data) => {
         error: "calldata-decoding-failed",
       };
 
-    if (
-      normalizeSignature(signature) ===
-      normalizeSignature(CREATE_STREAM_SIGNATURE)
-    ) {
+    if (signature === CREATE_STREAM_SIGNATURE) {
       const tokenContractAddress = functionInputs[2].toLowerCase();
       const tokenContract = resolveAddress(tokenContractAddress);
       return {
@@ -167,8 +156,7 @@ export const parse = (data) => {
 
     if (
       target === wethTokenContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature("transfer(address,uint256)")
+      signature === "transfer(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
@@ -183,6 +171,21 @@ export const parse = (data) => {
         functionInputTypes,
         receiverAddress: functionInputs[0],
         wethAmount: BigInt(functionInputs[1]),
+      };
+    }
+
+    if (
+      target === stethTokenContract.address &&
+      signature === "transfer(address,uint256)"
+    ) {
+      return {
+        type: "steth-transfer",
+        target,
+        functionName,
+        functionInputs,
+        functionInputTypes,
+        receiverAddress: functionInputs[0],
+        stethAmount: BigInt(functionInputs[1]),
       };
     }
 
@@ -203,8 +206,7 @@ export const parse = (data) => {
 
     if (
       target === nounsPayerContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature("sendOrRegisterDebt(address,uint256)")
+      signature === "sendOrRegisterDebt(address,uint256)"
     ) {
       const receiverAddress = functionInputs[0].toLowerCase();
       const isStreamFunding = predictedStreamContractAddresses.some(
@@ -226,10 +228,8 @@ export const parse = (data) => {
 
     if (
       target === nounsTokenContract.address &&
-      (normalizeSignature(signature) ===
-        normalizeSignature("transferFrom(address,address,uint256)") ||
-        normalizeSignature(signature) ===
-          normalizeSignature("safeTransferFrom(address,address,uint256)")) &&
+      (signature === "transferFrom(address,address,uint256)" ||
+        signature === "safeTransferFrom(address,address,uint256)") &&
       functionInputs[0].toLowerCase() ===
         nounsExecutorContract.address.toLowerCase()
     )
@@ -237,9 +237,7 @@ export const parse = (data) => {
         type: "treasury-noun-transfer",
         nounId: parseInt(functionInputs[2]),
         receiverAddress: functionInputs[1],
-        safe:
-          normalizeSignature(signature) ===
-          normalizeSignature("safeTransferFrom(address,address,uint256)"),
+        safe: signature === "safeTransferFrom(address,address,uint256)",
         target,
         functionName,
         functionInputs,
@@ -248,10 +246,8 @@ export const parse = (data) => {
 
     if (
       target === nounsGovernanceContract.address &&
-      normalizeSignature(signature) ===
-        normalizeSignature(
-          "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)",
-        )
+      signature ===
+        "withdrawDAONounsFromEscrowIncreasingTotalSupply(uint256[],address)"
     ) {
       return {
         type: "escrow-noun-transfer",
@@ -289,6 +285,7 @@ export const unparse = (transactions) => {
   const nounsExecutorContract = resolveIdentifier("executor");
   const nounsTokenContract = resolveIdentifier("token");
   const wethTokenContract = resolveIdentifier("weth-token");
+  const stethTokenContract = resolveIdentifier("steth-token");
   const nounsPayerContract = resolveIdentifier("payer");
   const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
   const nounsStreamFactoryContract = resolveIdentifier("stream-factory");
@@ -349,6 +346,17 @@ export const unparse = (transactions) => {
             calldata: encodeAbiParameters(
               [{ type: "address" }, { type: "uint256" }],
               [t.receiverAddress, t.wethAmount],
+            ),
+          });
+
+        case "steth-transfer":
+          return append({
+            target: stethTokenContract.address,
+            value: "0",
+            signature: "transfer(address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "uint256" }],
+              [t.receiverAddress, t.stethAmount],
             ),
           });
 
@@ -483,12 +491,18 @@ export const extractAmounts = (parsedTransactions) => {
       t.type === "weth-approval" ||
       t.type === "weth-stream-funding",
   );
+
+  const stEthTransfers = parsedTransactions.filter(
+    (t) => t.type === "steth-transfer",
+  );
+
   const usdcTransfers = parsedTransactions.filter(
     (t) =>
       t.type === "usdc-approval" ||
       t.type === "usdc-transfer-via-payer" ||
       t.type === "usdc-stream-funding-via-payer",
   );
+
   const treasuryNounTransferNounIds = parsedTransactions
     .filter((t) => t.type === "treasury-noun-transfer")
     .map((t) => t.nounId);
@@ -504,6 +518,11 @@ export const extractAmounts = (parsedTransactions) => {
     (sum, t) => sum + t.wethAmount,
     BigInt(0),
   );
+  const stEthAmount = stEthTransfers.reduce(
+    (sum, t) => sum + t.stethAmount,
+    BigInt(0),
+  );
+
   const usdcAmount = usdcTransfers.reduce(
     (sum, t) => sum + t.usdcAmount,
     BigInt(0),
@@ -512,6 +531,7 @@ export const extractAmounts = (parsedTransactions) => {
   return [
     { currency: "eth", amount: ethAmount },
     { currency: "weth", amount: wethAmount },
+    { currency: "steth", amount: stEthAmount },
     { currency: "usdc", amount: usdcAmount },
     {
       currency: "nouns",

@@ -72,6 +72,8 @@ export async function GET() {
   return jsonResponse(
     200,
     { casts, accounts },
-    { "Cache-Control": "max-age=300, stale-while-revalidate=600" },
+    {
+      "Cache-Control": "max-age=300, s-max-age=300, stale-while-revalidate=600",
+    },
   );
 }
