@@ -27,6 +27,9 @@ importers:
 
   apps/nouns-camp:
     dependencies:
+      '@cloudflare/pages-plugin-vercel-og':
+        specifier: ^0.1.2
+        version: 0.1.2
       '@emotion/cache':
         specifier: 11.13.1
         version: 11.13.1
@@ -935,6 +938,9 @@ packages:
     peerDependenciesMeta:
       '@cloudflare/workers-types':
         optional: true
+
+  '@cloudflare/pages-plugin-vercel-og@0.1.2':
+    resolution: {integrity: sha512-aWA2pHu1R2UbOJIcSASCuViyYVEhYkZ3tWTrTnr+yLosBfksOzjecHQkCkPv/jy75hGPrn1BbtsQR+oWVFkp1g==}
 
   '@cloudflare/workerd-darwin-64@1.20240909.0':
     resolution: {integrity: sha512-nJ8jm/6PR8DPzVb4QifNAfSdrFZXNblwIdOhLTU5FpSvFFocmzFX5WgzQagvtmcC9/ZAQyxuf7WynDNyBcoe0Q==}
@@ -8939,6 +8945,8 @@ snapshots:
       - bufferutil
       - supports-color
       - utf-8-validate
+
+  '@cloudflare/pages-plugin-vercel-og@0.1.2': {}
 
   '@cloudflare/workerd-darwin-64@1.20240909.0':
     optional: true
