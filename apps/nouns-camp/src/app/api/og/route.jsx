@@ -48,13 +48,13 @@ const fetchProposal = async (id) => {
             status
             createdBlock
             createdTimestamp
-            lastUpdatedBlock
-            lastUpdatedTimestamp
+          # lastUpdatedBlock
+          # lastUpdatedTimestamp
             executionETA
             startBlock
             endBlock
-            updatePeriodEndBlock
-            objectionPeriodEndBlock
+          # updatePeriodEndBlock
+          # objectionPeriodEndBlock
             forVotes
             againstVotes
             abstainVotes
@@ -69,9 +69,9 @@ const fetchProposal = async (id) => {
                 id
               }
             }
-            signers {
-              id
-            }
+          # signers {
+          #  id
+          # }
           }
         }`,
   });
