@@ -89,13 +89,15 @@ export async function generateMetadata({ params }) {
       url: canonicalUrl,
       images: firstImage?.url ?? "/opengraph-image.png",
     },
-    other: {
-      "fc:frame": "vNext",
-      "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
-      "fc:frame:button:1": "View proposal",
-      "fc:frame:button:1:action": "link",
-      "fc:frame:button:1:target": canonicalUrl,
-    },
+    other: firstImage?.url
+      ? {} // start by showing frame only for proposals without og:image
+      : {
+          "fc:frame": "vNext",
+          "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
+          "fc:frame:button:1": "View proposal",
+          "fc:frame:button:1:action": "link",
+          "fc:frame:button:1:target": canonicalUrl,
+        },
   };
 }
 
