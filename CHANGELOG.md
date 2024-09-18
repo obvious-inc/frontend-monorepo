@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.20] - 2024-09-18
+
+### 🐛 Bug Fixes
+
+- *(api)* Comment out faulty `proposal.signers` usage
+
+### 🚜 Refactor
+
+- *(api)* Comment out unused fields in `og` route
+- *(api)* Update `ImageResponse` import source
+
 ## [1.3.0-alpha.19] - 2024-09-18
 
 ### 🚀 Features
