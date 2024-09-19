@@ -125,7 +125,7 @@ const metaByIdentifier = {
   },
   descriptor: {
     name: "Nouns Art",
-    description: "NounsDescriptorV2",
+    description: "NounsDescriptorV3",
   },
   "fork-escrow": { name: "Nouns DAO Fork Escrow" },
   "token-buyer": {
