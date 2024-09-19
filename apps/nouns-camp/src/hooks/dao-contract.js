@@ -10,6 +10,7 @@ import usePublicClient from "./public-client.js";
 import { useWallet } from "./wallet.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
+import { useWriteContractSimulation } from "./simulation.js";
 
 const { address: contractAddress } = resolveIdentifier("dao");
 
@@ -398,19 +399,21 @@ export const useCreateProposal = () => {
 };
 
 export const useCreateProposalWithSignatures = () => {
-  const { address: accountAddress } = useWallet();
+  const { address: accountAddress, isImpersonated } = useWallet();
 
   const publicClient = usePublicClient();
   const registerEvent = useRegisterEvent();
 
   const { writeContractAsync: writeContract } = useWriteContract();
+  const { writeContractSimulationAsync: writeContractSimulation } =
+    useWriteContractSimulation();
 
   return async ({ description, transactions, proposerSignatures }) => {
     const { targets, values, signatures, calldatas } =
       unparseTransactions(transactions);
     const clientId = getClientId(description);
 
-    const hash = await writeContract({
+    const writeContractParams = {
       chainId: CHAIN_ID,
       address: contractAddress,
       abi: [
@@ -447,7 +450,16 @@ export const useCreateProposalWithSignatures = () => {
         description,
         clientId,
       ],
-    });
+    };
+
+    if (isImpersonated) {
+      return await writeContractSimulation({
+        ...writeContractParams,
+        account: accountAddress,
+      });
+    }
+
+    const hash = await writeContract(writeContractParams);
     registerEvent("Proposal successfully created", {
       account: accountAddress,
       hash,

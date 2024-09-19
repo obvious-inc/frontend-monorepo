@@ -271,6 +271,7 @@ export const useWallet = () => {
     isConnectedToTargetChain: connectedChainId === CHAIN_ID,
     isCanaryAccount: canaryAccounts.includes(address),
     isBetaAccount: betaAccounts.includes(address),
+    isImpersonated: impersonationAddress != null,
   };
 };
 
