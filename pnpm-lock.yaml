@@ -79,8 +79,8 @@ importers:
         specifier: 9.0.8
         version: 9.0.8(typescript@4.9.5)
       '@serwist/sw':
-        specifier: 9.0.7
-        version: 9.0.7(typescript@4.9.5)
+        specifier: 9.0.8
+        version: 9.0.8(typescript@4.9.5)
       '@shades/common':
         specifier: workspace:0.0.0
         version: link:../../packages/common
@@ -3012,8 +3012,8 @@ packages:
     resolution: {integrity: sha512-Yr/wKD16vXUqVbyfHhLM25qRWTtWgNJnY8Bot0yjCV/BvHM81cOIkG3sE76FIjcUntCvfemhaN9Zx53fbRzLPQ==}
     deprecated: This package has been deprecated. Please use serwist instead.
 
-  '@serwist/sw@9.0.7':
-    resolution: {integrity: sha512-G6X1S/rK6zI3+Q1ktD+gXlZNE9WRxOyf/KjVsEvStzVXYgy801C8y5yx9O2yG55u6UIGZQqkFner+qwrVcsjuw==}
+  '@serwist/sw@9.0.8':
+    resolution: {integrity: sha512-EYFQcGzR4fr6nbfgW4NqxGdiNpQnfnZnV0nGaqcb+yPhbpGFectf/2WLF4tCJLY4o9H9ElmE9Pk4mol6H8DgEg==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -7016,14 +7016,6 @@ packages:
 
   server-only@0.0.1:
     resolution: {integrity: sha512-qepMx2JxAa5jjfzxG79yPPq+8BuFToHd1hm7kI+Z4zAq1ftQiP7HcxMhDDItrbtwVeLg/cY2JnKnrcFkmiswNA==}
-
-  serwist@9.0.7:
-    resolution: {integrity: sha512-OcvOArMLFYhPWpK5LKqmSsyCS71Egn8SkUZQRBQVUJmAtsI3Aj+ixNDeEvUgyYtFArtvHsVRXgfdg4L5LkhAHA==}
-    peerDependencies:
-      typescript: '>=5.0.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   serwist@9.0.8:
     resolution: {integrity: sha512-pE9sG0GROVdqjIK51kjghH7RrMY8MOkekLCPid3KOuhxllKZnp7PU4F1qDAPgMN2zrGvmKs4CewYCKobuvBiSg==}
@@ -11811,9 +11803,9 @@ snapshots:
     dependencies:
       '@serwist/core': 8.4.4
 
-  '@serwist/sw@9.0.7(typescript@4.9.5)':
+  '@serwist/sw@9.0.8(typescript@4.9.5)':
     dependencies:
-      serwist: 9.0.7(typescript@4.9.5)
+      serwist: 9.0.8(typescript@4.9.5)
     optionalDependencies:
       typescript: 4.9.5
 
@@ -16726,12 +16718,6 @@ snapshots:
       - supports-color
 
   server-only@0.0.1: {}
-
-  serwist@9.0.7(typescript@4.9.5):
-    dependencies:
-      idb: 8.0.0
-    optionalDependencies:
-      typescript: 4.9.5
 
   serwist@9.0.8(typescript@4.9.5):
     dependencies:
