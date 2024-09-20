@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.21] - 2024-09-20
+
+### 🚀 Features
+
+- *(common)* Don’t interpret end block single item lists as list
+
 ## [1.3.0-alpha.20] - 2024-09-18
 
 ### 🐛 Bug Fixes
