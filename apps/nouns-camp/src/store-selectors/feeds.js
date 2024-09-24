@@ -368,16 +368,37 @@ export const buildCandidateFeed = (
   ]);
 };
 
-const buildAuctionItems = (auction) => {
-  const items = [
-    {
-      type: "event",
-      eventType: "auction-started",
-      id: `auction-started-${auction.nounId}`,
-      nounId: auction.nounId,
-      timestamp: auction.startTimestamp,
-    },
-  ];
+const buildAuctionItems = (
+  auction,
+  { bidsOnly = false, excludeBids = false } = {},
+) => {
+  const items = [];
+
+  if (!excludeBids) {
+    const bids = auction.bids ?? [];
+    for (const bid of bids) {
+      items.push({
+        type: "auction-bid",
+        id: `auction-bid-${bid.id}`,
+        nounId: auction.nounId,
+        authorAccount: bid.bidderId,
+        amount: bid.amount,
+        blockNumber: bid.blockNumber,
+        timestamp: bid.blockTimestamp,
+        transactionHash: bid.transactionHash,
+      });
+    }
+  }
+
+  if (bidsOnly) return items;
+
+  items.push({
+    type: "event",
+    eventType: "auction-started",
+    id: `auction-started-${auction.nounId}`,
+    nounId: auction.nounId,
+    timestamp: auction.startTimestamp,
+  });
 
   if (Date.now() >= auction.endTimestamp) {
     const winningBid = arrayUtils.sortBy(
@@ -396,24 +417,10 @@ const buildAuctionItems = (auction) => {
     });
   }
 
-  const bids = auction.bids ?? [];
-
-  for (const bid of bids) {
-    items.push({
-      type: "auction-bid",
-      id: `auction-bid-${bid.id}`,
-      nounId: auction.nounId,
-      authorAccount: bid.bidderId,
-      amount: bid.amount,
-      blockNumber: bid.blockNumber,
-      timestamp: bid.blockTimestamp,
-    });
-  }
-
   return items;
 };
 
-export const buildAuctionFeed = (storeState) => {
+export const buildAuctionFeed = (storeState, options) => {
   const auctions = Object.values(storeState.nounsById).reduce(
     (auctions, noun) => {
       if (noun.auction == null) return auctions;
@@ -423,7 +430,7 @@ export const buildAuctionFeed = (storeState) => {
     [],
   );
 
-  return auctions.flatMap(buildAuctionItems);
+  return auctions.flatMap((a) => buildAuctionItems(a, options));
 };
 
 const buildNounTransferAndDelegationItems = (

@@ -17,12 +17,12 @@ import {
   isActiveState as isActiveProposalState,
 } from "./utils/proposals.js";
 import {
-  // buildAuctionFeed,
+  buildAuctionFeed,
   buildAccountFeed,
   buildProposalFeed,
   buildCandidateFeed,
   buildPropdateFeedItem,
-  // buildNounsTokenRepresentationFeed,
+  buildNounsTokenRepresentationFeed,
 } from "./store-selectors/feeds.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -2490,7 +2490,7 @@ export const useAccountFeedItems = (accountAddress, { filter }) => {
   );
 };
 
-export const useMainFeedItems = (filter, { enabled = true }) => {
+export const useMainFeedItems = (categories, { enabled = true }) => {
   const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 10_000,
@@ -2515,11 +2515,6 @@ export const useMainFeedItems = (filter, { enabled = true }) => {
           casts,
         );
 
-        // const buildAuctionItems = () => buildAuctionFeed(s);
-
-        // const buildNounsTokenRepresentationItems = () =>
-        //   buildNounsTokenRepresentationFeed(s);
-
         const buildProposalItems = () =>
           Object.keys(s.proposalsById).flatMap((proposalId) =>
             buildProposalFeed(s, proposalId, {
@@ -2542,29 +2537,40 @@ export const useMainFeedItems = (filter, { enabled = true }) => {
             propdates.map(buildPropdateFeedItem),
           );
 
-        const buildFeedItems = () => {
-          switch (filter) {
-            case "proposals":
-              return [...buildProposalItems(), ...buildPropdateItems()];
-            case "candidates":
-              return buildCandidateItems();
-            case "propdates":
-              return buildPropdateItems();
-            default:
-              return [
+        const feedItems =
+          categories.length === 0
+            ? [
+                ...buildAuctionFeed(s),
+                ...buildNounsTokenRepresentationFeed(s),
                 ...buildProposalItems(),
                 ...buildCandidateItems(),
                 ...buildPropdateItems(),
-              ];
-          }
-        };
+              ]
+            : categories.flatMap((category) => {
+                switch (category) {
+                  case "auction-excluding-bids":
+                    return buildAuctionFeed(s, { excludeBids: true });
+                  case "auction-bids":
+                    return buildAuctionFeed(s, { bidsOnly: true });
+                  case "noun-representation":
+                    return buildNounsTokenRepresentationFeed(s);
+                  case "proposals":
+                    return buildProposalItems();
+                  case "candidates":
+                    return buildCandidateItems();
+                  case "propdates":
+                    return buildPropdateItems();
+                  default:
+                    console.error(`Unrecognized category: "${category}"`);
+                }
+              });
 
         return arrayUtils.sortBy(
           { value: (i) => i.timestamp ?? 0, order: "desc" },
-          buildFeedItems(),
+          feedItems,
         );
       },
-      [enabled, filter, casts, latestBlockNumber],
+      [enabled, categories, casts, latestBlockNumber],
     ),
   );
 };

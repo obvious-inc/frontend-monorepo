@@ -341,6 +341,10 @@ const FeedItem = React.memo(
     const showLikeAction = (() => {
       if (onLike == null) return false;
       if (item.type === "farcaster-cast") return true;
+      if (
+        ["auction-bid", "noun-transfer", "noun-delegation"].includes(item.type)
+      )
+        return false;
       if (["vote", "feedback-post"].includes(item.type)) return hasReason;
       return item.transactionHash != null;
     })();
@@ -1485,7 +1489,14 @@ const ItemTitle = ({ item, context }) => {
           <span css={(t) => css({ color: t.colors.textDimmed })}>
             placed a bid of{" "}
             <FormattedEthWithConditionalTooltip value={item.amount} /> for{" "}
-            <NounPreviewPopoverTrigger nounId={item.nounId} />
+            <NounPreviewPopoverTrigger nounId={item.nounId} /> at the{" "}
+            <a
+              href={`https://nouns.wtf/noun/${item.nounId}`}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Auction House
+            </a>
           </span>
         </>
       );
