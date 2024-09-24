@@ -1,6 +1,6 @@
 import { decodeEventLog } from "viem";
 import React from "react";
-import { useReadContract, useWriteContract, useSimulateContract } from "wagmi";
+import { useReadContract, useSimulateContract } from "wagmi";
 import { CHAIN_ID, CAMP_CLIENT_ID } from "../constants/env.js";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
@@ -10,7 +10,7 @@ import usePublicClient from "./public-client.js";
 import { useWallet } from "./wallet.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
-import { useWriteContractSimulation } from "./simulation.js";
+import { useWriteContract } from "./contract-write.js";
 
 const { address: contractAddress } = resolveIdentifier("dao");
 
@@ -399,21 +399,19 @@ export const useCreateProposal = () => {
 };
 
 export const useCreateProposalWithSignatures = () => {
-  const { address: accountAddress, isImpersonated } = useWallet();
+  const { address: accountAddress } = useWallet();
 
   const publicClient = usePublicClient();
   const registerEvent = useRegisterEvent();
 
   const { writeContractAsync: writeContract } = useWriteContract();
-  const { writeContractSimulationAsync: writeContractSimulation } =
-    useWriteContractSimulation();
 
   return async ({ description, transactions, proposerSignatures }) => {
     const { targets, values, signatures, calldatas } =
       unparseTransactions(transactions);
     const clientId = getClientId(description);
 
-    const writeContractParams = {
+    const hash = await writeContract({
       chainId: CHAIN_ID,
       address: contractAddress,
       abi: [
@@ -450,16 +448,7 @@ export const useCreateProposalWithSignatures = () => {
         description,
         clientId,
       ],
-    };
-
-    if (isImpersonated) {
-      return await writeContractSimulation({
-        ...writeContractParams,
-        account: accountAddress,
-      });
-    }
-
-    const hash = await writeContract(writeContractParams);
+    });
     registerEvent("Proposal successfully created", {
       account: accountAddress,
       hash,

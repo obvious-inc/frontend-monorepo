@@ -1,9 +1,4 @@
-import {
-  usePublicClient,
-  useReadContracts,
-  useSimulateContract,
-  useWriteContract,
-} from "wagmi";
+import { usePublicClient, useReadContracts, useSimulateContract } from "wagmi";
 import { CHAIN_ID } from "../constants/env.js";
 import { isAddress } from "viem";
 
