@@ -23,14 +23,14 @@ const decodeEventLogs = ({ logs, abi }) => {
   return decodedEventLogs;
 };
 
-const decodeNounTransferEvent = (transactionReceipt) => {
+const decodeNounTransferEvents = (transactionReceipt) => {
   const { address: nounTokenAddress } = resolveContractIdentifier("token");
 
   const logs = transactionReceipt.logs.filter(
     (l) => l.address.toLowerCase() === nounTokenAddress,
   );
 
-  const decodedLogs = decodeEventLogs({
+  return decodeEventLogs({
     logs,
     abi: [
       {
@@ -44,8 +44,6 @@ const decodeNounTransferEvent = (transactionReceipt) => {
       },
     ],
   });
-
-  return decodedLogs[0];
 };
 
 const decodeForkEvents = (transactionReceipt) => {
@@ -119,7 +117,11 @@ const decodeEthTransferEventLogs = (transactionReceipt) => {
   });
 };
 
-export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
+export const useTransferMeta = (
+  transactionHash,
+  nounId,
+  { enabled = true } = {},
+) => {
   const { data: transaction } = useTransaction({
     hash: transactionHash,
     query: {
@@ -163,7 +165,10 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
       }
     }
 
-    const nounTransferEvent = decodeNounTransferEvent(receipt);
+    const transferEvents = decodeNounTransferEvents(receipt);
+    const nounTransferEvent = transferEvents.find(
+      ({ args }) => args.tokenId === BigInt(nounId),
+    );
     const ethTransferLogs = decodeEthTransferEventLogs(receipt);
 
     const { to: receiverAccount } = nounTransferEvent.args;
