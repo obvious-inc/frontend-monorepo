@@ -457,11 +457,6 @@ const createStore = ({ initialState, publicClient }) =>
               resolveContractIdentifier("fork-escrow");
 
             const events = value.filter((e) => {
-              if (
-                e.transactionHash ===
-                "0xdc307aa4c37a2ecc16005e707533f0bb30f1214def3627c4916cd7057ac72fd3"
-              )
-                console.log(e);
               if (e.type === "delegate")
                 return (
                   // The owner and delegator are only different for delegation

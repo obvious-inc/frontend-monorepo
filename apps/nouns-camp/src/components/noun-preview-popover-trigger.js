@@ -171,6 +171,8 @@ const NounStatus = ({ nounId }) => {
           />{" "}
           (
           <FormattedEthWithConditionalTooltip
+            decimals={4}
+            truncationDots={false}
             value={highestBid.amount}
             disableTooltip
           />
@@ -584,6 +586,8 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                         <InlineVerticalSeparator />
                         Auctioned for{" "}
                         <FormattedEthWithConditionalTooltip
+                          decimals={4}
+                          truncationDots={false}
                           value={auction?.amount}
                         />
                       </>
