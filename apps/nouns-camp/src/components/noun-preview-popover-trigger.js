@@ -1,22 +1,21 @@
 import React from "react";
 import { css } from "@emotion/react";
-import NextLink from "next/link";
-import { useFetch } from "@shades/common/react";
+import { useQuery } from "@tanstack/react-query";
+import { array as arrayUtils, date as dateUtils } from "@shades/common/utils";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
 import InlineButton from "@shades/ui-web/inline-button";
 import { useActions, useNoun } from "../store.js";
-import { resolveIdentifier } from "../contracts.js";
-import { useSaleInfo } from "../hooks/sales.js";
-import useEnsName from "../hooks/ens-name.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
+import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
+import { useTransferMeta as useNounTransferMeta } from "@/hooks/noun-transfers";
 import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import { buildEtherscanLink } from "../utils/etherscan.js";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
+import ChainExplorerTransactionLink from "./chain-explorer-transaction-link.js";
 
-export const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
+export const DelegationStatusDot = ({ nounId, contextAccount, ...props }) => {
   const noun = useNoun(nounId);
   const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
   const delegated =
@@ -33,19 +32,18 @@ export const DelegationStatusDot = ({ nounId, contextAccount, cssProps }) => {
         css({
           display: "block",
           position: "absolute",
-          top: "3.6rem",
-          left: "3.6rem",
-          height: "1.4rem",
-          width: "1.4rem",
+          bottom: 0,
+          right: 0,
+          height: "20%",
+          width: "20%",
           zIndex: 2,
           backgroundColor: delegatedToAccount
             ? t.colors.textPositive
             : t.colors.textNegative,
           borderRadius: "50%",
-          border: `0.2rem solid ${t.colors.backgroundPrimary}`,
-          ...cssProps,
         })
       }
+      {...props}
     />
   );
 };
@@ -107,30 +105,168 @@ const NounPreviewPopoverTrigger = React.forwardRef(
       <Popover.Root placement={popoverPlacement} {...props}>
         <Popover.Trigger asChild>{renderTrigger()}</Popover.Trigger>
         <Popover.Content>
-          <NounPreview nounId={nounId} contextAccount={contextAccount} />
+          <NounPreview
+            nounId={nounId}
+            contextAccount={contextAccount?.toLowerCase()}
+          />
         </Popover.Content>
       </Popover.Root>
     );
   },
 );
 
-const NounEvents = ({ nounId, contextAccount }) => {
+const NounStatus = ({ nounId }) => {
   const noun = useNoun(nounId);
-  const events = noun?.events ?? [];
 
-  if (!events) return null;
+  const ownerId = noun.owner?.id;
+  const delegateId = noun.owner?.delegate?.id;
 
-  const latestDelegationEvent = events.find((e) => e.type === "delegate");
-  const latestTransferEvent = events.find((e) => e.type === "transfer");
+  const isDelegating =
+    delegateId != null && ownerId != null && ownerId !== delegateId;
 
-  const ignoreLastDelegationEvent =
-    latestDelegationEvent?.newAccountId === noun.ownerId;
+  const isAuctionOngoing = noun.auction?.endTimestamp > Date.now();
 
-  if (
-    !latestTransferEvent &&
-    (!latestDelegationEvent || ignoreLastDelegationEvent)
-  )
-    return null;
+  const reverseChronologicalEvents = arrayUtils.sortBy(
+    { value: (e) => e.blockNumber, order: "desc" },
+    noun.events ?? [],
+  );
+
+  const { delegate: delegationEvents = [], transfer: transferEvents = [] } =
+    arrayUtils.groupBy((e) => e.type, reverseChronologicalEvents);
+
+  const delegationEvent = delegationEvents.find(
+    (e) => e.newAccountId === delegateId,
+  );
+  const transferEvent = transferEvents.find((e) => e.newAccountId === ownerId);
+
+  const { address: treasuryAddress } = resolveContractIdentifier("executor");
+  const { address: auctionHouseAddress } =
+    resolveContractIdentifier("auction-house");
+  const { address: $nounsToken } = resolveContractIdentifier("$nouns-token");
+
+  const status = (() => {
+    if (isAuctionOngoing || ownerId === auctionHouseAddress) {
+      const highestBid = arrayUtils.sortBy(
+        { value: (b) => b.amount, order: "desc" },
+        noun.auction.bids ?? [],
+      )[0];
+
+      if (highestBid == null)
+        return (
+          <>
+            Held by{" "}
+            <AccountPreviewPopoverTrigger
+              accountAddress={auctionHouseAddress}
+              customDisplayName="The Auction House"
+            />
+          </>
+        );
+
+      return (
+        <>
+          Highest bid by{" "}
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={highestBid.bidderId}
+          />{" "}
+          (
+          <FormattedEthWithConditionalTooltip
+            value={highestBid.amount}
+            disableTooltip
+          />
+          )
+        </>
+      );
+    }
+
+    if (ownerId === treasuryAddress || ownerId === $nounsToken)
+      return (
+        <>
+          Held by <AccountPreviewPopoverTrigger accountAddress={ownerId} />
+          {transferEvent != null && (
+            <>
+              {" "}
+              since <EventTransactionTimestampLink event={transferEvent} />
+            </>
+          )}
+        </>
+      );
+
+    return isDelegating ? (
+      <>
+        Represented by{" "}
+        <AccountPreviewPopoverTrigger showAvatar accountAddress={delegateId} />,
+        delegated from{" "}
+        <AccountPreviewPopoverTrigger showAvatar accountAddress={ownerId} />
+        {delegationEvent != null && (
+          <>
+            {" "}
+            since <EventTransactionTimestampLink event={delegationEvent} />
+          </>
+        )}
+      </>
+    ) : (
+      <>
+        Represented and owned by{" "}
+        <AccountPreviewPopoverTrigger showAvatar accountAddress={ownerId} />
+        {transferEvent != null &&
+          transferEvent.previousAccountId !== auctionHouseAddress && (
+            <>
+              {" "}
+              since <EventTransactionTimestampLink event={transferEvent} />
+            </>
+          )}
+      </>
+    );
+  })();
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          padding: "1rem 1.2rem",
+          borderTop: "0.1rem solid",
+          borderColor: t.colors.borderLighter,
+          fontSize: t.text.sizes.small,
+          color: t.colors.textDimmed,
+        })
+      }
+    >
+      {status}
+    </div>
+  );
+};
+
+const NounContextStatus = ({ nounId, contextAccount }) => {
+  const noun = useNoun(nounId);
+
+  if (noun.events == null) return null;
+
+  const { address: forkEscrowAddress } =
+    resolveContractIdentifier("fork-escrow");
+
+  const ownerId = noun.owner?.id;
+  const delegateId = noun.owner?.delegate?.id;
+
+  const isDelegating =
+    delegateId != null && ownerId != null && ownerId !== delegateId;
+
+  const reverseChronologicalEvents = arrayUtils.sortBy(
+    { value: (e) => e.blockNumber, order: "desc" },
+    noun.events ?? [],
+  );
+
+  const { delegate: delegationEvents = [], transfer: transferEvents = [] } =
+    arrayUtils.groupBy((e) => e.type, reverseChronologicalEvents);
+
+  const delegationEvent = delegationEvents.find(
+    (e) => e.newAccountId === delegateId,
+  );
+
+  const transferEvent = transferEvents.find(
+    (e) =>
+      e.newAccountId === ownerId && e.previousAccountId !== forkEscrowAddress,
+  );
 
   return (
     <div
@@ -142,217 +278,145 @@ const NounEvents = ({ nounId, contextAccount }) => {
           borderTop: "0.1rem solid",
           borderColor: t.colors.borderLighter,
           fontSize: t.text.sizes.small,
+          color: t.colors.textDimmed,
         })
       }
     >
-      {latestTransferEvent && (
-        <NounTransferPreviewText
-          nounId={nounId}
-          event={latestTransferEvent}
+      {transferEvent?.newAccountId === contextAccount && (
+        <NounTransferEvent
+          event={transferEvent}
           contextAccount={contextAccount}
         />
       )}
 
-      {latestDelegationEvent && (
-        <NounDelegationPreviewText
-          nounId={nounId}
-          event={latestDelegationEvent}
-          contextAccount={contextAccount}
-        />
+      {isDelegating && (
+        <div>
+          {contextAccount === delegateId ? (
+            <>
+              Delegated from{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={ownerId}
+              />
+            </>
+          ) : contextAccount === ownerId ? (
+            <>
+              Delegated to{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={delegateId}
+              />
+            </>
+          ) : (
+            <>
+              Represented by{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={delegateId}
+              />
+              , delegated from{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={ownerId}
+              />
+            </>
+          )}
+          {delegationEvent != null && (
+            <>
+              {" "}
+              since <EventTransactionTimestampLink event={delegationEvent} />
+            </>
+          )}
+        </div>
       )}
     </div>
   );
 };
 
-const NounDelegationPreviewText = ({ nounId, event, contextAccount }) => {
-  const noun = useNoun(nounId);
-  const transactionHash = event.id.split("_")[0];
-  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
-  const newAccountEns = useEnsName(event.newAccountId);
-  const ownerDisplayName = useAccountDisplayName(noun.ownerId);
-  const ownerEns = useEnsName(noun.ownerId);
+const NounTransferEvent = ({ event }) => {
+  const transferMeta = useNounTransferMeta(event.transactionHash);
 
-  const isDestinationAccount =
-    contextAccount != null &&
-    event.newAccountId.toLowerCase() === contextAccount.toLowerCase();
-
-  const delegatingText = isDestinationAccount
-    ? "Delegated from"
-    : "Delegating to";
-
-  const previousAccount = isDestinationAccount
-    ? ownerDisplayName
-    : newAccountDisplayName;
-
-  const previousAccountAddress = isDestinationAccount
-    ? (ownerEns ?? noun.ownerId)
-    : (newAccountEns ?? event.newAccountId);
+  const { address: auctionHouseAddress } =
+    resolveContractIdentifier("auction-house");
+  const { address: $nounsToken } = resolveContractIdentifier("$nouns-token");
 
   return (
     <div>
-      <span
-        css={(t) =>
-          css({
-            color: isDestinationAccount
-              ? t.colors.textPositive
-              : t.colors.textNegative,
-            fontWeight: t.text.weights.emphasis,
-          })
+      {(() => {
+        if (transferMeta == null) return "..."; // Loading
+
+        switch (transferMeta.transferType) {
+          case "transfer":
+            return event.previousAccountId === auctionHouseAddress ? (
+              <>
+                Bought on auction{" "}
+                <EventTransactionTimestampLink event={event} />
+              </>
+            ) : (
+              <>
+                {event.previousAccountId === $nounsToken
+                  ? "Swapped"
+                  : "Transferred"}{" "}
+                from{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={event.previousAccountId}
+                />{" "}
+                on <EventTransactionTimestampLink event={event} />
+              </>
+            );
+
+          case "sale":
+            return (
+              <>
+                Bought from{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={event.previousAccountId}
+                />{" "}
+                on <EventTransactionTimestampLink event={event} /> for{" "}
+                <FormattedEthWithConditionalTooltip
+                  value={transferMeta.amount}
+                  disableTooltip
+                />
+              </>
+            );
+
+          case "fork-join":
+            return (
+              <>
+                Joined fork{" "}
+                <a
+                  href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  #{transferMeta.forkId}
+                </a>{" "}
+                <EventTransactionTimestampLink event={event} />
+              </>
+            );
+
+          case "fork-escrow":
+            return (
+              <>
+                Escrowed to fork{" "}
+                <a
+                  href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  #{transferMeta.forkId}
+                </a>{" "}
+                <EventTransactionTimestampLink event={event} />
+              </>
+            );
+
+          case "fork-escrow-withdrawal":
+          default:
+            throw new Error();
         }
-      >
-        {delegatingText}{" "}
-      </span>
-      <span>
-        <NextLink
-          href={`/voters/${previousAccountAddress}`}
-          css={(t) =>
-            css({
-              color: "inherit",
-              fontWeight: t.text.weights.emphasis,
-              textDecoration: "none",
-              "@media(hover: hover)": {
-                ":hover": {
-                  textDecoration: "underline",
-                },
-              },
-            })
-          }
-        >
-          {previousAccount}
-        </NextLink>
-      </span>{" "}
-      since{" "}
-      <span>
-        <a
-          href={buildEtherscanLink(`/tx/${transactionHash}`)}
-          rel="noreferrer"
-          target="_blank"
-          css={css({
-            color: "inherit",
-            textDecoration: "none",
-            "@media(hover: hover)": {
-              ":hover": {
-                textDecoration: "underline",
-              },
-            },
-          })}
-        >
-          <FormattedDateWithTooltip
-            disableRelative
-            disableTooltip
-            month="short"
-            day="numeric"
-            year="numeric"
-            value={event.blockTimestamp}
-          />
-        </a>
-      </span>
-    </div>
-  );
-};
-
-const NounTransferPreviewText = ({ event, contextAccount }) => {
-  const noun = useNoun(event.nounId);
-  const transactionHash = event.id.split("_")[0];
-  const { amount: saleAmount } = useSaleInfo({
-    transactionHash,
-    sourceAddress: contextAccount,
-  });
-
-  const newAccountDisplayName = useAccountDisplayName(event.newAccountId);
-  const newAccountEns = useEnsName(event.newAccountId);
-  const previousAccountDisplayName = useAccountDisplayName(
-    event.previousAccountId,
-  );
-  const previousAccountEns = useEnsName(event.previousAccountId);
-
-  const isDestinationAccount =
-    contextAccount != null &&
-    event.newAccountId.toLowerCase() === contextAccount.toLowerCase();
-
-  if (!isDestinationAccount) return null;
-
-  const transferredFromAuction =
-    event.previousAccountId === resolveIdentifier("auction-house").address;
-  const transferredFromTreasury =
-    event.previousAccountId === resolveIdentifier("executor").address;
-
-  const previousAccount = isDestinationAccount
-    ? previousAccountDisplayName
-    : newAccountDisplayName;
-
-  const previousAccountAddress = isDestinationAccount
-    ? (previousAccountEns ?? event.previousAccountId)
-    : (newAccountEns ?? event.newAccountId);
-
-  const transferredFromText = transferredFromAuction
-    ? "Auction House"
-    : transferredFromTreasury
-      ? "Nouns Treasury"
-      : previousAccount;
-
-  const amount = transferredFromAuction
-    ? parseInt(noun.auction.amount)
-    : saleAmount;
-
-  const actionText = amount > 0 ? "Bought" : "Transferred";
-
-  return (
-    <div
-      css={(t) =>
-        css({
-          a: {
-            color: t.colors.textDimmed,
-            fontWeight: t.text.weights.emphasis,
-            textDecoration: "none",
-            "@media(hover: hover)": {
-              ":hover": {
-                textDecoration: "underline",
-              },
-            },
-          },
-        })
-      }
-    >
-      <span
-        css={(t) =>
-          css({
-            fontWeight: t.text.weights.emphasis,
-          })
-        }
-      >
-        {actionText}
-      </span>{" "}
-      from{" "}
-      <span>
-        <NextLink href={`/voters/${previousAccountAddress}`}>
-          {transferredFromText}
-        </NextLink>
-      </span>{" "}
-      on{" "}
-      <span>
-        <a
-          href={buildEtherscanLink(`/tx/${transactionHash}`)}
-          rel="noreferrer"
-          target="_blank"
-        >
-          <FormattedDateWithTooltip
-            disableRelative
-            disableTooltip
-            month="short"
-            day="numeric"
-            year="numeric"
-            value={event.blockTimestamp}
-          />
-        </a>
-      </span>
-      {amount > 0 && (
-        <span>
-          {" "}
-          for{" "}
-          <FormattedEthWithConditionalTooltip value={amount} disableTooltip />
-        </span>
-      )}
+      })()}
     </div>
   );
 };
@@ -361,19 +425,22 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
   const { fetchNoun } = useActions();
 
-  const firstEvent = noun?.events?.[noun.events.length - 1];
+  const firstEventTimestamp =
+    noun?.events?.[noun.events.length - 1]?.blockTimestamp;
 
   const auction = noun?.auction;
-  const nounTimestamp = auction?.startTime ?? firstEvent?.blockTimestamp;
 
-  useFetch(() => fetchNoun(nounId), [nounId]);
+  const isAuctionOngoing = auction?.endTimestamp > Date.now();
+
+  useQuery({ queryKey: ["noun", nounId], queryFn: () => fetchNoun(nounId) });
 
   return (
     <div
       ref={ref}
       css={css({
-        width: "32rem",
-        minWidth: 0,
+        width: "fit-content",
+        minWidth: "24rem",
+        maxWidth: "min(calc(100vw - 1.2rem), 34rem)",
         borderRadius: "0.4rem",
         overflow: "hidden",
       })}
@@ -402,29 +469,26 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                 padding: "1rem 1.2rem",
                 gap: "1rem",
                 color: t.colors.textDimmed,
+                lineHeight: 1.25,
               })
             }
           >
             <div css={css({ position: "relative", zIndex: 1 })}>
-              <NounAvatar id={nounId} size="5rem" />
+              <NounAvatar id={nounId} size="3.2rem" />
               {contextAccount != null && (
                 <DelegationStatusDot
                   nounId={nounId}
                   contextAccount={contextAccount}
+                  css={(t) =>
+                    css({
+                      boxShadow: `0 0 0 0.2rem ${t.colors.popoverBackground}`,
+                    })
+                  }
                 />
               )}
             </div>
 
-            <div
-              css={(t) =>
-                css({
-                  flex: 1,
-                  minWidth: 0,
-                  lineHeight: 1.25,
-                  fontSize: t.text.sizes.default,
-                })
-              }
-            >
+            <div css={css({ flex: 1, minWidth: 0 })}>
               <a
                 href={`https://nouns.wtf/noun/${nounId}`}
                 rel="noreferrer"
@@ -435,50 +499,141 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
                     color: t.colors.textNormal,
                     textDecoration: "none",
                     "@media(hover: hover)": {
-                      ':hover [data-hover-underline="true"]': {
+                      ":hover [data-hover-underline]": {
                         textDecoration: "underline",
                       },
                     },
                   })
                 }
               >
-                <div data-hover-underline="true">Noun {nounId}</div>
+                <h2
+                  data-hover-underline
+                  css={(t) =>
+                    css({
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      color: t.colors.header,
+                      fontSize: t.text.sizes.large,
+                      fontWeight: t.text.weights.header,
+                    })
+                  }
+                >
+                  Noun {nounId}
+                </h2>
               </a>
 
               <div
                 css={(t) =>
-                  css({ fontSize: t.text.sizes.small, margin: "0.1rem 0" })
+                  css({
+                    fontSize: t.text.sizes.small,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    color: t.colors.textDimmed,
+                  })
                 }
               >
-                {nounTimestamp != null && (
-                  <FormattedDateWithTooltip
-                    disableRelative
-                    disableTooltip
-                    month="short"
-                    day="numeric"
-                    year="numeric"
-                    value={nounTimestamp}
-                  />
-                )}
-                {auction?.amount && (
+                {isAuctionOngoing ? (
+                  (() => {
+                    const { minutes, hours } = dateUtils.differenceUnits(
+                      auction.endTimestamp,
+                      new Date(),
+                    );
+
+                    if (minutes < 1)
+                      return <>Auction ends in less than 1 minute</>;
+
+                    if (hours <= 1)
+                      return (
+                        <>
+                          Auction ends in {Math.max(minutes, 0)}{" "}
+                          {minutes === 1 ? "minute" : "minutes"}
+                        </>
+                      );
+
+                    return <>Auction ends in {hours} hours</>;
+                  })()
+                ) : (
                   <>
-                    <InlineVerticalSeparator />
-                    <FormattedEthWithConditionalTooltip
-                      value={auction?.amount}
-                    />
+                    {auction?.startTimestamp != null ? (
+                      <>
+                        Born{" "}
+                        <FormattedDateWithTooltip
+                          disableRelative
+                          disableTooltip
+                          month="short"
+                          day="numeric"
+                          year="numeric"
+                          value={auction.startTimestamp}
+                        />
+                      </>
+                    ) : firstEventTimestamp != null ? (
+                      <>
+                        <FormattedDateWithTooltip
+                          disableRelative
+                          disableTooltip
+                          month="short"
+                          day="numeric"
+                          year="numeric"
+                          value={firstEventTimestamp}
+                        />
+                      </>
+                    ) : null}
+                    {auction?.amount && (
+                      <>
+                        <InlineVerticalSeparator />
+                        Auctioned for{" "}
+                        <FormattedEthWithConditionalTooltip
+                          value={auction?.amount}
+                        />
+                      </>
+                    )}
                   </>
                 )}
               </div>
             </div>
           </div>
+          {(() => {
+            if (noun?.owner?.id == null) return null;
 
-          {contextAccount != null && (
-            <NounEvents nounId={nounId} contextAccount={contextAccount} />
-          )}
+            if (contextAccount == null || isAuctionOngoing)
+              return <NounStatus nounId={nounId} />;
+
+            return (
+              <NounContextStatus
+                nounId={nounId}
+                contextAccount={contextAccount}
+              />
+            );
+          })()}
         </>
       )}
     </div>
   );
 });
+
+const EventTransactionTimestampLink = ({ event }) => (
+  <ChainExplorerTransactionLink
+    transactionHash={event.transactionHash}
+    css={css({
+      color: "inherit",
+      textDecoration: "none",
+      "@media(hover: hover)": {
+        ":hover": {
+          textDecoration: "underline",
+        },
+      },
+    })}
+  >
+    <FormattedDateWithTooltip
+      disableRelative
+      disableTooltip
+      month="short"
+      day="numeric"
+      year="numeric"
+      value={event.blockTimestamp}
+    />
+  </ChainExplorerTransactionLink>
+);
 
 export default NounPreviewPopoverTrigger;

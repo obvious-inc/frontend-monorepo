@@ -1,6 +1,9 @@
 "use client";
 
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  object as objectUtils,
+} from "@shades/common/utils";
 import { resolveIdentifier } from "../contracts.js";
 import {
   createReplyExtractor,
@@ -365,6 +368,177 @@ export const buildCandidateFeed = (
   ]);
 };
 
+const buildAuctionItems = (auction) => {
+  const items = [
+    {
+      type: "event",
+      eventType: "auction-started",
+      id: `auction-started-${auction.nounId}`,
+      nounId: auction.nounId,
+      timestamp: auction.startTimestamp,
+    },
+  ];
+
+  if (Date.now() >= auction.endTimestamp) {
+    const winningBid = arrayUtils.sortBy(
+      { value: (b) => b.amount, order: "desc" },
+      auction.bids,
+    )[0];
+
+    items.push({
+      type: "event",
+      eventType: "auction-ended",
+      id: `auction-ended-${auction.nounId}`,
+      nounId: auction.nounId,
+      timestamp: auction.endTimestamp,
+      bidderAccount: winningBid?.bidderId,
+      bidAmount: winningBid?.amount,
+    });
+  }
+
+  const bids = auction.bids ?? [];
+
+  for (const bid of bids) {
+    items.push({
+      type: "auction-bid",
+      id: `auction-bid-${bid.id}`,
+      nounId: auction.nounId,
+      authorAccount: bid.bidderId,
+      amount: bid.amount,
+      blockNumber: bid.blockNumber,
+      timestamp: bid.blockTimestamp,
+    });
+  }
+
+  return items;
+};
+
+export const buildAuctionFeed = (storeState) => {
+  const auctions = Object.values(storeState.nounsById).reduce(
+    (auctions, noun) => {
+      if (noun.auction == null) return auctions;
+      auctions.push(noun.auction);
+      return auctions;
+    },
+    [],
+  );
+
+  return auctions.flatMap(buildAuctionItems);
+};
+
+const buildNounTransferAndDelegationItems = (
+  transferAndDelegationEvents,
+  { includeAuctionSettlements = false, contextAccount } = {},
+) => {
+  const { address: treasuryAddress } = resolveIdentifier("executor");
+  const { address: auctionHouseAddress } = resolveIdentifier("auction-house");
+  const { address: $nounsTokenAddress } = resolveIdentifier("$nouns-token");
+
+  const {
+    transfer: transferEvents = [],
+    delegation: delegationEvents = [],
+    auctionSettlement: auctionSettlementTransfers = [],
+  } = arrayUtils.groupBy((e) => {
+    switch (e.type) {
+      case "delegate":
+        return "delegation";
+
+      case "transfer":
+        if (e.previousAccountId === auctionHouseAddress)
+          return includeAuctionSettlements ? "auctionSettlement" : "ignore";
+        return "transfer";
+
+      default:
+        throw new Error(`Unrecognized noun event: "${e.type}"`);
+    }
+  }, transferAndDelegationEvents);
+
+  const auctionSettlementItems = auctionSettlementTransfers.map((e) => ({
+    type: "event",
+    eventType: "auction-settled",
+    id: `${e.nounId}-auction-settled`,
+    timestamp: e.blockTimestamp,
+    blockNumber: e.blockNumber,
+    bidderAccount: e.newAccountId,
+    transactionHash: e.transactionHash,
+    nounId: e.nounId,
+  }));
+
+  const transferItems = arrayUtils
+    // Hack to get consistent swap order
+    // (until we add support for showing swaps as a single event)
+    .sortBy(
+      (i) =>
+        [treasuryAddress, $nounsTokenAddress].includes(i.previousAccountId),
+      transferEvents,
+    )
+    .map((e) => ({
+      type: "noun-transfer",
+      id: `${e.nounId}-transfer-${e.id}`,
+      timestamp: e.blockTimestamp,
+      blockNumber: e.blockNumber,
+      nounId: e.nounId,
+      fromAccount: e.previousAccountId,
+      toAccount: e.newAccountId,
+      transactionHash: e.transactionHash,
+      contextAccount,
+    }));
+
+  const transferEventsByTxHash = arrayUtils.indexBy(
+    (e) => e.transactionHash,
+    transferEvents,
+  );
+
+  const delegationItems = delegationEvents
+    // Delegation events are emitted when transferring already delegated tokens,
+    // which we don’t care about.
+    .filter((e) => {
+      const originTransferEvent = transferEventsByTxHash[e.transactionHash];
+      return originTransferEvent == null;
+    })
+    .map((e) => ({
+      type: "noun-delegation",
+      id: `${e.nounId}-delegation-${e.id}`,
+      timestamp: e.blockTimestamp,
+      blockNumber: e.blockNumber,
+      nounId: e.nounId,
+      authorAccount: e.delegatorId,
+      fromAccount: e.previousAccountId,
+      toAccount: e.newAccountId,
+      transactionHash: e.transactionHash,
+      contextAccount,
+    }));
+
+  const items = [
+    ...auctionSettlementItems,
+    ...transferItems,
+    ...delegationItems,
+  ];
+
+  // Bulk actions are indexed as one event per noun. This merges such events
+  // into one, referencing the set of nouns concerned.
+  const itemsById = objectUtils.mapValues(
+    (itemGroup, groupKey) => ({
+      ...itemGroup[0],
+      id: groupKey,
+      nouns: itemGroup.map((item) => item.nounId),
+    }),
+    arrayUtils.groupBy(
+      (e) => [e.transactionHash, e.type, e.fromAccount, e.toAccount].join("-"),
+      items,
+    ),
+  );
+
+  return Object.values(itemsById);
+};
+
+export const buildNounsTokenRepresentationFeed = (storeState) => {
+  const events = Object.values(storeState.nounsById).flatMap(
+    (n) => n.events ?? [],
+  );
+  return buildNounTransferAndDelegationItems(events);
+};
+
 export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
   const accountAddress = accountAddress_.toLowerCase();
 
@@ -390,100 +564,10 @@ export const buildAccountFeed = (storeState, accountAddress_, { filter }) => {
 
   const buildDelegationAndTransferEventItems = () => {
     const account = storeState.accountsById[accountAddress];
-    const events = account?.events ?? [];
-
-    const { address: auctionHouseAddress } = resolveIdentifier("auction-house");
-
-    const isFromAuctionHouse = (e) =>
-      e.previousAccountId === auctionHouseAddress;
-    const isToAuctionHouse = (e) => e.newAccountId === auctionHouseAddress;
-
-    // transfer events always come with an associated delegate event, ignore the latter
-    const uniqueEvents = arrayUtils.unique(
-      (e1, e2) => e1.id === e2.id,
-      // transfer events have to be first here to take precedence
-      arrayUtils.sortBy(
-        { value: (e) => e.type === "transfer", order: "asc" },
-        events,
-      ),
-    );
-
-    const auctionBoughtEventItems = uniqueEvents
-      .filter((e) => e.type === "transfer" && isFromAuctionHouse(e))
-      .map((e) => ({
-        type: "noun-auction-bought",
-        id: `${e.nounId}-auction-bought-${e.id}`,
-        timestamp: e.blockTimestamp,
-        blockNumber: e.blockNumber,
-        nounId: e.nounId,
-        authorAccount: e.newAccountId,
-        fromAccount: e.previousAccountId,
-        toAccount: e.newAccountId,
-        transactionHash: e.id.split("_")[0],
-      }));
-
-    const delegatedEventItems = uniqueEvents
-      .filter((e) => e.type === "delegate" && !isFromAuctionHouse(e))
-      .map((e) => {
-        const eventType =
-          accountAddress === e.previousAccountId &&
-          accountAddress !== e.delegatorId
-            ? "noun-undelegated"
-            : "noun-delegated";
-        return {
-          type: eventType,
-          id: `${e.nounId}-delegated-${e.id}`,
-          timestamp: e.blockTimestamp,
-          blockNumber: e.blockNumber,
-          nounId: e.nounId,
-          authorAccount: e.delegatorId,
-          fromAccount: e.previousAccountId,
-          toAccount: e.newAccountId,
-          transactionHash: e.id.split("_")[0],
-        };
-      });
-
-    const transferredEventItems = uniqueEvents
-      .filter(
-        (e) =>
-          e.type === "transfer" &&
-          !isFromAuctionHouse(e) &&
-          !isToAuctionHouse(e),
-      )
-      .map((e) => ({
-        type: "noun-transferred",
-        id: `${e.nounId}-transferred-${e.id}`,
-        timestamp: e.blockTimestamp,
-        blockNumber: e.blockNumber,
-        nounId: e.nounId,
-        authorAccount: e.previousAccountId,
-        fromAccount: e.previousAccountId,
-        toAccount: e.newAccountId,
-        transactionHash: e.id.split("_")[0],
-        accountRef: accountAddress,
-      }));
-
-    // Bulk actions are indexed as one event per noun. This merges such events
-    // into one, referencing the sef of nouns concerned.
-    const eventItems = Object.values(
-      arrayUtils.groupBy(
-        (e) => `${e.transactionHash}-${e.type}-${e.fromAccount}-${e.toAccount}`,
-        [
-          ...delegatedEventItems,
-          ...transferredEventItems,
-          ...auctionBoughtEventItems,
-        ],
-      ),
-    ).map((group) => {
-      const lastEvent = group[group.length - 1];
-      return {
-        ...lastEvent,
-        id: `${lastEvent.blockNumber}-${lastEvent.transactionHash}-${lastEvent.type}-${lastEvent.fromAccount}-${lastEvent.toAccount}`,
-        nouns: group.map((e) => e.nounId),
-      };
+    return buildNounTransferAndDelegationItems(account?.events ?? [], {
+      includeAuctionSettlements: true,
+      contextAccount: accountAddress,
     });
-
-    return eventItems;
   };
 
   const getFilteredItems = () => {

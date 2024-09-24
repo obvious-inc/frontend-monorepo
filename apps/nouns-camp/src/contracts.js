@@ -151,7 +151,7 @@ export const resolveIdentifier = (identifier, { chainId = CHAIN_ID } = {}) => {
 
 export const resolveAddress = (address, { chainId = CHAIN_ID } = {}) => {
   const identifier =
-    identifierByAddressByChainId[chainId]?.[address.toLowerCase()];
+    identifierByAddressByChainId[chainId]?.[address?.toLowerCase()];
   if (identifier == null) return null;
   const meta = metaByIdentifier[identifier];
   return { address, identifier, ...meta };
