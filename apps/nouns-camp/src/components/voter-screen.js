@@ -803,12 +803,11 @@ const VoterHeader = ({ accountAddress }) => {
                   <DelegationStatusDot
                     nounId={n.id}
                     contextAccount={accountAddress}
-                    cssProps={{
-                      top: "3rem",
-                      left: "3rem",
-                      height: "1.2rem",
-                      width: "1.2rem",
-                    }}
+                    css={(t) =>
+                      css({
+                        boxShadow: `0 0 0 0.2rem ${t.colors.backgroundPrimary}`,
+                      })
+                    }
                   />
                 </div>
                 <div data-id>{n.id}</div>

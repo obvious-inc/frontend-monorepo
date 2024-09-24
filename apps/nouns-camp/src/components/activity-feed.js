@@ -30,13 +30,14 @@ import AccountAvatar from "./account-avatar.js";
 import MarkdownRichText from "./markdown-rich-text.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
-import { useSaleInfo } from "../hooks/sales.js";
+import { useTransferMeta as useNounTransferMeta } from "@/hooks/noun-transfers";
 import {
   useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress,
   useSubmitTransactionLike,
   useSubmitCastLike,
   useTransactionLikes as useFarcasterTransactionLikes,
   useCastLikes as useFarcasterCastLikes,
+  useCastConversation as useFarcasterCastConversation,
 } from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
@@ -292,6 +293,20 @@ const FeedItem = React.memo(
     const castLikes = useFarcasterCastLikes(item.castHash, {
       enabled: isOnScreen,
     });
+    const replyCasts = useFarcasterCastConversation(item.castHash, {
+      enabled: isOnScreen,
+    });
+
+    const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
+      enabled: item.type === "noun-transfer",
+    });
+
+    const authorReplyCasts = (() => {
+      if (replyCasts == null) return null;
+      const flatten = (casts) =>
+        casts.flatMap((c) => [c, ...flatten(c.replies)]);
+      return flatten(replyCasts).filter((c) => c.fid === item.authorFid);
+    })();
 
     const likes = transactionLikes ?? castLikes;
 
@@ -326,6 +341,10 @@ const FeedItem = React.memo(
     const showLikeAction = (() => {
       if (onLike == null) return false;
       if (item.type === "farcaster-cast") return true;
+      if (
+        ["auction-bid", "noun-transfer", "noun-delegation"].includes(item.type)
+      )
+        return false;
       if (["vote", "feedback-post"].includes(item.type)) return hasReason;
       return item.transactionHash != null;
     })();
@@ -393,54 +412,105 @@ const FeedItem = React.memo(
       >
         <div data-header>
           <div>
-            {item.type === "farcaster-cast" ? (
-              <div style={{ position: "relative" }}>
-                {item.authorAccount == null ? (
-                  <Avatar url={item.authorAvatarUrl} size="2rem" />
-                ) : (
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={item.authorAccount}
-                  >
-                    <button data-avatar-button>
-                      <AccountAvatar
-                        address={item.authorAccount}
-                        fallbackImageUrl={item.authorAvatarUrl}
-                        size="2rem"
-                      />
-                    </button>
-                  </AccountPreviewPopoverTrigger>
-                )}
-                <span
-                  css={(t) =>
-                    css({
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      display: "flex",
-                      width: "1rem",
-                      height: "1rem",
-                      borderRadius: "50%",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#855DCD", // Farcaster purple
-                      transform: "translateY(-35%) translateX(35%)",
-                      boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
-                      svg: { width: "0.6rem", height: "auto", color: "white" },
-                    })
-                  }
-                >
-                  <FarcasterGateIcon />
-                </span>
-              </div>
-            ) : item.type === "event" || item.authorAccount == null ? (
-              <div data-timeline-symbol />
-            ) : (
-              <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
-                <button data-avatar-button>
-                  <AccountAvatar address={item.authorAccount} size="2rem" />
-                </button>
-              </AccountPreviewPopoverTrigger>
-            )}
+            {(() => {
+              switch (item.type) {
+                case "farcaster-cast":
+                  return (
+                    <div style={{ position: "relative" }}>
+                      {item.authorAccount == null ? (
+                        <Avatar url={item.authorAvatarUrl} size="2rem" />
+                      ) : (
+                        <AccountPreviewPopoverTrigger
+                          accountAddress={item.authorAccount}
+                        >
+                          <button data-avatar-button>
+                            <AccountAvatar
+                              address={item.authorAccount}
+                              fallbackImageUrl={item.authorAvatarUrl}
+                              size="2rem"
+                            />
+                          </button>
+                        </AccountPreviewPopoverTrigger>
+                      )}
+                      <span
+                        css={(t) =>
+                          css({
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            display: "flex",
+                            width: "1rem",
+                            height: "1rem",
+                            borderRadius: "50%",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#855DCD", // Farcaster purple
+                            transform: "translateY(-35%) translateX(35%)",
+                            boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+                            svg: {
+                              width: "0.6rem",
+                              height: "auto",
+                              color: "white",
+                            },
+                          })
+                        }
+                      >
+                        <FarcasterGateIcon />
+                      </span>
+                    </div>
+                  );
+
+                case "noun-transfer": {
+                  if (nounTransferMeta == null) return null;
+
+                  const authorAccount = {
+                    "fork-join": item.fromAccount,
+                    "fork-escrow": item.fromAccount,
+                    "fork-escrow-withdrawal": item.toAccount,
+                    sale: item.contextAccount == null ? null : item.toAccount,
+                    transfer: item.fromAccount,
+                  }[nounTransferMeta.transferType];
+
+                  if (authorAccount == null)
+                    return <div data-timeline-symbol />;
+
+                  if (
+                    item.contextAccount != null &&
+                    item.contextAccount !== authorAccount
+                  )
+                    return <div data-timeline-symbol />;
+
+                  return (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={authorAccount}
+                    >
+                      <button data-avatar-button>
+                        <AccountAvatar address={authorAccount} size="2rem" />
+                      </button>
+                    </AccountPreviewPopoverTrigger>
+                  );
+                }
+
+                case "event":
+                  return <div data-timeline-symbol />;
+
+                default:
+                  return item.authorAccount == null ? (
+                    <div data-timeline-symbol />
+                  ) : (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={item.authorAccount}
+                    >
+                      <button data-avatar-button>
+                        <AccountAvatar
+                          address={item.authorAccount}
+                          size="2rem"
+                        />
+                      </button>
+                    </AccountPreviewPopoverTrigger>
+                  );
+              }
+            })()}
           </div>
           <div>
             <div
@@ -611,6 +681,9 @@ const FeedItem = React.memo(
               truncateLines={!isIsolatedContext}
             />
           )}
+          {authorReplyCasts?.map((cast) => (
+            <ItemBody key={cast.hash} text={cast.text} />
+          ))}
           {item.type === "candidate-signature-added" && (
             <div
               css={(t) =>
@@ -637,7 +710,6 @@ const FeedItem = React.memo(
               )}
             </div>
           )}
-
           {showActionBar && (
             <div
               css={(t) =>
@@ -1007,6 +1079,27 @@ const ItemTitle = ({ item, context }) => {
   switch (item.type) {
     case "event": {
       switch (item.eventType) {
+        case "auction-started":
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
+              started
+            </span>
+          );
+        case "auction-ended":
+          return (
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} /> won
+              by{" "}
+              <AccountPreviewPopoverTrigger
+                accountAddress={item.bidderAccount}
+              />{" "}
+              for <FormattedEthWithConditionalTooltip value={item.bidAmount} />
+            </span>
+          );
+        case "auction-settled":
+          return <AuctionSettledItem item={item} />;
+
         case "proposal-created":
         case "proposal-updated":
           return (
@@ -1360,39 +1453,53 @@ const ItemTitle = ({ item, context }) => {
         </span>
       );
 
-    case "noun-auction-bought":
-    case "noun-transferred":
-      return <TransferItem item={item} />;
+    case "noun-transfer":
+      return <NounTransferItem item={item} />;
 
-    case "noun-delegated":
+    case "noun-delegation":
       return (
         <>
           {accountName}{" "}
           <span css={(t) => css({ color: t.colors.textDimmed })}>
-            delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.toAccount}
-            />
+            {item.toAccount === item.authorAccount ? (
+              <>
+                stopped delegating to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.fromAccount}
+                />
+              </>
+            ) : (
+              <>
+                delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />
+              </>
+            )}
           </span>
         </>
       );
 
-    case "noun-undelegated": {
+    case "auction-bid":
       return (
         <>
           {accountName}{" "}
           <span css={(t) => css({ color: t.colors.textDimmed })}>
-            stopped delegating{" "}
-            <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.fromAccount}
-            />
+            placed a bid of{" "}
+            <FormattedEthWithConditionalTooltip value={item.amount} /> for{" "}
+            <NounPreviewPopoverTrigger nounId={item.nounId} /> at the{" "}
+            <a
+              href={`https://nouns.wtf/noun/${item.nounId}`}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Auction House
+            </a>
           </span>
         </>
       );
-    }
 
     default:
       console.log(item);
@@ -1400,125 +1507,170 @@ const ItemTitle = ({ item, context }) => {
   }
 };
 
-const TransferItem = ({ item }) => {
-  const { amount: saleAmount, forkId } = useSaleInfo({
-    transactionHash: item?.transactionHash,
-    sourceAddress: item.toAccount,
-  });
+const NounTransferItem = ({ item }) => {
+  const transferMeta = useNounTransferMeta(item.transactionHash);
 
-  const noun = useNoun(item.nounId);
-  const nounAuctionAmount = noun ? parseInt(noun.auction?.amount) : null;
-  const accountName = (
-    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
-  );
+  if (transferMeta == null) return null; // Loading
 
-  switch (item.type) {
-    case "noun-auction-bought":
-      return (
-        <>
-          {accountName}{" "}
-          <span css={(t) => css({ color: t.colors.textDimmed })}>
-            bought <NounPreviewPopoverTrigger nounId={item.nounId} />
-            {nounAuctionAmount && (
-              <>
-                {" "}
-                for{" "}
-                <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
-              </>
-            )}{" "}
-            from the{" "}
-            <AccountPreviewPopoverTrigger accountAddress={item.fromAccount}>
-              <button
-                css={(t) =>
-                  css({
-                    fontWeight: t.text.weights.smallHeader,
-                    outline: "none",
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": {
-                        textDecoration: "underline",
-                      },
-                    },
-                  })
-                }
-              >
-                Auction house
-              </button>
-            </AccountPreviewPopoverTrigger>
-          </span>
-        </>
-      );
+  const nounsElement = <NounsPreviewPopoverTrigger nounIds={item.nouns} />;
 
-    case "noun-transferred":
-      if (forkId != null) {
+  switch (transferMeta.transferType) {
+    // Regular transfer
+    case "transfer":
+      if (item.contextAccount == item.fromAccount)
         return (
           <>
-            {accountName}{" "}
+            <AccountPreviewPopoverTrigger accountAddress={item.fromAccount} />{" "}
             <span css={(t) => css({ color: t.colors.textDimmed })}>
-              joined fork{" "}
-              <a
-                href={`https://nouns.wtf/fork/${forkId}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                #{forkId}
-              </a>{" "}
-              with <NounsPreviewPopoverTrigger nounIds={item.nouns} />
+              transferred {nounsElement} to{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.toAccount}
+              />
             </span>
           </>
         );
-      }
-      if (saleAmount && saleAmount > 0) {
-        if (item.accountRef.toLowerCase() === item.toAccount.toLowerCase()) {
-          return (
-            <>
-              <AccountPreviewPopoverTrigger
-                showAvatar
-                accountAddress={item.accountRef}
-              />{" "}
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                bought <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
-                <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.fromAccount}
-                />{" "}
-              </span>
-            </>
-          );
-        } else {
-          return (
-            <>
-              <AccountPreviewPopoverTrigger
-                showAvatar
-                accountAddress={item.accountRef}
-              />{" "}
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
-                <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.toAccount}
-                />{" "}
-              </span>
-            </>
-          );
-        }
-      }
+
+      if (item.contextAccount == item.toAccount)
+        return (
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            {nounsElement} transferred from{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.fromAccount}
+            />
+          </span>
+        );
 
       return (
-        <span>
-          {accountName}{" "}
+        <>
+          <AccountPreviewPopoverTrigger accountAddress={item.fromAccount} />{" "}
           <span css={(t) => css({ color: t.colors.textDimmed })}>
-            transferred <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            transferred {nounsElement} to{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
               accountAddress={item.toAccount}
             />
           </span>
-        </span>
+        </>
       );
+
+    // Account joined fork
+    case "fork-join":
+      return (
+        <>
+          <AccountPreviewPopoverTrigger accountAddress={item.fromAccount} />{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            joined fork{" "}
+            <a
+              href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              #{transferMeta.forkId}
+            </a>{" "}
+            with {nounsElement}
+          </span>
+          {transferMeta.reason != null && (
+            <ItemBody text={transferMeta.reason} />
+          )}
+        </>
+      );
+
+    // Account escrowed nouns to fork
+    case "fork-escrow":
+      return (
+        <>
+          <AccountPreviewPopoverTrigger accountAddress={item.fromAccount} />{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            escrowed {nounsElement} to fork{" "}
+            <a
+              href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              #{transferMeta.forkId}
+            </a>
+          </span>
+          {transferMeta.reason != null && (
+            <ItemBody text={transferMeta.reason} />
+          )}
+        </>
+      );
+
+    // Nouns withdrawn from fork escrow
+    case "fork-escrow-withdrawal":
+      return (
+        <>
+          <AccountPreviewPopoverTrigger accountAddress={item.toAccount} />{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            withdrew {nounsElement} from fork{" "}
+            <a
+              href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              #{transferMeta.forkId}
+            </a>
+          </span>
+        </>
+      );
+
+    // Secondary sale
+    case "sale":
+      if (item.contextAccount === item.toAccount)
+        return (
+          <>
+            <AccountPreviewPopoverTrigger accountAddress={item.toAccount} />{" "}
+            <span css={(t) => css({ color: t.colors.textDimmed })}>
+              bought {nounsElement} for{" "}
+              <FormattedEthWithConditionalTooltip value={transferMeta.amount} />{" "}
+              from{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.fromAccount}
+              />{" "}
+            </span>
+          </>
+        );
+
+      return (
+        <>
+          <AccountPreviewPopoverTrigger accountAddress={item.fromAccount} />{" "}
+          <span css={(t) => css({ color: t.colors.textDimmed })}>
+            sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
+            <FormattedEthWithConditionalTooltip value={transferMeta.amount} />{" "}
+            to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.toAccount}
+            />{" "}
+          </span>
+        </>
+      );
+
+    default:
+      throw new Error();
   }
+};
+
+const AuctionSettledItem = ({ item }) => {
+  const noun = useNoun(item.nounId);
+  return (
+    <>
+      <AccountPreviewPopoverTrigger accountAddress={item.bidderAccount} />{" "}
+      <span css={(t) => css({ color: t.colors.textDimmed })}>
+        bought <NounPreviewPopoverTrigger nounId={item.nounId} /> on auction
+        {noun.auction?.amount != null && (
+          <>
+            {" "}
+            for{" "}
+            <FormattedEthWithConditionalTooltip value={noun.auction.amount} />
+          </>
+        )}
+      </span>
+    </>
+  );
 };
 
 const Signal = ({ positive, negative, ...props }) => (

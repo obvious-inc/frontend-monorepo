@@ -18,8 +18,12 @@ import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
+import * as Menu from "@shades/ui-web/dropdown-menu";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
-import { Fullscreen as FullscreenIcon } from "@shades/ui-web/icons";
+import {
+  CaretDown as CaretDownIcon,
+  Fullscreen as FullscreenIcon,
+} from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
 import { getForYouGroup as getProposalForYouGroup } from "../utils/proposals.js";
 import { search as searchEns } from "../utils/ens.js";
@@ -910,7 +914,7 @@ const FEED_PAGE_ITEM_COUNT = 30;
 
 let hasFetchedActivityFeedOnce = false;
 
-const useActivityFeedItems = ({ filter = "all" }) => {
+const useActivityFeedItems = ({ categories }) => {
   const { fetchNounsActivity } = useActions();
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
@@ -949,7 +953,7 @@ const useActivityFeedItems = ({ filter = "all" }) => {
     [latestBlockNumber, fetchNounsActivity],
   );
 
-  return useMainFeedItems(filter, { enabled: hasFetchedOnce });
+  return useMainFeedItems(categories, { enabled: hasFetchedOnce });
 };
 
 const TruncatedActivityFeed = ({ items }) => {
@@ -1006,12 +1010,43 @@ const TruncatedActivityFeed = ({ items }) => {
   );
 };
 
-const Feed = React.memo(() => {
-  const [filter, setFilter] = useCachedState(
-    "browse-screen:activity-filter",
-    "all",
+const feedFilterCategoryItems = [
+  {
+    key: "proposals",
+    title: "Proposal activity",
+  },
+  {
+    key: "candidates",
+    title: "Candidate activity",
+  },
+  {
+    key: "noun-representation",
+    title: "Delegations & transfers",
+  },
+  {
+    key: "auction-excluding-bids",
+    title: "Auction winners & settlements",
+  },
+  { key: "auction-bids", title: "Auction bids" },
+  { key: "propdates", title: "Propdate posts" },
+];
+const defaultSelectedFeedFilterCategories = [
+  "proposals",
+  "candidates",
+  "noun-representation",
+  "auction-excluding-bids",
+  "auction-bids",
+  "propdates",
+];
+const useFeedFilterCategories = () =>
+  useCachedState(
+    "landing-screen:selected-feed-categories",
+    defaultSelectedFeedFilterCategories,
   );
-  const feedItems = useActivityFeedItems({ filter });
+
+const Feed = React.memo(() => {
+  const [selectedCategories, setSelectedCategories] = useFeedFilterCategories();
+  const feedItems = useActivityFeedItems({ categories: selectedCategories });
 
   return (
     <div
@@ -1019,53 +1054,10 @@ const Feed = React.memo(() => {
       style={{ opacity: feedItems.length > 0 ? 1 : 0 }}
     >
       <React.Suspense fallback={null}>
-        <div
-          css={css({
-            // height: "4.05rem",
-            display: "flex",
-            alignItems: "center",
-            // justifyContent: "flex-end",
-            margin: "0 0 2rem",
-          })}
-        >
-          <Select
-            size="small"
-            aria-label="Feed filter"
-            value={filter}
-            options={[
-              { value: "all", label: "Everything" },
-              { value: "proposals", label: "Proposal activity only" },
-              { value: "candidates", label: "Candidate activity only" },
-              { value: "propdates", label: "Propdates only" },
-            ]}
-            onChange={(value) => {
-              setFilter(value);
-            }}
-            fullWidth={false}
-            width="max-content"
-            renderTriggerContent={(value) => {
-              const filterLabel = {
-                all: "Everything",
-                proposals: "Proposal activity",
-                candidates: "Candidate activity",
-                propdates: "Propdates",
-              }[value];
-              return (
-                <>
-                  Show:{" "}
-                  <em
-                    css={(t) =>
-                      css({
-                        fontStyle: "normal",
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    {filterLabel}
-                  </em>
-                </>
-              );
-            }}
+        <div css={css({ margin: "0 0 2rem" })}>
+          <FeedFilterMenu
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
           />
         </div>
 
@@ -1076,11 +1068,8 @@ const Feed = React.memo(() => {
 });
 
 const FeedTabContent = React.memo(() => {
-  const [filter, setFilter] = useCachedState(
-    "browse-screen:activity-filter",
-    "all",
-  );
-  const feedItems = useActivityFeedItems({ filter });
+  const [selectedCategories, setSelectedCategories] = useFeedFilterCategories();
+  const feedItems = useActivityFeedItems({ categories: selectedCategories });
 
   return (
     <div
@@ -1089,42 +1078,9 @@ const FeedTabContent = React.memo(() => {
     >
       <React.Suspense fallback={null}>
         <div css={css({ margin: "0 0 2.8rem" })}>
-          <Select
-            size="small"
-            aria-label="Feed filter"
-            value={filter}
-            options={[
-              { value: "all", label: "Everything" },
-              { value: "proposals", label: "Proposal activity only" },
-              { value: "candidates", label: "Candidate activity only" },
-            ]}
-            onChange={(value) => {
-              setFilter(value);
-            }}
-            fullWidth={false}
-            width="max-content"
-            renderTriggerContent={(value) => {
-              const filterLabel = {
-                all: "Everything",
-                proposals: "Proposal activity",
-                candidates: "Candidate activity",
-              }[value];
-              return (
-                <>
-                  Show:{" "}
-                  <em
-                    css={(t) =>
-                      css({
-                        fontStyle: "normal",
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    {filterLabel}
-                  </em>
-                </>
-              );
-            }}
+          <FeedFilterMenu
+            selectedCategories={selectedCategories}
+            setSelectedCategories={setSelectedCategories}
           />
         </div>
 
@@ -1307,6 +1263,82 @@ const Pagination = ({ showNext, showAll }) => (
       </Link>
     </div>
   </div>
+);
+
+const FilterMenu = ({
+  size,
+  fullWidth,
+  widthFollowTrigger,
+  inlineLabel,
+  items,
+  selectedKeys,
+  setSelectedKeys,
+}) => (
+  <Menu.Root>
+    <Menu.Trigger asChild>
+      <Button
+        align="left"
+        size={size}
+        fullWidth={fullWidth}
+        iconRight={
+          <CaretDownIcon style={{ width: "1.1rem", height: "auto" }} />
+        }
+      >
+        <span
+          data-inline-label={inlineLabel != null}
+          css={(t) =>
+            css({
+              em: {
+                fontStyle: "normal",
+                fontWeight: t.text.weights.emphasis,
+              },
+              '&[data-inline-label="true"]': {
+                fontWeight: t.text.weights.emphasis,
+                ".inline-label": {
+                  fontWeight: t.text.weights.normal,
+                },
+              },
+            })
+          }
+        >
+          {inlineLabel != null && (
+            <span className="inline-label">{inlineLabel}: </span>
+          )}
+          {(() => {
+            if (selectedKeys.size === 0 || selectedKeys.size === items.length)
+              return "Everything";
+            if (selectedKeys.size > 1) return "Custom ";
+            const selectedItems = items.filter((i) => selectedKeys.has(i.key));
+            return selectedItems.map((i) => i.title).join(", ");
+          })()}
+        </span>
+      </Button>
+    </Menu.Trigger>
+    <Menu.Content
+      widthFollowTrigger={widthFollowTrigger}
+      selectionMode="multiple"
+      selectedKeys={selectedKeys}
+      onSelectionChange={(keys) => {
+        setSelectedKeys(keys);
+      }}
+    >
+      {items.map((item) => (
+        <Menu.Item key={item.key}>{item.title}</Menu.Item>
+      ))}
+    </Menu.Content>
+  </Menu.Root>
+);
+
+const FeedFilterMenu = ({ selectedCategories, setSelectedCategories }) => (
+  <FilterMenu
+    inlineLabel="Show"
+    size="small"
+    selectedKeys={new Set(selectedCategories)}
+    setSelectedKeys={(keys) => {
+      setSelectedCategories([...keys]);
+    }}
+    items={feedFilterCategoryItems}
+  />
 );
 
 export default BrowseScreen;

@@ -109,7 +109,7 @@ export const Content = ({
       widthFollowTrigger={widthFollowTrigger}
       css={(theme) =>
         css({
-          width: theme.dropdownMenus.width,
+          width: "min-content", // theme.dropdownMenus.width,
           minWidth: theme.dropdownMenus.minWidth,
           maxWidth: theme.dropdownMenus.maxWidth,
           padding: theme.dropdownMenus.padding,

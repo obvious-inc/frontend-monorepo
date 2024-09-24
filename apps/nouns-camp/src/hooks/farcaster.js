@@ -250,6 +250,40 @@ export const useCastLikes = (
   return likes;
 };
 
+export const useCastConversation = (
+  castHash,
+  { enabled = true, ...queryOptions } = {},
+) => {
+  const { data: casts } = useTanstackQuery({
+    queryKey: ["farcaster-cast-conversation", castHash],
+    queryFn: async ({ queryKey: [, hash] }) => {
+      const response = await fetch(
+        `/api/farcaster-cast-conversation?${new URLSearchParams({ hash })}`,
+      );
+
+      if (!response.ok) {
+        console.log(
+          `Error fetching conversation for: [${hash}]`,
+          await response.text(),
+        );
+        return;
+      }
+
+      const { casts, accounts } = await response.json();
+      const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
+      const parseCast = (cast) => ({
+        ...cast,
+        account: accountsByFid[cast.fid],
+      });
+      return casts.map(parseCast);
+    },
+    enabled: enabled && castHash != null,
+    staleTime: 1000 * 30,
+    ...queryOptions,
+  });
+  return casts;
+};
+
 export const useSubmitTransactionLike = () => {
   const queryClient = useTanstackQueryClient();
   const { address: nounerAddress } = useWallet();
