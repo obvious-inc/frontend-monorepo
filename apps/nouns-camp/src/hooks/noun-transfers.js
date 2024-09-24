@@ -187,8 +187,30 @@ export const useTransferMeta = (
     const receiverBalanceChange =
       balanceChangeByAddress?.[receiverAccount.toLowerCase()] ?? 0;
 
-    if (receiverBalanceChange < 0)
-      return { transferType: "sale", amount: -receiverBalanceChange };
+    if (receiverBalanceChange < 0) {
+      let amount = -receiverBalanceChange;
+
+      const multipleSellers =
+        new Set(transferEvents.map(({ args }) => args.from)).size > 1;
+      const multipleBuyers =
+        new Set(transferEvents.map(({ args }) => args.to)).size > 1;
+
+      // feed items are grouped by hash, type, from, and to.
+      //
+      // if there are multiple transfers between different accounts in the same transaction
+      // they'll be displayed as individual items so we use the average amount
+      //
+      // if there are multiple transfers between the same accounts they'll be displayed
+      // as one item in the feed so we use the total amount
+      if (multipleSellers || multipleBuyers) {
+        amount /= BigInt(transferEvents.length);
+      }
+
+      return {
+        transferType: "sale",
+        amount,
+      };
+    }
 
     return { transferType: "transfer" };
   }, [transaction, receipt, enabled]);
