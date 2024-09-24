@@ -297,9 +297,13 @@ const FeedItem = React.memo(
       enabled: isOnScreen,
     });
 
-    const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
-      enabled: item.type === "noun-transfer",
-    });
+    const nounTransferMeta = useNounTransferMeta(
+      item.transactionHash,
+      item.nounId,
+      {
+        enabled: item.type === "noun-transfer",
+      },
+    );
 
     const authorReplyCasts = (() => {
       if (replyCasts == null) return null;
@@ -1460,7 +1464,7 @@ const ItemTitle = ({ item, context }) => {
 };
 
 const NounTransferItem = ({ item }) => {
-  const transferMeta = useNounTransferMeta(item.transactionHash);
+  const transferMeta = useNounTransferMeta(item.transactionHash, item.nounId);
 
   if (transferMeta == null) return null; // Loading
 
