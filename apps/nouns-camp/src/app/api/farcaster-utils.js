@@ -124,6 +124,55 @@ export const fetchNounerLikesByCast = async (hash) => {
   );
 };
 
+export const fetchCastReplies = async (hash) => {
+  const response = await fetch(
+    `https://api.neynar.com/v2/farcaster/cast/conversation?${new URLSearchParams(
+      {
+        identifier: hash,
+        type: "hash",
+        reply_depth: 5,
+        limit: 50,
+      },
+    )}`,
+    {
+      headers: {
+        accept: "application/json",
+        api_key: process.env.NEYNAR_API_KEY,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    console.error(await response.text());
+    throw new Error();
+  }
+
+  const { conversation } = await response.json();
+
+  const getConversationAccounts = (cast) => [
+    cast.author,
+    ...cast.direct_replies.flatMap(getConversationAccounts),
+  ];
+
+  const parseCast = (c) => ({
+    hash: c.hash,
+    fid: c.author.fid,
+    text: c.text,
+    timestamp: c.timestamp,
+    replies: c.direct_replies.map(parseCast),
+  });
+
+  const casts = conversation.cast.direct_replies.map(parseCast);
+  const accounts = await parseNeynarUsers(
+    arrayUtils.unique(
+      (u1, u2) => u1.fid === u2.fid,
+      getConversationAccounts(conversation.cast),
+    ),
+  );
+
+  return { casts, accounts };
+};
+
 const submitMessage = async (
   buildMessage,
   { fid, privateAccountKey },
@@ -321,9 +370,6 @@ export const fetchCastsByParentUrl = async (
   }
 
   const { casts: rawCasts } = await response.json();
-
-  // TODO: Recursively fetch all casts
-  // TODO: Somehow include replies (and reactions/replies to relevant onchain stuff we display)
 
   const casts = rawCasts.map((c) => ({
     hash: c.hash,

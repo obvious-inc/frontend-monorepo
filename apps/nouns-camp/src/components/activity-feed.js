@@ -37,6 +37,7 @@ import {
   useSubmitCastLike,
   useTransactionLikes as useFarcasterTransactionLikes,
   useCastLikes as useFarcasterCastLikes,
+  useCastConversation as useFarcasterCastConversation,
 } from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
@@ -292,10 +293,20 @@ const FeedItem = React.memo(
     const castLikes = useFarcasterCastLikes(item.castHash, {
       enabled: isOnScreen,
     });
+    const replyCasts = useFarcasterCastConversation(item.castHash, {
+      enabled: isOnScreen,
+    });
 
     const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
       enabled: item.type === "noun-transfer",
     });
+
+    const authorReplyCasts = (() => {
+      if (replyCasts == null) return null;
+      const flatten = (casts) =>
+        casts.flatMap((c) => [c, ...flatten(c.replies)]);
+      return flatten(replyCasts).filter((c) => c.fid === item.authorFid);
+    })();
 
     const likes = transactionLikes ?? castLikes;
 
@@ -666,6 +677,9 @@ const FeedItem = React.memo(
               truncateLines={!isIsolatedContext}
             />
           )}
+          {authorReplyCasts?.map((cast) => (
+            <ItemBody key={cast.hash} text={cast.text} />
+          ))}
           {item.type === "candidate-signature-added" && (
             <div
               css={(t) =>
@@ -692,7 +706,6 @@ const FeedItem = React.memo(
               )}
             </div>
           )}
-
           {showActionBar && (
             <div
               css={(t) =>
