@@ -409,26 +409,26 @@ const BrowseProposalsScreen = () => {
               status
               createdBlock
               createdTimestamp
-              lastUpdatedBlock
-              lastUpdatedTimestamp
+            # lastUpdatedBlock
+            # lastUpdatedTimestamp
               startBlock
               endBlock
-              updatePeriodEndBlock
-              objectionPeriodEndBlock
-              canceledBlock
-              canceledTimestamp
-              queuedBlock
-              queuedTimestamp
-              executedBlock
-              executedTimestamp
+            # updatePeriodEndBlock
+            # objectionPeriodEndBlock
+            # canceledBlock
+            # canceledTimestamp
+            # queuedBlock
+            # queuedTimestamp
+            # executedBlock
+            # executedTimestamp
               forVotes
               againstVotes
               abstainVotes
               quorumVotes
               executionETA
-              adjustedTotalSupply
+            # adjustedTotalSupply
               proposer { id }
-              signers { id }
+            # signers { id }
             }
           }`,
         });
