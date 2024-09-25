@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.23] - 2024-09-25
+
+### 🚀 Features
+
+- *(camp)* Improve account and noun preview popovers
+- *(camp)* Remove like action from some feed items
+
+### 🐛 Bug Fixes
+
+- *(camp)* Update noun-transfer hook to decode correct transfer event
+- *(camp)* Update useTransferMeta to use avg sale price for sweep txns
+
 ## [1.3.0-alpha.22] - 2024-09-25
 
 ### 🚀 Features
