@@ -297,9 +297,13 @@ const FeedItem = React.memo(
       enabled: isOnScreen,
     });
 
-    const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
-      enabled: item.type === "noun-transfer",
-    });
+    const nounTransferMeta = useNounTransferMeta(
+      item.transactionHash,
+      item.nounId,
+      {
+        enabled: item.type === "noun-transfer",
+      },
+    );
 
     const authorReplyCasts = (() => {
       if (replyCasts == null) return null;
@@ -345,7 +349,13 @@ const FeedItem = React.memo(
         ["auction-bid", "noun-transfer", "noun-delegation"].includes(item.type)
       )
         return false;
-      if (["vote", "feedback-post"].includes(item.type)) return hasReason;
+      if (
+        ["vote", "feedback-post", "candidate-signature"].includes(item.type) ||
+        ["candidate-updated", "proposal-updated"].includes(item.eventType)
+      ) {
+        if (item.type === "proposal-updated") console.log(item);
+        return hasReason;
+      }
       return item.transactionHash != null;
     })();
 
@@ -674,7 +684,7 @@ const FeedItem = React.memo(
           {authorReplyCasts?.map((cast) => (
             <ItemBody key={cast.hash} text={cast.text} />
           ))}
-          {item.type === "candidate-signature-added" && (
+          {item.type === "candidate-signature" && (
             <div
               css={(t) =>
                 css({
@@ -1397,7 +1407,7 @@ const ItemTitle = ({ item, context }) => {
       );
     }
 
-    case "candidate-signature-added":
+    case "candidate-signature":
       return (
         <>
           {author} <Signal positive>sponsored candidate</Signal>
@@ -1460,7 +1470,7 @@ const ItemTitle = ({ item, context }) => {
 };
 
 const NounTransferItem = ({ item }) => {
-  const transferMeta = useNounTransferMeta(item.transactionHash);
+  const transferMeta = useNounTransferMeta(item.transactionHash, item.nounId);
 
   if (transferMeta == null) return null; // Loading
 

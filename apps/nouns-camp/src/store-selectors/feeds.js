@@ -348,8 +348,8 @@ export const buildCandidateFeed = (
     });
 
   const signatureItems = getCandidateSponsorSignatures(candidate).map((s) => ({
-    type: "candidate-signature-added",
-    id: `candidate-signature-added-${candidate.id}-${s.sig}`,
+    type: "candidate-signature",
+    id: `candidate-signature-${candidate.id}-${s.sig}`,
     authorAccount: s.signer.id,
     body: s.reason,
     voteCount: s.signer.nounsRepresented?.length,

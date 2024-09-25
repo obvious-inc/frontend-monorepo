@@ -148,6 +148,7 @@ export default {
     link: primaryTintLighter,
     linkModifierHover: createPrimary({ saturation: 1, lightness: 0.65 }),
     borderNormal: "hsl(0 0% 100% / 20%)",
+    borderStrong: "hsl(0, 0%, 100%, 0.5)",
     borderLight: "hsl(0, 0%, 100%, 0.16)",
     borderLighter: "hsl(0, 0%, 100%, 0.1)",
     borderDanger: "rgb(110, 54, 48)",
