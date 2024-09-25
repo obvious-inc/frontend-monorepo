@@ -118,7 +118,10 @@ export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
 export const DELEGATION_EVENT_FIELDS = `
   fragment DelegationEventFields on DelegationEvent {
     id
-    noun { id owner { id } }
+    noun {
+      id
+      owner { id }
+    }
     newDelegate { id }
     previousDelegate { id }
   # delegator { id }
@@ -387,29 +390,58 @@ const parseNoun = (data) => {
   return parsedData;
 };
 
-const parseTransferEvent = (e) => ({
-  ...e,
-  blockTimestamp: parseTimestamp(e.blockTimestamp),
-  newAccountId: e.newHolder?.id,
-  previousAccountId: e.previousHolder?.id,
-  nounId: e.noun?.id,
-  type: "transfer",
-});
+const parseTransferEvent = (e) => {
+  const parsedData = {
+    ...e,
+    blockTimestamp: parseTimestamp(e.blockTimestamp),
+    newAccountId: e.newHolder?.id,
+    previousAccountId: e.previousHolder?.id,
+    nounId: e.noun?.id,
+    type: "transfer",
+  };
 
-const parseDelegationEvent = (e) => ({
-  ...e,
-  blockTimestamp: parseTimestamp(e.blockTimestamp),
+  if (e.id != null) parsedData.transactionHash = e.id.split("_")[0];
+
+  return parsedData;
+};
+
+const parseDelegationEvent = (e) => {
+  const parsedData = {
+    ...e,
+    blockTimestamp: parseTimestamp(e.blockTimestamp),
     delegatorId: e.noun?.owner?.id,
-  newAccountId: e.newDelegate?.id,
-  previousAccountId: e.previousDelegate?.id,
-  nounId: e.noun?.id,
-  type: "delegate",
-});
+    newAccountId: e.newDelegate?.id,
+    previousAccountId: e.previousDelegate?.id,
+    nounId: e.noun?.id,
+    type: "delegate",
+  };
 
-const parseAuction = (a) => ({
-  ...a,
-  startTime: parseTimestamp(a.startTime),
-});
+  if (e.id != null) parsedData.transactionHash = e.id.split("_")[0];
+
+  return parsedData;
+};
+
+const parseAuction = (a) => {
+  const parsedData = { nounId: a.id, ...a };
+
+  if (a.bids != null)
+    parsedData.bids = a.bids.map((b) => ({
+      id: b.id,
+      bidderId: b.bidder.id,
+      amount: BigInt(b.amount),
+      blockNumber: b.blockNumber == null ? null : BigInt(b.blockNumber),
+      blockTimestamp:
+        b.blockTimestamp == null ? null : parseTimestamp(b.blockTimestamp),
+      transactionHash: b.txHash,
+    }));
+
+  if (a.startTime != null)
+    parsedData.startTimestamp = parseTimestamp(a.startTime);
+
+  if (a.endTime != null) parsedData.endTimestamp = parseTimestamp(a.endTime);
+
+  return parsedData;
+};
 
 export const subgraphFetch = async ({
   endpoint,
@@ -453,6 +485,7 @@ export const parsedSubgraphFetch = async (options) => {
   return objectUtils.mapValues((value, key) => {
     switch (key) {
       // Single entities
+      case "auction":
       case "account":
       case "delegate":
       case "noun":
@@ -460,6 +493,7 @@ export const parsedSubgraphFetch = async (options) => {
       case "proposalCandidate": {
         if (value == null) return null;
         const parseFn = {
+          auction: parseAuction,
           account: parseAccount,
           delegate: parseDelegate,
           noun: parseNoun,

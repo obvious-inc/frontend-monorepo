@@ -1,5 +1,6 @@
 import { getAddress as checksumEncodeAddress } from "viem";
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
 import { ethereum as ethereumUtils } from "@shades/common/utils";
@@ -9,9 +10,10 @@ import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
 import Avatar from "@shades/ui-web/avatar";
+import { resolveAddress as resolveContractAddress } from "@/contracts.js";
 import { CHAIN_ID } from "../constants/env.js";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
-import { useDelegate, useAccount } from "../store.js";
+import { useActions, useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import useEnsName from "../hooks/ens-name.js";
@@ -37,7 +39,8 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       avatarFallback = false,
       avatarBackground,
       fallbackImageUrl,
-      fallbackDisplayName,
+      fallbackDisplayName: fallbackDisplayName_,
+      customDisplayName,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
       children,
@@ -45,6 +48,9 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
     },
     triggerRef,
   ) => {
+    const contract = resolveContractAddress(accountAddress);
+    const fallbackDisplayName = fallbackDisplayName_ ?? contract?.name;
+
     const avatar = showAvatar ? (
       <AccountAvatar
         address={accountAddress}
@@ -69,6 +75,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
             ref={triggerRef}
             address={accountAddress}
             variant={buttonVariant}
+            customDisplayName={customDisplayName}
             fallbackDisplayName={fallbackDisplayName}
             {...props}
           />
@@ -93,6 +100,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
             component="div"
             address={accountAddress}
             variant={buttonVariant}
+            customDisplayName={customDisplayName}
             fallbackDisplayName={fallbackDisplayName}
             {...props}
           />
@@ -123,10 +131,15 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
   const delegate = useDelegate(accountAddress);
 
-  const displayName = useAccountDisplayName(accountAddress);
+  const resolvedContract = resolveContractAddress(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(
     checksumEncodeAddress(accountAddress),
   );
+  const displayName_ = useAccountDisplayName(accountAddress);
+  const displayName =
+    displayName_ !== truncatedAddress
+      ? displayName_
+      : (resolvedContract?.name ?? displayName_);
 
   const ensName = useEnsName(accountAddress);
   const { data: ensAvatarUrl } = useEnsAvatar({
@@ -140,6 +153,13 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const { open: openDelegationDialog } = useDialog("delegation");
 
   const accountLink = `/voters/${ensName ?? accountAddress}`;
+
+  const { fetchDelegate } = useActions();
+
+  useQuery({
+    queryKey: ["delegate", accountAddress],
+    queryFn: () => fetchDelegate(accountAddress),
+  });
 
   return (
     <div
@@ -515,7 +535,14 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
 const InlineAccountButton = React.forwardRef(
   (
-    { address, variant = "button", fallbackDisplayName, children, ...props },
+    {
+      address,
+      variant = "button",
+      customDisplayName,
+      fallbackDisplayName,
+      children,
+      ...props
+    },
     ref,
   ) => {
     const displayName = useAccountDisplayName(address);
@@ -534,7 +561,7 @@ const InlineAccountButton = React.forwardRef(
         css={css({ userSelect: "text" })}
       >
         {variant === "button" && "@"}
-        {displayNameOrFallback}
+        {customDisplayName ?? displayNameOrFallback}
         {children}
       </InlineButton>
     );

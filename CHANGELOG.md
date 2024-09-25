@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.22] - 2024-09-25
+
+### 🚀 Features
+
+- Pull changes from upstream (#651)
+
+### 🚜 Refactor
+
+- *(browse-proposals-screen)* Comment out unused fields
+
 ## [1.3.0-alpha.21] - 2024-09-20
 
 ### 🚀 Features
