@@ -327,7 +327,7 @@ const NounContextStatus = ({ nounId, contextAccount }) => {
 };
 
 const NounTransferEvent = ({ event }) => {
-  const transferMeta = useNounTransferMeta(event.transactionHash);
+  const transferMeta = useNounTransferMeta(event.transactionHash, event.nounId);
 
   const { address: auctionHouseAddress } =
     resolveContractIdentifier("auction-house");
