@@ -68,6 +68,7 @@ export default {
     textHighlightBackground: "#b8810e26",
     link: primaryText,
     linkModifierHover: primaryText,
+    borderStrong: "hsl(0 0% 0% / 25%)",
     borderLight: "hsl(0 0% 0% / 15%)",
     borderLightModifierHover: "hsl(0 0% 0% / 18%)",
     borderLighter: "hsl(0, 0%, 0%, 0.12)",

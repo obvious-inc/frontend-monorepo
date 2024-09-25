@@ -457,11 +457,6 @@ const createStore = ({ initialState, publicClient }) =>
               resolveContractIdentifier("fork-escrow");
 
             const events = value.filter((e) => {
-              if (
-                e.transactionHash ===
-                "0xdc307aa4c37a2ecc16005e707533f0bb30f1214def3627c4916cd7057ac72fd3"
-              )
-                console.log(e);
               if (e.type === "delegate")
                 return (
                   // The owner and delegator are only different for delegation
@@ -1118,6 +1113,8 @@ const createStore = ({ initialState, publicClient }) =>
 
         // fetch nouns async ...
         fetchNounsByIds(nounIds);
+
+        return account;
       },
       fetchNoun: (id) => fetchNounsByIds([id]),
       fetchProposalCandidatesByAccount: (accountAddress) =>
@@ -2378,29 +2375,6 @@ export const useNounsRepresented = (accountId) =>
       [accountId],
     ),
   );
-
-export const useAllNounsByAccount = (accountAddress) => {
-  const delegatedNouns = useStore(
-    (s) =>
-      s.delegatesById[accountAddress.toLowerCase()]?.nounsRepresented ?? [],
-  );
-
-  const ownedNouns = useStore(
-    (s) => s.accountsById[accountAddress.toLowerCase()]?.nouns ?? [],
-  );
-
-  const uniqueNouns = arrayUtils.unique(
-    (n1, n2) => n1.id === n2.id,
-    [...delegatedNouns, ...ownedNouns],
-  );
-
-  const nounsById = useStore((s) => s.nounsById);
-
-  return React.useMemo(
-    () => uniqueNouns.map((n) => nounsById[n.id]).filter(Boolean),
-    [uniqueNouns, nounsById],
-  );
-};
 
 export const useAccount = (id) =>
   useStore(React.useCallback((s) => s.accountsById[id?.toLowerCase()], [id]));
