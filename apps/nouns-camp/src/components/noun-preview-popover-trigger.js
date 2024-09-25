@@ -15,43 +15,12 @@ import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChainExplorerTransactionLink from "./chain-explorer-transaction-link.js";
 
-export const DelegationStatusDot = ({ nounId, contextAccount, ...props }) => {
-  const noun = useNoun(nounId);
-  const lastDelegateEvent = noun?.events?.find((e) => e.type === "delegate");
-  const delegated =
-    lastDelegateEvent && lastDelegateEvent.newAccountId != noun.ownerId;
-  const delegatedToAccount =
-    lastDelegateEvent?.newAccountId.toLowerCase() ==
-    contextAccount.toLowerCase();
-
-  if (!lastDelegateEvent || !delegated) return null;
-
-  return (
-    <span
-      css={(t) =>
-        css({
-          display: "block",
-          position: "absolute",
-          bottom: 0,
-          right: 0,
-          height: "20%",
-          width: "20%",
-          zIndex: 2,
-          backgroundColor: delegatedToAccount
-            ? t.colors.textPositive
-            : t.colors.textNegative,
-          borderRadius: "50%",
-        })
-      }
-      {...props}
-    />
-  );
-};
-
 const NounPreviewPopoverTrigger = React.forwardRef(
   (
     {
       nounId,
+      variant,
+      size, // for portrait variant
       contextAccount,
       showAvatar = true,
       popoverPlacement = "top",
@@ -62,6 +31,28 @@ const NounPreviewPopoverTrigger = React.forwardRef(
   ) => {
     const renderTrigger = () => {
       if (children != null) return children;
+
+      if (variant === "portrait")
+        return (
+          <button
+            ref={triggerRef}
+            css={css({
+              outline: "none",
+              "@media(hover: hover)": {
+                cursor: "pointer",
+                ":hover": {
+                  ".noun-id": { textDecoration: "underline" },
+                },
+              },
+            })}
+          >
+            <NounAvatarWithDelegationStatusIndicator
+              nounId={nounId}
+              size={size}
+              contextAccount={contextAccount}
+            />
+          </button>
+        );
 
       return (
         <button
@@ -475,20 +466,12 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
               })
             }
           >
-            <div css={css({ position: "relative", zIndex: 1 })}>
-              <NounAvatar id={nounId} size="3.2rem" />
-              {contextAccount != null && (
-                <DelegationStatusDot
-                  nounId={nounId}
-                  contextAccount={contextAccount}
-                  css={(t) =>
-                    css({
-                      boxShadow: `0 0 0 0.2rem ${t.colors.popoverBackground}`,
-                    })
-                  }
-                />
-              )}
-            </div>
+            <NounAvatarWithDelegationStatusIndicator
+              nounId={nounId}
+              avatarOnly
+              size="3.2rem"
+              contextAccount={contextAccount}
+            />
 
             <div css={css({ flex: 1, minWidth: 0 })}>
               <a
@@ -639,5 +622,65 @@ const EventTransactionTimestampLink = ({ event }) => (
     />
   </ChainExplorerTransactionLink>
 );
+
+const NounAvatarWithDelegationStatusIndicator = ({
+  nounId,
+  contextAccount,
+  size = "3.2rem",
+  avatarOnly = false,
+}) => {
+  const noun = useNoun(nounId);
+  const isDelegated = noun.ownerId !== noun.delegateId;
+
+  const isOwner = contextAccount === noun.ownerId;
+  const isDelegate = isDelegated && contextAccount === noun.delegateId;
+
+  return (
+    <div
+      css={(t) =>
+        css({
+          ".avatar-container": { position: "relative" },
+          ".noun-id": {
+            fontSize: t.text.sizes.tiny,
+            color: t.colors.textDimmed,
+            margin: "0.2rem 0 0",
+            textAlign: "center",
+          },
+          ".delegation-status-indicator": {
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: "35%",
+            height: "35%",
+            borderRadius: "50%",
+            boxShadow: `0 0 0 1px ${t.colors.borderStrong}`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: "8px",
+            fontWeight: t.text.weights.emphasis,
+            background: t.colors.backgroundTertiary,
+            "&[data-owner]": { color: t.colors.textHighlight },
+            "&[data-delegate]": { color: t.colors.textPositiveContrast },
+          },
+        })
+      }
+    >
+      <div className="avatar-container">
+        <NounAvatar id={noun.id} size={size} />
+        {isDelegated && (isDelegate || isOwner) && (
+          <div
+            className="delegation-status-indicator"
+            data-owner={isOwner || undefined}
+            data-delegate={isDelegate || undefined}
+          >
+            {isOwner ? <>&rarr;</> : <>&larr;</>}
+          </div>
+        )}
+      </div>
+      {!avatarOnly && <div className="noun-id">{noun.id}</div>}
+    </div>
+  );
+};
 
 export default NounPreviewPopoverTrigger;
