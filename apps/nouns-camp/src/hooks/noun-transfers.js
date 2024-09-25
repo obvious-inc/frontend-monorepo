@@ -165,8 +165,8 @@ export const useTransferMeta = (
       }
     }
 
-    const transferEvents = decodeNounTransferEvents(receipt);
-    const nounTransferEvent = transferEvents.find(
+    const nounTransferEvents = decodeNounTransferEvents(receipt);
+    const nounTransferEvent = nounTransferEvents.find(
       ({ args }) => args.tokenId === BigInt(nounId),
     );
     const ethTransferLogs = decodeEthTransferEventLogs(receipt);
@@ -191,9 +191,9 @@ export const useTransferMeta = (
       let amount = -receiverBalanceChange;
 
       const multipleSellers =
-        new Set(transferEvents.map(({ args }) => args.from)).size > 1;
+        new Set(nounTransferEvents.map(({ args }) => args.from)).size > 1;
       const multipleBuyers =
-        new Set(transferEvents.map(({ args }) => args.to)).size > 1;
+        new Set(nounTransferEvents.map(({ args }) => args.to)).size > 1;
 
       // feed items are grouped by hash, type, from, and to.
       //
@@ -203,7 +203,7 @@ export const useTransferMeta = (
       // if there are multiple transfers between the same accounts they'll be displayed
       // as one item in the feed so we use the total amount
       if (multipleSellers || multipleBuyers) {
-        amount /= BigInt(transferEvents.length);
+        amount /= BigInt(nounTransferEvents.length);
       }
 
       return {
@@ -213,5 +213,5 @@ export const useTransferMeta = (
     }
 
     return { transferType: "transfer" };
-  }, [transaction, receipt, enabled]);
+  }, [nounId, transaction, receipt, enabled]);
 };
