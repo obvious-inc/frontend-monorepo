@@ -10,7 +10,7 @@ const DAO_EXECUTOR_PROXY_CONTRACT =
 const DAO_DATA_PROXY_CONTRACT = "0x5d2c31ce16924c2a71d317e5bbfd5ce387854039";
 const DAO_TOKEN_CONTRACT = "0x4b10701bfd7bfedc47d50562b76b436fbb5bdb3b";
 const DAO_AUCTION_HOUSE_PROXY_CONTRACT =
-  "0x55e0f7a3bb39a28bd7bcc458e04b3cf00ad3219e";
+  "0xa2587b1e2626904c8575640512b987bd3d3b592d";
 const DAO_DESCRIPTOR_CONTRACT = "0xb2a47999b3117c7dd628920ed8e77ebdfb948b68";
 const DAO_TOKEN_BUYER_CONTRACT = "0x387140cd0132ff750263f08acfdfbec7b0cf63c0";
 const DAO_PAYER_CONTRACT = "0xf62387d21153fdcbb06ab3026c2089e418688164";
@@ -64,7 +64,7 @@ const addressByIdentifierByChainId = {
     executor: "0xe54f098b1880c536e0083720922b8a365fb403dc",
     data: "0xa7c37f79ff5e6f932147fc69724b6ed432ca6aa7",
     token: "0x6e48e79f718776cf412a87e047722dbfda5b465d",
-    "auction-house": "0xa777a0a132dcc0a1c35e1ea19f28595dbe7ca6a6",
+    "auction-house": "0x0d8c4d18765ab8808ab6cee4d7a760e8b93ab20c",
     "auction-house-admin": "0x7dc74e65a3619c28076f06135ef9dcaa9b7ba8cf",
     "fork-escrow": "0x0",
     payer: "0x5a2a0951c6b3479dbee1d5909aac7b325d300d94",

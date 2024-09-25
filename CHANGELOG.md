@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.24] - 2024-09-25
+
+### 🐛 Bug Fixes
+
+- *(camp)* Add missing noun id argument
+- *(contracts)* Update auction house proxy contract address
+
 ## [1.3.0-alpha.23] - 2024-09-25
 
 ### 🚀 Features
