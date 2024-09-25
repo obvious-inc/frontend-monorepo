@@ -17,10 +17,12 @@ import {
   isActiveState as isActiveProposalState,
 } from "./utils/proposals.js";
 import {
+  buildAuctionFeed,
   buildAccountFeed,
   buildProposalFeed,
   buildCandidateFeed,
   buildPropdateFeedItem,
+  buildNounsTokenRepresentationFeed,
 } from "./store-selectors/feeds.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -45,6 +47,7 @@ import {
   TRANSFER_EVENT_FIELDS,
 } from "./nouns-subgraph.js";
 import * as PropdatesSubgraph from "./propdates-subgraph.js";
+import { resolveIdentifier as resolveContractIdentifier } from "./contracts.js";
 
 const createFeedbackPostCompositeId = (post) =>
   [post.proposalId, post.candidateId, post.reason, post.support, post.voterId]
@@ -169,9 +172,10 @@ const mergeNouns = (n1, n2) => {
   const mergedNoun = { ...n1, ...n2 };
   if (n1.events != null && n2.events != null)
     mergedNoun.events = arrayUtils.unique(
-      (e1, e2) => e1.id === e2.id,
+      (e1, e2) => e1.type === e2.type && e1.id === e2.id,
       [...n2.events, ...n1.events],
     );
+  if (n1.auction != null) mergedNoun.auction = { ...n1.auction, ...n2.auction };
   return mergedNoun;
 };
 
@@ -197,14 +201,14 @@ const mergeStoreState = (state1, state2) => {
   );
 };
 
+const getBlockTimestamp = async (blockNumber) => {
+  const response = await fetch(`/api/block-timestamps?block=${blockNumber}`);
+  const { timestamp } = await response.json();
+  return new Date(timestamp * 1000);
+};
+
 const fetchMissingProposalTimestamps = async ({ publicClient }, proposals) => {
   const mostRecentBlockNumber = await publicClient.getBlockNumber();
-  const getBlockTimestamp = async (blockNumber) => {
-    // const block = await publicClient.getBlock({ blockNumber });
-    const response = await fetch(`/api/block-timestamps?block=${blockNumber}`);
-    const { timestamp } = await response.json();
-    return new Date(timestamp * 1000);
-  };
   const fetchTimestamps = async (p) => {
     const [startTimestamp, endTimestamp, objectionPeriodEndTimestamp] =
       await Promise.all([
@@ -445,9 +449,37 @@ const createStore = ({ initialState, publicClient }) =>
                 events,
               );
 
-            const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, value);
+            const { address: treasuryAddress } =
+              resolveContractIdentifier("executor");
+            const { address: auctionHouseAddress } =
+              resolveContractIdentifier("auction-house");
+            const { address: forkEscrowAddress } =
+              resolveContractIdentifier("fork-escrow");
 
-            const eventsByAccountId = value.reduce((acc, event) => {
+            const events = value.filter((e) => {
+              if (e.type === "delegate")
+                return (
+                  // The owner and delegator are only different for delegation
+                  // events originating from a token transfer. Since these events
+                  // aren’t really delegations, we ignore them.
+                  // e.delegator.id === e.noun.owner.id &&
+                  // Fork escrows shouldn’t show as delegation events either
+                  e.newAccountId !== forkEscrowAddress
+                );
+
+              if (e.type === "transfer")
+                // Hide the initial transfer between the treasury and auction house
+                return !(
+                  e.previousAccountId === treasuryAddress &&
+                  e.newAccountId === auctionHouseAddress
+                );
+
+              throw new Error();
+            });
+
+            const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, events);
+
+            const eventsByAccountId = events.reduce((acc, event) => {
               for (const propName of [
                 "newAccountId",
                 "previousAccountId",
@@ -1210,48 +1242,48 @@ const createStore = ({ initialState, publicClient }) =>
         // Populate ENS cache async
         reverseResolveEnsAddresses(client, arrayUtils.unique(accountAddresses));
 
-        (async () => {
-          const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
-
-          const { proposalCandidateVersions } = await subgraphFetch({
-            query: `{
-              proposalCandidateVersions(
-                where: {
-                  or: [${proposals.map(
-                    (p) => `{
-                      content_: { matchingProposalIds_contains: ["${p.id}"] }
-                    }`,
-                  )}]
-                },
-                first: 1000
-              ) {
-                content { matchingProposalIds }
-                proposal { id }
-              }
-            }`,
-          });
-
-          const missingCandidateIds = arrayUtils.unique(
-            proposalCandidateVersions
-              .map((v) => v.proposal.id)
-              .filter((id) => !fetchedCandidateIds.includes(id)),
-          );
-
-          subgraphFetch({
-            query: `
-              ${CANDIDATE_FEEDBACK_FIELDS}
-              query {
-                candidateFeedbacks(
-                  where: {
-                    candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
-                  },
-                  first: 1000
-                ) {
-                  ...CandidateFeedbackFields
-                }
-              }`,
-          });
-        })();
+        // (async () => {
+        //   const fetchedCandidateIds = proposalCandidates.map((c) => c.id);
+        //
+        //   const { proposalCandidateVersions } = await subgraphFetch({
+        //     query: `{
+        //       proposalCandidateVersions(
+        //         where: {
+        //           or: [${proposals.map(
+        //             (p) => `{
+        //               content_: { matchingProposalIds_contains: ["${p.id}"] }
+        //             }`,
+        //           )}]
+        //         },
+        //         first: 1000
+        //       ) {
+        //         content { matchingProposalIds }
+        //         proposal { id }
+        //       }
+        //     }`,
+        //   });
+        //
+        //   const missingCandidateIds = arrayUtils.unique(
+        //     proposalCandidateVersions
+        //       .map((v) => v.proposal.id)
+        //       .filter((id) => !fetchedCandidateIds.includes(id)),
+        //   );
+        //
+        //   subgraphFetch({
+        //     query: `
+        //       ${CANDIDATE_FEEDBACK_FIELDS}
+        //       query {
+        //         candidateFeedbacks(
+        //           where: {
+        //             candidate_in: [${missingCandidateIds.map((id) => JSON.stringify(id))}]
+        //           },
+        //           first: 1000
+        //         ) {
+        //           ...CandidateFeedbackFields
+        //         }
+        //       }`,
+        //   });
+        // })();
 
         // Fetch less urgent data async
         subgraphFetch({
@@ -1583,6 +1615,10 @@ const createStore = ({ initialState, publicClient }) =>
         }));
       },
       fetchNounsActivity: async ({ startBlock, endBlock }) => {
+        const [startTimestamp, endTimestamp] = await Promise.all([
+          getBlockTimestamp(startBlock),
+          getBlockTimestamp(endBlock),
+        ]);
         const [propdates, { proposals }] = await Promise.all([
           PropdatesSubgraph.fetchPropdates({ startBlock, endBlock }),
           subgraphFetch({
@@ -1590,7 +1626,32 @@ const createStore = ({ initialState, publicClient }) =>
               ${CANDIDATE_FEEDBACK_FIELDS}
               ${PROPOSAL_FEEDBACK_FIELDS}
               ${VOTE_FIELDS}
+              ${TRANSFER_EVENT_FIELDS}
+              ${DELEGATION_EVENT_FIELDS}
               query {
+                auctions(
+                  where: {
+                    or: [
+                      { startTime_gte: ${startTimestamp.getTime() / 1000}, startTime_lte: ${endTimestamp.getTime() / 1000} },
+                      { endTime_gte: ${startTimestamp.getTime() / 1000}, endTime_lte: ${endTimestamp.getTime() / 1000} }
+                    ]
+                  },
+                  first: 1000
+                ) {
+                  id
+                  startTime
+                  endTime
+                  amount
+                  bidder { id }
+                  bids {
+                    id
+                    amount
+                    blockNumber
+                    blockTimestamp
+                  # txHash
+                    bidder { id }
+                  }
+                }
                 proposals(
                   where: {
                     or: [
@@ -1635,6 +1696,28 @@ const createStore = ({ initialState, publicClient }) =>
                 ) {
                   ...VoteFields
                   proposal { id }
+                }
+                transferEvents(
+                  where: {
+                    blockNumber_gte: ${startBlock},
+                    blockNumber_lte: ${endBlock}
+                  },
+                  orderBy: blockNumber,
+                  orderDirection: desc,
+                  first: 1000
+                ) {
+                  ...TransferEventFields
+                }
+                delegationEvents(
+                  where: {
+                    blockNumber_gte: ${startBlock},
+                    blockNumber_lte: ${endBlock}
+                  },
+                  orderBy: blockNumber,
+                  orderDirection: desc,
+                  first: 1000
+                ) {
+                  ...DelegationEventFields
                 }
               }`,
           }),
@@ -2405,7 +2488,7 @@ export const useAccountFeedItems = (accountAddress, { filter }) => {
   );
 };
 
-export const useMainFeedItems = (filter, { enabled = true }) => {
+export const useMainFeedItems = (categories, { enabled = true }) => {
   const eagerLatestBlockNumber = useBlockNumber({
     watch: true,
     cacheTime: 10_000,
@@ -2452,29 +2535,40 @@ export const useMainFeedItems = (filter, { enabled = true }) => {
             propdates.map(buildPropdateFeedItem),
           );
 
-        const buildFeedItems = () => {
-          switch (filter) {
-            case "proposals":
-              return [...buildProposalItems(), ...buildPropdateItems()];
-            case "candidates":
-              return buildCandidateItems();
-            case "propdates":
-              return buildPropdateItems();
-            default:
-              return [
+        const feedItems =
+          categories.length === 0
+            ? [
+                ...buildAuctionFeed(s),
+                ...buildNounsTokenRepresentationFeed(s),
                 ...buildProposalItems(),
                 ...buildCandidateItems(),
                 ...buildPropdateItems(),
-              ];
-          }
-        };
+              ]
+            : categories.flatMap((category) => {
+                switch (category) {
+                  case "auction-excluding-bids":
+                    return buildAuctionFeed(s, { excludeBids: true });
+                  case "auction-bids":
+                    return buildAuctionFeed(s, { bidsOnly: true });
+                  case "noun-representation":
+                    return buildNounsTokenRepresentationFeed(s);
+                  case "proposals":
+                    return buildProposalItems();
+                  case "candidates":
+                    return buildCandidateItems();
+                  case "propdates":
+                    return buildPropdateItems();
+                  default:
+                    console.error(`Unrecognized category: "${category}"`);
+                }
+              });
 
         return arrayUtils.sortBy(
           { value: (i) => i.blockNumber ?? 0, order: "desc" },
-          buildFeedItems(),
+          feedItems,
         );
       },
-      [enabled, filter, casts, latestBlockNumber],
+      [enabled, categories, casts, latestBlockNumber],
     ),
   );
 };

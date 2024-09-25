@@ -30,13 +30,14 @@ import AccountAvatar from "./account-avatar.js";
 import MarkdownRichText from "./markdown-rich-text.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
-import { useSaleInfo } from "../hooks/sales.js";
+import { useTransferMeta as useNounTransferMeta } from "@/hooks/noun-transfers";
 import {
   useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress,
   useSubmitTransactionLike,
   useSubmitCastLike,
   useTransactionLikes as useFarcasterTransactionLikes,
   useCastLikes as useFarcasterCastLikes,
+  useCastConversation as useFarcasterCastConversation,
 } from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
@@ -292,14 +293,28 @@ const FeedItem = React.memo(
     const castLikes = useFarcasterCastLikes(item.castHash, {
       enabled: isOnScreen,
     });
+    const replyCasts = useFarcasterCastConversation(item.castHash, {
+      enabled: isOnScreen,
+    });
+
+    const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
+      enabled: item.type === "noun-transfer",
+    });
+
+    const authorReplyCasts = (() => {
+      if (replyCasts == null) return null;
+      const flatten = (casts) =>
+        casts.flatMap((c) => [c, ...flatten(c.replies)]);
+      return flatten(replyCasts).filter((c) => c.fid === item.authorFid);
+    })();
 
     const likes = transactionLikes ?? castLikes;
 
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
-    const hasBody = item.body != null && item.body.trim() !== "";
+    const itemBody =
+      item.type === "noun-transfer" ? nounTransferMeta?.reason : item.body;
+    const hasBody = itemBody != null && itemBody.trim() !== "";
     const hasReason = item.reason != null && item.reason.trim() !== "";
-    // const hasMultiParagraphBody =
-    //   hasBody && item.body.trim().split("\n").length > 1;
 
     const hasReposts = item.reposts?.length > 0;
     const hasLikes = likes?.length > 0;
@@ -326,6 +341,10 @@ const FeedItem = React.memo(
     const showLikeAction = (() => {
       if (onLike == null) return false;
       if (item.type === "farcaster-cast") return true;
+      if (
+        ["auction-bid", "noun-transfer", "noun-delegation"].includes(item.type)
+      )
+        return false;
       if (["vote", "feedback-post"].includes(item.type)) return hasReason;
       return item.transactionHash != null;
     })();
@@ -393,54 +412,105 @@ const FeedItem = React.memo(
       >
         <div data-header>
           <div>
-            {item.type === "farcaster-cast" ? (
-              <div style={{ position: "relative" }}>
-                {item.authorAccount == null ? (
-                  <Avatar url={item.authorAvatarUrl} size="2rem" />
-                ) : (
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={item.authorAccount}
-                  >
-                    <button data-avatar-button>
-                      <AccountAvatar
-                        address={item.authorAccount}
-                        fallbackImageUrl={item.authorAvatarUrl}
-                        size="2rem"
-                      />
-                    </button>
-                  </AccountPreviewPopoverTrigger>
-                )}
-                <span
-                  css={(t) =>
-                    css({
-                      position: "absolute",
-                      top: 0,
-                      right: 0,
-                      display: "flex",
-                      width: "1rem",
-                      height: "1rem",
-                      borderRadius: "50%",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      background: "#855DCD", // Farcaster purple
-                      transform: "translateY(-35%) translateX(35%)",
-                      boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
-                      svg: { width: "0.6rem", height: "auto", color: "white" },
-                    })
-                  }
-                >
-                  <FarcasterGateIcon />
-                </span>
-              </div>
-            ) : item.type === "event" || item.authorAccount == null ? (
-              <div data-timeline-symbol />
-            ) : (
-              <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
-                <button data-avatar-button>
-                  <AccountAvatar address={item.authorAccount} size="2rem" />
-                </button>
-              </AccountPreviewPopoverTrigger>
-            )}
+            {(() => {
+              switch (item.type) {
+                case "farcaster-cast":
+                  return (
+                    <div style={{ position: "relative" }}>
+                      {item.authorAccount == null ? (
+                        <Avatar url={item.authorAvatarUrl} size="2rem" />
+                      ) : (
+                        <AccountPreviewPopoverTrigger
+                          accountAddress={item.authorAccount}
+                        >
+                          <button data-avatar-button>
+                            <AccountAvatar
+                              address={item.authorAccount}
+                              fallbackImageUrl={item.authorAvatarUrl}
+                              size="2rem"
+                            />
+                          </button>
+                        </AccountPreviewPopoverTrigger>
+                      )}
+                      <span
+                        css={(t) =>
+                          css({
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            display: "flex",
+                            width: "1rem",
+                            height: "1rem",
+                            borderRadius: "50%",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#855DCD", // Farcaster purple
+                            transform: "translateY(-35%) translateX(35%)",
+                            boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+                            svg: {
+                              width: "0.6rem",
+                              height: "auto",
+                              color: "white",
+                            },
+                          })
+                        }
+                      >
+                        <FarcasterGateIcon />
+                      </span>
+                    </div>
+                  );
+
+                case "noun-transfer": {
+                  if (nounTransferMeta == null) return null;
+
+                  const authorAccount = {
+                    "fork-join": item.fromAccount,
+                    "fork-escrow": item.fromAccount,
+                    "fork-escrow-withdrawal": item.toAccount,
+                    sale: item.contextAccount == null ? null : item.toAccount,
+                    transfer: item.fromAccount,
+                  }[nounTransferMeta.transferType];
+
+                  if (authorAccount == null)
+                    return <div data-timeline-symbol />;
+
+                  if (
+                    item.contextAccount != null &&
+                    item.contextAccount !== authorAccount
+                  )
+                    return <div data-timeline-symbol />;
+
+                  return (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={authorAccount}
+                    >
+                      <button data-avatar-button>
+                        <AccountAvatar address={authorAccount} size="2rem" />
+                      </button>
+                    </AccountPreviewPopoverTrigger>
+                  );
+                }
+
+                case "event":
+                  return <div data-timeline-symbol />;
+
+                default:
+                  return item.authorAccount == null ? (
+                    <div data-timeline-symbol />
+                  ) : (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={item.authorAccount}
+                    >
+                      <button data-avatar-button>
+                        <AccountAvatar
+                          address={item.authorAccount}
+                          size="2rem"
+                        />
+                      </button>
+                    </AccountPreviewPopoverTrigger>
+                  );
+              }
+            })()}
           </div>
           <div>
             <div
@@ -453,20 +523,10 @@ const FeedItem = React.memo(
             >
               <div
                 css={(t) =>
-                  css({
-                    flex: 1,
-                    minWidth: 0,
-                    // display: "-webkit-box",
-                    // WebkitBoxOrient: "vertical",
-                    // WebkitLineClamp: 2,
-                    // overflow: "hidden",
-                    color: t.colors.textNormal,
-                  })
+                  css({ flex: 1, minWidth: 0, color: t.colors.textDimmed })
                 }
               >
-                {/* <span css={(t) => css({ color: t.colors.textNormal })}> */}
                 <ItemTitle item={item} context={context} />
-                {/* </span> */}
               </div>
               <div>
                 {item.isPending ? (
@@ -606,11 +666,14 @@ const FeedItem = React.memo(
           )}
           {hasBody && (
             <ItemBody
-              text={item.body}
+              text={itemBody}
               displayImages={item.type === "event"}
               truncateLines={!isIsolatedContext}
             />
           )}
+          {authorReplyCasts?.map((cast) => (
+            <ItemBody key={cast.hash} text={cast.text} />
+          ))}
           {item.type === "candidate-signature-added" && (
             <div
               css={(t) =>
@@ -637,7 +700,6 @@ const FeedItem = React.memo(
               )}
             </div>
           )}
-
           {showActionBar && (
             <div
               css={(t) =>
@@ -997,20 +1059,43 @@ const ItemTitle = ({ item, context }) => {
     throw new Error();
   };
 
-  const accountName = (
-    <AccountPreviewPopoverTrigger
-      accountAddress={item.authorAccount}
-      fallbackDisplayName={item.authorDisplayName}
-    />
+  const author = (
+    <span css={(t) => css({ color: t.colors.textNormal })}>
+      <AccountPreviewPopoverTrigger
+        accountAddress={item.authorAccount}
+        fallbackDisplayName={item.authorDisplayName}
+      />
+    </span>
   );
 
   switch (item.type) {
     case "event": {
       switch (item.eventType) {
+        case "auction-started":
+          return (
+            <>
+              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
+              started
+            </>
+          );
+        case "auction-ended":
+          return (
+            <>
+              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} /> won
+              by{" "}
+              <AccountPreviewPopoverTrigger
+                accountAddress={item.bidderAccount}
+              />{" "}
+              for <FormattedEthWithConditionalTooltip value={item.bidAmount} />
+            </>
+          );
+        case "auction-settled":
+          return <AuctionSettledItem item={item} />;
+
         case "proposal-created":
         case "proposal-updated":
           return (
-            <span css={(t) => css({ color: t.colors.textDimmed })}>
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               {item.eventType === "proposal-created" ? "created" : "updated"}
               {item.authorAccount != null && (
@@ -1023,7 +1108,7 @@ const ItemTitle = ({ item, context }) => {
                   />
                 </>
               )}
-            </span>
+            </>
           );
 
         case "candidate-created":
@@ -1049,7 +1134,7 @@ const ItemTitle = ({ item, context }) => {
             );
 
           return (
-            <span css={(t) => css({ color: t.colors.textDimmed })}>
+            <>
               {label}{" "}
               {item.eventType === "candidate-created" ? "created" : "updated"}
               {item.authorAccount != null && (
@@ -1062,19 +1147,13 @@ const ItemTitle = ({ item, context }) => {
                   />
                 </>
               )}
-            </span>
+            </>
           );
         }
 
         case "candidate-canceled":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               {context === "proposal" ? (
                 <ContextLink {...item}>
                   {item.targetProposalId == null
@@ -1087,12 +1166,12 @@ const ItemTitle = ({ item, context }) => {
                 <ContextLink {...item} />
               )}{" "}
               was canceled
-            </span>
+            </>
           );
 
         case "proposal-started":
           return (
-            <span css={(t) => css({ color: t.colors.textDimmed })}>
+            <>
               Voting{" "}
               {context !== "proposal" && (
                 <>
@@ -1100,12 +1179,12 @@ const ItemTitle = ({ item, context }) => {
                 </>
               )}{" "}
               started{" "}
-            </span>
+            </>
           );
 
         case "proposal-ended":
           return (
-            <span css={(t) => css({ color: t.colors.textDimmed })}>
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               {isSucceededProposalState(proposal.state) ? (
                 <span
@@ -1133,46 +1212,28 @@ const ItemTitle = ({ item, context }) => {
                   </span>
                 </>
               )}
-            </span>
+            </>
           );
 
         case "proposal-objection-period-started":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               entered objection period
-            </span>
+            </>
           );
 
         case "proposal-queued":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               was queued for execution
-            </span>
+            </>
           );
 
         case "proposal-executed":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               was{" "}
               <span
@@ -1185,18 +1246,12 @@ const ItemTitle = ({ item, context }) => {
               >
                 executed
               </span>
-            </span>
+            </>
           );
 
         case "proposal-canceled":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               was{" "}
               <span
@@ -1209,18 +1264,12 @@ const ItemTitle = ({ item, context }) => {
               >
                 canceled
               </span>
-            </span>
+            </>
           );
 
         case "propdate-posted":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               Propdate posted
               {context !== "proposal" && (
                 <>
@@ -1228,21 +1277,15 @@ const ItemTitle = ({ item, context }) => {
                   for <ContextLink {...item} />
                 </>
               )}
-            </span>
+            </>
           );
 
         case "propdate-marked-completed":
           return (
-            <span
-              css={(t) =>
-                css({
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
+            <>
               {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
               marked as completed via Propdate
-            </span>
+            </>
           );
 
         default:
@@ -1276,8 +1319,8 @@ const ItemTitle = ({ item, context }) => {
         }
       })();
       return (
-        <span>
-          {accountName}{" "}
+        <>
+          {author}{" "}
           {(() => {
             switch (item.support) {
               case 0:
@@ -1313,7 +1356,7 @@ const ItemTitle = ({ item, context }) => {
               <ContextLink short {...item} />
             </>
           )}
-        </span>
+        </>
       );
     }
 
@@ -1321,7 +1364,14 @@ const ItemTitle = ({ item, context }) => {
       if (item.authorAccount == null)
         return (
           <>
-            <span css={(t) => css({ fontWeight: t.text.weights.emphasis })}>
+            <span
+              css={(t) =>
+                css({
+                  color: t.colors.textNormal,
+                  fontWeight: t.text.weights.emphasis,
+                })
+              }
+            >
               {item.authorDisplayName}
             </span>{" "}
             commented
@@ -1336,7 +1386,7 @@ const ItemTitle = ({ item, context }) => {
 
       return (
         <>
-          {accountName} commented{" "}
+          {author} commented{" "}
           {!isIsolatedContext && (
             <>
               {" "}
@@ -1349,50 +1399,59 @@ const ItemTitle = ({ item, context }) => {
 
     case "candidate-signature-added":
       return (
-        <span>
-          {accountName} <Signal positive>sponsored candidate</Signal>
+        <>
+          {author} <Signal positive>sponsored candidate</Signal>
           {!isIsolatedContext && (
             <>
               {" "}
               <ContextLink short {...item} />
             </>
           )}
-        </span>
-      );
-
-    case "noun-auction-bought":
-    case "noun-transferred":
-      return <TransferItem item={item} />;
-
-    case "noun-delegated":
-      return (
-        <>
-          {accountName}{" "}
-          <span css={(t) => css({ color: t.colors.textDimmed })}>
-            delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.toAccount}
-            />
-          </span>
         </>
       );
 
-    case "noun-undelegated": {
+    case "noun-transfer":
+      return <NounTransferItem item={item} />;
+
+    case "noun-delegation":
       return (
         <>
-          {accountName}{" "}
-          <span css={(t) => css({ color: t.colors.textDimmed })}>
-            stopped delegating{" "}
-            <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.fromAccount}
-            />
-          </span>
+          {author}{" "}
+          {item.toAccount === item.authorAccount ? (
+            <>
+              stopped delegating to{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.fromAccount}
+              />
+            </>
+          ) : (
+            <>
+              delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={item.toAccount}
+              />
+            </>
+          )}
         </>
       );
-    }
+
+    case "auction-bid":
+      return (
+        <>
+          {author} placed a bid of{" "}
+          <FormattedEthWithConditionalTooltip value={item.amount} /> for{" "}
+          <NounPreviewPopoverTrigger nounId={item.nounId} /> at the{" "}
+          <a
+            href={`https://nouns.wtf/noun/${item.nounId}`}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Auction House
+          </a>
+        </>
+      );
 
     default:
       console.log(item);
@@ -1400,125 +1459,169 @@ const ItemTitle = ({ item, context }) => {
   }
 };
 
-const TransferItem = ({ item }) => {
-  const { amount: saleAmount, forkId } = useSaleInfo({
-    transactionHash: item?.transactionHash,
-    sourceAddress: item.toAccount,
-  });
+const NounTransferItem = ({ item }) => {
+  const transferMeta = useNounTransferMeta(item.transactionHash);
 
-  const noun = useNoun(item.nounId);
-  const nounAuctionAmount = noun ? parseInt(noun.auction?.amount) : null;
-  const accountName = (
-    <AccountPreviewPopoverTrigger accountAddress={item.authorAccount} />
+  if (transferMeta == null) return null; // Loading
+
+  const nounsElement = <NounsPreviewPopoverTrigger nounIds={item.nouns} />;
+
+  const renderAuthor = (address) => (
+    <span css={(t) => css({ color: t.colors.textNormal })}>
+      <AccountPreviewPopoverTrigger accountAddress={address} />
+    </span>
   );
 
-  switch (item.type) {
-    case "noun-auction-bought":
-      return (
-        <>
-          {accountName}{" "}
-          <span css={(t) => css({ color: t.colors.textDimmed })}>
-            bought <NounPreviewPopoverTrigger nounId={item.nounId} />
-            {nounAuctionAmount && (
-              <>
-                {" "}
-                for{" "}
-                <FormattedEthWithConditionalTooltip value={nounAuctionAmount} />
-              </>
-            )}{" "}
-            from the{" "}
-            <AccountPreviewPopoverTrigger accountAddress={item.fromAccount}>
-              <button
-                css={(t) =>
-                  css({
-                    fontWeight: t.text.weights.smallHeader,
-                    outline: "none",
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": {
-                        textDecoration: "underline",
-                      },
-                    },
-                  })
-                }
-              >
-                Auction house
-              </button>
-            </AccountPreviewPopoverTrigger>
-          </span>
-        </>
-      );
-
-    case "noun-transferred":
-      if (forkId != null) {
+  switch (transferMeta.transferType) {
+    // Regular transfer
+    case "transfer":
+      if (item.contextAccount == item.fromAccount)
         return (
           <>
-            {accountName}{" "}
-            <span css={(t) => css({ color: t.colors.textDimmed })}>
-              joined fork{" "}
-              <a
-                href={`https://nouns.wtf/fork/${forkId}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                #{forkId}
-              </a>{" "}
-              with <NounsPreviewPopoverTrigger nounIds={item.nouns} />
-            </span>
-          </>
-        );
-      }
-      if (saleAmount && saleAmount > 0) {
-        if (item.accountRef.toLowerCase() === item.toAccount.toLowerCase()) {
-          return (
-            <>
-              <AccountPreviewPopoverTrigger
-                showAvatar
-                accountAddress={item.accountRef}
-              />{" "}
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                bought <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
-                <FormattedEthWithConditionalTooltip value={saleAmount} /> from{" "}
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.fromAccount}
-                />{" "}
-              </span>
-            </>
-          );
-        } else {
-          return (
-            <>
-              <AccountPreviewPopoverTrigger
-                showAvatar
-                accountAddress={item.accountRef}
-              />{" "}
-              <span css={(t) => css({ color: t.colors.textDimmed })}>
-                sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> for{" "}
-                <FormattedEthWithConditionalTooltip value={saleAmount} /> to{" "}
-                <AccountPreviewPopoverTrigger
-                  showAvatar
-                  accountAddress={item.toAccount}
-                />{" "}
-              </span>
-            </>
-          );
-        }
-      }
-
-      return (
-        <span>
-          {accountName}{" "}
-          <span css={(t) => css({ color: t.colors.textDimmed })}>
-            transferred <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+            {renderAuthor(item.fromAccount)} transferred {nounsElement} to{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
               accountAddress={item.toAccount}
             />
-          </span>
-        </span>
+          </>
+        );
+
+      if (item.contextAccount == item.toAccount)
+        return (
+          <>
+            {nounsElement} transferred from{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.fromAccount}
+            />
+          </>
+        );
+
+      return (
+        <>
+          {renderAuthor(item.fromAccount)} transferred {nounsElement} to{" "}
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={item.toAccount}
+          />
+        </>
       );
+
+    // Account joined fork
+    case "fork-join":
+      return (
+        <>
+          {renderAuthor(item.fromAccount)} joined fork{" "}
+          <a
+            href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            #{transferMeta.forkId}
+          </a>{" "}
+          with {nounsElement}
+        </>
+      );
+
+    // Account escrowed nouns to fork
+    case "fork-escrow":
+      return (
+        <>
+          {renderAuthor(item.fromAccount)} escrowed {nounsElement} to fork{" "}
+          <a
+            href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            #{transferMeta.forkId}
+          </a>
+        </>
+      );
+
+    // Nouns withdrawn from fork escrow
+    case "fork-escrow-withdrawal":
+      return (
+        <>
+          {renderAuthor(item.toAccount)} withdrew {nounsElement} from fork{" "}
+          <a
+            href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            #{transferMeta.forkId}
+          </a>
+        </>
+      );
+
+    // Secondary sale
+    case "sale":
+      if (item.contextAccount === item.toAccount)
+        return (
+          <>
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.toAccount}
+            />{" "}
+            bought {nounsElement} from{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.fromAccount}
+            />{" "}
+            for{" "}
+            <FormattedEthWithConditionalTooltip
+              decimals={2}
+              truncationDots={false}
+              value={transferMeta.amount}
+            />
+          </>
+        );
+
+      return (
+        <>
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={item.fromAccount}
+          />{" "}
+          sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={item.toAccount}
+          />{" "}
+          for{" "}
+          <FormattedEthWithConditionalTooltip
+            decimals={2}
+            truncationDots={false}
+            value={transferMeta.amount}
+          />
+        </>
+      );
+
+    default:
+      throw new Error();
   }
+};
+
+const AuctionSettledItem = ({ item }) => {
+  const noun = useNoun(item.nounId);
+  return (
+    <>
+      <AccountPreviewPopoverTrigger accountAddress={item.bidderAccount} />{" "}
+      <span css={(t) => css({ color: t.colors.textDimmed })}>
+        bought <NounPreviewPopoverTrigger nounId={item.nounId} /> on auction
+        {noun.auction?.amount != null && (
+          <>
+            {" "}
+            for{" "}
+            <FormattedEthWithConditionalTooltip
+              decimals={2}
+              truncationDots={false}
+              value={noun.auction.amount}
+            />
+          </>
+        )}
+      </span>
+    </>
+  );
 };
 
 const Signal = ({ positive, negative, ...props }) => (
