@@ -1,6 +1,6 @@
 import React from "react";
 import NextLink from "next/link";
-import { isAddress, getAddress as checksumEncodeAddress } from "viem";
+import { isAddress } from "viem";
 import { useEnsAddress } from "wagmi";
 import { css } from "@emotion/react";
 import {
@@ -16,6 +16,7 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import { CHAIN_ID } from "../constants/env.js";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
+import { resolveAddress as resolveContractAddress } from "@/contracts.js";
 import {
   useAccount,
   useAccountFetch,
@@ -23,7 +24,6 @@ import {
   useAccountProposalCandidates,
   useAccountSponsoredProposals,
   useActions,
-  useAllNounsByAccount,
   useDelegate,
   useDelegateFetch,
   useAccountFeedItems,
@@ -33,7 +33,6 @@ import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import useEnsName from "../hooks/ens-name.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
@@ -41,14 +40,12 @@ import * as Tabs from "./tabs.js";
 import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import VotingBar from "./voting-bar.js";
-import NounAvatar from "./noun-avatar.js";
-import NounPreviewPopoverTrigger, {
-  DelegationStatusDot,
-} from "./noun-preview-popover-trigger.js";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import ProposalList from "./proposal-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "../hooks/farcaster.js";
 import Avatar from "@shades/ui-web/avatar";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -266,9 +263,6 @@ const FeedTabContent = React.memo(({ voterAddress }) => {
 const VotingPowerCallout = ({ voterAddress }) => {
   const currentQuorum = useCurrentDynamicQuorum();
   const account = useAccount(voterAddress);
-  const delegateDisplayName = useAccountDisplayName(account?.delegateId);
-  const ensName = useEnsName(account?.delegateId);
-
   const delegate = useDelegate(voterAddress);
   const voteCount = delegate?.delegatedVotes ?? 0;
   const votePowerQuorumPercentage =
@@ -307,23 +301,10 @@ const VotingPowerCallout = ({ voterAddress }) => {
       {isDelegating ? (
         <p>
           Delegating votes to{" "}
-          <NextLink
-            href={`/voters/${ensName ?? account?.delegateId}`}
-            css={(t) =>
-              css({
-                color: "inherit",
-                fontWeight: t.text.weights.emphasis,
-                textDecoration: "none",
-                "@media(hover: hover)": {
-                  ":hover": {
-                    textDecoration: "underline",
-                  },
-                },
-              })
-            }
-          >
-            {delegateDisplayName}
-          </NextLink>
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={account?.delegateId}
+          />
         </p>
       ) : !hasVotingPower ? (
         "No voting power"
@@ -456,19 +437,33 @@ const VoterHeader = ({ accountAddress }) => {
   const { address: connectedAccountAddress } = useWallet();
   const connectedAccount = useAccount(connectedAccountAddress);
 
+  const account = useAccount(accountAddress);
+  const delegate = useDelegate(accountAddress);
+
   const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
   const enableDelegation = !isMe && connectedAccount?.nouns?.length > 0;
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
 
-  const displayName = useAccountDisplayName(accountAddress);
-  const truncatedAddress = ethereumUtils.truncateAddress(
-    checksumEncodeAddress(accountAddress),
-  );
+  const displayName_ = useAccountDisplayName(accountAddress);
+  const truncatedAddress = ethereumUtils.truncateAddress(accountAddress);
+  const matchingContract = resolveContractAddress(accountAddress);
+
+  const displayName =
+    matchingContract == null || displayName_ !== truncatedAddress
+      ? displayName_
+      : matchingContract.name;
 
   const farcasterAccounts =
     useFarcasterAccountsWithVerifiedEthAddress(accountAddress);
 
-  const allVoterNouns = useAllNounsByAccount(accountAddress);
+  const representedNouns = delegate?.nounsRepresented ?? [];
+
+  const ownedNouns = account?.nouns ?? [];
+  const delegatedRepresentedNouns = representedNouns.filter(
+    (n) => n.ownerId !== accountAddress,
+  );
+
+  const nouns = [...ownedNouns, ...delegatedRepresentedNouns];
 
   const { open: openDelegationDialog } = useDialog("delegation");
 
@@ -758,62 +753,30 @@ const VoterHeader = ({ accountAddress }) => {
         )}
       </div>
 
-      {allVoterNouns.length > 0 && (
+      {nouns.length > 0 && (
         <div
-          css={(t) =>
-            css({
-              display: "flex",
-              gap: "1.6rem",
-              flexWrap: "wrap",
-              justifyContent: "flex-start",
-              "[data-id]": {
-                fontSize: t.text.sizes.tiny,
-                fontWeight: t.text.weights.numberBadge,
-                color: t.colors.textDimmed,
-                margin: "0.2rem 0 0",
-                textAlign: "center",
-              },
-            })
-          }
+          css={css({
+            display: "flex",
+            gap: "1.6rem",
+            flexWrap: "wrap",
+            justifyContent: "flex-start",
+          })}
         >
-          {allVoterNouns.map((n) => (
-            <NounPreviewPopoverTrigger
-              key={n.id}
-              nounId={n.id}
-              contextAccount={accountAddress}
-            >
-              <button
-                css={(t) =>
-                  css({
-                    outline: "none",
-                    "[data-id]": {
-                      fontWeight: t.text.weights.smallHeader,
-                    },
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": {
-                        "[data-id]": { textDecoration: "underline" },
-                      },
-                    },
-                  })
-                }
-              >
-                <div css={css({ position: "relative", zIndex: 1 })}>
-                  <NounAvatar id={n.id} size="4rem" />
-                  <DelegationStatusDot
-                    nounId={n.id}
-                    contextAccount={accountAddress}
-                    css={(t) =>
-                      css({
-                        boxShadow: `0 0 0 0.2rem ${t.colors.backgroundPrimary}`,
-                      })
-                    }
-                  />
-                </div>
-                <div data-id>{n.id}</div>
-              </button>
-            </NounPreviewPopoverTrigger>
-          ))}
+          {arrayUtils
+            .sortBy(
+              { value: (n) => n.ownerId === accountAddress },
+              { value: (n) => parseInt(n.id), order: "asc" },
+              nouns,
+            )
+            .map((n) => (
+              <NounPreviewPopoverTrigger
+                key={n.id}
+                nounId={n.id}
+                contextAccount={accountAddress}
+                variant="portrait"
+                size="4rem"
+              />
+            ))}
         </div>
       )}
     </div>
@@ -1051,9 +1014,9 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
     },
   });
 
-  const voterAddress = isAddress(addressOrEnsName)
-    ? addressOrEnsName
-    : ensAddress;
+  const voterAddress = (
+    isAddress(addressOrEnsName) ? addressOrEnsName : ensAddress
+  )?.toLowerCase();
 
   const displayName = useAccountDisplayName(voterAddress);
 

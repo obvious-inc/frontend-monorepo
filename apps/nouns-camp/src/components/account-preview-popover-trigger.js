@@ -3,7 +3,10 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useEnsAvatar } from "wagmi";
 import { css } from "@emotion/react";
-import { ethereum as ethereumUtils } from "@shades/common/utils";
+import {
+  ethereum as ethereumUtils,
+  array as arrayUtils,
+} from "@shades/common/utils";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
@@ -13,6 +16,7 @@ import Avatar from "@shades/ui-web/avatar";
 import { resolveAddress as resolveContractAddress } from "@/contracts.js";
 import { CHAIN_ID } from "../constants/env.js";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
+import { buildEtherscanLink } from "../utils/etherscan.js";
 import { useActions, useDelegate, useAccount } from "../store.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -20,10 +24,8 @@ import useEnsName from "../hooks/ens-name.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "../hooks/farcaster.js";
 import AccountAvatar from "./account-avatar.js";
-import NounAvatar from "./noun-avatar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NextLink from "next/link";
-import { buildEtherscanLink } from "../utils/etherscan.js";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -111,7 +113,19 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
     return (
       <Popover.Root placement={popoverPlacement} {...props}>
         <Popover.Trigger asChild>{renderTrigger()}</Popover.Trigger>
-        <Popover.Content>
+        <Popover.Content
+          css={css({
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            "& > *": {
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            },
+          })}
+        >
           <AccountPreview accountAddress={accountAddress} />
         </Popover.Content>
       </Popover.Root>
@@ -129,7 +143,31 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
   const enableImpersonation = !isMe && (!isProduction || isDebugSession);
   const enableDelegation = connectedAccount?.nouns?.length > 0;
 
+  const account = useAccount(accountAddress);
   const delegate = useDelegate(accountAddress);
+
+  const representedNouns = delegate?.nounsRepresented ?? [];
+  const ownedNouns = account?.nouns ?? [];
+
+  const isDelegating =
+    // We only care about delegation status if there are nouns to delegate
+    ownedNouns.length > 0 &&
+    account?.delegateId != null &&
+    account.delegateId !== accountAddress;
+
+  const delegatedRepresentedNouns = representedNouns.filter(
+    (n) => n.ownerId !== accountAddress,
+  );
+
+  const representedNounsByOwner = arrayUtils.groupBy(
+    (n) => n.ownerId,
+    representedNouns,
+  );
+  const delegatedRepresentedNounOwnerAccounts = Object.entries(
+    representedNounsByOwner,
+  )
+    .filter(([ownerId]) => ownerId !== accountAddress)
+    .map(([accountAddress, nouns]) => ({ id: accountAddress, nouns }));
 
   const resolvedContract = resolveContractAddress(accountAddress);
   const truncatedAddress = ethereumUtils.truncateAddress(
@@ -154,8 +192,12 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
 
   const accountLink = `/voters/${ensName ?? accountAddress}`;
 
-  const { fetchDelegate } = useActions();
+  const { fetchAccount, fetchDelegate } = useActions();
 
+  const { isPending: accountDataIsPending } = useQuery({
+    queryKey: ["account", accountAddress],
+    queryFn: () => fetchAccount(accountAddress),
+  });
   useQuery({
     queryKey: ["delegate", accountAddress],
     queryFn: () => fetchDelegate(accountAddress),
@@ -165,79 +207,132 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     <div
       ref={ref}
       css={css({
+        flex: 1,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
         width: "min-content",
-        maxWidth: "min(calc(100vw - 1.2rem), 36.4rem)",
-        minWidth: "32rem",
+        maxWidth: "min(36.4rem, calc(100vw - 2rem))",
+        minWidth: "min(32rem, calc(100vw - 2rem))",
         borderRadius: "0.4rem",
         overflow: "hidden",
       })}
     >
-      <div
-        css={(t) =>
-          css({
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.8rem",
-            padding: "1rem 1.2rem",
-            borderBottom: "0.1rem solid",
-            borderColor: t.colors.borderLighter,
-            h2: {
-              fontWeight: "400",
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-            },
-          })
-        }
-      >
-        <h2>
-          {delegate?.nounsRepresented?.length > 0
-            ? "Nouns represented"
-            : "No delegation currently"}
-        </h2>
-        {delegate?.nounsRepresented.length > 0 && (
-          <div
-            css={(t) =>
-              css({
-                display: "flex",
-                gap: "1.2rem",
-                flexWrap: "wrap",
-                justifyContent: "flex-start",
-                paddingTop: "0.2rem",
-                marginBottom: "-0.2rem",
-                "[data-id]": {
-                  fontSize: t.text.sizes.tiny,
-                  color: t.colors.textDimmed,
-                  margin: "0.2rem 0 0",
-                  textAlign: "center",
-                },
-              })
-            }
-          >
-            {delegate.nounsRepresented.map((n) => (
-              <NounPreviewPopoverTrigger
-                key={n.id}
-                nounId={n.id}
-                contextAccount={accountAddress}
-              >
-                <button
-                  css={css({
-                    outline: "none",
-                    "@media(hover: hover)": {
-                      cursor: "pointer",
-                      ":hover": {
-                        "[data-id]": { textDecoration: "underline" },
-                      },
-                    },
-                  })}
-                >
-                  <NounAvatar id={n.id} size="3.2rem" />
-                  <div data-id>{n.id}</div>
-                </button>
-              </NounPreviewPopoverTrigger>
-            ))}
-          </div>
-        )}
-      </div>
+      {!accountDataIsPending && (
+        <div
+          css={(t) =>
+            css({
+              flex: 1,
+              minHeight: 0,
+              overflow: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.8rem",
+              padding: "1rem 1.2rem",
+              borderBottom: "0.1rem solid",
+              borderColor: t.colors.borderLighter,
+              h2: {
+                fontWeight: "400",
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+              },
+              ".nowrap": {
+                whiteSpace: "nowrap",
+                textOverflow: "ellipsis",
+              },
+            })
+          }
+        >
+          {representedNouns?.length === 0 && ownedNouns.length === 0 && (
+            <h2>No voting power</h2>
+          )}
+          {representedNouns?.length > 0 && (
+            <>
+              <h2>
+                Representing{" "}
+                {representedNouns.length === 1 ? (
+                  <NounPreviewPopoverTrigger nounId={representedNouns[0].id} />
+                ) : (
+                  <>
+                    {representedNouns.length}{" "}
+                    {representedNouns.length === 1 ? "noun" : "nouns"}
+                  </>
+                )}
+                {delegatedRepresentedNouns.length > 0 &&
+                  (() => {
+                    const delegators = arrayUtils
+                      .sortBy(
+                        { value: ({ nouns }) => nouns.length, order: "desc" },
+                        delegatedRepresentedNounOwnerAccounts,
+                      )
+                      .map(({ id, nouns }, index, accounts) => {
+                        const isLast = index === accounts.length - 1;
+                        return (
+                          <React.Fragment key={id}>
+                            {index > 0 && <>, {isLast && "and "}</>}
+                            <span className="nowrap">
+                              <AccountPreviewPopoverTrigger
+                                accountAddress={id}
+                              />
+                              {accounts.length > 1 && <> ({nouns.length})</>}
+                            </span>
+                          </React.Fragment>
+                        );
+                      });
+
+                    if (!isDelegating && ownedNouns.length > 0)
+                      return (
+                        <>
+                          , of which {ownedNouns.length} owned, and{" "}
+                          {delegatedRepresentedNouns.length} delegated from{" "}
+                          {delegators}
+                        </>
+                      );
+
+                    return <>, delegated from {delegators}</>;
+                  })()}
+              </h2>
+              {representedNouns.length > 1 && (
+                <NounList
+                  nouns={representedNouns}
+                  contextAccount={accountAddress}
+                />
+              )}
+            </>
+          )}
+          {isDelegating && ownedNouns?.length > 0 && (
+            <>
+              <h2>
+                Delegating{" "}
+                {ownedNouns.length === 1 ? (
+                  <NounPreviewPopoverTrigger
+                    nounId={ownedNouns[0].id}
+                    contextAccount={accountAddress}
+                  />
+                ) : representedNouns.length > 0 ? (
+                  <>
+                    {ownedNouns.length}{" "}
+                    {ownedNouns.length === 1 ? "noun" : "nouns"}
+                  </>
+                ) : (
+                  <>
+                    votes{ownedNouns.length > 3 && <> ({ownedNouns.length})</>}
+                  </>
+                )}{" "}
+                to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={account.delegateId}
+                />
+              </h2>
+              {ownedNouns.length > 1 && (
+                <NounList nouns={ownedNouns} contextAccount={accountAddress} />
+              )}
+            </>
+          )}
+        </div>
+      )}
+
       <div
         css={css({
           display: "flex",
@@ -566,6 +661,36 @@ const InlineAccountButton = React.forwardRef(
       </InlineButton>
     );
   },
+);
+
+const NounList = ({ nouns = [], contextAccount }) => (
+  <ul
+    css={css({
+      display: "flex",
+      gap: "1.2rem",
+      flexWrap: "wrap",
+      justifyContent: "flex-start",
+      paddingTop: "0.2rem",
+      marginBottom: "-0.2rem",
+      listStyle: "none",
+    })}
+  >
+    {arrayUtils
+      .sortBy(
+        { value: (n) => n.ownerId === contextAccount },
+        { value: (n) => parseInt(n.id), order: "asc" },
+        nouns,
+      )
+      .map((n) => (
+        <li key={n.id}>
+          <NounPreviewPopoverTrigger
+            nounId={n.id}
+            contextAccount={contextAccount}
+            variant="portrait"
+          />
+        </li>
+      ))}
+  </ul>
 );
 
 export default AccountPreviewPopoverTrigger;
