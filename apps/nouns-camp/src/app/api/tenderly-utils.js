@@ -201,3 +201,68 @@ export const fetchSimulationBundle = async (unparsedTxs) => {
     },
   });
 };
+
+export const fetchContractSimulation = async ({
+  chainId,
+  address,
+  abi,
+  functionName,
+  args,
+  from,
+}) => {
+  const encodedData = encodeFunctionData({ abi, functionName, args });
+
+  const transaction = {
+    to: address,
+    from,
+    input: encodedData,
+    estimate_gas: true,
+    network_id: chainId,
+    ...TENDERLY_SIMULATION_OPTIONS,
+  };
+
+  const response = await fetch(`${TENDERLY_API_ENDPOINT}/simulate`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "X-Access-Key": process.env.TENDERLY_API_KEY,
+    },
+    body: JSON.stringify(transaction),
+    cache: "no-cache",
+  });
+
+  const text = await response.text();
+  const data = JSON.parse(text);
+
+  if (!response.ok) {
+    return new Response(
+      JSON.stringify({
+        error: "simulation-error",
+        reason: data?.error?.message,
+      }),
+      {
+        status: 400,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      },
+    );
+  }
+
+  const simulation = data?.simulation || {};
+  const simulationResult = {
+    id: simulation.id,
+    status: simulation.status,
+    error_message: simulation.error_message,
+  };
+
+  await shareSimulation(simulationResult);
+
+  return new Response(JSON.stringify({ simulation: simulationResult }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+};
