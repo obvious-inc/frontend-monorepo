@@ -3,8 +3,10 @@ import { useWriteContract as useWagmiContractWrite } from "wagmi";
 
 export const useWriteContract = () => {
   const { address: accountAddress, isImpersonated } = useWallet();
-  const { writeContractAsync: wagmiWriteContractAsync } =
-    useWagmiContractWrite();
+  const {
+    writeContractAsync: wagmiWriteContractAsync,
+    ...wagmiContractWriteParams
+  } = useWagmiContractWrite();
 
   const simulateWriteContractAsync = async ({ account, ...params }) => {
     const res = await fetch(`/api/simulate/contract`, {
@@ -42,5 +44,5 @@ export const useWriteContract = () => {
     return simulateWriteContractAsync({ ...params, account: accountAddress });
   };
 
-  return { writeContractAsync };
+  return { ...wagmiContractWriteParams, writeContractAsync };
 };
