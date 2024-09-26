@@ -1,6 +1,7 @@
 import { usePublicClient, useReadContracts, useSimulateContract } from "wagmi";
 import { CHAIN_ID } from "../constants/env.js";
 import { isAddress } from "viem";
+import { useWriteContract } from "./contract-write.js";
 
 const streamDataAbi = [
   {
