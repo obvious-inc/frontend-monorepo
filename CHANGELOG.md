@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.25] - 2024-09-26
+
+### 🚜 Refactor
+
+- *(contracts)* Rename `auction-house` to `Lil Nouns Auction`
+
 ## [1.3.0-alpha.24] - 2024-09-25
 
 ### 🐛 Bug Fixes
