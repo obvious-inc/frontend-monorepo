@@ -118,7 +118,7 @@ const metaByIdentifier = {
     name: "Nouns Token",
   },
   "auction-house": {
-    name: "Nouns Auction House",
+    name: "Lil Nouns Auction",
     description: "NounsAuctionHouseProxy",
   },
   "auction-house-admin": {
