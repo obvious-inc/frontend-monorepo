@@ -13,6 +13,7 @@ import {
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
   CrossCircle as CrossCircleIcon,
+  Share as ShareIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
@@ -1525,6 +1526,7 @@ const StreamStatus = ({ transaction }) => {
 };
 const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
+  const isDesktopLayout = useMatchDesktopLayout();
 
   const proposal = useProposal(proposalId);
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
@@ -1583,6 +1585,21 @@ const ProposalScreen = ({ proposalId }) => {
     if (proposal.state === "canceled") return undefined;
 
     const actions = [];
+
+    if (!isDesktopLayout && navigator?.share) {
+      actions.push({
+        label: (
+          <>
+            <ShareIcon css={css({ width: "1.5rem" })} />
+          </>
+        ),
+        onSelect: () => {
+          navigator
+            .share({ url: `/proposals/${proposalId}` })
+            .catch((error) => console.log("Error sharing", error));
+        },
+      });
+    }
 
     if (isProposer && proposal.state === "updatable")
       actions.push({
