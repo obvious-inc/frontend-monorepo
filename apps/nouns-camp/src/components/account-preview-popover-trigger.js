@@ -203,6 +203,8 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     queryFn: () => fetchDelegate(accountAddress),
   });
 
+  const showStatus = !accountDataIsPending || account != null;
+
   return (
     <div
       ref={ref}
@@ -218,7 +220,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
         overflow: "hidden",
       })}
     >
-      {!accountDataIsPending && (
+      {showStatus && (
         <div
           css={(t) =>
             css({

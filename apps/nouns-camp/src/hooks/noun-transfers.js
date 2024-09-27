@@ -1,5 +1,6 @@
 import React from "react";
 import { decodeEventLog } from "viem";
+import { array as arrayUtils } from "@shades/common/utils";
 import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import { useTransaction, useTransactionReceipt } from "wagmi";
 
@@ -117,11 +118,7 @@ const decodeEthTransferEventLogs = (transactionReceipt) => {
   });
 };
 
-export const useTransferMeta = (
-  transactionHash,
-  nounId,
-  { enabled = true } = {},
-) => {
+export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
   const { data: transaction } = useTransaction({
     hash: transactionHash,
     query: {
@@ -165,13 +162,32 @@ export const useTransferMeta = (
       }
     }
 
-    const nounTransferEvents = decodeNounTransferEvents(receipt);
-    const nounTransferEvent = nounTransferEvents.find(
-      ({ args }) => args.tokenId === BigInt(nounId),
-    );
-    const ethTransferLogs = decodeEthTransferEventLogs(receipt);
+    const transactionSenderAccount = transaction.from.toLowerCase();
 
-    const { to: receiverAccount } = nounTransferEvent.args;
+    const nounTransferEvents = decodeNounTransferEvents(receipt);
+
+    const senders = arrayUtils.unique(
+      nounTransferEvents.map((e) => e.args.from.toLowerCase()),
+    );
+    const receivers = arrayUtils.unique(
+      nounTransferEvents.map((e) => e.args.to.toLowerCase()),
+    );
+
+    const isSender = senders.includes(transactionSenderAccount);
+    const isReceiver = receivers.includes(transactionSenderAccount);
+
+    // If the account submitting the transaction isn’t involved in the
+    // transfer, we don’t want to show it as the author of the event
+    const authorAccount =
+      isSender || isReceiver ? transactionSenderAccount : null;
+
+    const isSwap =
+      senders.toSorted().toString() === receivers.toSorted().toString();
+
+    if (isSwap && senders.length === 2)
+      return { transferType: "swap", authorAccount };
+
+    const ethTransferLogs = decodeEthTransferEventLogs(receipt);
 
     const balanceChangeByAddress = ethTransferLogs.reduce(
       (acc, { args: { src, dst, amount } }) => {
@@ -180,38 +196,48 @@ export const useTransferMeta = (
         return acc;
       },
       {
-        [transaction.from.toLowerCase()]: 0n - transaction.value,
+        [transactionSenderAccount]: 0n - transaction.value,
       },
     );
 
-    const receiverBalanceChange =
-      balanceChangeByAddress?.[receiverAccount.toLowerCase()] ?? 0;
+    const isSale = [...senders, ...receivers].some((address) => {
+      const change = balanceChangeByAddress?.[address] ?? 0n;
+      return change !== 0n;
+    });
 
-    if (receiverBalanceChange < 0) {
-      let amount = -receiverBalanceChange;
+    const hasTargetAccount = receivers.length === 1 || senders.length === 1;
 
-      const multipleSellers =
-        new Set(nounTransferEvents.map(({ args }) => args.from)).size > 1;
-      const multipleBuyers =
-        new Set(nounTransferEvents.map(({ args }) => args.to)).size > 1;
+    // The account all transfers are targeting or originating from
+    const targetAccount = (() => {
+      if (!hasTargetAccount) return null;
+      if (receivers.length === senders.length)
+        return authorAccount ?? senders[0];
+      return senders.length === 1 ? senders[0] : receivers[0];
+    })();
 
-      // feed items are grouped by hash, type, from, and to.
-      //
-      // if there are multiple transfers between different accounts in the same transaction
-      // they'll be displayed as individual items so we use the average amount
-      //
-      // if there are multiple transfers between the same accounts they'll be displayed
-      // as one item in the feed so we use the total amount
-      if (multipleSellers || multipleBuyers) {
-        amount /= BigInt(nounTransferEvents.length);
-      }
+    if (isSale) {
+      if (!hasTargetAccount) return { transferType: "bundled-sale" };
+
+      // We only trust the balance change enough to show it when it’s from the
+      // author (transaction sender)
+      if (targetAccount !== authorAccount)
+        return { transferType: "sale", targetAccount };
+
+      const balanceChange = balanceChangeByAddress?.[authorAccount] ?? 0n;
+      const amount = balanceChange < 0n ? -balanceChange : balanceChange;
 
       return {
         transferType: "sale",
-        amount,
+        authorAccount: targetAccount,
+        amount: amount > 0n ? amount : null,
       };
     }
 
-    return { transferType: "transfer" };
-  }, [nounId, transaction, receipt, enabled]);
+    if (!hasTargetAccount) return { transferType: "bundled-transfer" };
+
+    if (targetAccount === authorAccount)
+      return { transferType: "transfer", authorAccount };
+
+    return { transferType: "transfer", targetAccount };
+  }, [transaction, receipt, enabled]);
 };

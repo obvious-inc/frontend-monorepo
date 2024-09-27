@@ -943,7 +943,7 @@ const useActivityFeedItems = ({ categories }) => {
           setHasFetchedOnce(true);
           hasFetchedActivityFeedOnce = true;
 
-          fetchNounsActivity({
+          await fetchNounsActivity({
             startBlock:
               latestBlockNumber - BigInt(APPROXIMATE_BLOCKS_PER_DAY * 30),
             endBlock:
