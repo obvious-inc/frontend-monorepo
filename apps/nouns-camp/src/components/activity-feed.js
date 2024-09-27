@@ -297,13 +297,9 @@ const FeedItem = React.memo(
       enabled: isOnScreen,
     });
 
-    const nounTransferMeta = useNounTransferMeta(
-      item.transactionHash,
-      item.nounId,
-      {
-        enabled: item.type === "noun-transfer",
-      },
-    );
+    const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
+      enabled: item.type === "noun-transfer",
+    });
 
     const authorReplyCasts = (() => {
       if (replyCasts == null) return null;
@@ -315,8 +311,7 @@ const FeedItem = React.memo(
     const likes = transactionLikes ?? castLikes;
 
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
-    const itemBody =
-      item.type === "noun-transfer" ? nounTransferMeta?.reason : item.body;
+    const itemBody = nounTransferMeta?.reason ?? item.body;
     const hasBody = itemBody != null && itemBody.trim() !== "";
     const hasReason = item.reason != null && item.reason.trim() !== "";
 
@@ -477,8 +472,9 @@ const FeedItem = React.memo(
                     "fork-join": item.fromAccount,
                     "fork-escrow": item.fromAccount,
                     "fork-escrow-withdrawal": item.toAccount,
-                    sale: item.contextAccount == null ? null : item.toAccount,
-                    transfer: item.fromAccount,
+                    swap: nounTransferMeta.authorAccount,
+                    sale: nounTransferMeta.authorAccount,
+                    transfer: nounTransferMeta.authorAccount,
                   }[nounTransferMeta.transferType];
 
                   if (authorAccount == null)
@@ -1470,52 +1466,218 @@ const ItemTitle = ({ item, context }) => {
 };
 
 const NounTransferItem = ({ item }) => {
-  const transferMeta = useNounTransferMeta(item.transactionHash, item.nounId);
+  const transferMeta = useNounTransferMeta(item.transactionHash);
 
   if (transferMeta == null) return null; // Loading
 
-  const nounsElement = <NounsPreviewPopoverTrigger nounIds={item.nouns} />;
+  const nouns = item.transfers.map((t) => t.nounId);
+
+  const nounsElement = <NounsPreviewPopoverTrigger nounIds={nouns} />;
+
+  const { transferType, authorAccount, targetAccount } = transferMeta;
+
+  const senders = arrayUtils.unique(item.transfers.map((t) => t.from));
+  const receivers = arrayUtils.unique(item.transfers.map((t) => t.to));
 
   const renderAuthor = (address) => (
     <span css={(t) => css({ color: t.colors.textNormal })}>
       <AccountPreviewPopoverTrigger accountAddress={address} />
     </span>
   );
+  const renderAccounts = (accounts) =>
+    accounts.map((a, i, as) => (
+      <React.Fragment key={a}>
+        {i > 0 && (
+          <>
+            {as.length === 2 ? " and" : i === as.length - 1 ? ", and" : ", "}{" "}
+          </>
+        )}
+        <AccountPreviewPopoverTrigger showAvatar accountAddress={a} />
+      </React.Fragment>
+    ));
 
-  switch (transferMeta.transferType) {
-    // Regular transfer
-    case "transfer":
-      if (item.contextAccount == item.fromAccount)
+  switch (transferType) {
+    case "bundled-transfer":
+    case "bundled-sale": {
+      // Show sales as tranfers when bundled since we don’t know enough about
+      // the state change
+
+      if (item.transfers.length === 1)
+        // Since we filter out certain events upstream bundles can sometimes
+        // hold just a single transfer. E.g. nounder rewards.
         return (
           <>
-            {renderAuthor(item.fromAccount)} transferred {nounsElement} to{" "}
+            {nounsElement} {nouns.length === 1 ? "was" : "were"} transferred
+            from{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
-              accountAddress={item.toAccount}
+              accountAddress={item.transfers[0].from}
+            />{" "}
+            to{" "}
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={item.transfers[0].to}
             />
           </>
         );
 
-      if (item.contextAccount == item.toAccount)
+      const accounts = arrayUtils.unique([...senders, ...receivers]);
+
+      return (
+        <>
+          {nounsElement} were transferred between {renderAccounts(accounts)}
+        </>
+      );
+    }
+
+    case "transfer": {
+      if (authorAccount != null) {
+        const isIncoming = receivers.includes(authorAccount);
         return (
           <>
-            {nounsElement} transferred from{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.fromAccount}
-            />
+            {renderAuthor(authorAccount)}{" "}
+            {isIncoming ? (
+              <>
+                withdrew {nounsElement} from {renderAccounts(senders)}
+              </>
+            ) : (
+              <>
+                transferred {nounsElement} to {renderAccounts(receivers)}
+              </>
+            )}
+          </>
+        );
+      }
+
+      const isIncoming = receivers.includes(targetAccount);
+
+      if (item.contextAccount != null && item.contextAccount === targetAccount)
+        return (
+          <>
+            {nounsElement} {nouns.length === 1 ? "was" : "were"}{" "}
+            {isIncoming ? (
+              <>transferred from {renderAccounts(senders)}</>
+            ) : (
+              <>transferred to {renderAccounts(receivers)}</>
+            )}
           </>
         );
 
       return (
         <>
-          {renderAuthor(item.fromAccount)} transferred {nounsElement} to{" "}
+          {nounsElement} {nouns.length === 1 ? "was" : "were"}{" "}
+          {isIncoming ? (
+            <>
+              transferred to{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={targetAccount}
+              />{" "}
+              from {renderAccounts(senders)}
+            </>
+          ) : (
+            <>
+              transferred from{" "}
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={targetAccount}
+              />{" "}
+              to {renderAccounts(receivers)}
+            </>
+          )}
+        </>
+      );
+    }
+
+    // Secondary sale
+    case "sale": {
+      if (authorAccount != null) {
+        const isIncoming = receivers.includes(authorAccount);
+        return (
+          <>
+            {renderAuthor(authorAccount)}{" "}
+            {isIncoming ? (
+              <>
+                bought {nounsElement} from {renderAccounts(senders)}
+              </>
+            ) : (
+              <>
+                sold {nounsElement} to {renderAccounts(receivers)}
+              </>
+            )}
+            {transferMeta.amount != null && (
+              <>
+                {" "}
+                for{" "}
+                <FormattedEthWithConditionalTooltip
+                  decimals={2}
+                  truncationDots={false}
+                  value={transferMeta.amount}
+                />
+              </>
+            )}
+          </>
+        );
+      }
+
+      const isIncoming = receivers.includes(targetAccount);
+
+      if (item.contextAccount != null && item.contextAccount === targetAccount)
+        return (
+          <>
+            {nounsElement}{" "}
+            {isIncoming ? (
+              <>bought from {renderAccounts(senders)}</>
+            ) : (
+              <>sold to {renderAccounts(receivers)}</>
+            )}
+          </>
+        );
+
+      return (
+        <>
+          {nounsElement} {nouns.length === 1 ? "was" : "were"} sold from{" "}
+          {renderAccounts(senders)} to {renderAccounts(receivers)}
+        </>
+      );
+    }
+
+    // Swaps can include other funds, like ETH, but we ignore that here to
+    // keep things simple
+    case "swap": {
+      const accounts = arrayUtils.unique(
+        item.transfers.flatMap((t) => [t.from, t.to]),
+      );
+
+      const firstAccount = authorAccount ?? accounts[0];
+      const otherAccount = accounts.find((a) => a !== firstAccount);
+
+      const outgoingNouns = item.transfers
+        .filter((t) => t.from === firstAccount)
+        .map((t) => t.nounId);
+      const incomingNouns = item.transfers
+        .filter((t) => t.to === firstAccount)
+        .map((t) => t.nounId);
+
+      return (
+        <>
+          {authorAccount != null ? (
+            renderAuthor(firstAccount)
+          ) : (
+            <AccountPreviewPopoverTrigger
+              showAvatar
+              accountAddress={firstAccount}
+            />
+          )}{" "}
+          swapped <NounsPreviewPopoverTrigger nounIds={outgoingNouns} /> with{" "}
+          <NounsPreviewPopoverTrigger nounIds={incomingNouns} /> from{" "}
           <AccountPreviewPopoverTrigger
             showAvatar
-            accountAddress={item.toAccount}
+            accountAddress={otherAccount}
           />
         </>
       );
+    }
 
     // Account joined fork
     case "fork-join":
@@ -1560,49 +1722,6 @@ const NounTransferItem = ({ item }) => {
           >
             #{transferMeta.forkId}
           </a>
-        </>
-      );
-
-    // Secondary sale
-    case "sale":
-      if (item.contextAccount === item.toAccount)
-        return (
-          <>
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.toAccount}
-            />{" "}
-            bought {nounsElement} from{" "}
-            <AccountPreviewPopoverTrigger
-              showAvatar
-              accountAddress={item.fromAccount}
-            />{" "}
-            for{" "}
-            <FormattedEthWithConditionalTooltip
-              decimals={2}
-              truncationDots={false}
-              value={transferMeta.amount}
-            />
-          </>
-        );
-
-      return (
-        <>
-          <AccountPreviewPopoverTrigger
-            showAvatar
-            accountAddress={item.fromAccount}
-          />{" "}
-          sold <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
-          <AccountPreviewPopoverTrigger
-            showAvatar
-            accountAddress={item.toAccount}
-          />{" "}
-          for{" "}
-          <FormattedEthWithConditionalTooltip
-            decimals={2}
-            truncationDots={false}
-            value={transferMeta.amount}
-          />
         </>
       );
 

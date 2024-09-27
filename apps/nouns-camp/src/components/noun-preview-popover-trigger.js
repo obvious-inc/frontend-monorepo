@@ -235,9 +235,6 @@ const NounContextStatus = ({ nounId, contextAccount }) => {
 
   if (noun.events == null) return null;
 
-  const { address: forkEscrowAddress } =
-    resolveContractIdentifier("fork-escrow");
-
   const ownerId = noun.owner?.id;
   const delegateId = noun.owner?.delegate?.id;
 
@@ -256,10 +253,7 @@ const NounContextStatus = ({ nounId, contextAccount }) => {
     (e) => e.newAccountId === delegateId,
   );
 
-  const transferEvent = transferEvents.find(
-    (e) =>
-      e.newAccountId === ownerId && e.previousAccountId !== forkEscrowAddress,
-  );
+  const transferEvent = transferEvents.find((e) => e.newAccountId === ownerId);
 
   return (
     <div
@@ -327,11 +321,10 @@ const NounContextStatus = ({ nounId, contextAccount }) => {
 };
 
 const NounTransferEvent = ({ event }) => {
-  const transferMeta = useNounTransferMeta(event.transactionHash, event.nounId);
+  const transferMeta = useNounTransferMeta(event.transactionHash);
 
   const { address: auctionHouseAddress } =
     resolveContractIdentifier("auction-house");
-  const { address: $nounsToken } = resolveContractIdentifier("$nouns-token");
 
   return (
     <div>
@@ -340,6 +333,7 @@ const NounTransferEvent = ({ event }) => {
 
         switch (transferMeta.transferType) {
           case "transfer":
+          case "bundled-transfer":
             return event.previousAccountId === auctionHouseAddress ? (
               <>
                 Bought on auction{" "}
@@ -347,10 +341,7 @@ const NounTransferEvent = ({ event }) => {
               </>
             ) : (
               <>
-                {event.previousAccountId === $nounsToken
-                  ? "Swapped"
-                  : "Transferred"}{" "}
-                from{" "}
+                Transferred from{" "}
                 <AccountPreviewPopoverTrigger
                   showAvatar
                   accountAddress={event.previousAccountId}
@@ -360,6 +351,7 @@ const NounTransferEvent = ({ event }) => {
             );
 
           case "sale":
+          case "bundled-sale":
             return (
               <>
                 Bought from{" "}
@@ -375,17 +367,30 @@ const NounTransferEvent = ({ event }) => {
               </>
             );
 
+          case "swap":
+            return (
+              <>
+                Swapped from{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={event.previousAccountId}
+                />{" "}
+                on <EventTransactionTimestampLink event={event} />
+              </>
+            );
+
           case "fork-join":
             return (
               <>
-                Joined fork{" "}
-                <a
+                Joined{" "}
+                <InteractiveText
+                  component="a"
                   href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  #{transferMeta.forkId}
-                </a>{" "}
+                  fork #{transferMeta.forkId}
+                </InteractiveText>{" "}
                 <EventTransactionTimestampLink event={event} />
               </>
             );
@@ -393,14 +398,15 @@ const NounTransferEvent = ({ event }) => {
           case "fork-escrow":
             return (
               <>
-                Escrowed to fork{" "}
-                <a
+                Escrowed to{" "}
+                <InteractiveText
+                  component="a"
                   href={`https://nouns.wtf/fork/${transferMeta.forkId}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  #{transferMeta.forkId}
-                </a>{" "}
+                  fork #{transferMeta.forkId}
+                </InteractiveText>{" "}
                 <EventTransactionTimestampLink event={event} />
               </>
             );
@@ -682,5 +688,22 @@ const NounAvatarWithDelegationStatusIndicator = ({
     </div>
   );
 };
+
+const InteractiveText = ({ component: Component = "span", ...props }) => (
+  <Component
+    css={(t) => ({
+      color: t.colors.textDimmed,
+      fontWeight: t.text.weights.emphasis,
+      textDecoration: "none",
+      "@media(hover: hover)": {
+        cursor: "pointer",
+        ":hover": {
+          textDecoration: "underline",
+        },
+      },
+    })}
+    {...props}
+  />
+);
 
 export default NounPreviewPopoverTrigger;

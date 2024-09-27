@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  array as arrayUtils,
-  object as objectUtils,
-} from "@shades/common/utils";
+import { array as arrayUtils } from "@shades/common/utils";
 import { resolveIdentifier } from "../contracts.js";
 import {
   createReplyExtractor,
@@ -439,15 +436,29 @@ const buildNounTransferAndDelegationItems = (
 ) => {
   const { address: treasuryAddress } = resolveIdentifier("executor");
   const { address: auctionHouseAddress } = resolveIdentifier("auction-house");
-  const { address: $nounsTokenAddress } = resolveIdentifier("$nouns-token");
+  const { address: forkEscrowAddress } = resolveIdentifier("fork-escrow");
 
   const {
     transfer: transferEvents = [],
     delegation: delegationEvents = [],
     auctionSettlement: auctionSettlementTransfers = [],
   } = arrayUtils.groupBy((e) => {
+    if (
+      // Treasury to Auction House transfer
+      e.previousAccountId === treasuryAddress &&
+      e.newAccountId === auctionHouseAddress
+    )
+      return "ignore";
+
     switch (e.type) {
       case "delegate":
+        if (
+          // Auction settlements
+          e.previousAccountId === auctionHouseAddress ||
+          // Fork escrows/joins
+          e.newAccountId === forkEscrowAddress
+        )
+          return "ignore";
         return "delegation";
 
       case "transfer":
@@ -471,25 +482,17 @@ const buildNounTransferAndDelegationItems = (
     nounId: e.nounId,
   }));
 
-  const transferItems = arrayUtils
-    // Hack to get consistent swap order
-    // (until we add support for showing swaps as a single event)
-    .sortBy(
-      (i) =>
-        [treasuryAddress, $nounsTokenAddress].includes(i.previousAccountId),
-      transferEvents,
-    )
-    .map((e) => ({
-      type: "noun-transfer",
-      id: `${e.nounId}-transfer-${e.id}`,
-      timestamp: e.blockTimestamp,
-      blockNumber: e.blockNumber,
-      nounId: e.nounId,
-      fromAccount: e.previousAccountId,
-      toAccount: e.newAccountId,
-      transactionHash: e.transactionHash,
-      contextAccount,
-    }));
+  const transferItems = transferEvents.map((e) => ({
+    type: "noun-transfer",
+    id: `${e.nounId}-transfer-${e.id}`,
+    timestamp: e.blockTimestamp,
+    blockNumber: e.blockNumber,
+    nounId: e.nounId,
+    fromAccount: e.previousAccountId,
+    toAccount: e.newAccountId,
+    transactionHash: e.transactionHash,
+    contextAccount,
+  }));
 
   const transferEventsByTxHash = arrayUtils.indexBy(
     (e) => e.transactionHash,
@@ -516,27 +519,41 @@ const buildNounTransferAndDelegationItems = (
       contextAccount,
     }));
 
-  const items = [
-    ...auctionSettlementItems,
-    ...transferItems,
-    ...delegationItems,
-  ];
-
-  // Bulk actions are indexed as one event per noun. This merges such events
-  // into one, referencing the set of nouns concerned.
-  const itemsById = objectUtils.mapValues(
-    (itemGroup, groupKey) => ({
-      ...itemGroup[0],
-      id: groupKey,
-      nouns: itemGroup.map((item) => item.nounId),
-    }),
+  // Bulk actions are indexed as one event per noun and transfer. This merges
+  // such events into one, referencing the set of nouns and tranfers concerned.
+  const transferAndDelegationsItems = Object.entries(
     arrayUtils.groupBy(
-      (e) => [e.transactionHash, e.type, e.fromAccount, e.toAccount].join("-"),
-      items,
+      (e) => [e.type, e.transactionHash].join(":"),
+      [...transferItems, ...delegationItems],
     ),
-  );
+  ).map(([groupKey, items]) => {
+    const [type] = groupKey.split(":");
 
-  return Object.values(itemsById);
+    switch (type) {
+      case "noun-delegation":
+        return {
+          ...items[0],
+          id: groupKey,
+          nouns: items.map((item) => item.nounId),
+        };
+
+      case "noun-transfer":
+        return {
+          ...items[0],
+          id: groupKey,
+          transfers: items.map((i) => ({
+            from: i.fromAccount,
+            to: i.toAccount,
+            nounId: i.nounId,
+          })),
+        };
+
+      default:
+        throw new Error();
+    }
+  });
+
+  return [...auctionSettlementItems, ...transferAndDelegationsItems];
 };
 
 export const buildNounsTokenRepresentationFeed = (storeState) => {

@@ -1,7 +1,6 @@
 import React from "react";
 import { css } from "@emotion/react";
 import * as Popover from "@shades/ui-web/popover";
-import NounAvatar from "./noun-avatar.js";
 import InlineButton from "@shades/ui-web/inline-button";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import { array as arrayUtils } from "@shades/common/utils";
@@ -60,48 +59,29 @@ const NounsPreviewPopoverTrigger = React.forwardRef(
         <Popover.Content>
           {() => (
             <div
-              css={(t) =>
-                css({
+              data-wrap={sortedNounIds.length > 6}
+              css={css({
+                width: "max-content",
+                padding: "1.2rem 1.2rem 0.8rem",
+                overflow: "hidden",
+                display: "flex",
+                gap: "1.2rem",
+                flexWrap: "wrap",
+                justifyContent: "flex-start",
+                '&[data-wrap="true"]': {
                   width: "min-content",
-                  maxWidth: "min(calc(100vw - 1.2rem), 36.4rem)",
-                  minWidth: "32rem",
-                  padding: "1rem",
-                  marginBottom: "-0.2rem",
-                  overflow: "hidden",
-                  display: "flex",
-                  gap: "1.2rem",
-                  flexWrap: "wrap",
-                  justifyContent: "flex-start",
-                  "[data-id]": {
-                    fontSize: t.text.sizes.tiny,
-                    color: t.colors.textDimmed,
-                    margin: "0.2rem 0 0",
-                    textAlign: "center",
-                  },
-                })
-              }
+                  minWidth: "min(32rem, calc(100vw - 2rem))",
+                  maxWidth: "min(36.4rem, calc(100vw - 2rem))",
+                },
+              })}
             >
               {sortedNounIds.map((id) => (
                 <NounPreviewPopoverTrigger
                   key={id}
                   nounId={id}
                   contextAccount={contextAccount}
-                >
-                  <button
-                    css={css({
-                      outline: "none",
-                      "@media(hover: hover)": {
-                        cursor: "pointer",
-                        ":hover": {
-                          "[data-id]": { textDecoration: "underline" },
-                        },
-                      },
-                    })}
-                  >
-                    <NounAvatar id={id} size="3.2rem" />
-                    <div data-id>{id}</div>
-                  </button>
-                </NounPreviewPopoverTrigger>
+                  variant="portrait"
+                />
               ))}
             </div>
           )}
