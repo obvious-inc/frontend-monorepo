@@ -128,7 +128,7 @@ const ProposalCandidateScreenContent = ({
   const submitCandidateCast = useSubmitCandidateCast(candidateId);
 
   const [isProposalUpdateDiffDialogOpen, toggleProposalUpdateDiffDialog] =
-    useSearchParamToggleState("diff", { prefetch: true });
+    useSearchParamToggleState("diff", { replace: true });
   const [hasPendingProposalUpdate, setPendingProposalUpdate] =
     React.useState(false);
   const submitProposalUpdate = useUpdateSponsoredProposalWithSignatures(
@@ -1434,15 +1434,15 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
 
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
-    { prefetch: true, replace: true },
+    { replace: true },
   );
   const [isSponsorDialogOpen, toggleSponsorDialog] = useSearchParamToggleState(
     "sponsor",
-    { prefetch: true, replace: true },
+    { replace: true },
   );
   const [isProposeDialogOpen, toggleProposeDialog] = useSearchParamToggleState(
     "propose",
-    { prefetch: true, replace: true },
+    { replace: true },
   );
 
   const cancelCandidate = useCancelProposalCandidate(slug, {

@@ -125,7 +125,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   );
   const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
   const [isTreasuryDialogOpen, toggleTreasuryDialog] =
-    useSearchParamToggleState("treasury", { replace: true, prefetch: "true" });
+    useSearchParamToggleState("treasury", { replace: true });
 
   const {
     address: connectedWalletAccountAddress,
