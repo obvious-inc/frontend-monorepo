@@ -1532,7 +1532,7 @@ const ProposalScreen = ({ proposalId }) => {
   const proposal = useProposal(proposalId);
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
     "votes",
-    { replace: true, prefetch: "true" },
+    { replace: true },
   );
 
   const [notFound, setNotFound] = React.useState(false);
@@ -1561,12 +1561,12 @@ const ProposalScreen = ({ proposalId }) => {
 
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
-    { replace: true, prefetch: "true" },
+    { replace: true },
   );
 
   const [isStreamsDialogOpen, toggleStreamsDialog] = useSearchParamToggleState(
     "streams",
-    { replace: true, prefetch: "true" },
+    { replace: true },
   );
 
   useProposalFetch(proposalId, {
