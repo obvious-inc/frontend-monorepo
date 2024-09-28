@@ -5,12 +5,7 @@ import {
   encodeAbiParameters,
   decodeEventLog,
 } from "viem";
-import {
-  useReadContract,
-  useWriteContract,
-  useSimulateContract,
-  useSignTypedData,
-} from "wagmi";
+import { useReadContract, useSimulateContract, useSignTypedData } from "wagmi";
 import { CHAIN_ID } from "../constants/env.js";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
@@ -20,6 +15,7 @@ import useBlockNumber from "./block-number.js";
 import { useWallet } from "./wallet.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes } from "./token-contract.js";
+import { useWriteContract } from "./contract-write.js";
 // import abi from "../abis/nouns-dao-data.js";
 
 const { address: contractAddress } = resolveIdentifier("data");

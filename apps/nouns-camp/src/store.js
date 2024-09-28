@@ -47,7 +47,6 @@ import {
   TRANSFER_EVENT_FIELDS,
 } from "./nouns-subgraph.js";
 import * as PropdatesSubgraph from "./propdates-subgraph.js";
-import { resolveIdentifier as resolveContractIdentifier } from "./contracts.js";
 
 const createFeedbackPostCompositeId = (post) =>
   [post.proposalId, post.candidateId, post.reason, post.support, post.voterId]
@@ -432,50 +431,7 @@ const createStore = ({ initialState, publicClient }) =>
           case "transferEvents": {
             // Putting events in all relevant nouns and accounts for now,
             // will likely normalize at some point
-
-            // TODO: Move sorting closer to UI code?
-            const sortEvents = (events) =>
-              arrayUtils.sortBy(
-                { value: (e) => e.blockTimestamp, order: "desc" },
-                {
-                  value: (e) => {
-                    // delegate events should come after transfers chronologically
-                    if (e.type === "transfer") return 0;
-                    if (e.type === "delegate") return 1;
-                    else return -1;
-                  },
-                  order: "desc",
-                },
-                events,
-              );
-
-            const { address: treasuryAddress } =
-              resolveContractIdentifier("executor");
-            const { address: auctionHouseAddress } =
-              resolveContractIdentifier("auction-house");
-            const { address: forkEscrowAddress } =
-              resolveContractIdentifier("fork-escrow");
-
-            const events = value.filter((e) => {
-              if (e.type === "delegate")
-                return (
-                  // The owner and delegator are only different for delegation
-                  // events originating from a token transfer. Since these events
-                  // aren’t really delegations, we ignore them.
-                  // e.delegator.id === e.noun.owner.id &&
-                  // Fork escrows shouldn’t show as delegation events either
-                  e.newAccountId !== forkEscrowAddress
-                );
-
-              if (e.type === "transfer")
-                // Hide the initial transfer between the treasury and auction house
-                return !(
-                  e.previousAccountId === treasuryAddress &&
-                  e.newAccountId === auctionHouseAddress
-                );
-
-              throw new Error();
-            });
+            const events = value;
 
             const eventsByNounId = arrayUtils.groupBy((e) => e.nounId, events);
 
@@ -495,17 +451,11 @@ const createStore = ({ initialState, publicClient }) =>
 
             return mergeIntoStore({
               accountsById: objectUtils.mapValues(
-                (events, accountId) => ({
-                  id: accountId,
-                  events: sortEvents(events),
-                }),
+                (events, accountId) => ({ id: accountId, events }),
                 eventsByAccountId,
               ),
               nounsById: objectUtils.mapValues(
-                (events, nounId) => ({
-                  id: nounId,
-                  events: sortEvents(events),
-                }),
+                (events, nounId) => ({ id: nounId, events }),
                 eventsByNounId,
               ),
             });

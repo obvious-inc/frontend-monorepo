@@ -1,6 +1,6 @@
 import { decodeEventLog } from "viem";
 import React from "react";
-import { useReadContract, useWriteContract, useSimulateContract } from "wagmi";
+import { useReadContract, useSimulateContract } from "wagmi";
 import { CHAIN_ID /*CAMP_CLIENT_ID*/ } from "../constants/env.js";
 import { unparse as unparseTransactions } from "../utils/transactions.js";
 import { resolveIdentifier } from "../contracts.js";
@@ -10,6 +10,7 @@ import usePublicClient from "./public-client.js";
 import { useWallet } from "./wallet.js";
 import useRegisterEvent from "./register-event.js";
 import { useCurrentVotes, useTotalSupply } from "./token-contract.js";
+import { useWriteContract } from "./contract-write.js";
 
 const { address: contractAddress } = resolveIdentifier("dao");
 
