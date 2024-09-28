@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.26] - 2024-09-28
+
+### 🚀 Features
+
+- *(camp)* Use tenderly to simulate contract writes during impersonation mode
+- *(camp)* Improve noun transfer parsing
+
+### 🐛 Bug Fixes
+
+- *(api)* Add `runtime` configuration to contract route
+
 ## [1.3.0-alpha.25] - 2024-09-26
 
 ### 🚜 Refactor
