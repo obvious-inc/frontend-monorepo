@@ -54,6 +54,7 @@ import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalList from "./proposal-list.js";
 import { useVotes, useRevoteCount } from "./browse-accounts-screen.js";
+import useEnsAddress from "@/hooks/ens-address.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -144,11 +145,14 @@ const BrowseScreen = () => {
 
   const treasuryData = useTreasuryData();
 
+  const eagerMatchingEnsAddress = useEnsAddress(deferredQuery);
+  const matchingEnsAddress = React.useDeferredValue(eagerMatchingEnsAddress);
+
   // const candidateSortStrategies =
   //   connectedAccountAddress == null
   //     ? ["activity", "popularity"]
   //     : ["activity", "popularity", "connected-account-feedback"];
-
+  //
   // const candidateSortStrategy = candidateSortStrategies.includes(
   //   candidateSortStrategy_,
   // )
@@ -218,7 +222,10 @@ const BrowseScreen = () => {
   const searchResultItems = React.useMemo(() => {
     if (deferredQuery === "") return [];
 
-    const matchingAddresses = searchEns(primaryEnsNameByAddress, deferredQuery);
+    const matchingAddresses =
+      deferredQuery.length >= 3
+        ? searchEns(primaryEnsNameByAddress, deferredQuery)
+        : [];
 
     const matchingRecords = searchRecords(
       [
@@ -262,9 +269,24 @@ const BrowseScreen = () => {
       [deferredQuery, ...matchingAddresses],
     );
 
+    if (matchingEnsAddress != null) {
+      matchingRecords.unshift({
+        type: "account",
+        data: { id: matchingEnsAddress },
+      });
+    } else {
+      for (const address of matchingAddresses.toReversed()) {
+        matchingRecords.unshift({
+          type: "account",
+          data: { id: address },
+        });
+      }
+    }
+
     return matchingRecords.map((r) => r.data);
   }, [
     deferredQuery,
+    matchingEnsAddress,
     filteredProposals,
     filteredCandidates,
     filteredProposalUpdateCandidates,
