@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.27] - 2024-09-29
+
+### 🚀 Features
+
+- *(camp)* Add limited support for accounts to search
+- *(camp)* Default to bypass next router on search param navigations
+- *(camp)* Bypass app router in update banner to prevent delay
+
 ## [1.3.0-alpha.26] - 2024-09-28
 
 ### 🚀 Features

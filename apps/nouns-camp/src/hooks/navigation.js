@@ -20,8 +20,10 @@ export const useNavigate = () => {
   );
 };
 
-export const useSearchParams = () => {
-  const router = useRouter();
+export const useSearchParams = ({
+  router: navigateWithNextRouter = false,
+} = {}) => {
+  const nextRouter = useRouter();
   const pathname = usePathname();
   const searchParams = useNextSearchParams();
 
@@ -34,13 +36,21 @@ export const useSearchParams = () => {
       const href = pathname + "?" + params.toString();
 
       if (options?.replace) {
-        router.replace(href);
+        if (navigateWithNextRouter) {
+          nextRouter.replace(href);
+          return;
+        }
+        window.history.replaceState(null, "", href);
         return;
       }
 
-      router.push(href);
+      if (navigateWithNextRouter) {
+        nextRouter.push(href);
+        return;
+      }
+      window.history.pushState(null, "", href);
     },
-    [router, pathname, searchParams],
+    [nextRouter, pathname, searchParams, navigateWithNextRouter],
   );
 
   return [searchParams, set];
@@ -48,11 +58,17 @@ export const useSearchParams = () => {
 
 export const useSearchParamToggleState = (
   key,
-  { replace = true, prefetch = false } = {},
+  {
+    router: navigateWithNextRouter = false,
+    replace = true,
+    prefetch = false,
+  } = {},
 ) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams({
+    router: navigateWithNextRouter,
+  });
 
   const isToggled = searchParams.get(key) != null;
 
