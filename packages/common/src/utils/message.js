@@ -324,16 +324,67 @@ const escapeMarkdown = (string) => {
 
 export const toMarkdown = (blockElements) => {
   const renderTextNode = (l) => {
-    let text = escapeMarkdown(l.text);
-
-    if (l.bold) text = `**${text}**`;
-    if (l.italic) text = `*${text}*`;
-    if (l.strikethrough) text = `~~${text}~~`;
-    return text;
+    return escapeMarkdown(l.text);
   };
 
   const renderBlockElement = (el) => {
-    const renderInlineChildren = () => el.children.map(renderNode).join("");
+    const renderInlineChildren = () => {
+      let children = "";
+      let isBold = false;
+      let isItalic = false;
+      let isStrikethrough = false;
+
+      for (const [index, node] of el.children.entries()) {
+        const isLast = index === el.children.length - 1;
+        const nextNode = el.children[index + 1];
+        const renderedNode = renderNode(node);
+
+        const leadingSpaces =
+          renderedNode.length - renderedNode.trimStart().length;
+        const trailingSpaces =
+          renderedNode.length - renderedNode.trimEnd().length;
+
+        children += "".padStart(leadingSpaces, " ");
+
+        if (!isStrikethrough && node.strikethrough) {
+          // Start strikethrough
+          children += "~~";
+          isStrikethrough = true;
+        }
+        if (!isItalic && node.italic) {
+          // Start italic
+          children += "*";
+          isItalic = true;
+        }
+        if (!isBold && node.bold) {
+          // Start bold
+          children += "**";
+          isBold = true;
+        }
+
+        children += renderedNode.trim();
+
+        if (isBold && (isLast || !nextNode.bold)) {
+          // End bold
+          children += "**";
+          isBold = false;
+        }
+        if (isItalic && (isLast || !nextNode.italic)) {
+          // End italics
+          children += "*";
+          isItalic = false;
+        }
+        if (isStrikethrough && (isLast || !nextNode.strikethrough)) {
+          // End strikethrough
+          children += "~~";
+          isStrikethrough = false;
+        }
+
+        children += "".padStart(trailingSpaces, " ");
+      }
+
+      return children;
+    };
 
     switch (el.type) {
       case "paragraph":
