@@ -1582,24 +1582,16 @@ const ProposalScreen = ({ proposalId }) => {
 
   const getActions = () => {
     if (proposal == null) return [];
-    if (proposal.state === "canceled") return undefined;
-
     const actions = [];
-
     if (!isDesktopLayout && navigator?.share) {
       actions.push({
-        label: (
-          <>
-            <ShareIcon css={css({ width: "1.5rem" })} />
-          </>
-        ),
-        onSelect: () => {
-          navigator
-            .share({ url: `/proposals/${proposalId}` })
-            .catch((error) => console.log("Error sharing", error));
-        },
+        label: <ShareIcon css={css({ width: "1.7rem" })} />,
+        onSelect: () => navigator.share({ url: `/proposals/${proposalId}` }),
       });
     }
+
+    if (proposal.state === "canceled")
+      return actions.length === 0 ? undefined : actions;
 
     if (isProposer && proposal.state === "updatable")
       actions.push({
