@@ -30,26 +30,24 @@ const middleware = (editor) => {
     }
 
     for (const [childNode, childPath] of Node.children(editor, path)) {
-      // Element children aren’t allowed
-      if (childNode.children != null) {
-        if (editor.isBlock(childNode)) {
-          editor.liftNodes({ at: childPath });
-          return;
-        }
+      // Block children aren’t allowed
+      if (editor.isBlock(childNode)) {
+        editor.liftNodes({ at: childPath });
+        return;
+      }
 
+      if (
+        // No element children
+        childNode.children != null &&
+        // Emojis are special
+        childNode.type !== "emoji"
+      ) {
         editor.unwrapNodes({ at: childPath });
         return;
       }
 
-      // We only allow a single child
-      const childLeafIndex = childPath.slice(-1)[0];
-      if (childLeafIndex !== 0) {
-        editor.mergeNodes({ at: childPath });
-        return;
-      }
-
       // No line breaks
-      if (childNode.text.includes("\n")) {
+      if (childNode.text?.includes("\n")) {
         const flatText = childNode.text.split("\n").join(" ");
         editor.withoutNormalizing(() => {
           // A regular `editor.insertText()` refuses to work, don’t know why
@@ -74,7 +72,6 @@ const middleware = (editor) => {
     }
 
     normalizeNode([node, path]);
-    return;
   };
 
   return compose(

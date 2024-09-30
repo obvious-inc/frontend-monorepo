@@ -78,8 +78,17 @@ export const toMessageBlocks = (nodes) => {
         type: "link",
         url: n.url,
         label: n.label ?? n.children[0]?.text,
+        italic: n.children[0]?.italic,
+        bold: n.children[0]?.bold,
+        strikethrough: n.children[0]?.strikethrough,
       };
-    if (n.type === "emoji") return { type: "emoji", emoji: n.emoji };
+    if (n.type === "emoji")
+      return {
+        type: "emoji",
+        emoji: n.emoji,
+        // Slate only supports italic formatting for emojis, perhaps correctly
+        italic: n.children[0]?.italic,
+      };
     if (n.type === "user") return { type: "user", ref: n.ref };
     if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
     if (n.type === "horizontal-divider") return { type: n.type };
