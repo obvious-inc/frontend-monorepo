@@ -364,7 +364,9 @@ const createStore = ({ initialState, publicClient }) =>
             );
             return mergeIntoStore({
               proposalsById: value.reduce((acc, v) => {
-                if (v.proposalId == null) return acc;
+                if (v.proposalId == null || v.targetProposalId != null)
+                  return acc;
+
                 return {
                   ...acc,
                   [v.proposalId]: {
@@ -563,6 +565,7 @@ const createStore = ({ initialState, publicClient }) =>
                   values
                   signatures
                   calldatas
+                  proposalIdToUpdate
                 }
               }
             }
@@ -829,7 +832,7 @@ const createStore = ({ initialState, publicClient }) =>
             #   createdTimestamp
             #   updateMessage
             #   proposal { id }
-            #   content { matchingProposalIds }
+            #   content { matchingProposalIds, proposalIdToUpdate }
             # }
             }`,
         });
