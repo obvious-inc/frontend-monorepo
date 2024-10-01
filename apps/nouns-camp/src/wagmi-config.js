@@ -46,7 +46,7 @@ export const config = createConfig({
   },
   batch: {
     multicall: {
-      wait: 250,
+      wait: 50,
       batchSize: 1024 * 8, // 8kb seems to be the max size for cloudflare
     },
   },
