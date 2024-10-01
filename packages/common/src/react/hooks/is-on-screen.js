@@ -30,4 +30,16 @@ const useIsOnScreen = (ref, { rootMargin, transition = true } = {}) => {
   return isIntersecting;
 };
 
+export const useHasBeenOnScreen = (...args) => {
+  const isOnScreen = useIsOnScreen(...args);
+
+  const hasBeenOnScreenRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (isOnScreen) hasBeenOnScreenRef.current = true;
+  });
+
+  return isOnScreen || (hasBeenOnScreenRef.current ?? false);
+};
+
 export default useIsOnScreen;

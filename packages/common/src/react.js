@@ -6,7 +6,10 @@ export { default as useWindowOnlineListener } from "./react/hooks/window-online-
 export { default as useWindowFocusOrDocumentVisibleListener } from "./react/hooks/window-focus-or-document-visible-listener.js";
 export { default as useFetch } from "./react/hooks/fetch.js";
 export { default as useInterval } from "./react/hooks/interval.js";
-export { default as useIsOnScreen } from "./react/hooks/is-on-screen.js";
+export {
+  default as useIsOnScreen,
+  useHasBeenOnScreen,
+} from "./react/hooks/is-on-screen.js";
 export { default as useScrollListener } from "./react/hooks/scroll-listener.js";
 export { default as useMutationObserver } from "./react/hooks/mutation-observer.js";
 export { default as AutoAdjustingHeightTextarea } from "./react/components/auto-adjusting-height-textarea.js";

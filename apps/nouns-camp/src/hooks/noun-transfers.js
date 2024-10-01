@@ -1,5 +1,5 @@
 import React from "react";
-import { decodeEventLog } from "viem";
+import { decodeEventLog, zeroAddress } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
 import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import { useTransaction, useTransactionReceipt } from "wagmi";
@@ -138,23 +138,27 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
     const forkEvent = decodeForkEvents(receipt);
 
     if (forkEvent != null) {
+      const nounIds = forkEvent.args.tokenIds.map((id) => parseInt(id));
       switch (forkEvent.eventName) {
         case "JoinFork":
           return {
             transferType: "fork-join",
             forkId: forkEvent.args.forkId,
             reason: forkEvent.args.reason,
+            nounIds,
           };
         case "EscrowedToFork":
           return {
             transferType: "fork-escrow",
             forkId: forkEvent.args.forkId,
             reason: forkEvent.args.reason,
+            nounIds,
           };
         case "WithdrawFromForkEscrow":
           return {
             transferType: "fork-escrow-withdrawal",
             forkId: forkEvent.args.forkId,
+            nounIds,
           };
         default:
           console.log("Unexpected event", forkEvent);
@@ -165,13 +169,15 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
     const transactionSenderAccount = transaction.from.toLowerCase();
 
     const nounTransferEvents = decodeNounTransferEvents(receipt);
-
-    const senders = arrayUtils.unique(
-      nounTransferEvents.map((e) => e.args.from.toLowerCase()),
-    );
-    const receivers = arrayUtils.unique(
-      nounTransferEvents.map((e) => e.args.to.toLowerCase()),
-    );
+    const transfers = nounTransferEvents
+      .map((e) => ({
+        from: e.args.from.toLowerCase(),
+        to: e.args.to.toLowerCase(),
+        nounId: parseInt(e.args.tokenId),
+      }))
+      .filter((t) => t.from !== zeroAddress);
+    const senders = arrayUtils.unique(transfers.map((t) => t.from));
+    const receivers = arrayUtils.unique(transfers.map((t) => t.to));
 
     const isSender = senders.includes(transactionSenderAccount);
     const isReceiver = receivers.includes(transactionSenderAccount);
@@ -185,7 +191,7 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
       senders.toSorted().toString() === receivers.toSorted().toString();
 
     if (isSwap && senders.length === 2)
-      return { transferType: "swap", authorAccount };
+      return { transferType: "swap", authorAccount, transfers };
 
     const ethTransferLogs = decodeEthTransferEventLogs(receipt);
 
@@ -216,12 +222,12 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
     })();
 
     if (isSale) {
-      if (!hasTargetAccount) return { transferType: "bundled-sale" };
+      if (!hasTargetAccount) return { transferType: "bundled-sale", transfers };
 
       // We only trust the balance change enough to show it when it’s from the
       // author (transaction sender)
       if (targetAccount !== authorAccount)
-        return { transferType: "sale", targetAccount };
+        return { transferType: "sale", targetAccount, transfers };
 
       const balanceChange = balanceChangeByAddress?.[authorAccount] ?? 0n;
       const amount = balanceChange < 0n ? -balanceChange : balanceChange;
@@ -230,14 +236,16 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
         transferType: "sale",
         authorAccount: targetAccount,
         amount: amount > 0n ? amount : null,
+        transfers,
       };
     }
 
-    if (!hasTargetAccount) return { transferType: "bundled-transfer" };
+    if (!hasTargetAccount)
+      return { transferType: "bundled-transfer", transfers };
 
     if (targetAccount === authorAccount)
-      return { transferType: "transfer", authorAccount };
+      return { transferType: "transfer", authorAccount, transfers };
 
-    return { transferType: "transfer", targetAccount };
+    return { transferType: "transfer", targetAccount, transfers };
   }, [transaction, receipt, enabled]);
 };
