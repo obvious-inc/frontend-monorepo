@@ -3,12 +3,13 @@ import React from "react";
 import NextLink from "next/link";
 import { css, keyframes } from "@emotion/react";
 import { array as arrayUtils } from "@shades/common/utils";
-import { useIsOnScreen } from "@shades/common/react";
+import { useHasBeenOnScreen } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Avatar from "@shades/ui-web/avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { FarcasterGate as FarcasterGateIcon } from "@shades/ui-web/icons";
+import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
 import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -282,7 +283,7 @@ const FeedItem = React.memo(
       useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
 
     const containerRef = React.useRef();
-    const isOnScreen = useIsOnScreen(containerRef, {
+    const isOnScreen = useHasBeenOnScreen(containerRef, {
       rootMargin: "0px 0px 200%",
     });
 
@@ -298,7 +299,7 @@ const FeedItem = React.memo(
     });
 
     const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
-      enabled: item.type === "noun-transfer",
+      enabled: item.type === "noun-transfer" && isOnScreen,
     });
 
     const authorReplyCasts = (() => {
@@ -480,12 +481,6 @@ const FeedItem = React.memo(
                   if (authorAccount == null)
                     return <div data-timeline-symbol />;
 
-                  if (
-                    item.contextAccount != null &&
-                    item.contextAccount !== authorAccount
-                  )
-                    return <div data-timeline-symbol />;
-
                   return (
                     <AccountPreviewPopoverTrigger
                       accountAddress={authorAccount}
@@ -498,6 +493,20 @@ const FeedItem = React.memo(
                 }
 
                 case "event":
+                  if (item.eventType === "auction-settled")
+                    return (
+                      <AccountPreviewPopoverTrigger
+                        accountAddress={item.bidderAccount}
+                      >
+                        <button data-avatar-button>
+                          <AccountAvatar
+                            address={item.bidderAccount}
+                            size="2rem"
+                          />
+                        </button>
+                      </AccountPreviewPopoverTrigger>
+                    );
+
                   return <div data-timeline-symbol />;
 
                 default:
@@ -532,7 +541,11 @@ const FeedItem = React.memo(
                   css({ flex: 1, minWidth: 0, color: t.colors.textDimmed })
                 }
               >
-                <ItemTitle item={item} context={context} />
+                <ItemTitle
+                  item={item}
+                  context={context}
+                  isOnScreen={isOnScreen}
+                />
               </div>
               <div>
                 {item.isPending ? (
@@ -1012,7 +1025,7 @@ const ItemBody = React.memo(
   },
 );
 
-const ItemTitle = ({ item, context }) => {
+const ItemTitle = ({ item, context, isOnScreen }) => {
   const isIsolatedContext = ["proposal", "candidate"].includes(context);
 
   const proposal = useProposal(item.proposalId ?? item.targetProposalId);
@@ -1417,7 +1430,7 @@ const ItemTitle = ({ item, context }) => {
       );
 
     case "noun-transfer":
-      return <NounTransferItem item={item} />;
+      return <NounTransferItem item={item} isOnScreen={isOnScreen} />;
 
     case "noun-delegation":
       return (
@@ -1465,19 +1478,36 @@ const ItemTitle = ({ item, context }) => {
   }
 };
 
-const NounTransferItem = ({ item }) => {
-  const transferMeta = useNounTransferMeta(item.transactionHash);
+const NounTransferItem = ({ item, isOnScreen }) => {
+  const transferMeta = useNounTransferMeta(item.transactionHash, {
+    enabled: isOnScreen,
+  });
 
-  if (transferMeta == null) return null; // Loading
+  const { address: treasuryAddress } = resolveContractIdentifier("executor");
+  const { address: auctionHouseAddress } =
+    resolveContractIdentifier("auction-house");
 
-  const nouns = item.transfers.map((t) => t.nounId);
+  if (transferMeta == null) return <>&nbsp;</>; // Loading
 
+  const {
+    transferType,
+    authorAccount,
+    targetAccount,
+    nounIds,
+    transfers: nounTransfers = [],
+  } = transferMeta;
+
+  const transfers = nounTransfers.filter((t) => {
+    const isTreasuryToAuctionHouseTransfer =
+      t.from === treasuryAddress && t.to === auctionHouseAddress;
+    return !isTreasuryToAuctionHouseTransfer && t.from !== auctionHouseAddress;
+  });
+
+  const nouns = arrayUtils.unique(nounIds ?? transfers.map((t) => t.nounId));
   const nounsElement = <NounsPreviewPopoverTrigger nounIds={nouns} />;
 
-  const { transferType, authorAccount, targetAccount } = transferMeta;
-
-  const senders = arrayUtils.unique(item.transfers.map((t) => t.from));
-  const receivers = arrayUtils.unique(item.transfers.map((t) => t.to));
+  const senders = arrayUtils.unique(transfers.map((t) => t.from));
+  const receivers = arrayUtils.unique(transfers.map((t) => t.to));
 
   const renderAuthor = (address) => (
     <span css={(t) => css({ color: t.colors.textNormal })}>
@@ -1502,7 +1532,7 @@ const NounTransferItem = ({ item }) => {
       // Show sales as tranfers when bundled since we don’t know enough about
       // the state change
 
-      if (item.transfers.length === 1)
+      if (transfers.length === 1)
         // Since we filter out certain events upstream bundles can sometimes
         // hold just a single transfer. E.g. nounder rewards.
         return (
@@ -1511,12 +1541,12 @@ const NounTransferItem = ({ item }) => {
             from{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
-              accountAddress={item.transfers[0].from}
+              accountAddress={transfers[0].from}
             />{" "}
             to{" "}
             <AccountPreviewPopoverTrigger
               showAvatar
-              accountAddress={item.transfers[0].to}
+              accountAddress={transfers[0].to}
             />
           </>
         );
@@ -1646,19 +1676,18 @@ const NounTransferItem = ({ item }) => {
     // keep things simple
     case "swap": {
       const accounts = arrayUtils.unique(
-        item.transfers.flatMap((t) => [t.from, t.to]),
+        transfers.flatMap((t) => [t.from, t.to]),
       );
 
       const firstAccount = authorAccount ?? accounts[0];
       const otherAccount = accounts.find((a) => a !== firstAccount);
 
-      const outgoingNouns = item.transfers
+      const outgoingNouns = transfers
         .filter((t) => t.from === firstAccount)
         .map((t) => t.nounId);
-      const incomingNouns = item.transfers
+      const incomingNouns = transfers
         .filter((t) => t.to === firstAccount)
         .map((t) => t.nounId);
-
       return (
         <>
           {authorAccount != null ? (
@@ -1734,21 +1763,21 @@ const AuctionSettledItem = ({ item }) => {
   const noun = useNoun(item.nounId);
   return (
     <>
-      <AccountPreviewPopoverTrigger accountAddress={item.bidderAccount} />{" "}
-      <span css={(t) => css({ color: t.colors.textDimmed })}>
-        bought <NounPreviewPopoverTrigger nounId={item.nounId} /> on auction
-        {noun.auction?.amount != null && (
-          <>
-            {" "}
-            for{" "}
-            <FormattedEthWithConditionalTooltip
-              decimals={2}
-              truncationDots={false}
-              value={noun.auction.amount}
-            />
-          </>
-        )}
-      </span>
+      <span css={(t) => css({ color: t.colors.textNormal })}>
+        <AccountPreviewPopoverTrigger accountAddress={item.bidderAccount} />
+      </span>{" "}
+      bought <NounPreviewPopoverTrigger nounId={item.nounId} /> on auction
+      {noun.auction?.amount != null && (
+        <>
+          {" "}
+          for{" "}
+          <FormattedEthWithConditionalTooltip
+            decimals={2}
+            truncationDots={false}
+            value={noun.auction.amount}
+          />
+        </>
+      )}
     </>
   );
 };
