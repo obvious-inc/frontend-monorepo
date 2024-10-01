@@ -1060,11 +1060,13 @@ const defaultSelectedFeedFilterCategories = [
   // "auction-bids",
   // "propdates",
 ];
-const useFeedFilterCategories = () =>
-  useCachedState(
+const useFeedFilterCategories = () => {
+  const [state, setState] = useCachedState(
     "landing-screen:selected-feed-categories",
     defaultSelectedFeedFilterCategories,
   );
+  return [state ?? [], setState];
+};
 
 const Feed = React.memo(() => {
   const [selectedCategories, setSelectedCategories] = useFeedFilterCategories();
