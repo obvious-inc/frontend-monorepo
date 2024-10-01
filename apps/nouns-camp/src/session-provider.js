@@ -22,6 +22,7 @@ const Provider = ({ initialSession, children }) => {
       const nonceRes = await fetch("/api/siwe-nonce");
       return nonceRes.text();
     },
+    enabled: createSessionState === "idle",
   });
 
   const create = React.useCallback(
