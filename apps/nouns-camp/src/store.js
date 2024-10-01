@@ -2027,6 +2027,21 @@ export const useActiveProposalsFetch = () => {
   );
 };
 
+export const useActiveProposals = () => {
+  const blockNumber = useBlockNumber({ watch: true, cacheTime: 10_000 });
+
+  return useStore(
+    React.useCallback(
+      (s) => {
+        return Object.values(s.proposalsById).filter((p) =>
+          isActiveProposalState(getProposalState(p, { blockNumber })),
+        );
+      },
+      [blockNumber],
+    ),
+  );
+};
+
 export const useProposalCandidateFetch = (id, options) => {
   const blockNumber = useBlockNumber({ watch: true, cacheTime: 10_000 });
   const onError = useLatestCallback(options?.onError);

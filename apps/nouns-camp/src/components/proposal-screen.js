@@ -15,6 +15,7 @@ import {
   CrossCircle as CrossCircleIcon,
   Share as ShareIcon,
 } from "@shades/ui-web/icons";
+import Select from "@shades/ui-web/select";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -31,6 +32,8 @@ import {
   useProposal,
   useProposalFetch,
   useProposalFeedItems,
+  useActiveProposalsFetch,
+  useActiveProposals,
 } from "../store.js";
 import useBlockNumber from "../hooks/block-number.js";
 import {
@@ -1529,6 +1532,7 @@ const ProposalScreen = ({ proposalId }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
   const proposal = useProposal(proposalId);
+  const activeProposals = useActiveProposals();
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
     "votes",
     { replace: true },
@@ -1579,6 +1583,8 @@ const ProposalScreen = ({ proposalId }) => {
       setFetchError(e);
     },
   });
+
+  useActiveProposalsFetch();
 
   const getActions = () => {
     if (proposal == null) return [];
@@ -1640,22 +1646,38 @@ const ProposalScreen = ({ proposalId }) => {
         navigationStack={[
           { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
-            to: `/proposals/${proposalId}`,
-            label: (
-              <>
-                Proposal {proposalId}
-                {proposal?.state != null && (
-                  <ProposalStateTag
-                    size="small"
-                    proposalId={proposalId}
-                    style={{
-                      marginLeft: "0.6rem",
-                      transform: "translateY(-0.1rem)",
-                    }}
-                  />
-                )}
-              </>
-            ),
+            label: "Proposal",
+            component: Select,
+            props: {
+              "aria-label": "Proposal",
+              size: "small",
+              fullWidth: false,
+              width: "max-content",
+              value: proposalId,
+              options: activeProposals.map((p) => ({
+                value: p.id,
+                label: `${p.id}: ${p.title}`,
+              })),
+              onChange: (value) => {
+                if (value === proposalId) return;
+                navigate(`/proposals/${value}`);
+              },
+              renderTriggerContent: (value) => (
+                <>
+                  Proposal {value}
+                  {proposal?.state != null && (
+                    <ProposalStateTag
+                      size="small"
+                      proposalId={value}
+                      style={{
+                        marginLeft: "0.6rem",
+                        transform: "translateY(-0.1rem)",
+                      }}
+                    />
+                  )}
+                </>
+              ),
+            },
           },
         ]}
         actions={getActions()}
