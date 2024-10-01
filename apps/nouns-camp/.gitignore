@@ -7,3 +7,5 @@ public/service-worker.js.map
 .vercel
 
 src/abis
+
+certificates
