@@ -1654,6 +1654,9 @@ const ProposalScreen = ({ proposalId }) => {
               fullWidth: false,
               width: "max-content",
               value: proposalId,
+              buttonProps: {
+                css: css({ margin: "0 0.5rem" }),
+              },
               options: activeProposals.map((p) => ({
                 value: p.id,
                 label: `${p.id}: ${p.title}`,
