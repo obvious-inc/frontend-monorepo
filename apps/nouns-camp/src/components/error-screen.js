@@ -16,18 +16,18 @@ const ErrorScreen = ({
   <Layout navigationStack={navigationStack}>
     <div
       css={css({
-        flex: 1,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         textAlign: "center",
-        padding: "0 1.6rem",
+        padding: "1.6rem 1.6rem 6.4rem",
         "@media (min-width: 600px)": {
+          flex: 1,
           padding: "5vh 1.6rem 20vh",
         },
       })}
     >
-      <div>
+      <div style={{ maxWidth: "100%" }}>
         <div
           css={(t) =>
             css({
