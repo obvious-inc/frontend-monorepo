@@ -10,3 +10,5 @@ public/service-worker.js.map
 .env*.local
 
 src/abis
+
+certificates

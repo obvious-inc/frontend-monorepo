@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.28] - 2024-10-02
+
+### 🚀 Features
+
+- *(camp)* Add share icon to prop/candie navbar using the native sharing UI
+- *(camp)* Decrease multicall delay to 50 ms
+- *(camp)* Improve main feed filter menu
+
+### 🐛 Bug Fixes
+
+- *(camp)* Fix `marks` rendering to not create faulty markdown
+- *(camp)* Fix transfer items showing incorrect noun data
+- *(camp)* Add default value for ininitialized cache delay
+- *(camp)* Fix error screen layout on small devices
+- *(camp)* Fetch nonce eagerly so the signature request can be instant
+- *(camp)* Prevent nonce renewal when auth is in progress
+- *(camp)* Ignore update candies when matching proposal <> candidate
+
+### 🚜 Refactor
+
+- *(store)* Comment out unused fetch functions
+
+### ◀️ Revert
+
+- *(deps)* Bump @tanstack/react-query from 5.56.2 to 5.59.0 (#665)
+
 ## [1.3.0-alpha.27] - 2024-09-29
 
 ### 🚀 Features

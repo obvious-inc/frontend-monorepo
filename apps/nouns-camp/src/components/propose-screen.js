@@ -491,6 +491,7 @@ export default ({ draftId }) => {
   React.useEffect(() => {
     if (hasPendingNavigationTransition) return;
 
+    // `draft` will be `undefined` until the cache store is initialized
     if (draftId != null && draft === null) {
       navigate("/", { replace: true });
     }

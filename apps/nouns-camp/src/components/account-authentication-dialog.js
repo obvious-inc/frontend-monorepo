@@ -129,8 +129,6 @@ const Content = ({ titleProps, dismiss }) => {
           <p className="small">
             {(() => {
               switch (authenticationState) {
-                case "fetching-nonce":
-                  return <>Preparing signature request...</>;
                 case "requesting-signature":
                   return <>Awaiting signature... (check your wallet)</>;
                 case "verifying-signature":

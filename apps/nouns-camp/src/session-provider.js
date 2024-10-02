@@ -2,6 +2,7 @@
 
 import { createSiweMessage } from "viem/siwe";
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useSignMessage } from "wagmi";
 import { useFetch } from "@shades/common/react";
 import { CHAIN_ID } from "@/constants/env.js";
@@ -15,13 +16,19 @@ const Provider = ({ initialSession, children }) => {
   });
   const { signMessageAsync: signMessage } = useSignMessage();
 
+  const { data: nonce } = useQuery({
+    queryKey: ["siwe-nonce"],
+    queryFn: async () => {
+      const nonceRes = await fetch("/api/siwe-nonce");
+      return nonceRes.text();
+    },
+    enabled: createSessionState === "idle",
+  });
+
   const create = React.useCallback(
     async ({ address }) => {
       try {
-        setState((s) => ({ ...s, createSessionState: "fetching-nonce" }));
-
-        const nonceRes = await fetch("/api/siwe-nonce");
-        const nonce = await nonceRes.text();
+        if (nonce == null) throw new Error("Missing nonce");
 
         const message = createSiweMessage({
           address,
@@ -57,7 +64,7 @@ const Provider = ({ initialSession, children }) => {
         throw e;
       }
     },
-    [signMessage],
+    [nonce, signMessage],
   );
 
   const destroy = React.useCallback(async () => {
