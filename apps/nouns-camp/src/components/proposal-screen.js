@@ -15,7 +15,6 @@ import {
   CrossCircle as CrossCircleIcon,
   Share as ShareIcon,
 } from "@shades/ui-web/icons";
-import Select from "@shades/ui-web/select";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -27,13 +26,14 @@ import {
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
   getLatestVersionBlock,
+  isActiveState,
 } from "../utils/proposals.js";
 import {
   useProposal,
   useProposalFetch,
   useProposalFeedItems,
-  useActiveProposalsFetch,
-  useActiveProposals,
+  useProposals,
+  useSubgraphFetch,
 } from "../store.js";
 import useBlockNumber from "../hooks/block-number.js";
 import {
@@ -77,6 +77,8 @@ import { buildEtherscanLink } from "../utils/etherscan.js";
 import getDateYear from "date-fns/getYear";
 import StreamsDialog from "./streams-dialog.js";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
+import NativeSelect from "./native-select.js";
+import { useFetch } from "@shades/common/react";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -1532,7 +1534,8 @@ const ProposalScreen = ({ proposalId }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
   const proposal = useProposal(proposalId);
-  const activeProposals = useActiveProposals();
+  const proposals = useProposals({ state: true });
+
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
     "votes",
     { replace: true },
@@ -1584,7 +1587,59 @@ const ProposalScreen = ({ proposalId }) => {
     },
   });
 
-  useActiveProposalsFetch();
+  const subgraphFetch = useSubgraphFetch();
+
+  useFetch(
+    ({ signal }) => {
+      const pageSize = 50;
+
+      const fetchProposals = async (page = 1) => {
+        const { proposals } = await subgraphFetch({
+          query: `{
+            proposals(
+              orderBy: createdBlock,
+              orderDirection: desc,
+              first: ${pageSize},
+              skip: ${(page - 1) * pageSize},
+            ) {
+              id
+              title
+              status
+              createdBlock
+              createdTimestamp
+              lastUpdatedBlock
+              lastUpdatedTimestamp
+              startBlock
+              endBlock
+              updatePeriodEndBlock
+              objectionPeriodEndBlock
+              canceledBlock
+              canceledTimestamp
+              queuedBlock
+              queuedTimestamp
+              executedBlock
+              executedTimestamp
+              forVotes
+              againstVotes
+              abstainVotes
+              quorumVotes
+              executionETA
+              adjustedTotalSupply
+              proposer { id }
+              signers { id }
+            }
+          }`,
+        });
+        if (signal?.aborted) return [];
+        if (proposals.length < pageSize) return proposals;
+        const remainingProposals = await fetchProposals(page + 1);
+        return [...proposals, ...remainingProposals];
+      };
+
+      return fetchProposals();
+    },
+    [subgraphFetch],
+  );
 
   const getActions = () => {
     if (proposal == null) return [];
@@ -1639,6 +1694,13 @@ const ProposalScreen = ({ proposalId }) => {
 
   if (notFound) nextNotFound();
 
+  const activeProposals = proposals
+    .filter((p) => isActiveState(p?.state))
+    .sort((a, b) => b.id - a.id);
+  const remainingProposals = proposals
+    .filter((p) => !activeProposals.includes(p))
+    .sort((a, b) => b.id - a.id);
+
   return (
     <>
       <Layout
@@ -1647,37 +1709,51 @@ const ProposalScreen = ({ proposalId }) => {
           { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
             label: "Proposal",
-            component: Select,
+            component: NativeSelect,
             props: {
-              "aria-label": "Proposal",
-              size: "small",
-              fullWidth: false,
-              width: "max-content",
               value: proposalId,
-              buttonProps: {
-                css: css({ margin: "0 0.5rem" }),
-              },
-              options: activeProposals.map((p) => ({
-                value: p.id,
-                label: `${p.id}: ${p.title}`,
-              })),
-              onChange: (value) => {
+              groupedOptions: [
+                {
+                  label: "Active",
+                  options: activeProposals.map((p) => ({
+                    value: p.id,
+                    label: `${p.id}: ${p.title}`,
+                  })),
+                },
+                {
+                  label: "Past",
+                  options: remainingProposals.map((p) => ({
+                    value: p.id,
+                    label: `${p.id}: ${p.title}`,
+                  })),
+                },
+              ],
+              onChange: (e) => {
+                const value = e.target.value;
                 if (value === proposalId) return;
                 navigate(`/proposals/${value}`);
               },
-              renderTriggerContent: (value) => (
+              renderSelectedOption: (option) => (
                 <>
-                  Proposal {value}
+                  Proposal {option?.value}
                   {proposal?.state != null && (
                     <ProposalStateTag
                       size="small"
-                      proposalId={value}
+                      proposalId={option?.value}
                       style={{
                         marginLeft: "0.6rem",
                         transform: "translateY(-0.1rem)",
                       }}
                     />
                   )}
+                  <CaretDownIcon
+                    style={{
+                      display: "inline-flex",
+                      width: "0.9rem",
+                      height: "auto",
+                      marginLeft: "0.4rem",
+                    }}
+                  />
                 </>
               ),
             },
