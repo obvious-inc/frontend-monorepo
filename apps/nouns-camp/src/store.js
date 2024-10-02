@@ -483,38 +483,38 @@ const createStore = ({ initialState, publicClient }) =>
       return subgraphEntities;
     };
 
-    // const fetchProposalsVersions = async (proposalIds) =>
-    //   subgraphFetch({
-    //     query: `{
-    //       proposalVersions(
-    //         where: {
-    //           proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
-    //         }
-    //       ) {
-    //         createdAt
-    //         createdBlock
-    //         createdTransactionHash
-    //         updateMessage
-    //         proposal { id }
-    //       }
-    //     }`,
-    //   });
+    const fetchProposalsVersions = async (proposalIds) =>
+      subgraphFetch({
+        query: `{
+          proposalVersions(
+            where: {
+              proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
+            }
+          ) {
+            createdAt
+            createdBlock
+            createdTransactionHash
+            updateMessage
+            proposal { id }
+          }
+        }`,
+      });
 
-    // const fetchCandidatesFeedbackPosts = (candidateIds) =>
-    //   subgraphFetch({
-    //     query: `
-    //       ${CANDIDATE_FEEDBACK_FIELDS}
-    //       query {
-    //         candidateFeedbacks(
-    //           where: {
-    //             candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
-    //           },
-    //           first: 1000
-    //         ) {
-    //           ...CandidateFeedbackFields
-    //         }
-    //       }`,
-    //   });
+    const fetchCandidatesFeedbackPosts = (candidateIds) =>
+      subgraphFetch({
+        query: `
+          ${CANDIDATE_FEEDBACK_FIELDS}
+          query {
+            candidateFeedbacks(
+              where: {
+                candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
+              },
+              first: 1000
+            ) {
+              ...CandidateFeedbackFields
+            }
+          }`,
+      });
 
     const fetchProposalCandidate = async (rawId) => {
       const [account, ...slugParts] = rawId.split("-");
@@ -1457,75 +1457,75 @@ const createStore = ({ initialState, publicClient }) =>
                 } `,
           }),
 
-          // (async () => {
-          //   // Fetch signatures, then content IDs, and finally the candidate versions
-          //   const { proposalCandidateSignatures } = await subgraphFetch({
-          //     query: `
-          //       query {
-          //         proposalCandidateSignatures(
-          //           where: { signer: "${id.toLowerCase()}" }
-          //         ) {
-          //           content { id }
-          //         }
-          //       } `,
-          //   });
-          //
-          //   const contentIds = arrayUtils.unique(
-          //     proposalCandidateSignatures.map((s) => s.content.id),
-          //   );
-          //
-          //   const { proposalCandidateVersions } = await subgraphFetch({
-          //     query: `
-          //       query {
-          //         proposalCandidateVersions(
-          //           where: {
-          //             content_in: [${contentIds.map((id) => `"${id}"`)}]
-          //           }
-          //         ) {
-          //           id
-          //         }
-          //       } `,
-          //   });
-          //
-          //   return subgraphFetch({
-          //     query: `
-          //       ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-          //       query {
-          //         proposalCandidates(
-          //           where: {
-          //             latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
-          //           }
-          //         ) {
-          //           id
-          //           slug
-          //           proposer
-          //           canceledTimestamp
-          //           createdTimestamp
-          //           lastUpdatedTimestamp
-          //           createdBlock
-          //           canceledBlock
-          //           lastUpdatedBlock
-          //           latestVersion {
-          //             id
-          //               content {
-          //               title
-          //               description
-          //               targets
-          //               values
-          //               signatures
-          //               calldatas
-          //               matchingProposalIds
-          //               proposalIdToUpdate
-          //               contentSignatures {
-          //                 ...CandidateContentSignatureFields
-          //               }
-          //             }
-          //           }
-          //           versions { id }
-          //         }
-          //       }`,
-          //   });
-          // })(),
+          (async () => {
+            // Fetch signatures, then content IDs, and finally the candidate versions
+            const { proposalCandidateSignatures } = await subgraphFetch({
+              query: `
+                query {
+                  proposalCandidateSignatures(
+                    where: { signer: "${id.toLowerCase()}" }
+                  ) {
+                    content { id }
+                  }
+                } `,
+            });
+
+            const contentIds = arrayUtils.unique(
+              proposalCandidateSignatures.map((s) => s.content.id),
+            );
+
+            const { proposalCandidateVersions } = await subgraphFetch({
+              query: `
+                query {
+                  proposalCandidateVersions(
+                    where: {
+                      content_in: [${contentIds.map((id) => `"${id}"`)}]
+                    }
+                  ) {
+                    id
+                  }
+                } `,
+            });
+
+            return subgraphFetch({
+              query: `
+                ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+                query {
+                  proposalCandidates(
+                    where: {
+                      latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
+                    }
+                  ) {
+                    id
+                    slug
+                    proposer
+                    canceledTimestamp
+                    createdTimestamp
+                    lastUpdatedTimestamp
+                    createdBlock
+                    canceledBlock
+                    lastUpdatedBlock
+                    latestVersion {
+                      id
+                        content {
+                        title
+                        description
+                        targets
+                        values
+                        signatures
+                        calldatas
+                        matchingProposalIds
+                        proposalIdToUpdate
+                        contentSignatures {
+                          ...CandidateContentSignatureFields
+                        }
+                      }
+                    }
+                    versions { id }
+                  }
+                }`,
+            });
+          })(),
 
           PropdatesSubgraph.fetchPropdatesByAccount(id),
         ]);
@@ -1533,13 +1533,13 @@ const createStore = ({ initialState, publicClient }) =>
         // TODO: Merge all below into a single request
 
         // Fetch all versions of created proposals
-        // fetchProposalsVersions(proposals.map((p) => p.id));
+        fetchProposalsVersions(proposals.map((p) => p.id));
         // Fetch feedback for voter's candies (candidates tab)
-        // fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
+        fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
         // Fetch Candidates the voter has commented on
-        // fetchProposalCandidates(
-        //   arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
-        // );
+        fetchProposalCandidates(
+          arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
+        );
         // Fetch relevant noun data
         fetchNounsByIds(
           arrayUtils.unique([
@@ -1554,20 +1554,20 @@ const createStore = ({ initialState, publicClient }) =>
         fetchProposals(
           arrayUtils.unique([
             ...votes.map((p) => p.proposalId),
-            // ...proposalFeedbacks.map((p) => p.proposalId),
-            // ...sponsoredProposalCandidates.map(
-            //   (c) => c.latestVersion?.proposalId,
-            // ),
-            // ...propdates.map((p) => p.proposalId),
+            ...proposalFeedbacks.map((p) => p.proposalId),
+            ...sponsoredProposalCandidates.map(
+              (c) => c.latestVersion?.proposalId,
+            ),
+            ...propdates.map((p) => p.proposalId),
           ]),
         );
 
-        // set(() => ({
-        //   propdatesByProposalId: arrayUtils.groupBy(
-        //     (d) => d.proposalId,
-        //     propdates,
-        //   ),
-        // }));
+        set(() => ({
+          propdatesByProposalId: arrayUtils.groupBy(
+            (d) => d.proposalId,
+            propdates,
+          ),
+        }));
       },
       fetchNounsActivity: async ({ startBlock, endBlock }) => {
         const [startTimestamp, endTimestamp] = await Promise.all([
