@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.29] - 2024-10-02
+
+### ◀️ Revert
+
+- *(store)* Comment out unused fetch functions
+
 ## [1.3.0-alpha.28] - 2024-10-02
 
 ### 🚀 Features
