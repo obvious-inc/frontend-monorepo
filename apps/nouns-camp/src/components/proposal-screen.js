@@ -48,6 +48,7 @@ import {
   useDynamicQuorumParamsAt,
   useQueueProposal,
   useExecuteProposal,
+  useProposalCount,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
@@ -1535,6 +1536,7 @@ const ProposalScreen = ({ proposalId }) => {
 
   const proposal = useProposal(proposalId);
   const proposals = useProposals({ state: true });
+  const proposalCount = useProposalCount();
 
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
     "votes",
@@ -1697,9 +1699,23 @@ const ProposalScreen = ({ proposalId }) => {
   const activeProposals = proposals
     .filter((p) => isActiveState(p?.state))
     .sort((a, b) => b.id - a.id);
-  const remainingProposals = proposals
-    .filter((p) => !activeProposals.includes(p))
-    .sort((a, b) => b.id - a.id);
+
+  const remainingProposalsOptions = React.useMemo(() => {
+    return new Array(proposalCount)
+      .fill({})
+      .map((_, i) => ({
+        value: i + 1,
+        label: `${i + 1}: `,
+      }))
+      .filter(
+        (p) => !activeProposals.map((p) => Number(p.id)).includes(p.value),
+      )
+      .map((o) => ({
+        ...o,
+        label: `${o.value}: ${proposals.find((p) => Number(p.id) === o.value)?.title ?? ""}`,
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [proposalCount, activeProposals, proposals]);
 
   return (
     <>
@@ -1722,10 +1738,7 @@ const ProposalScreen = ({ proposalId }) => {
                 },
                 {
                   label: "Past",
-                  options: remainingProposals.map((p) => ({
-                    value: p.id,
-                    label: `${p.id}: ${p.title}`,
-                  })),
+                  options: remainingProposalsOptions,
                 },
               ],
               onChange: (e) => {
