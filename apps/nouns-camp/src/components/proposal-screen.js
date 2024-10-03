@@ -5,8 +5,12 @@ import { formatUnits } from "viem";
 import { notFound as nextNotFound } from "next/navigation";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
-import { ErrorBoundary } from "@shades/common/react";
+import {
+  date as dateUtils,
+  array as arrayUtils,
+  reloadPageOnce,
+} from "@shades/common/utils";
+import { ErrorBoundary, useFetch } from "@shades/common/react";
 import {
   CaretDown as CaretDownIcon,
   Clock as ClockIcon,
@@ -79,7 +83,6 @@ import getDateYear from "date-fns/getYear";
 import StreamsDialog from "./streams-dialog.js";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import NativeSelect from "./native-select.js";
-import { useFetch } from "@shades/common/react";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -1535,8 +1538,6 @@ const ProposalScreen = ({ proposalId }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
   const proposal = useProposal(proposalId);
-  const proposals = useProposals({ state: true });
-  const proposalCount = useProposalCount();
 
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
     "votes",
@@ -1588,60 +1589,6 @@ const ProposalScreen = ({ proposalId }) => {
       setFetchError(e);
     },
   });
-
-  const subgraphFetch = useSubgraphFetch();
-
-  useFetch(
-    ({ signal }) => {
-      const pageSize = 50;
-
-      const fetchProposals = async (page = 1) => {
-        const { proposals } = await subgraphFetch({
-          query: `{
-            proposals(
-              orderBy: createdBlock,
-              orderDirection: desc,
-              first: ${pageSize},
-              skip: ${(page - 1) * pageSize},
-            ) {
-              id
-              title
-              status
-              createdBlock
-              createdTimestamp
-              lastUpdatedBlock
-              lastUpdatedTimestamp
-              startBlock
-              endBlock
-              updatePeriodEndBlock
-              objectionPeriodEndBlock
-              canceledBlock
-              canceledTimestamp
-              queuedBlock
-              queuedTimestamp
-              executedBlock
-              executedTimestamp
-              forVotes
-              againstVotes
-              abstainVotes
-              quorumVotes
-              executionETA
-              adjustedTotalSupply
-              proposer { id }
-              signers { id }
-            }
-          }`,
-        });
-        if (signal?.aborted) return [];
-        if (proposals.length < pageSize) return proposals;
-        const remainingProposals = await fetchProposals(page + 1);
-        return [...proposals, ...remainingProposals];
-      };
-
-      return fetchProposals();
-    },
-    [subgraphFetch],
-  );
 
   const getActions = () => {
     if (proposal == null) return [];
@@ -1696,27 +1643,6 @@ const ProposalScreen = ({ proposalId }) => {
 
   if (notFound) nextNotFound();
 
-  const activeProposals = proposals
-    .filter((p) => isActiveState(p?.state))
-    .sort((a, b) => b.id - a.id);
-
-  const remainingProposalsOptions = React.useMemo(() => {
-    return new Array(proposalCount)
-      .fill({})
-      .map((_, i) => ({
-        value: i + 1,
-        label: `${i + 1}: `,
-      }))
-      .filter(
-        (p) => !activeProposals.map((p) => Number(p.id)).includes(p.value),
-      )
-      .map((o) => ({
-        ...o,
-        label: `${o.value}: ${proposals.find((p) => Number(p.id) === o.value)?.title ?? ""}`,
-      }))
-      .sort((a, b) => b.value - a.value);
-  }, [proposalCount, activeProposals, proposals]);
-
   return (
     <>
       <Layout
@@ -1725,40 +1651,24 @@ const ProposalScreen = ({ proposalId }) => {
           { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
             label: "Proposal",
-            component: NativeSelect,
+            component: ProposalsSelect,
             props: {
-              value: proposalId,
-              groupedOptions: [
-                {
-                  label: "Active",
-                  options: activeProposals.map((p) => ({
-                    value: p.id,
-                    label: `${p.id}: ${p.title}`,
-                  })),
-                },
-                {
-                  label: "Past",
-                  options: remainingProposalsOptions,
-                },
-              ],
-              selectProps: {
-                css: css({ cursor: "pointer" }),
-              },
+              selectedProposalId: proposalId,
               onChange: (e) => {
                 const value = e.target.value;
                 if (value === proposalId) return;
                 navigate(`/proposals/${value}`);
               },
-              renderSelectedOption: (option) => (
+              renderSelectedOption: () => (
                 <>
-                  Proposal {option?.value}
+                  Proposal {proposalId}
                   {proposal?.state != null && (
                     <ProposalStateTag
                       size="small"
-                      proposalId={option?.value}
+                      proposalId={proposalId}
                       style={{
                         marginLeft: "0.6rem",
-                        transform: "translateY(-0.1rem)",
+                        transform: "translateY(-1.5px)",
                       }}
                     />
                   )}
@@ -2175,6 +2085,127 @@ const ProposalVoteStatusBar = React.memo(({ proposalId, hasVotingEnded }) => {
         <div className="vote-overview-toggle">Vote overview {"\u2197"}</div>
       </div>
     </div>
+  );
+});
+
+const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
+  const proposals = useProposals({ state: true });
+  const proposalCount = useProposalCount();
+
+  const groupedOptions = React.useMemo(() => {
+    const proposalsById = arrayUtils.indexBy((p) => p.id, proposals);
+
+    const allProposals = Array.from({ length: proposalCount }).map(
+      (_, index) => {
+        const id = index + 1;
+        const proposal = proposalsById[id];
+        return { id, ...proposal };
+      },
+    );
+
+    const { active: activeProposals = [], past: pastProposals = [] } =
+      arrayUtils.groupBy(
+        (p) => {
+          if (p.state != null && isActiveState(p.state)) return "active";
+          return "past";
+        },
+        arrayUtils.sortBy(
+          { value: (p) => parseInt(p.id), order: "desc" },
+          allProposals,
+        ),
+      );
+
+    const toOption = (p) => ({
+      value: p.id,
+      label:
+        p.title == null ? `Proposal ${p.id}` : `Proposal ${p.id}: ${p.title}`,
+    });
+
+    return [
+      {
+        label: "Active",
+        options: activeProposals.map(toOption),
+      },
+      {
+        label: "Past",
+        options: pastProposals.map(toOption),
+      },
+    ];
+  }, [proposalCount, proposals]);
+
+  const subgraphFetch = useSubgraphFetch();
+
+  const latestBlockNumber = useBlockNumber();
+
+  useFetch(
+    async () => {
+      await subgraphFetch({
+        // Only fetch fields necessary to derive the "active" state
+        query: `{
+          proposals(
+            where: {
+              and: [
+                { status_not_in: ["CANCELLED", "VETOED"] },
+                {
+                  or: [
+                    { endBlock_gt: ${latestBlockNumber} },
+                    { objectionPeriodEndBlock_gt: ${latestBlockNumber} }
+                  ]
+                }
+              ]
+            }
+          ) {
+            id
+            status
+            startBlock
+            endBlock
+            updatePeriodEndBlock
+            objectionPeriodEndBlock
+            executionETA
+          }
+        }`,
+      });
+    },
+    { enabled: latestBlockNumber != null },
+    [latestBlockNumber],
+  );
+
+  useFetch(
+    ({ signal }) => {
+      const pageSize = 1000;
+
+      const fetchProposals = async (page = 1) => {
+        const { proposals } = await subgraphFetch({
+          query: `{
+            proposals(
+              orderBy: createdBlock,
+              orderDirection: desc,
+              first: ${pageSize},
+              skip: ${(page - 1) * pageSize},
+            ) {
+              id
+              title
+            }
+          }`,
+        });
+        if (signal?.aborted) return [];
+        if (proposals.length < pageSize) return proposals;
+        const remainingProposals = await fetchProposals(page + 1);
+        return [...proposals, ...remainingProposals];
+      };
+
+      return fetchProposals();
+    },
+    [subgraphFetch],
+  );
+
+  return (
+    <NativeSelect
+      value={selectedProposalId}
+      groupedOptions={groupedOptions}
+      selectProps={{ css: css({ cursor: "pointer" }) }}
+      {...props}
+    />
   );
 });
 
