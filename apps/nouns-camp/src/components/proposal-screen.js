@@ -1741,6 +1741,9 @@ const ProposalScreen = ({ proposalId }) => {
                   options: remainingProposalsOptions,
                 },
               ],
+              selectProps: {
+                css: css({ cursor: "pointer" }),
+              },
               onChange: (e) => {
                 const value = e.target.value;
                 if (value === proposalId) return;

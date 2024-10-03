@@ -7,6 +7,7 @@ const NativeSelect = ({
   renderSelectedOption,
   onChange,
   style,
+  selectProps,
   ...props
 }) => {
   const selectedOption = groupedOptions
@@ -29,6 +30,7 @@ const NativeSelect = ({
         value={value}
         onChange={onChange}
         style={{ position: "absolute", inset: 0, opacity: 0 }}
+        {...selectProps}
       >
         {groupedOptions
           ? groupedOptions.map((group) => (
