@@ -462,14 +462,21 @@ const ProposalMainSection = ({
                 </>
               ) : (
                 <>
-                  The proposal may be executed after a short delay (
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    day="numeric"
-                    month="short"
-                    value={proposal.executionEtaTimestamp}
-                  />
-                  ).
+                  The proposal may be executed after a short delay
+                  {proposal.executionEtaTimestamp != null && (
+                    <>
+                      {" "}
+                      (
+                      <FormattedDateWithTooltip
+                        capitalize={false}
+                        day="numeric"
+                        month="short"
+                        value={proposal.executionEtaTimestamp}
+                      />
+                      )
+                    </>
+                  )}
+                  .
                 </>
               )}
             </p>
