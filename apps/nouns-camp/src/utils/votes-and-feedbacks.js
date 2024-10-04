@@ -10,7 +10,7 @@ import {
 //     +1
 //
 //     > Voting against this prop for no good reason
-export const REPOST_REGEX = /^\+1$(\n){2}(?<quote>(?:^>.*?$\n?)+)/gms;
+export const REPOST_REGEX = /^\+1$(\n){2}(?<quote>(?:^>.*?$\s*)+)/gms;
 
 // Matches an @-prefixed truncated address like "@0xe3D7...A436", followed by
 // the reply content, and an end boundry consisting of the quoted reply target
@@ -24,7 +24,7 @@ export const REPOST_REGEX = /^\+1$(\n){2}(?<quote>(?:^>.*?$\n?)+)/gms;
 //
 //     > Why can’t we have nice things?
 export const REPLY_REGEX =
-  /^@(?<author>0x[a-zA-Z0-9]{4}(\.){3}[a-zA-Z0-p]{4})(\n){2}(?<reply>.+?)\n(?<quote>(?:^>.*?$\n?)+)/gms;
+  /^@(?<author>0x[a-zA-Z0-9]{4}(\.){3}[a-zA-Z0-p]{4})(\n){2}(?<reply>.+?)\n(?<quote>(?:^>.*?$\s*)+)/gms;
 
 const poormansUnquote = (markdownBlockquote) =>
   markdownBlockquote
@@ -98,12 +98,13 @@ export const createRepostExtractor =
           if (originReason == null) return false;
           // Check if the whole reason matches
           // (can’t use e.g. `includes` since that might include nested reposts)
-          if (originReason.trim() === quoteBody) return true;
+          if (originReason.trim() === quoteBody.trim()) return true;
           // Check if the reason matches when stripping it of reposts
           return (
             // Checking `includes` first to not match the regex unnecessarily
-            originReason.includes(quoteBody) &&
-            originReason.replaceAll(REPOST_REGEX, "").trim() === quoteBody
+            originReason.includes(quoteBody.trim()) &&
+            originReason.replaceAll(REPOST_REGEX, "").trim() ===
+              quoteBody.trim()
           );
         },
       );
