@@ -2159,7 +2159,7 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
                 {
                   or: [
                     { endBlock_gt: ${latestBlockNumber} },
-                    { objectionPeriodEndBlock_gt: ${latestBlockNumber} }
+                  # { objectionPeriodEndBlock_gt: ${latestBlockNumber} }
                   ]
                 }
               ]
@@ -2169,8 +2169,8 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
             status
             startBlock
             endBlock
-            updatePeriodEndBlock
-            objectionPeriodEndBlock
+          # updatePeriodEndBlock
+          # objectionPeriodEndBlock
             executionETA
           }
         }`,
