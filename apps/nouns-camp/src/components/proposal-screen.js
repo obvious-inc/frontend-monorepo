@@ -5,8 +5,12 @@ import { formatUnits } from "viem";
 import { notFound as nextNotFound } from "next/navigation";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { date as dateUtils, reloadPageOnce } from "@shades/common/utils";
-import { ErrorBoundary } from "@shades/common/react";
+import {
+  date as dateUtils,
+  array as arrayUtils,
+  reloadPageOnce,
+} from "@shades/common/utils";
+import { ErrorBoundary, useFetch } from "@shades/common/react";
 import {
   CaretDown as CaretDownIcon,
   Clock as ClockIcon,
@@ -26,11 +30,14 @@ import {
   isSucceededState as isSucceededProposalState,
   isExecutable as isProposalExecutable,
   getLatestVersionBlock,
+  isActiveState,
 } from "../utils/proposals.js";
 import {
   useProposal,
   useProposalFetch,
   useProposalFeedItems,
+  useProposals,
+  useSubgraphFetch,
 } from "../store.js";
 import useBlockNumber from "../hooks/block-number.js";
 import {
@@ -45,6 +52,7 @@ import {
   useDynamicQuorumParamsAt,
   useQueueProposal,
   useExecuteProposal,
+  useProposalCount,
 } from "../hooks/dao-contract.js";
 import { useSendProposalFeedback } from "../hooks/data-contract.js";
 import useApproximateBlockTimestampCalculator from "../hooks/approximate-block-timestamp-calculator.js";
@@ -74,6 +82,7 @@ import { buildEtherscanLink } from "../utils/etherscan.js";
 import getDateYear from "date-fns/getYear";
 import StreamsDialog from "./streams-dialog.js";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
+import NativeSelect from "./native-select.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -453,14 +462,21 @@ const ProposalMainSection = ({
                 </>
               ) : (
                 <>
-                  The proposal may be executed after a short delay (
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    day="numeric"
-                    month="short"
-                    value={proposal.executionEtaTimestamp}
-                  />
-                  ).
+                  The proposal may be executed after a short delay
+                  {proposal.executionEtaTimestamp != null && (
+                    <>
+                      {" "}
+                      (
+                      <FormattedDateWithTooltip
+                        capitalize={false}
+                        day="numeric"
+                        month="short"
+                        value={proposal.executionEtaTimestamp}
+                      />
+                      )
+                    </>
+                  )}
+                  .
                 </>
               )}
             </p>
@@ -1532,6 +1548,7 @@ const ProposalScreen = ({ proposalId }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
   const proposal = useProposal(proposalId);
+
   const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
     "votes",
     { replace: true },
@@ -1643,22 +1660,39 @@ const ProposalScreen = ({ proposalId }) => {
         navigationStack={[
           { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
-            to: `/proposals/${proposalId}`,
-            label: (
-              <>
-                Proposal {proposalId}
-                {proposal?.state != null && (
-                  <ProposalStateTag
-                    size="small"
-                    proposalId={proposalId}
+            label: "Proposal",
+            component: ProposalsSelect,
+            props: {
+              selectedProposalId: proposalId,
+              onChange: (e) => {
+                const value = e.target.value;
+                if (value === proposalId) return;
+                navigate(`/proposals/${value}`);
+              },
+              renderSelectedOption: () => (
+                <>
+                  Proposal {proposalId}
+                  {proposal?.state != null && (
+                    <ProposalStateTag
+                      size="small"
+                      proposalId={proposalId}
+                      style={{
+                        marginLeft: "0.6rem",
+                        transform: "translateY(-1.5px)",
+                      }}
+                    />
+                  )}
+                  <CaretDownIcon
                     style={{
-                      marginLeft: "0.6rem",
-                      transform: "translateY(-0.1rem)",
+                      display: "inline-flex",
+                      width: "0.9rem",
+                      height: "auto",
+                      marginLeft: "0.4rem",
                     }}
                   />
-                )}
-              </>
-            ),
+                </>
+              ),
+            },
           },
         ]}
         actions={getActions()}
@@ -2061,6 +2095,127 @@ const ProposalVoteStatusBar = React.memo(({ proposalId, hasVotingEnded }) => {
         <div className="vote-overview-toggle">Vote overview {"\u2197"}</div>
       </div>
     </div>
+  );
+});
+
+const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
+  const proposals = useProposals({ state: true });
+  const proposalCount = useProposalCount();
+
+  const groupedOptions = React.useMemo(() => {
+    const proposalsById = arrayUtils.indexBy((p) => p.id, proposals);
+
+    const allProposals = Array.from({ length: proposalCount }).map(
+      (_, index) => {
+        const id = index + 1;
+        const proposal = proposalsById[id];
+        return { id, ...proposal };
+      },
+    );
+
+    const { active: activeProposals = [], past: pastProposals = [] } =
+      arrayUtils.groupBy(
+        (p) => {
+          if (p.state != null && isActiveState(p.state)) return "active";
+          return "past";
+        },
+        arrayUtils.sortBy(
+          { value: (p) => parseInt(p.id), order: "desc" },
+          allProposals,
+        ),
+      );
+
+    const toOption = (p) => ({
+      value: p.id,
+      label:
+        p.title == null ? `Proposal ${p.id}` : `Proposal ${p.id}: ${p.title}`,
+    });
+
+    return [
+      {
+        label: "Active",
+        options: activeProposals.map(toOption),
+      },
+      {
+        label: "Past",
+        options: pastProposals.map(toOption),
+      },
+    ];
+  }, [proposalCount, proposals]);
+
+  const subgraphFetch = useSubgraphFetch();
+
+  const latestBlockNumber = useBlockNumber();
+
+  useFetch(
+    async () => {
+      await subgraphFetch({
+        // Only fetch fields necessary to derive the "active" state
+        query: `{
+          proposals(
+            where: {
+              and: [
+                { status_not_in: ["CANCELLED", "VETOED"] },
+                {
+                  or: [
+                    { endBlock_gt: ${latestBlockNumber} },
+                  # { objectionPeriodEndBlock_gt: ${latestBlockNumber} }
+                  ]
+                }
+              ]
+            }
+          ) {
+            id
+            status
+            startBlock
+            endBlock
+          # updatePeriodEndBlock
+          # objectionPeriodEndBlock
+            executionETA
+          }
+        }`,
+      });
+    },
+    { enabled: latestBlockNumber != null },
+    [latestBlockNumber],
+  );
+
+  useFetch(
+    ({ signal }) => {
+      const pageSize = 1000;
+
+      const fetchProposals = async (page = 1) => {
+        const { proposals } = await subgraphFetch({
+          query: `{
+            proposals(
+              orderBy: createdBlock,
+              orderDirection: desc,
+              first: ${pageSize},
+              skip: ${(page - 1) * pageSize},
+            ) {
+              id
+              title
+            }
+          }`,
+        });
+        if (signal?.aborted) return [];
+        if (proposals.length < pageSize) return proposals;
+        const remainingProposals = await fetchProposals(page + 1);
+        return [...proposals, ...remainingProposals];
+      };
+
+      return fetchProposals();
+    },
+    [subgraphFetch],
+  );
+
+  return (
+    <NativeSelect
+      value={selectedProposalId}
+      groupedOptions={groupedOptions}
+      selectProps={{ css: css({ cursor: "pointer" }) }}
+      {...props}
+    />
   );
 });
 

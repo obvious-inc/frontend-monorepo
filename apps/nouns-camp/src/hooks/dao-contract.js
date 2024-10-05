@@ -75,6 +75,22 @@ const useLatestProposalId = (accountAddress) => {
   return data == null ? null : Number(data);
 };
 
+export const useProposalCount = () => {
+  const { data, isSuccess } = useRead({
+    abi: [
+      {
+        inputs: [],
+        name: "proposalCount",
+        outputs: [{ type: "uint256" }],
+        type: "function",
+      },
+    ],
+    functionName: "proposalCount",
+  });
+
+  return isSuccess ? Number(data) : null;
+};
+
 export const useProposalDynamicQuorum = (proposalId) => {
   const { data, isSuccess } = useRead({
     abi: [

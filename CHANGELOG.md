@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.30] - 2024-10-05
+
+### 🚀 Features
+
+- *(camp)* Add prop navigation to the navbar using <select>
+- *(camp)* Allow impersonation using ens instead of wallet addr
+
+### 🐛 Bug Fixes
+
+- *(camp)* Conditionally show execution ETA if available
+- *(camp)* Correctly match all possible line terminators
+
+### 🚜 Refactor
+
+- *(proposal-screen)* Comment out unused fields
+
+### ◀️ Revert
+
+- *(deps)* Bump @tanstack/react-query from 5.56.2 to 5.59.0 (#673)
+
 ## [1.3.0-alpha.29] - 2024-10-02
 
 ### ◀️ Revert
