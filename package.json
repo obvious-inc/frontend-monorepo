@@ -17,9 +17,10 @@
     "axios": ">=1.6.0",
     "follow-redirects": ">=1.15.6",
     "ip": ">=1.1.9",
-    "undici": ">=6.11.1",
+    "path-to-regexp": ">=6.3.0",
     "rollup": ">=4.22.4",
-    "path-to-regexp": ">=6.3.0"
+    "undici": ">=6.11.1",
+    "ws": ">=7.5.10"
   },
   "devDependencies": {
     "prettier": "3.3.3",
