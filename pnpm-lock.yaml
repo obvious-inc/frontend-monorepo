@@ -215,8 +215,8 @@ importers:
         specifier: '>=4.22.4'
         version: 4.24.0
       rollup-plugin-swc3:
-        specifier: 0.11.2
-        version: 0.11.2(@swc/core@1.7.28(@swc/helpers@0.5.13))(rollup@4.24.0)
+        specifier: 0.12.0
+        version: 0.12.0(@swc/core@1.7.28(@swc/helpers@0.5.13))(rollup@4.24.0)
 
   packages/ui-web:
     dependencies:
@@ -231,8 +231,8 @@ importers:
         specifier: '>=4.22.4'
         version: 4.24.0
       rollup-plugin-swc3:
-        specifier: 0.11.2
-        version: 0.11.2(@swc/core@1.7.28(@swc/helpers@0.5.13))(rollup@4.24.0)
+        specifier: 0.12.0
+        version: 0.12.0(@swc/core@1.7.28(@swc/helpers@0.5.13))(rollup@4.24.0)
 
 packages:
 
@@ -1024,6 +1024,9 @@ packages:
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
     engines: {node: '>=12'}
 
+  '@dual-bundle/import-meta-resolve@4.1.0':
+    resolution: {integrity: sha512-+nxncfwHM5SgAtrVzgpzJOI1ol0PkumhVo469KCf9lUi21IGcY90G98VuHm9VRrUypmAzawAHO9bs6hqeADaVg==}
+
   '@edge-runtime/format@2.2.1':
     resolution: {integrity: sha512-JQTRVuiusQLNNLe2W9tnzBlV/GvSVcozLl4XZHk5swnRZ/v6jp8TqR8P7sqmJsQqblDZ3EztcWmLDbhRje/+8g==}
     engines: {node: '>=16'}
@@ -1370,8 +1373,8 @@ packages:
   '@farcaster/core@0.15.4':
     resolution: {integrity: sha512-mmm0Wt7gRw/rHQu1XefGh8GyN7bd+oxCuBKEsgmqg69l1TxO+rasQpAFZFxr/GtQIi5mNwNimqXPkr3CIF+nPg==}
 
-  '@fastify/deepmerge@1.3.0':
-    resolution: {integrity: sha512-J8TOSBq3SoZbDhM9+R/u77hP93gz/rajSA+K2kGyijPpORPWUXHUpTaleoj+92As0S9uPRP7Oi8IqMf0u+ro6A==}
+  '@fastify/deepmerge@2.0.0':
+    resolution: {integrity: sha512-fsaybTGDyQ5KpPsplQqb9yKdCf2x/pbNpMNk8Tvp3rRz7lVcupKysH4b2ELMN2P4Hak1+UqTYdTj/u4FNV2p0g==}
 
   '@floating-ui/core@1.6.5':
     resolution: {integrity: sha512-8GrTWmoFhm5BsMZOTHeGD2/0FLKLQQHvO/ZmQga4tKempYRLz8aqJGqXVuQgisnMObq2YZ2SgkwctN1LOOxcqA==}
@@ -2782,6 +2785,15 @@ packages:
 
   '@rollup/pluginutils@5.1.0':
     resolution: {integrity: sha512-XTIWOPPcpvyKI6L1NHo0lFlCyznUEyPmPY1mc3KpPVDYulHSTvyeLNVW00QTLIAFNhR3kYnJTQHeGqU4M3n09g==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      rollup: '>=4.22.4'
+    peerDependenciesMeta:
+      rollup:
+        optional: true
+
+  '@rollup/pluginutils@5.1.2':
+    resolution: {integrity: sha512-/FIdS3PyZ39bjZlwqFnWqCOVnW7o963LtKMwQOD0NhQqw22gSr2YY1afu3FxRip4ZCZNsD5jq6Aaz6QV3D/Njw==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       rollup: '>=4.22.4'
@@ -4896,6 +4908,7 @@ packages:
   eslint@8.57.1:
     resolution: {integrity: sha512-ypowyDxpVSYpkXr9WPv2PAZCtNip1Mv5KTW0SCurXv/9iOpcrH9PaqUElksqEB6pChqHGDRCFTyrZlGhnLNGiA==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
 
   espree@9.6.1:
@@ -6831,9 +6844,9 @@ packages:
   rollup-plugin-node-polyfills@0.2.1:
     resolution: {integrity: sha512-4kCrKPTJ6sK4/gLL/U5QzVT8cxJcofO0OU74tnB19F40cmuAKSzH5/siithxlofFEjwvw1YAhPmbvGNA6jEroA==}
 
-  rollup-plugin-swc3@0.11.2:
-    resolution: {integrity: sha512-o1ih9B806fV2wBSNk46T0cYfTF2eiiKmYXRpWw3K4j/Cp3tCAt10UCVsTqvUhGP58pcB3/GZcAVl5e7TCSKN6Q==}
-    engines: {node: '>=12'}
+  rollup-plugin-swc3@0.12.0:
+    resolution: {integrity: sha512-uT6EOMk4m8j7eeBtXk4maitFDKGCaZlc9xIJvv+prg7F59kSH7o1k4XsS9XFeI6IfmuV10ljH5kQWtF40ps+UQ==}
+    engines: {node: '>=16'}
     peerDependencies:
       '@swc/core': '>=1.2.165'
       rollup: '>=4.22.4'
@@ -6851,8 +6864,8 @@ packages:
   rollup-pluginutils@2.8.2:
     resolution: {integrity: sha512-EEp9NhnUkwY8aif6bxgovPHMoMoNr2FulJziTndpt5H9RdwC47GSGuII9XxpSdzVGM0GWrNPHV6ie1LTNJPaLQ==}
 
-  rollup-preserve-directives@1.1.1:
-    resolution: {integrity: sha512-+eQafbuEfDPfxQ9hQPlwaROfin4yiVRxap8hnrvvvcSGoukv1tTiYpAW9mvm3uR8J+fe4xd8FdVd5rz9q7jZ+Q==}
+  rollup-preserve-directives@1.1.2:
+    resolution: {integrity: sha512-OOaYh4zO0Dcd/eVWGB8H69CgTiohl+jJqc2TLtjLENVIQaV2rxO3OW6RILzCQOdDvPT+/rzwRp+97OXhem895Q==}
     peerDependencies:
       rollup: '>=4.22.4'
 
@@ -8906,6 +8919,8 @@ snapshots:
     dependencies:
       '@jridgewell/trace-mapping': 0.3.9
 
+  '@dual-bundle/import-meta-resolve@4.1.0': {}
+
   '@edge-runtime/format@2.2.1': {}
 
   '@edge-runtime/node-utils@2.3.0': {}
@@ -9376,7 +9391,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@fastify/deepmerge@1.3.0': {}
+  '@fastify/deepmerge@2.0.0': {}
 
   '@floating-ui/core@1.6.5':
     dependencies:
@@ -11408,6 +11423,14 @@ snapshots:
       picomatch: 2.3.1
 
   '@rollup/pluginutils@5.1.0(rollup@4.24.0)':
+    dependencies:
+      '@types/estree': 1.0.6
+      estree-walker: 2.0.2
+      picomatch: 2.3.1
+    optionalDependencies:
+      rollup: 4.24.0
+
+  '@rollup/pluginutils@5.1.2(rollup@4.24.0)':
     dependencies:
       '@types/estree': 1.0.6
       estree-walker: 2.0.2
@@ -13946,7 +13969,7 @@ snapshots:
       debug: 4.3.7
       enhanced-resolve: 5.17.1
       eslint: 8.57.1
-      eslint-module-utils: 2.11.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.1)
+      eslint-module-utils: 2.11.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0)(eslint@8.57.1))(eslint@8.57.1)
       fast-glob: 3.3.2
       get-tsconfig: 4.8.1
       is-bun-module: 1.2.1
@@ -13959,7 +13982,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.11.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.1):
+  eslint-module-utils@2.11.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0)(eslint@8.57.1))(eslint@8.57.1):
     dependencies:
       debug: 4.3.7
     optionalDependencies:
@@ -13981,7 +14004,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.11.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.1)
+      eslint-module-utils: 2.11.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0)(eslint@8.57.1))(eslint@8.57.1)
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -16388,14 +16411,15 @@ snapshots:
     dependencies:
       rollup-plugin-inject: 3.0.2
 
-  rollup-plugin-swc3@0.11.2(@swc/core@1.7.28(@swc/helpers@0.5.13))(rollup@4.24.0):
+  rollup-plugin-swc3@0.12.0(@swc/core@1.7.28(@swc/helpers@0.5.13))(rollup@4.24.0):
     dependencies:
-      '@fastify/deepmerge': 1.3.0
-      '@rollup/pluginutils': 5.1.0(rollup@4.24.0)
+      '@dual-bundle/import-meta-resolve': 4.1.0
+      '@fastify/deepmerge': 2.0.0
+      '@rollup/pluginutils': 5.1.2(rollup@4.24.0)
       '@swc/core': 1.7.28(@swc/helpers@0.5.13)
       get-tsconfig: 4.8.1
       rollup: 4.24.0
-      rollup-preserve-directives: 1.1.1(rollup@4.24.0)
+      rollup-preserve-directives: 1.1.2(rollup@4.24.0)
 
   rollup-plugin-visualizer@5.12.0(rollup@4.24.0):
     dependencies:
@@ -16410,7 +16434,7 @@ snapshots:
     dependencies:
       estree-walker: 0.6.1
 
-  rollup-preserve-directives@1.1.1(rollup@4.24.0):
+  rollup-preserve-directives@1.1.2(rollup@4.24.0):
     dependencies:
       magic-string: 0.30.11
       rollup: 4.24.0
