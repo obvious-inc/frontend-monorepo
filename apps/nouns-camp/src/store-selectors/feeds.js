@@ -357,6 +357,7 @@ export const buildCandidateFeed = (
     isCanceled: s.canceled,
     candidateId,
     targetProposalId,
+    reason: s.reason,
   }));
 
   return arrayUtils.sortBy({ value: (i) => i.blockNumber ?? 0, order: "desc" }, [

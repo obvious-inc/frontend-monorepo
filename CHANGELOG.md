@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.31] - 2024-10-07
+
+### 🚀 Features
+
+- *(camp)* Hide like action for `proposal queued` feed items
+
+### 🐛 Bug Fixes
+
+- *(camp)* Fix like action not visible on signatures with comment
+
 ## [1.3.0-alpha.30] - 2024-10-05
 
 ### 🚀 Features
