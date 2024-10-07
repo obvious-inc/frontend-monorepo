@@ -17,7 +17,8 @@
     "axios": ">=1.6.0",
     "follow-redirects": ">=1.15.6",
     "ip": ">=1.1.9",
-    "undici": ">=6.11.1"
+    "undici": ">=6.11.1",
+    "rollup": ">=4.22.4"
   },
   "devDependencies": {
     "prettier": "3.3.3",
