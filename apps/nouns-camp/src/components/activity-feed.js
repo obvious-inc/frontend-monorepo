@@ -340,18 +340,30 @@ const FeedItem = React.memo(
 
     const showLikeAction = (() => {
       if (onLike == null) return false;
+
+      // Items always likeable
       if (item.type === "farcaster-cast") return true;
+
+      // Items not likeable
       if (
-        ["auction-bid", "noun-transfer", "noun-delegation"].includes(item.type)
+        ["auction-bid", "noun-transfer", "noun-delegation"].includes(
+          item.type,
+        ) ||
+        ["proposal-queued"].includes(item.eventType)
       )
         return false;
+
+      // Items likeable if body present
       if (
-        ["vote", "feedback-post", "candidate-signature"].includes(item.type) ||
+        ["candidate-signature"].includes(item.type) ||
         ["candidate-updated", "proposal-updated"].includes(item.eventType)
-      ) {
-        if (item.type === "proposal-updated") console.log(item);
-        return hasReason;
-      }
+      )
+        return hasBody;
+
+      // Items likeable if reason present (revotes have reason but no body)
+      if (["vote", "feedback-post"].includes(item.type)) return hasReason;
+
+      // The rest can be liked if they have a tx hash
       return item.transactionHash != null;
     })();
 
