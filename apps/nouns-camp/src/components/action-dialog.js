@@ -455,9 +455,11 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
 const CustomTransactionActionForm = ({ state, setState }) => {
   const publicClient = usePublicClient();
 
-  const contractNotFound = ["not-found", "not-contract-address"].includes(
-    state.contractDataRequestError?.message,
-  );
+  const contractNotFound = [
+    "not-found",
+    "not-contract-address",
+    "source-code-not-verified",
+  ].includes(state.contractDataRequestError?.message);
 
   const fetchedAbi =
     state.contractData?.abi == null
@@ -590,6 +592,9 @@ const CustomTransactionActionForm = ({ state, setState }) => {
                 Try again
               </Link>
             </>
+          ) : state.contractDataRequestError?.message ===
+            "source-code-not-verified" ? (
+            "Contract code not verified on Etherscan"
           ) : fetchedAbi != null && contractCallAbiItemOptions?.length === 0 ? (
             <>No public write functions found on abi</>
           ) : contractName != null ? (
@@ -1031,9 +1036,11 @@ const formConfigByActionType = {
               ...state.contractData.abi,
               ...(state.contractData.implementationAbi ?? []),
             ];
-      const contractNotFound = ["not-found", "not-contract-address"].includes(
-        state.contractDataRequestError?.message,
-      );
+      const contractNotFound = [
+        "not-found",
+        "not-contract-address",
+        "source-code-not-verified",
+      ].includes(state.contractDataRequestError?.message);
       const abi =
         state.forceCustomAbi || contractNotFound ? customAbi : fetchedAbi;
       return { ...state, customAbi, fetchedAbi, abi };
