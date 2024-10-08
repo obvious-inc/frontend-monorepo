@@ -1112,12 +1112,19 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
         case "auction-ended":
           return (
             <>
-              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} /> won
-              by{" "}
-              <AccountPreviewPopoverTrigger
-                accountAddress={item.bidderAccount}
-              />{" "}
-              for <FormattedEthWithConditionalTooltip value={item.bidAmount} />
+              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
+              {item.bidderAccount == null ? (
+                <>ended without bids</>
+              ) : (
+                <>
+                  won by{" "}
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={item.bidderAccount}
+                  />{" "}
+                  for{" "}
+                  <FormattedEthWithConditionalTooltip value={item.bidAmount} />
+                </>
+              )}
             </>
           );
         case "auction-settled":

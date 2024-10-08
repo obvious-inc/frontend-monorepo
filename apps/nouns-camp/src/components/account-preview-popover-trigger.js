@@ -318,7 +318,8 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                   </>
                 ) : (
                   <>
-                    votes{ownedNouns.length > 3 && <> ({ownedNouns.length})</>}
+                    votes
+                    {ownedNouns.length > 3 && <> ({ownedNouns.length})</>}
                   </>
                 )}{" "}
                 to{" "}

@@ -40,12 +40,45 @@ const ModalDialog = React.forwardRef(
       modalRef,
     );
 
+    const [visualViewportInset, setVisualViewportInset] = React.useState(null);
+
+    React.useEffect(() => {
+      if (!isOpen) return;
+
+      const update = () => {
+        setVisualViewportInset(
+          window.innerHeight - window.visualViewport.height,
+        );
+      };
+
+      let req;
+      const scheduleUpdate = () => {
+        if (req != null) window.cancelAnimationFrame(req);
+        req = window.requestAnimationFrame(update);
+      };
+
+      const resizeHandler = () => {
+        if (req == null) {
+          update();
+        }
+        scheduleUpdate();
+      };
+
+      window.visualViewport.addEventListener("resize", resizeHandler);
+
+      update();
+
+      return () => {
+        window.visualViewport.removeEventListener("resize", resizeHandler);
+      };
+    }, [isOpen, tray]);
+
     if (!isOpen) return null;
 
     return (
       <Overlay>
         <div
-          data-tray={tray}
+          data-tray={tray || undefined}
           {...underlayProps}
           {...customUnderlayProps}
           css={[
@@ -61,12 +94,10 @@ const ModalDialog = React.forwardRef(
                 left: 0,
                 width: "100%",
                 height: "100%",
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "center",
                 overflow: "auto",
                 background: "var(--background, hsl(0 0% 0% / 40%))",
-                padding: "6rem 0 0",
+                scrollSnapType: "y mandatory",
+                ".edge-scroll-padding": { paddingTop: "100vh" },
                 "[data-modal]": {
                   width: "100%",
                   color: t.colors.textNormal,
@@ -75,17 +106,31 @@ const ModalDialog = React.forwardRef(
                   borderTopRightRadius: "0.6rem",
                   display: "flex",
                   flexDirection: "column",
-                  boxShadow: t.shadows.elevationHigh,
-                  height: "100%",
+                  // boxShadow: t.shadows.elevationHigh,
                   outline: "none",
+                  overflow: "hidden",
+                  minHeight: "min-content",
+                  scrollSnapAlign: "end",
                 },
                 "@media (min-width: 600px)": {
-                  // Use centered dialogs on larger screens
+                  padding: "0 1.6rem",
+                  scrollSnapType: "none",
+                  display: "flex",
+                  flexDirection: "column",
                   "[data-modal]": {
                     maxWidth: "var(--max-width)",
+                    margin: "0 auto",
                   },
-                  '&:not([data-tray="true"])': {
+                  ".scroll-tray-only": { display: "none" },
+                  "&[data-tray]": {
+                    "[data-modal]": {
+                      minHeight: `var(--desktop-set-height, calc(100vh - ${t.navBarHeight}))`,
+                    },
+                  },
+                  // Default to centered dialogs on larger screens
+                  "&:not([data-tray])": {
                     padding: "2.8rem",
+                    display: "flex",
                     alignItems: "center",
                     "[data-modal]": {
                       borderRadius: "0.6rem",
@@ -99,6 +144,8 @@ const ModalDialog = React.forwardRef(
             customUnderlayProps?.css,
           ]}
           style={{
+            // "--viewport-height":
+            //   viewportHeight == null ? undefined : `${viewportHeight}px`,
             "--max-width": width,
             "--background": transparent
               ? "none"
@@ -108,12 +155,34 @@ const ModalDialog = React.forwardRef(
           }}
         >
           <div
+            className="scroll-tray-only edge-scroll-padding"
+            style={{ paddingTop: "100vh" }}
+          />
+          <div
+            css={(t) =>
+              css({
+                minHeight: t.navBarHeight,
+                scrollSnapAlign: "start",
+                "@media (min-width: 600px)": {
+                  flex: 1,
+                },
+              })
+            }
+          />
+          <div
+            className="scroll-tray-only"
+            css={(t) => css({ boxShadow: t.shadows.elevationHigh })}
+          />
+          <div
             ref={modalRef}
             data-modal
             {...modalProps}
             {...customModalProps}
             css={[customModalProps?.css]}
-            style={{ "--desktop-set-height": height }}
+            style={{
+              "--desktop-set-height": height,
+              transition: "0.1s transform ease-out",
+            }}
           >
             <Dialog
               ref={dialogRef}
@@ -129,6 +198,25 @@ const ModalDialog = React.forwardRef(
               {children}
             </Dialog>
           </div>
+          <div
+            className="scroll-tray-only"
+            css={(t) =>
+              css({
+                background: t.colors.dialogBackground,
+                scrollSnapAlign: "end",
+              })
+            }
+            style={{
+              paddingTop:
+                visualViewportInset == null
+                  ? undefined
+                  : `${visualViewportInset}px`,
+            }}
+          />
+          <div
+            className="scroll-tray-only edge-scroll-padding"
+            css={(t) => css({ background: t.colors.dialogBackground })}
+          />
         </div>
       </Overlay>
     );

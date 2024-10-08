@@ -35,6 +35,7 @@ const Layout = ({
   actions,
   scrollView = true,
   children,
+  ...props
 }) => (
   <div
     css={(t) =>
@@ -49,6 +50,7 @@ const Layout = ({
         height: "100%",
       })
     }
+    {...props}
   >
     <NavBar navigationStack={navigationStack} actions={actions} />
     <div
@@ -115,6 +117,8 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
+  const { open: openAuctionDialog, preload: preloadAuctionDialog } =
+    useDialog("auction");
   const { open: openAccountDialog } = useDialog("account");
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
@@ -239,6 +243,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     }
   };
 
+  React.useEffect(() => {
+    if (pathname === "/") preloadAuctionDialog();
+  }, [pathname, preloadAuctionDialog]);
+
   return (
     <>
       <div
@@ -272,23 +280,39 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
           })}
         >
           {[
-            {
-              to: "/",
-              label: (
-                <>
-                  <LogoSymbol
-                    css={css({
-                      display: "inline-block",
-                      width: "1.8rem",
-                      height: "auto",
-                      verticalAlign: "sub",
-                      transform: "translateY(0.1rem) scale(1.05)",
-                    })}
-                    style={{
-                      filter: isTestnet ? "invert(1)" : undefined,
-                    }}
-                  />
-                  {(pathname !== "/" || isTestnet) && (
+            (() => {
+              const logo = (
+                <LogoSymbol
+                  css={css({
+                    display: "inline-block",
+                    width: "1.8rem",
+                    height: "auto",
+                    verticalAlign: "sub",
+                    transform: "translateY(0.1rem) scale(1.05)",
+                  })}
+                  style={{
+                    filter: isTestnet ? "invert(1)" : undefined,
+                  }}
+                />
+              );
+
+              if (pathname === "/")
+                return {
+                  key: "auction-dialog",
+                  component: "button",
+                  props: {
+                    onClick: () => {
+                      openAuctionDialog();
+                    },
+                  },
+                  label: <>{logo}</>,
+                };
+
+              return {
+                to: "/",
+                label: (
+                  <>
+                    {logo}
                     <span
                       css={css({
                         display: "none",
@@ -300,10 +324,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     >
                       {isTestnet ? chain.name : "Camp"}
                     </span>
-                  )}
-                </>
-              ),
-            },
+                  </>
+                ),
+              };
+            })(),
             ...navigationStack,
           ].map((item, index) => {
             const [Component, componentProps] =
@@ -317,7 +341,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     },
                   ];
             return (
-              <React.Fragment key={item.to}>
+              <React.Fragment key={item.key ?? item.to}>
                 {index > 0 && (
                   <span
                     data-index={index}

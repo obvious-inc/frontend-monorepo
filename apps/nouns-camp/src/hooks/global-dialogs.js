@@ -1,4 +1,5 @@
 import React from "react";
+import { useSearchParams } from "./navigation.js";
 
 const ReactLazyWithPreload = (fetcher) => {
   const LazyComponent = React.lazy(fetcher);
@@ -9,6 +10,13 @@ const ReactLazyWithPreload = (fetcher) => {
 const Context = React.createContext();
 
 const dialogs = [
+  {
+    key: "auction",
+    search: true,
+    component: ReactLazyWithPreload(
+      () => import("../components/auction-dialog.js"),
+    ),
+  },
   {
     key: "account",
     component: ReactLazyWithPreload(
@@ -53,40 +61,95 @@ const dialogs = [
   },
 ];
 
+const searchParamDialogKeys = dialogs.filter((d) => d.search).map((d) => d.key);
+
 const preload = (key) => {
   const { component } = dialogs.find((d) => d.key === key);
   return component.preload();
 };
 
 export const Provider = ({ children }) => {
-  const [openDialogs, setOpenDialogs] = React.useState(new Map());
+  const [openLocalDialogs, setOpenLocalDialogs] = React.useState(new Map());
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const openSearchParamsDialogKey = searchParams.get("dialog");
+
+  const openDialogs = React.useMemo(() => {
+    if (
+      openSearchParamsDialogKey == null ||
+      searchParamDialogKeys.every((key) => key != openSearchParamsDialogKey)
+    )
+      return openLocalDialogs;
+
+    const openDialogs = new Map(openLocalDialogs);
+    openDialogs.set(openSearchParamsDialogKey, true);
+    return openDialogs;
+  }, [openLocalDialogs, openSearchParamsDialogKey]);
 
   const open = React.useCallback(
     (key, data) => {
-      setOpenDialogs((prev) => {
+      if (searchParamDialogKeys.includes(key)) {
+        setSearchParams(
+          (currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            nextParams.set("dialog", key);
+            return nextParams;
+          },
+          { replace: true },
+        );
+        return;
+      }
+      setOpenLocalDialogs((prev) => {
         const next = new Map(prev);
         next.set(key, data ?? true);
         return next;
       });
     },
-    [setOpenDialogs],
+    [setOpenLocalDialogs, setSearchParams],
   );
 
   const close = React.useCallback(
     (key) => {
-      setOpenDialogs((prev) => {
-        const next = new Map(prev);
+      if (searchParamDialogKeys.includes(key)) {
+        setSearchParams(
+          (currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            nextParams.delete("dialog");
+            return nextParams;
+          },
+          { replace: true },
+        );
+        return;
+      }
+      setOpenLocalDialogs((current) => {
+        const next = new Map(current);
         next.delete(key);
         return next;
       });
     },
-    [setOpenDialogs],
+    [setOpenLocalDialogs, setSearchParams],
   );
 
   const toggle = React.useCallback(
     (key) => {
-      setOpenDialogs((prev) => {
-        const next = new Map(prev);
+      if (searchParamDialogKeys.includes(key)) {
+        setSearchParams(
+          (currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            if (nextParams.get("dialog") === key) {
+              nextParams.delete("dialog");
+              return nextParams;
+            }
+            nextParams.set("dialog", key);
+            return nextParams;
+          },
+          { replace: true },
+        );
+        return;
+      }
+      setOpenLocalDialogs((current) => {
+        const next = new Map(current);
 
         if (next.has(key)) {
           next.delete(key);
@@ -97,7 +160,7 @@ export const Provider = ({ children }) => {
         return next;
       });
     },
-    [setOpenDialogs],
+    [setOpenLocalDialogs, setSearchParams],
   );
 
   const contextValue = React.useMemo(
@@ -109,15 +172,10 @@ export const Provider = ({ children }) => {
     <Context.Provider value={contextValue}>
       {children}
       <React.Suspense fallback={null}>
-        {dialogs.map(({ key, component: DialogComponent }) =>
-          openDialogs.has(key) ? (
-            <DialogComponent
-              key={key}
-              isOpen={openDialogs.has(key)}
-              close={() => close(key)}
-            />
-          ) : null,
-        )}
+        {dialogs.map(({ key, component: DialogComponent }) => {
+          if (!openDialogs.has(key)) return null;
+          return <DialogComponent key={key} isOpen close={() => close(key)} />;
+        })}
       </React.Suspense>
     </Context.Provider>
   );

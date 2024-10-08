@@ -1,11 +1,12 @@
 import { css } from "@emotion/react";
 import { Switch as ReactAriaSwitch } from "react-aria-components";
 
-const Switch = ({ label, size, align, ...props }) => (
+const Switch = ({ label, size, align, variant, ...props }) => (
   <ReactAriaSwitch
     {...props}
     data-size={size}
     data-align={align}
+    data-variant={variant}
     css={(t) =>
       css({
         display: "flex",
@@ -32,6 +33,9 @@ const Switch = ({ label, size, align, ...props }) => (
             borderRadius: "50%",
             transition: "transform 0.2s",
           },
+        },
+        '&[data-variant="light"] .indicator': {
+          background: t.colors.backgroundModifierStrong,
         },
         "&[data-selected] .indicator": {
           background: t.colors.primary,

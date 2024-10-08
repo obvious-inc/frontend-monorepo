@@ -62,6 +62,7 @@ const addressByIdentifierByChainId = {
     executor: "0x07e5d6a1550ad5e597a9b0698a474aa080a2fb28",
     data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
     token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
+    descriptor: "0x79e04ebcdf1ac2661697b23844149b43acc002d5",
     "auction-house": "0x488609b7113fcf3b761a05956300d605e8f6bcaf",
     "auction-house-admin": "0x9a19e520d9cd6c40ecc79623f16390a68962b7e9",
     "fork-escrow": "0xa15b495deb1b77f066b0c286fdb640c81ef356c4",
