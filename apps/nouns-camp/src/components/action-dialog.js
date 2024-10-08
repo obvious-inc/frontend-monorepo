@@ -1749,6 +1749,7 @@ const AmountWithCurrencyInput = ({
           disabled={disabled}
         />
         <Select
+          size="medium"
           aria-label="Currency token"
           value={currency}
           options={currencyOptions}
