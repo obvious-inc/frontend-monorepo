@@ -54,7 +54,9 @@ const AddressInput = ({
 
     if (hasFocus) {
       if (value.startsWith("0x"))
-        return `An account address should be 42 characters long (currently ${value.length})`;
+        return value.length === 42
+          ? "This is not a valid Ethereum account address"
+          : `An account address should be 42 characters long (currently ${value.length})`;
 
       return props.hint ?? "Specify an Ethereum account address or ENS name";
     }
