@@ -467,7 +467,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
           ...(state.contractData.implementationAbi ?? []),
         ];
 
-  const showCustomAbiInput = state.forceCustomAbi || contractNotFound;
+  const showCustomAbiInput = state.forceCustomAbi;
 
   const abi = showCustomAbiInput ? state.customAbi : fetchedAbi;
 
