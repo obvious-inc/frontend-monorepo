@@ -357,7 +357,6 @@ export const buildCandidateFeed = (
     isCanceled: s.canceled,
     candidateId,
     targetProposalId,
-    reason: s.reason,
   }));
 
   return arrayUtils.sortBy({ value: (i) => i.timestamp ?? 0, order: "desc" }, [
