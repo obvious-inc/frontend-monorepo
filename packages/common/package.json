@@ -25,6 +25,6 @@
   "devDependencies": {
     "@swc/core": "1.7.28",
     "rollup": "4.24.0",
-    "rollup-plugin-swc3": "0.12.0"
+    "rollup-plugin-swc3": "0.12.1"
   }
 }
