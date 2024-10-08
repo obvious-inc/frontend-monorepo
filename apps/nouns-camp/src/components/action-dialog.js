@@ -455,9 +455,9 @@ const StreamingPaymentActionForm = ({ state, setState }) => {
 const CustomTransactionActionForm = ({ state, setState }) => {
   const publicClient = usePublicClient();
 
-  const contractNotFound = ["not-found", "not-contract-address"].includes(
-    state.contractDataRequestError?.message,
-  );
+  const hasContractFetchError = state.contractDataRequestError != null;
+
+  const isValidTargetAddress = isAddress(state.target);
 
   const fetchedAbi =
     state.contractData?.abi == null
@@ -467,7 +467,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
           ...(state.contractData.implementationAbi ?? []),
         ];
 
-  const showCustomAbiInput = state.forceCustomAbi;
+  const showCustomAbiInput = state.forceCustomAbi || hasContractFetchError;
 
   const abi = showCustomAbiInput ? state.customAbi : fetchedAbi;
 
@@ -550,6 +550,9 @@ const CustomTransactionActionForm = ({ state, setState }) => {
       };
     });
 
+  const hasContractCallAbiItemOptions =
+    (contractCallAbiItemOptions?.length ?? 0) > 0;
+
   const selectedContractCallAbiItem = contractCallAbiItemOptions?.find(
     (o) => o.signature === state.signature,
   )?.abiItem;
@@ -573,44 +576,56 @@ const CustomTransactionActionForm = ({ state, setState }) => {
         }}
         placeholder="0x..."
         maxLength={42}
-        hint={
-          state.contractDataRequestError?.message === "not-contract-address" ? (
-            "No contract code found at the given address"
-          ) : state.contractDataRequestError?.message === "not-found" ? (
-            <>
-              No abi found for address.{" "}
-              <Link
-                underline
-                color="currentColor"
-                type="button"
-                onClick={() => {
-                  fetchContractData();
-                }}
-              >
-                Try again
-              </Link>
-            </>
-          ) : fetchedAbi != null && contractCallAbiItemOptions?.length === 0 ? (
-            <>No public write functions found on abi</>
-          ) : contractName != null ? (
-            <>
-              Etherscan contract name:{" "}
-              <strong>
-                <Link
-                  color="currentColor"
-                  component="a"
-                  href={buildEtherscanLink(`/address/${state.target}`)}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  {contractName}
-                </Link>
-              </strong>
-            </>
-          ) : (
-            <>&nbsp;</>
-          )
-        }
+        hint={(() => {
+          if (state.contractDataRequestError != null) {
+            switch (state.contractDataRequestError.message) {
+              case "not-contract-address":
+                return "No contract code found at the given address";
+              case "source-code-not-verified":
+              case "not-found":
+                return "No ABI found for the given address";
+              default:
+                return (
+                  <>
+                    Error fetching ABI from Etherscan.{" "}
+                    <Link
+                      underline
+                      color="currentColor"
+                      type="button"
+                      onClick={() => {
+                        fetchContractData();
+                      }}
+                    >
+                      Try again
+                    </Link>
+                  </>
+                );
+            }
+          }
+
+          if (fetchedAbi != null && contractCallAbiItemOptions?.length === 0)
+            return <>No public write functions found on abi</>;
+
+          if (contractName != null)
+            return (
+              <>
+                Etherscan contract name:{" "}
+                <strong>
+                  <Link
+                    color="currentColor"
+                    component="a"
+                    href={buildEtherscanLink(`/address/${state.target}`)}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    {contractName}
+                  </Link>
+                </strong>
+              </>
+            );
+
+          return <>&nbsp;</>;
+        })()}
       />
 
       {showCustomAbiInput && (
@@ -671,7 +686,19 @@ const CustomTransactionActionForm = ({ state, setState }) => {
         </div>
       )}
 
-      {contractCallAbiItemOptions?.length > 0 ? (
+      {!isValidTargetAddress ? null : contractCallAbiItemOptions == null &&
+        state.isFetchingContractData ? (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "6.28rem",
+          }}
+        >
+          <Spinner />
+        </div>
+      ) : (
         <div>
           <div
             css={css({
@@ -699,8 +726,14 @@ const CustomTransactionActionForm = ({ state, setState }) => {
           <Select
             id="contract-function"
             aria-label="Contract function"
+            placeholder={
+              hasContractCallAbiItemOptions
+                ? "Select a function"
+                : "No write functions on ABI"
+            }
             value={state.signature}
-            options={contractCallAbiItemOptions}
+            disabled={!hasContractCallAbiItemOptions}
+            options={contractCallAbiItemOptions ?? []}
             size="medium"
             onChange={(signature) => {
               const targetOption = contractCallAbiItemOptions?.find(
@@ -714,18 +747,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
             fullWidth
           />
         </div>
-      ) : state.isFetchingContractData && !contractNotFound ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "6.28rem",
-          }}
-        >
-          <Spinner />
-        </div>
-      ) : null}
+      )}
 
       {selectedContractCallAbiItem != null &&
         selectedContractCallAbiItem.inputs.length > 0 && (
@@ -1031,11 +1053,9 @@ const formConfigByActionType = {
               ...state.contractData.abi,
               ...(state.contractData.implementationAbi ?? []),
             ];
-      const contractNotFound = ["not-found", "not-contract-address"].includes(
-        state.contractDataRequestError?.message,
-      );
+      const hasContractFetchError = state.contractDataRequestError != null;
       const abi =
-        state.forceCustomAbi || contractNotFound ? customAbi : fetchedAbi;
+        state.forceCustomAbi || hasContractFetchError ? customAbi : fetchedAbi;
       return { ...state, customAbi, fetchedAbi, abi };
     },
     hasRequiredInputs: ({ state }) => {
