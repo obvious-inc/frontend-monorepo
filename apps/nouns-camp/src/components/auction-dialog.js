@@ -4,11 +4,19 @@ import { formatEther, parseEther } from "viem";
 import React from "react";
 import { css, ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import NextLink from "next/link";
-import { useInterval } from "@shades/common/react";
+import { useInterval, useMatchMedia } from "@shades/common/react";
+import {
+  Cross as CrossIcon,
+  Fullscreen as FullscreenIcon,
+} from "@shades/ui-web/icons";
 import Dialog from "@shades/ui-web/dialog";
 import Switch from "@shades/ui-web/switch";
 import Spinner from "@shades/ui-web/spinner";
+import Button from "@shades/ui-web/button";
+import Input from "@shades/ui-web/input";
+import { CHAIN_ID } from "@/constants/env";
 import { getTheme } from "@/theme";
+import { getChain as getSupportedChain } from "@/utils/chains";
 import {
   useAuction,
   useReservePrice,
@@ -17,16 +25,12 @@ import {
   useSettleCurrentAndCreateNewAuction,
 } from "@/hooks/auction-house-contract";
 import useThemePreferred from "@/hooks/preferred-theme";
-import { useMatchMedia } from "@shades/common/react";
+import { useWallet } from "@/hooks/wallet";
 import { useNounSeed } from "@/hooks/token-contract";
 import { useGenerateSVGImage } from "@/hooks/nouns-token-descriptor-contract";
-import {
-  Cross as CrossIcon,
-  Fullscreen as FullscreenIcon,
-} from "@shades/ui-web/icons";
-import Button from "@shades/ui-web/button";
-import Input from "@shades/ui-web/input";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
+
+const chain = getSupportedChain(CHAIN_ID);
 
 const AuctionDialog = ({ isOpen, close }) => {
   return (
@@ -110,6 +114,13 @@ const AuctionDialog = ({ isOpen, close }) => {
 export const Auction = ({ children, ...props }) => {
   const inputRef = React.useRef();
 
+  const {
+    address: connectedWalletAccountAddress,
+    chainId: connectedChainId,
+    requestAccess: requestWalletAccess,
+    switchToTargetChain: switchWalletToTargetChain,
+  } = useWallet();
+
   const preferredTheme = useThemePreferred();
 
   const isDesktopLayout = useMatchMedia("(min-width: 600px)");
@@ -131,11 +142,14 @@ export const Auction = ({ children, ...props }) => {
     );
   })();
 
-  const [pendingBid, setPendingBid] = React.useState(() => {
-    if (minBidValue == null) return null;
-    return formatEther(minBidValue);
+  const [pendingBidByNounId, setPendingBids] = React.useState(() => {
+    if (minBidValue == null) return {};
+    return { [auction.nounId]: formatEther(minBidValue) };
   });
+
   const [hideUI, setHideUI] = React.useState(false);
+
+  const pendingBid = pendingBidByNounId[auction?.nounId];
 
   const isBidValid = (() => {
     if (minBidValue == null || pendingBid == null || pendingBid.trim() === "")
@@ -157,55 +171,49 @@ export const Auction = ({ children, ...props }) => {
     callError: createBidCallError,
     simulationStatus: createBidSimulationStatus,
     simulationError: createBidSimulationError,
+    receiptStatus: createBidReceiptStatus,
+    receiptError: createBidReceiptError,
   } = useCreateBid({
     nounId: auction?.nounId,
     bidValue: isBidValid ? parseEther(pendingBid) : null,
-    enabled: !hasEnded,
+    enabled:
+      connectedWalletAccountAddress != null &&
+      auction != null &&
+      !hasEnded &&
+      isBidValid,
   });
 
-  const createBidError = createBidCallError ?? createBidSimulationError;
+  const hasPendingBidReceipt =
+    createBidCallStatus === "success" && createBidReceiptStatus === "pending";
+
+  const createBidError =
+    createBidReceiptError ?? createBidCallError ?? createBidSimulationError;
 
   const {
     call: settle,
     callStatus: settleCallStatus,
     callError: settleCallError,
-    simulationStatus: settleSimulationStatus,
+    // simulationStatus: settleSimulationStatus,
     simulationError: settleSimulationError,
-  } = useSettleCurrentAndCreateNewAuction({ enabled: hasEnded });
+    receiptStatus: settleReceiptStatus,
+    receiptError: settleReceiptError,
+  } = useSettleCurrentAndCreateNewAuction({
+    enabled: connectedWalletAccountAddress != null && hasEnded,
+  });
 
-  const settleError = settleCallError ?? settleSimulationError;
+  const hasPendingSettleReceipt =
+    settleCallStatus === "success" && settleReceiptStatus === "pending";
 
-  const error = createBidError ?? settleError;
+  const settleError =
+    settleReceiptError ?? settleCallError ?? settleSimulationError;
 
   React.useEffect(() => {
+    if (auction == null) return;
     if (minBidValue != null && pendingBid == null)
-      setPendingBid(formatEther(minBidValue));
-  }, [pendingBid, minBidValue]);
+      setPendingBids({ [auction.nounId]: formatEther(minBidValue) });
+  }, [auction, pendingBid, minBidValue]);
 
-  if (auction == null || seed != null)
-    return (
-      <div
-        css={css({
-          // height: "100%",
-          // width: "100%",
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
-          padding: "2rem",
-          "& > *": {
-            minWidth: 0,
-          },
-        })}
-      >
-        <Spinner
-          color="rgb(255 255 255 / 15%)"
-          size="2.4rem"
-          style={{ margin: "0 auto 2rem" }}
-        />
-      </div>
-    );
+  const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
 
   const biddingForm = (
     <div className="bidding-form">
@@ -222,6 +230,10 @@ export const Auction = ({ children, ...props }) => {
             ".error": {
               color: t.colors.textNegative,
             },
+            ".success": {
+              color: t.colors.textPositive,
+              fontWeight: t.text.weights.emphasis,
+            },
             "@media (min-width: 600px)": {
               fontSize: t.text.sizes.small,
               ".error": {
@@ -233,7 +245,7 @@ export const Auction = ({ children, ...props }) => {
           })
         }
       >
-        {!hasEnded && (
+        {auction != null && !hasEnded && (
           <div>
             Auction ends in{" "}
             <em>
@@ -265,6 +277,8 @@ export const Auction = ({ children, ...props }) => {
         )}
         <div>
           {(() => {
+            if (auction == null) return <>&nbsp;</>;
+
             if (auction.amount == 0)
               return hasEnded ? "Auction ended without bids" : "No bids yet";
 
@@ -293,18 +307,65 @@ export const Auction = ({ children, ...props }) => {
           })()}
         </div>
 
-        {error != null && (
-          <div className="error">{error.shortMessage || error.message}</div>
+        {hasEnded ? (
+          <>
+            {settleError != null && (
+              <div className="error">
+                {settleError.shortMessage || settleError.message}
+              </div>
+            )}
+            {hasPendingSettleReceipt && (
+              <div>
+                Transaction submitted. Awaiting receipt
+                <Spinner inline style={{ marginLeft: "0.5em" }} />
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {createBidError != null && (
+              <div className="error">
+                {createBidError.shortMessage || createBidError.message}
+              </div>
+            )}
+            {createBidReceiptStatus === "success" ? (
+              <div className="success">Bid successfully submitted!</div>
+            ) : hasPendingBidReceipt ? (
+              <div>
+                Bid transaction submitted. Awaiting receipt
+                <Spinner inline style={{ marginLeft: "0.5em" }} />
+              </div>
+            ) : null}
+          </>
         )}
       </div>
-      {hasEnded ? (
+
+      {connectedWalletAccountAddress == null ? (
+        <Button
+          onClick={() => {
+            requestWalletAccess();
+          }}
+        >
+          Connect wallet to participate
+        </Button>
+      ) : !isConnectedToTargetChain ? (
+        <Button
+          onClick={() => {
+            switchWalletToTargetChain();
+          }}
+        >
+          Switch to {CHAIN_ID === 1 ? "Mainnet" : chain.name} to interact with
+          auction
+        </Button>
+      ) : hasEnded ? (
         <Button
           size="default"
-          disabled={settle == null || settleCallStatus === "pending"}
-          isLoading={
-            settleSimulationStatus === "pending" ||
-            settleCallStatus === "pending"
+          disabled={
+            settle == null ||
+            settleCallStatus === "pending" ||
+            hasPendingSettleReceipt
           }
+          isLoading={settleCallStatus === "pending" || hasPendingSettleReceipt}
           onClick={() => {
             settle();
           }}
@@ -315,8 +376,8 @@ export const Auction = ({ children, ...props }) => {
         <form
           onSubmit={async (e) => {
             e.preventDefault();
-            const transactionHash = await createBid();
-            console.log(transactionHash);
+            await createBid();
+            setPendingBids({ [auction.nounId]: "" });
           }}
           css={(t) =>
             css({
@@ -375,7 +436,7 @@ export const Auction = ({ children, ...props }) => {
               className="input"
               value={pendingBid ?? ""}
               onChange={(e) => {
-                setPendingBid(e.target.value.trim());
+                setPendingBids({ [auction.nounId]: e.target.value.trim() });
               }}
               placeholder={
                 minBidValue == null
@@ -433,42 +494,45 @@ export const Auction = ({ children, ...props }) => {
     <>
       <EmotionThemeProvider theme={getTheme("light")}>
         <div css={css({ position: "relative" })} {...props}>
-          {seed != null && (
+          <div
+            css={(t) =>
+              css({
+                transition: "0.2s background ease-out",
+                background: t.colors.backgroundSecondary,
+                ".image-container": {
+                  width: `calc(100vh - ${t.navBarHeight})`, // Needs to mirror tray dialog height
+                  maxWidth: "100%",
+                  margin: "0 auto",
+                  aspectRatio: "1/1",
+                  transition: "0.2s opacity ease-out",
+                },
+                img: {
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "contain",
+                  objectPosition: "bottom",
+                },
+              })
+            }
+            style={{
+              background:
+                seed == null
+                  ? undefined
+                  : parseInt(seed.background) === 0
+                    ? "#d5d7e1"
+                    : "#e1d7d5",
+            }}
+          >
             <div
-              css={(t) =>
-                css({
-                  transition: "0.2s background ease-out",
-                  ".image-container": {
-                    width: `calc(100vh - ${t.navBarHeight})`, // Needs to mirror tray dialog height
-                    maxWidth: "100%",
-                    margin: "0 auto",
-                    aspectRatio: "1/1",
-                    transition: "0.2s opacity ease-out",
-                  },
-                  img: {
-                    display: "block",
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "contain",
-                    objectPosition: "bottom",
-                  },
-                })
-              }
-              style={{
-                background:
-                  parseInt(seed.background) === 0 ? "#d5d7e1" : "#e1d7d5",
-              }}
+              className="image-container"
+              style={{ opacity: base64Svg == null ? 0 : 1 }}
             >
-              <div
-                className="image-container"
-                style={{ opacity: base64Svg == null ? 0 : 1 }}
-              >
-                {base64Svg != null && (
-                  <img src={`data:image/svg+xml;base64,${base64Svg}`} />
-                )}
-              </div>
+              {base64Svg != null && (
+                <img src={`data:image/svg+xml;base64,${base64Svg}`} />
+              )}
             </div>
-          )}
+          </div>
           <div
             data-hide-ui={hideUI || undefined}
             css={(t) =>

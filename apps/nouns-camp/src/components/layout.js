@@ -26,6 +26,7 @@ import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
+import useFeatureFlag from "@/hooks/feature-flag.js";
 
 const TreasuryDialog = React.lazy(() => import("./treasury-dialog.js"));
 
@@ -116,6 +117,8 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const navigate = useNavigate();
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
+
+  const enableAuction = useFeatureFlag("auction");
 
   const { open: openAuctionDialog, preload: preloadAuctionDialog } =
     useDialog("auction");
@@ -296,7 +299,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 />
               );
 
-              if (pathname === "/")
+              if (enableAuction && pathname === "/")
                 return {
                   key: "auction-dialog",
                   component: "button",

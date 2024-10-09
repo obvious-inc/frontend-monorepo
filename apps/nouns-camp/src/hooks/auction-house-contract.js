@@ -1,5 +1,10 @@
 import React from "react";
-import { useReadContract, useSimulateContract, useWriteContract } from "wagmi";
+import {
+  useReadContract,
+  useSimulateContract,
+  useWaitForTransactionReceipt,
+  useWriteContract,
+} from "wagmi";
 import { CHAIN_ID, CAMP_CLIENT_ID } from "@/constants/env";
 import { resolveIdentifier } from "../contracts.js";
 import useBlockNumber from "./block-number.js";
@@ -14,13 +19,55 @@ const useRead = ({ enabled = true, ...options }) =>
     query: { enabled },
   });
 
-const useSimulate = ({ enabled = true, ...options }) =>
-  useSimulateContract({
-    chainId: CHAIN_ID,
-    address: contractAddress,
-    ...options,
+const useWrite = ({ enabled = true, ...simulateOptions }) => {
+  const {
+    data: transactionHash,
+    writeContractAsync,
+    status: callStatus,
+    error: callError,
+    reset: resetCall,
+  } = useWriteContract({
     query: { enabled },
   });
+
+  const {
+    data: receipt,
+    status: receiptStatus,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({
+    hash: transactionHash,
+    query: { enabled },
+  });
+
+  const {
+    data: simulationResult,
+    isSuccess: isSimulationSuccess,
+    status: simulationStatus,
+    error: simulationError,
+  } = useSimulateContract({
+    chainId: CHAIN_ID,
+    address: contractAddress,
+    ...simulateOptions,
+    query: { enabled },
+  });
+
+  React.useEffect(() => {
+    resetCall();
+  }, [simulationResult, resetCall]);
+
+  return {
+    simulationStatus: !enabled ? "idle" : simulationStatus,
+    simulationError,
+    call: isSimulationSuccess
+      ? () => writeContractAsync(simulationResult.request)
+      : null,
+    callStatus,
+    callError,
+    receipt,
+    receiptStatus: transactionHash == null ? "idle" : receiptStatus,
+    receiptError,
+  };
+};
 
 export const useAuction = ({ watch = false } = {}) => {
   const latestBlockNumber = useBlockNumber({
@@ -95,18 +142,7 @@ export const useMinBidIncrementPercentage = (options) => {
 };
 
 export const useCreateBid = ({ nounId, bidValue, enabled = true }) => {
-  const {
-    writeContractAsync,
-    status: callStatus,
-    error: callError,
-  } = useWriteContract();
-
-  const {
-    data: simulationResult,
-    isSuccess: isSimulationSuccess,
-    status: simulationStatus,
-    error: simulationError,
-  } = useSimulate({
+  return useWrite({
     abi: [
       {
         inputs: [
@@ -123,33 +159,12 @@ export const useCreateBid = ({ nounId, bidValue, enabled = true }) => {
     functionName: "createBid",
     enabled,
   });
-
-  return {
-    simulationStatus,
-    simulationError,
-    call: isSimulationSuccess
-      ? () => writeContractAsync(simulationResult.request)
-      : null,
-    callStatus,
-    callError,
-  };
 };
 
 export const useSettleCurrentAndCreateNewAuction = ({
   enabled = true,
 } = {}) => {
-  const {
-    writeContractAsync,
-    status: callStatus,
-    error: callError,
-  } = useWriteContract();
-
-  const {
-    data: simulationResult,
-    isSuccess: isSimulationSuccess,
-    status: simulationStatus,
-    error: simulationError,
-  } = useSimulate({
+  return useWrite({
     abi: [
       {
         inputs: [],
@@ -163,14 +178,4 @@ export const useSettleCurrentAndCreateNewAuction = ({
     functionName: "settleCurrentAndCreateNewAuction",
     enabled,
   });
-
-  return {
-    simulationStatus,
-    simulationError,
-    call: isSimulationSuccess
-      ? () => writeContractAsync(simulationResult.request)
-      : null,
-    callStatus,
-    callError,
-  };
 };

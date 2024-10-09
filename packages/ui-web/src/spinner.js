@@ -22,22 +22,30 @@ const dashAnimation = keyframes({
 });
 
 const Spinner = ({
-  size = "2rem",
+  inline = false,
+  size,
   color,
   strokeWidth = 6,
   style,
   ...props
 }) => (
   <svg
+    data-inline={inline || undefined}
     viewBox="0 0 50 50"
-    style={{ width: size, height: "auto", color, ...style }}
     css={css({
-      color: "currentcolor",
+      width: "var(--size, 2rem)",
+      height: "auto",
+      color: "var(--color, currentColor)",
       animation: `${rotateAnimation} 2.5s linear infinite`,
       circle: {
         animation: `${dashAnimation} 2s ease-in-out infinite`,
       },
+      "&[data-inline]": {
+        display: "inline-block",
+        width: "0.85em",
+      },
     })}
+    style={{ "--size": size, "--color": color, ...style }}
     {...props}
   >
     <circle

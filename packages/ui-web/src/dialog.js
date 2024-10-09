@@ -132,12 +132,14 @@ const ModalDialog = React.forwardRef(
                     padding: "2.8rem",
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     "[data-modal]": {
                       borderRadius: "0.6rem",
                       height: "var(--desktop-set-height, auto)",
                       maxHeight:
                         "var(--desktop-set-height, min(calc(100% - 3rem), 82rem))",
                     },
+                    ".tray-only": { display: "none" },
                   },
                 },
               }),
@@ -159,6 +161,7 @@ const ModalDialog = React.forwardRef(
             style={{ paddingTop: "100vh" }}
           />
           <div
+            className="tray-only"
             css={(t) =>
               css({
                 minHeight: t.navBarHeight,
