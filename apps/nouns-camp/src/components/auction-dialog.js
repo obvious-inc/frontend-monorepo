@@ -4,6 +4,8 @@ import { formatEther, parseEther } from "viem";
 import React from "react";
 import { css, ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import NextLink from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { array as arrayUtils } from "@shades/common/utils";
 import { useInterval, useMatchMedia } from "@shades/common/react";
 import {
   Cross as CrossIcon,
@@ -17,6 +19,8 @@ import Input from "@shades/ui-web/input";
 import { CHAIN_ID } from "@/constants/env";
 import { getTheme } from "@/theme";
 import { getChain as getSupportedChain } from "@/utils/chains";
+import { useActions } from "@/store";
+import usePublicClient from "@/hooks/public-client";
 import {
   useAuction,
   useReservePrice,
@@ -111,7 +115,7 @@ const AuctionDialog = ({ isOpen, close }) => {
   );
 };
 
-export const Auction = ({ children, ...props }) => {
+export const Auction = ({ showBids = false, children, ...props }) => {
   const inputRef = React.useRef();
 
   const {
@@ -120,6 +124,8 @@ export const Auction = ({ children, ...props }) => {
     requestAccess: requestWalletAccess,
     switchToTargetChain: switchWalletToTargetChain,
   } = useWallet();
+
+  const publicClient = usePublicClient();
 
   const preferredTheme = useThemePreferred();
 
@@ -148,6 +154,8 @@ export const Auction = ({ children, ...props }) => {
   });
 
   const [hideUI, setHideUI] = React.useState(false);
+  const [showBidSimulationErrors, setShowBidSimulationErrors] =
+    React.useState(false);
 
   const pendingBid = pendingBidByNounId[auction?.nounId];
 
@@ -187,7 +195,9 @@ export const Auction = ({ children, ...props }) => {
     createBidCallStatus === "success" && createBidReceiptStatus === "pending";
 
   const createBidError =
-    createBidReceiptError ?? createBidCallError ?? createBidSimulationError;
+    createBidReceiptError ??
+    createBidCallError ??
+    (showBidSimulationErrors ? createBidSimulationError : null);
 
   const {
     call: settle,
@@ -213,7 +223,34 @@ export const Auction = ({ children, ...props }) => {
       setPendingBids({ [auction.nounId]: formatEther(minBidValue) });
   }, [auction, pendingBid, minBidValue]);
 
+  const { subgraphFetch } = useActions();
+
+  const { data: bids = [] } = useQuery({
+    queryKey: ["auction", String(auction?.nounId)],
+    queryFn: async () => {
+      const { auction: subgraphAuction } = await subgraphFetch({
+        query: `{
+          auction(id: ${auction.nounId}) {
+            id
+            bids {
+              id
+              amount
+              blockNumber
+              blockTimestamp
+              txHash
+              bidder { id }
+            }
+          }
+        }`,
+      });
+      return subgraphAuction.bids;
+    },
+    enabled: auction != null,
+  });
+
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
+
+  const buttonSize = isDesktopLayout ? "medium" : "large";
 
   const biddingForm = (
     <div className="bidding-form">
@@ -222,7 +259,6 @@ export const Auction = ({ children, ...props }) => {
         css={(t) =>
           css({
             color: t.colors.textDimmedAlpha,
-            fontSize: t.text.sizes.base,
             em: {
               fontStyle: "normal",
               fontWeight: t.text.weights.emphasis,
@@ -233,14 +269,6 @@ export const Auction = ({ children, ...props }) => {
             ".success": {
               color: t.colors.textPositive,
               fontWeight: t.text.weights.emphasis,
-            },
-            "@media (min-width: 600px)": {
-              fontSize: t.text.sizes.small,
-              ".error": {
-                width: "30rem",
-                maxWidth: "100%",
-                textAlign: "right",
-              },
             },
           })
         }
@@ -316,7 +344,7 @@ export const Auction = ({ children, ...props }) => {
             )}
             {hasPendingSettleReceipt && (
               <div>
-                Transaction submitted. Awaiting receipt
+                Transaction submitted. Awaiting receipt...
                 <Spinner inline style={{ marginLeft: "0.5em" }} />
               </div>
             )}
@@ -342,14 +370,16 @@ export const Auction = ({ children, ...props }) => {
 
       {connectedWalletAccountAddress == null ? (
         <Button
+          size={buttonSize}
           onClick={() => {
             requestWalletAccess();
           }}
         >
-          Connect wallet to participate
+          Connect wallet to bid
         </Button>
       ) : !isConnectedToTargetChain ? (
         <Button
+          size={buttonSize}
           onClick={() => {
             switchWalletToTargetChain();
           }}
@@ -359,7 +389,7 @@ export const Auction = ({ children, ...props }) => {
         </Button>
       ) : hasEnded ? (
         <Button
-          size="default"
+          size={buttonSize}
           disabled={
             settle == null ||
             settleCallStatus === "pending" ||
@@ -373,119 +403,144 @@ export const Auction = ({ children, ...props }) => {
           Settle and start the next auction
         </Button>
       ) : (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            await createBid();
-            setPendingBids({ [auction.nounId]: "" });
-          }}
-          css={(t) =>
-            css({
-              display: "flex",
-              gap: "0.8rem",
-              ".submit-button": {
-                height: "auto",
-              },
-              fontSize: t.text.sizes.base,
-              "@media (max-width: 600px)": {
-                fontSize: t.text.sizes.large,
-                ".submit-button": { fontSize: "inherit" },
-              },
-            })
-          }
-        >
-          <Input
-            className="input-container"
-            component="div"
-            size={isDesktopLayout ? "small" : "medium"}
-            onClick={() => {
-              inputRef.current.focus();
+        <>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+
+              if (createBid == null) {
+                setShowBidSimulationErrors(true);
+                return;
+              }
+
+              const hash = await createBid();
+              await publicClient.waitForTransactionReceipt({ hash });
+              setShowBidSimulationErrors(false);
+              setPendingBids({ [auction.nounId]: "" });
             }}
             css={(t) =>
               css({
-                flex: 1,
-                minWidth: 0,
                 display: "flex",
-                alignItems: "center",
-                gap: "0.5em",
-                ".input": {
-                  flex: 1,
-                  minWidth: 0,
-                  padding: 0,
-                  outline: 0,
-                  background: "none",
-                  fontSize: "inherit",
-                  color: "inherit",
-                  border: 0,
-                  "::placeholder": {
-                    color: t.colors.inputPlaceholder,
-                  },
+                gap: "0.8rem",
+                ".submit-button": {
+                  height: "auto",
                 },
-                "&:has(:focus-visible)": {
-                  boxShadow: t.shadows.focus,
-                },
-                // Prevents iOS zooming in on input fields
-                "@supports (-webkit-touch-callout: none)": {
-                  fontSize: "1.6rem",
+                fontSize: t.text.sizes.base,
+                "@media (max-width: 600px)": {
+                  fontSize: t.text.sizes.large,
+                  ".submit-button": { fontSize: "inherit" },
                 },
               })
             }
           >
-            <input
-              ref={inputRef}
-              className="input"
-              value={pendingBid ?? ""}
-              onChange={(e) => {
-                setPendingBids({ [auction.nounId]: e.target.value.trim() });
+            <Input
+              className="input-container"
+              component="div"
+              size={isDesktopLayout ? "small" : "medium"}
+              onClick={() => {
+                inputRef.current.focus();
               }}
-              placeholder={
-                minBidValue == null
-                  ? "..."
-                  : `${formatEther(minBidValue)} or more`
-              }
-            />
-            <div
-              data-simulating={
-                createBidSimulationStatus === "pending" || undefined
-              }
               css={(t) =>
                 css({
-                  position: "relative",
-                  ".spinner-overlay": {
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: t.colors.borderLight,
-                    transition: "0.1s opacity ease-out",
-                    opacity: 0,
+                  flex: 1,
+                  minWidth: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.5em",
+                  ".input": {
+                    flex: 1,
+                    minWidth: 0,
+                    padding: 0,
+                    outline: 0,
+                    background: "none",
+                    fontSize: "inherit",
+                    color: "inherit",
+                    border: 0,
+                    "::placeholder": {
+                      color: t.colors.inputPlaceholder,
+                    },
                   },
-                  "&[data-simulating] .eth": { opacity: 0 },
-                  "&[data-simulating] .spinner-overlay": { opacity: 1 },
+                  "&:has(:focus-visible)": {
+                    boxShadow: t.shadows.focus,
+                  },
+                  // Prevents iOS zooming in on input fields
+                  "@supports (-webkit-touch-callout: none)": {
+                    fontSize: "1.6rem",
+                  },
                 })
               }
             >
-              <div className="eth">ETH</div>
-              <div className="spinner-overlay" aria-hidden="true">
-                <Spinner size="1.25rem" />
+              <input
+                ref={inputRef}
+                className="input"
+                value={pendingBid ?? ""}
+                onChange={(e) => {
+                  setShowBidSimulationErrors(false);
+                  setPendingBids({ [auction.nounId]: e.target.value.trim() });
+                }}
+                placeholder={
+                  minBidValue == null
+                    ? "..."
+                    : `${formatEther(minBidValue)} or more`
+                }
+              />
+              <div
+                data-simulating={
+                  createBidSimulationStatus === "pending" || undefined
+                }
+                css={(t) =>
+                  css({
+                    position: "relative",
+                    ".spinner-overlay": {
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: t.colors.borderLight,
+                      transition: "0.1s opacity ease-out",
+                      opacity: 0,
+                    },
+                    "&[data-simulating] .eth": { opacity: 0 },
+                    "&[data-simulating] .spinner-overlay": { opacity: 1 },
+                  })
+                }
+              >
+                <div className="eth">ETH</div>
+                <div className="spinner-overlay" aria-hidden="true">
+                  <Spinner size="1.3rem" />
+                </div>
               </div>
-            </div>
-          </Input>
-          <Button
-            className="submit-button"
-            size="default"
-            type="submit"
-            disabled={
-              !isBidValid ||
-              createBid == null ||
-              createBidCallStatus === "pending"
+            </Input>
+            <Button
+              className="submit-button"
+              size={buttonSize}
+              type="submit"
+              disabled={
+                !isBidValid ||
+                // createBid == null ||
+                createBidCallStatus === "pending"
+              }
+              isLoading={createBidCallStatus === "pending"}
+            >
+              Place bid
+            </Button>
+          </form>
+          <div
+            css={(t) =>
+              css({
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.small,
+              })
             }
-            isLoading={createBidCallStatus === "pending"}
           >
-            Place bid
-          </Button>
-        </form>
+            {minBidValue == null ? (
+              <>&nbsp;</>
+            ) : (
+              <>Bid needs to be Ξ{formatEther(minBidValue)} or more</>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
@@ -543,6 +598,15 @@ export const Auction = ({ children, ...props }) => {
                 color: t.colors.textNormal,
                 colorScheme: "light",
 
+                ".meta-container": {
+                  fontSize: t.text.sizes.base,
+                  ".error": {
+                    width: "30rem",
+                    maxWidth: "100%",
+                    textAlign: "right",
+                  },
+                },
+
                 ".hideable, .hover-hideable": {
                   transition: "0.2s opacity ease-out",
                 },
@@ -585,7 +649,7 @@ export const Auction = ({ children, ...props }) => {
                       gap: "0.8rem",
                     },
                     ".input-container": {
-                      maxWidth: "16rem",
+                      maxWidth: "20rem",
                       ".input": { textAlign: "right" },
                     },
                   },
@@ -625,13 +689,8 @@ export const Auction = ({ children, ...props }) => {
                 // boxShadow: t.shadows.elevationHigh,
                 padding: "1.6rem",
 
-                ".text": {
-                  color: t.colors.textDimmedAlpha,
-                  fontSize: t.text.sizes.small,
-                  em: {
-                    fontStyle: "normal",
-                    fontWeight: t.text.weights.emphasis,
-                  },
+                ".meta-container": {
+                  fontSize: t.text.sizes.button,
                 },
 
                 ".bidding-form": {
@@ -643,11 +702,66 @@ export const Auction = ({ children, ...props }) => {
                     flexDirection: "column",
                     gap: "0.4rem",
                   },
+                  ".input-container": { padding: "0.8rem 1.4rem" },
                 },
               })
             }
           >
             {biddingForm}
+
+            {showBids && (
+              <div
+                css={(t) =>
+                  css({
+                    padding: "1.6rem 0",
+                    h2: {
+                      fontSize: t.text.sizes.small,
+                      textTransform: "uppercase",
+                      fontWeight: t.text.weights.emphasis,
+                      color: t.colors.textDimmed,
+                      padding: "1.6rem 0",
+                    },
+                    '[role="list"]': {
+                      borderTop: "0.1rem solid",
+                      borderColor: t.colors.borderLight,
+                      '[role="listitem"]': {
+                        display: "flex",
+                        gap: "0.8rem",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        padding: "1.6rem 0",
+                        borderBottom: "0.1rem solid",
+                        borderColor: t.colors.borderLight,
+                        button: {
+                          // color: t.colors.textDimmed,
+                        },
+                        ".amount": {
+                          fontSize: t.text.sizes.small,
+                        },
+                      },
+                    },
+                  })
+                }
+              >
+                <h2>All bids</h2>
+                <div role="list">
+                  {arrayUtils
+                    .sortBy((b) => b.blockTimestamp, bids)
+                    .map((bid) => (
+                      <div role="listitem" key={bid.id}>
+                        <div>
+                          <AccountPreviewPopoverTrigger
+                            showAvatar
+                            accountAddress={bid.bidderId}
+                            style={{ fontWeight: "400" }}
+                          />
+                        </div>
+                        <div className="amount">Ξ{formatEther(bid.amount)}</div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            )}
           </div>
         </EmotionThemeProvider>
       )}

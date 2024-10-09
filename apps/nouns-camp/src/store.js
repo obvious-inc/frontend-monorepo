@@ -292,6 +292,12 @@ const createStore = ({ initialState, publicClient }) =>
               nounsById: arrayUtils.indexBy((n) => n.id, value),
             });
 
+          case "auction": {
+            return mergeIntoStore({
+              nounsById: { [value.id]: { auction: value } },
+            });
+          }
+
           case "auctions": {
             const auctionsByNounId = arrayUtils.indexBy((a) => a.id, value);
             return mergeIntoStore({

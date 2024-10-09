@@ -62,7 +62,7 @@ const AuctionScreen = () => {
             justifyContent: "flex-end",
           })}
         >
-          <Auction />
+          <Auction showBids />
         </div>
       </Layout>
     </EmotionThemeProvider>
