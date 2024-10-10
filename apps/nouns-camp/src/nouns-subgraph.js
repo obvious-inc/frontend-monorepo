@@ -424,6 +424,8 @@ const parseDelegationEvent = (e) => {
 const parseAuction = (a) => {
   const parsedData = { nounId: a.id, ...a };
 
+  if (a.bidder?.id != null) parsedData.bidderId = a.bidder.id;
+
   if (a.bids != null)
     parsedData.bids = a.bids.map((b) => ({
       id: b.id,

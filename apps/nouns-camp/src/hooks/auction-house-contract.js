@@ -69,10 +69,10 @@ const useWrite = ({ enabled = true, ...simulateOptions }) => {
   };
 };
 
-export const useAuction = ({ watch = false } = {}) => {
+export const useAuction = ({ watch = false, enabled = true } = {}) => {
   const latestBlockNumber = useBlockNumber({
     watch: true,
-    query: { enabled: watch },
+    query: { enabled: enabled && watch },
   });
 
   const { data, refetch } = useRead({
@@ -98,13 +98,14 @@ export const useAuction = ({ watch = false } = {}) => {
     functionName: "auction",
     query: {
       keepPreviousData: true,
+      enabled,
     },
   });
 
   React.useEffect(() => {
-    if (!watch) return;
+    if (!enabled || !watch) return;
     refetch();
-  }, [latestBlockNumber, refetch, watch]);
+  }, [latestBlockNumber, refetch, enabled, watch]);
 
   return data;
 };

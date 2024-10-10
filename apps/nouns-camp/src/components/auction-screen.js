@@ -1,7 +1,9 @@
 "use client";
 import { formatEther } from "viem";
+import React from "react";
 import { css, ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import NextLink from "next/link";
+import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import { getTheme } from "@/theme";
 import { useSearchParams } from "@/hooks/navigation.js";
 import useTreasuryData from "@/hooks/treasury-data";
@@ -9,15 +11,57 @@ import { useNounSeed } from "@/hooks/token-contract";
 import { useAuction } from "@/hooks/auction-house-contract";
 import Layout from "./layout.js";
 import { Auction } from "./auction-dialog.js";
+import NativeSelect from "./native-select.js";
 
 const AuctionScreen = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const treasuryData = useTreasuryData();
   const auction = useAuction({ watch: true });
-  const seed = useNounSeed(auction?.nounId);
+  const nounId = (() => {
+    const customNounId = searchParams.get("noun");
+    if (customNounId != null) return customNounId;
+    if (auction == null) return null;
+    return String(auction.nounId);
+  })();
+
+  const currentSeed = useNounSeed(nounId);
+  const lastSeedRef = React.useRef(currentSeed);
+  React.useEffect(() => {
+    if (currentSeed != null) lastSeedRef.current = currentSeed;
+  });
+  const seed = currentSeed ?? lastSeedRef.current;
+
+  const background = parseInt(seed?.background) === 0 ? "#d5d7e1" : "#e1d7d5";
+
   return (
     <EmotionThemeProvider theme={getTheme("light")}>
       <Layout
+        navigationStack={[
+          {
+            key: "noun",
+            component: NounsSelect,
+            props: {
+              selectedNounId: nounId,
+              auctionNounId: auction == null ? null : String(auction.nounId),
+              onChange: (e) => {
+                setSearchParams({ noun: e.target.value });
+              },
+              renderSelectedOption: () => (
+                <>
+                  Noun {nounId}
+                  <CaretDownIcon
+                    style={{
+                      display: "inline-flex",
+                      width: "0.9rem",
+                      height: "auto",
+                      marginLeft: "0.4rem",
+                    }}
+                  />
+                </>
+              ),
+            },
+          },
+        ]}
         actions={[
           {
             label: "Propose",
@@ -50,8 +94,8 @@ const AuctionScreen = () => {
         ].filter(Boolean)}
         style={{
           transition: "0.2s opacity ease-out",
-          opacity: seed == null ? 0 : 1,
-          background: parseInt(seed?.background) === 0 ? "#d5d7e1" : "#e1d7d5",
+          opacity: lastSeedRef.current == null ? 0 : 1,
+          background,
         }}
       >
         <div
@@ -62,10 +106,31 @@ const AuctionScreen = () => {
             justifyContent: "flex-end",
           })}
         >
-          <Auction showBids />
+          <Auction nounId={nounId} showBids transparent />
         </div>
       </Layout>
     </EmotionThemeProvider>
+  );
+};
+
+const NounsSelect = ({ selectedNounId, auctionNounId, ...props }) => {
+  const options =
+    auctionNounId == null
+      ? []
+      : Array.from({ length: parseInt(auctionNounId) })
+          .map((_, i) => ({
+            label: `Noun ${i + 1}`,
+            value: String(i + 1),
+          }))
+          .toReversed();
+
+  return (
+    <NativeSelect
+      value={selectedNounId}
+      options={options}
+      selectProps={{ css: css({ cursor: "pointer" }) }}
+      {...props}
+    />
   );
 };
 

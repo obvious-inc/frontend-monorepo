@@ -9,7 +9,7 @@ const Switch = ({ label, size, align, variant, ...props }) => (
     data-variant={variant}
     css={(t) =>
       css({
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
         gap: "0.8rem",
         fontSize: t.text.sizes.base,

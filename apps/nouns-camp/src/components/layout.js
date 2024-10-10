@@ -311,6 +311,29 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   label: <>{logo}</>,
                 };
 
+              if (pathname === "/")
+                return {
+                  to: "/",
+                  label: (
+                    <>
+                      {logo}
+                      {isTestnet && (
+                        <span
+                          css={css({
+                            display: "none",
+                            "@media(min-width: 600px)": {
+                              display: "inline",
+                              marginLeft: "0.6rem",
+                            },
+                          })}
+                        >
+                          {chain.name}
+                        </span>
+                      )}
+                    </>
+                  ),
+                };
+
               return {
                 to: "/",
                 label: (

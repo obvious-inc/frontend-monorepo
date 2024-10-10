@@ -115,11 +115,12 @@ const ModalDialog = React.forwardRef(
                 "@media (min-width: 600px)": {
                   padding: "0 1.6rem",
                   scrollSnapType: "none",
-                  display: "flex",
-                  flexDirection: "column",
+                  // display: "flex",
+                  // flexDirection: "column",
                   "[data-modal]": {
                     maxWidth: "var(--max-width)",
-                    margin: "0 auto",
+                    // margin: "0 auto",
+                    margin: "auto",
                   },
                   ".scroll-tray-only": { display: "none" },
                   "&[data-tray]": {
