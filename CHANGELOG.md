@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.32] - 2024-10-10
+
+### 🐛 Bug Fixes
+
+- *(camp)* Always allow custom abi input
+- *(camp)* Don’t complain about address length when that’s not the issue
+- *(camp)* Use same size as other inputs
+
+### ◀️ Revert
+
+- *(camp)* Fix like action not visible on signatures with comment
+
 ## [1.3.0-alpha.31] - 2024-10-07
 
 ### 🚀 Features
