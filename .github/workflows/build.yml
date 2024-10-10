@@ -47,7 +47,7 @@ jobs:
     steps:
       # The first step is to check out the repository code
       - name: Checking out repository code
-        uses: actions/checkout@v4.2.0 # Action for checking out a repo.
+        uses: actions/checkout@v4.2.1 # Action for checking out a repo.
         with:
           fetch-depth: 0 # Fetches all history for all branches and tags
 
@@ -81,7 +81,7 @@ jobs:
 
     steps: # The sequence of tasks that make up a job.
       - name: Checking out repository code
-        uses: actions/checkout@v4.2.0 # Action for checking out a repo.
+        uses: actions/checkout@v4.2.1 # Action for checking out a repo.
 
       - name: Setup Node.js ${{ matrix.node-version }} Environment
         uses: actions/setup-node@v4.0.4 # Action for setting up Node environment.
@@ -100,7 +100,7 @@ jobs:
           echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
 
       - name: Cache pnpm Store
-        uses: actions/cache@v4.1.0 # Action provides caching dependencies and build outputs to improve workflow execution time.
+        uses: actions/cache@v4.1.1 # Action provides caching dependencies and build outputs to improve workflow execution time.
         with:
           path: ${{ steps.pnpm-cache.outputs.pnpm_cache_dir }} # The path of the directory to cache.
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }} # An explicit key for restoring and saving the cache.
@@ -135,7 +135,7 @@ jobs:
     steps:
       # Checkout the repository code
       - name: Checkout code
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.1
         with:
           fetch-depth: 0 # Fetches all history for all branches and tags
 
