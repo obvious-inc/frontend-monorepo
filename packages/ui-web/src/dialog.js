@@ -1,6 +1,20 @@
 import React from "react";
-import { css } from "@emotion/react";
+import { css, keyframes } from "@emotion/react";
 import { Overlay, useDialog, useModalOverlay } from "react-aria";
+
+const trayEnterAnimation = keyframes({
+  "0%": { opacity: 0, transform: "translateY(min(100%, 50vh))" },
+  "100%": { opacity: 1, transform: "translateY(0)" },
+});
+const trayEnterAnimationDesktop = keyframes({
+  "0%": { opacity: 0, transform: "translateY(2vh)" },
+  "100%": { opacity: 1, transform: "translateY(0)" },
+});
+
+const centeredEnterAnimationDesktop = keyframes({
+  "0%": { opacity: 0, transform: "translateY(-1vh)" },
+  "100%": { opacity: 1, transform: "translateY(0)" },
+});
 
 const Dialog = React.forwardRef(({ children, ...props }, dialogRef) => {
   const internalRef = React.useRef();
@@ -42,6 +56,7 @@ const ModalDialog = React.forwardRef(
 
     const [visualViewportInset, setVisualViewportInset] = React.useState(null);
 
+    // Sync visual viewport inset
     React.useEffect(() => {
       if (!isOpen) return;
 
@@ -73,12 +88,24 @@ const ModalDialog = React.forwardRef(
       };
     }, [isOpen, tray]);
 
+    // TODO
+    // React.useEffect(() => {
+    //   if (!isOpen) return;
+
+    //   if (matchMedia("(max-width: 600px)").matches) {
+    //     modalRef.current.scrollIntoView({
+    //       behavior: "instant",
+    //       block: "start",
+    //     });
+    //   }
+    // }, [isOpen]);
+
     if (!isOpen) return null;
 
     return (
       <Overlay>
         <div
-          data-tray={tray || undefined}
+          data-variant={tray ? "tray" : undefined}
           {...underlayProps}
           {...customUnderlayProps}
           css={[
@@ -98,7 +125,7 @@ const ModalDialog = React.forwardRef(
                 background: "var(--background, hsl(0 0% 0% / 40%))",
                 scrollSnapType: "y mandatory",
                 ".edge-scroll-padding": { paddingTop: "100vh" },
-                "[data-modal]": {
+                ".modal": {
                   width: "100%",
                   color: t.colors.textNormal,
                   background: t.colors.dialogBackground,
@@ -106,41 +133,46 @@ const ModalDialog = React.forwardRef(
                   borderTopRightRadius: "0.6rem",
                   display: "flex",
                   flexDirection: "column",
-                  // boxShadow: t.shadows.elevationHigh,
                   outline: "none",
                   overflow: "hidden",
                   minHeight: "min-content",
                   scrollSnapAlign: "end",
+                  // Fade in from bottom
+                  animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
                 },
+                // "Desktop mode"
                 "@media (min-width: 600px)": {
                   padding: "0 1.6rem",
-                  scrollSnapType: "none",
-                  // display: "flex",
-                  // flexDirection: "column",
-                  "[data-modal]": {
+                  ".modal": {
                     maxWidth: "var(--max-width)",
-                    // margin: "0 auto",
-                    margin: "auto",
+                    margin: "auto", // center in all directions
                   },
+                  // No scroll snap behavior on desktop
+                  scrollSnapType: "none",
                   ".scroll-tray-only": { display: "none" },
-                  "&[data-tray]": {
-                    "[data-modal]": {
-                      minHeight: `var(--desktop-set-height, calc(100vh - ${t.navBarHeight}))`,
-                    },
-                  },
-                  // Default to centered dialogs on larger screens
-                  "&:not([data-tray])": {
+                  // Default to centered dialogs on desktop if not explicitly set to tray
+                  '&:not([data-variant="tray"])': {
                     padding: "2.8rem",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    "[data-modal]": {
+                    ".modal": {
                       borderRadius: "0.6rem",
                       height: "var(--desktop-set-height, auto)",
                       maxHeight:
                         "var(--desktop-set-height, min(calc(100% - 3rem), 82rem))",
+                      animation: `${centeredEnterAnimationDesktop} 0.2s ease-out backwards`,
                     },
                     ".tray-only": { display: "none" },
+                  },
+                  '&[data-variant="tray"]': {
+                    display: "flex",
+                    flexDirection: "column",
+                    ".modal": {
+                      // Desktop trays are always "fullscreen"
+                      minHeight: `var(--desktop-set-height, calc(100vh - ${t.navBarHeight}))`,
+                      animation: `${trayEnterAnimationDesktop} 0.2s ease-out backwards`,
+                    },
                   },
                 },
               }),
@@ -179,14 +211,11 @@ const ModalDialog = React.forwardRef(
           />
           <div
             ref={modalRef}
-            data-modal
+            className="modal"
             {...modalProps}
             {...customModalProps}
             css={[customModalProps?.css]}
-            style={{
-              "--desktop-set-height": height,
-              transition: "0.1s transform ease-out",
-            }}
+            style={{ "--desktop-set-height": height }}
           >
             <Dialog
               ref={dialogRef}

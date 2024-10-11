@@ -7,30 +7,32 @@ import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import { getTheme } from "@/theme";
 import { useSearchParams } from "@/hooks/navigation.js";
 import useTreasuryData from "@/hooks/treasury-data";
-import { useNounSeed } from "@/hooks/token-contract";
-import { useAuction } from "@/hooks/auction-house-contract";
+import usePreferredTheme from "@/hooks/preferred-theme";
 import Layout from "./layout.js";
-import { Auction } from "./auction-dialog.js";
+import { Auction, useAuctionData, useLazySeed } from "./auction-dialog.js";
 import NativeSelect from "./native-select.js";
 
 const AuctionScreen = () => {
+  const preferredTheme = usePreferredTheme();
+
   const [searchParams, setSearchParams] = useSearchParams();
+
   const treasuryData = useTreasuryData();
-  const auction = useAuction({ watch: true });
-  const nounId = (() => {
-    const customNounId = searchParams.get("noun");
-    if (customNounId != null) return customNounId;
-    if (auction == null) return null;
-    return String(auction.nounId);
-  })();
 
-  const currentSeed = useNounSeed(nounId);
-  const lastSeedRef = React.useRef(currentSeed);
-  React.useEffect(() => {
-    if (currentSeed != null) lastSeedRef.current = currentSeed;
+  const specifiedNounId = React.useDeferredValue(searchParams.get("noun"));
+
+  const { auction: customAuction } = useAuctionData({
+    nounId: specifiedNounId,
+    enabled: specifiedNounId != null,
   });
-  const seed = currentSeed ?? lastSeedRef.current;
+  const { auction: currentAuction } = useAuctionData();
+  const isCurrentAuction =
+    specifiedNounId == null || specifiedNounId === currentAuction?.nounId;
 
+  const auction = isCurrentAuction ? currentAuction : customAuction;
+  const nounId = specifiedNounId ?? auction?.nounId;
+
+  const seed = useLazySeed(nounId);
   const background = parseInt(seed?.background) === 0 ? "#d5d7e1" : "#e1d7d5";
 
   return (
@@ -83,25 +85,22 @@ const AuctionScreen = () => {
         ].filter(Boolean)}
         style={{
           transition: "0.2s opacity ease-out",
-          opacity: lastSeedRef.current == null ? 0 : 1,
+          opacity: seed == null ? 0 : 1,
           background,
         }}
       >
-        <div
-          css={(t) =>
-            css({
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              ".filler": {
-                flex: 1,
-                background: t.colors.backgroundPrimary,
-              },
-            })
-          }
-        >
-          <Auction nounId={nounId} showBids transparent />
-          <div className="filler" />
+        <div css={css({ flex: 1, display: "flex", flexDirection: "column" })}>
+          <Auction nounId={nounId} stickyNoun showBids transparent />
+          <EmotionThemeProvider theme={preferredTheme}>
+            <div
+              css={(t) =>
+                css({
+                  flex: 1,
+                  background: t.colors.dialogBackground,
+                })
+              }
+            />
+          </EmotionThemeProvider>
         </div>
       </Layout>
     </EmotionThemeProvider>

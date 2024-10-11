@@ -48,7 +48,7 @@ import { FormattedEthWithConditionalTooltip as FormattedEth } from "./transactio
 
 const chain = getSupportedChain(CHAIN_ID);
 
-const useAuctionData = ({
+export const useAuctionData = ({
   nounId: customNounId,
   watch = false,
   enabled = true,
@@ -142,7 +142,7 @@ const useAuctionData = ({
   }, [nounId, noun, contractAuction, isNounderReward]);
 };
 
-const useLazySeed = (nounId) => {
+export const useLazySeed = (nounId) => {
   const noun = useNoun(nounId);
   const currentContractSeed = useNounSeed(nounId, {
     enabled: noun?.seed == null,
@@ -192,10 +192,20 @@ const AuctionDialog = ({ isOpen }) => {
     });
   };
   return (
-    <Dialog isOpen={isOpen} onRequestClose={close} tray width="124.4rem">
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={close}
+      tray
+      width="124.4rem"
+      height="auto"
+    >
       {({ titleProps }) => (
-        <Auction trayDialog nounId={nounId} style={{ flex: 1, minHeight: 0 }}>
-          {({ auction, currentAuction }) => (
+        <Auction
+          trayDialog
+          nounId={nounId}
+          nounContainerStyle={{ flex: 1, minHeight: 0 }}
+        >
+          {({ nounId, auction, currentAuction }) => (
             <div
               className="hideable"
               css={css({
@@ -212,20 +222,42 @@ const AuctionDialog = ({ isOpen }) => {
                   css({
                     flex: 1,
                     minWidth: 0,
-                    h1: {
-                      fontSize: t.text.sizes.small,
-                      fontWeight: t.text.weights.normal,
-                      lineHeight: 1.2,
-                      color: t.colors.textMutedAlpha,
-                      fontStyle: "italic",
-                    },
+                    h1: { fontSize: t.text.sizes.base },
                   })
                 }
               >
-                {auction != null && (
+                <div style={{ display: "flex", gap: "1px" }}>
+                  <Button
+                    size="small"
+                    variant="transparent"
+                    css={css({ width: "2.8rem", padding: 0 })}
+                    disabled={(() => {
+                      const prevNounId = parseInt(nounId) - 1;
+                      return prevNounId < 1 && currentAuction == null;
+                    })()}
+                    onClick={() => {
+                      const prevNounId = parseInt(nounId) - 1;
+                      if (prevNounId >= 1) {
+                        setSearchParams((params) => {
+                          const nextParams = new URLSearchParams(params);
+                          nextParams.set("noun", prevNounId);
+                          return nextParams;
+                        });
+                        return;
+                      }
+                      if (currentAuction == null) return;
+                      setSearchParams((params) => {
+                        const nextParams = new URLSearchParams(params);
+                        nextParams.set("noun", parseInt(currentAuction.nounId));
+                        return nextParams;
+                      });
+                    }}
+                  >
+                    &larr;
+                  </Button>
                   <h1 {...titleProps}>
                     <NounsSelect
-                      selectedNounId={auction.nounId}
+                      selectedNounId={nounId}
                       auctionNounId={currentAuction?.nounId}
                       onChange={(e) => {
                         setSearchParams((params) => {
@@ -234,26 +266,74 @@ const AuctionDialog = ({ isOpen }) => {
                           return nextParams;
                         });
                       }}
+                      renderSelectedOption={(option) => (
+                        <Button
+                          size="small"
+                          variant="transparent"
+                          component="div"
+                          className="trigger"
+                          isLoading={nounId == null && option == null}
+                        >
+                          Noun {nounId ?? option?.value}
+                        </Button>
+                      )}
+                      css={(t) =>
+                        css({
+                          display: "block",
+                          "@media(hover: hover)": {
+                            ":hover .trigger": {
+                              background: t.colors.backgroundModifierNormal,
+                            },
+                          },
+                        })
+                      }
                     />
                   </h1>
-                )}
+                  <Button
+                    size="small"
+                    variant="transparent"
+                    css={css({ width: "2.8rem", padding: 0 })}
+                    disabled={currentAuction == null}
+                    onClick={() => {
+                      setSearchParams((params) => {
+                        const nextParams = new URLSearchParams(params);
+                        const nextNounId = parseInt(nounId) + 1;
+                        nextParams.set(
+                          "noun",
+                          nextNounId > parseInt(currentAuction.nounId)
+                            ? 1
+                            : nextNounId,
+                        );
+                        return nextParams;
+                      });
+                    }}
+                  >
+                    &rarr;
+                  </Button>
+                </div>
               </div>
               <div style={{ display: "flex", gap: "0.8rem" }}>
-                <Button
-                  component={NextLink}
-                  href="/auction"
-                  size="small"
-                  css={css({ width: "2.8rem", padding: 0 })}
-                >
-                  <FullscreenIcon
-                    style={{
-                      width: "1.2rem",
-                      height: "auto",
-                      margin: "auto",
-                      transform: "scaleX(-1)",
-                    }}
-                  />
-                </Button>
+                {auction != null && (
+                  <Button
+                    component={NextLink}
+                    href={
+                      auction.nounId === currentAuction?.nounId
+                        ? "/auction"
+                        : `/auction?noun=${nounId}`
+                    }
+                    size="small"
+                    css={css({ width: "2.8rem", padding: 0 })}
+                  >
+                    <FullscreenIcon
+                      style={{
+                        width: "1.2rem",
+                        height: "auto",
+                        margin: "auto",
+                        transform: "scaleX(-1)",
+                      }}
+                    />
+                  </Button>
+                )}
                 <Button
                   size="small"
                   onClick={close}
@@ -277,8 +357,8 @@ export const Auction = ({
   trayDialog = false,
   showBids = false,
   transparent = false,
+  nounContainerStyle,
   children,
-  ...props
 }) => {
   const inputRef = React.useRef();
 
@@ -468,7 +548,6 @@ export const Auction = ({
         className="meta-container"
         css={(t) =>
           css({
-            color: t.colors.textDimmedAlpha,
             em: {
               fontStyle: "normal",
               fontWeight: t.text.weights.emphasis,
@@ -610,7 +689,7 @@ export const Auction = ({
                     accountAddress={auction.bidderId}
                   />{" "}
                   (Ξ
-                  <FormattedEth value={auction.amount} />) on{" "}
+                  <FormattedEth value={auction.amount} tokenSymbol={null} />) on{" "}
                   <FormattedDateWithTooltip
                     disableRelative
                     disableTooltip
@@ -628,7 +707,7 @@ export const Auction = ({
             <div>
               Current bid:{" "}
               <em>
-                Ξ<FormattedEth value={auction.amount} />
+                Ξ<FormattedEth value={auction.amount} tokenSymbol={null} />
               </em>{" "}
               (by{" "}
               <AccountPreviewPopoverTrigger
@@ -869,18 +948,34 @@ export const Auction = ({
   return (
     <>
       <EmotionThemeProvider theme={getTheme("light")}>
-        <div css={css({ position: "relative" })} {...props}>
+        <div
+          data-tray-dialog={trayDialog || undefined}
+          css={(t) =>
+            css({
+              transition: "0.2s background ease-out",
+              background: t.colors.backgroundSecondary,
+              "&[data-tray-dialog]": {
+                "@media(max-width: 600px)": {
+                  paddingTop: "6rem",
+                },
+              },
+            })
+          }
+          style={{
+            position: "relative",
+            background: transparent
+              ? "none"
+              : seed == null
+                ? undefined
+                : parseInt(seed.background) === 0
+                  ? "#d5d7e1"
+                  : "#e1d7d5",
+            ...nounContainerStyle,
+          }}
+        >
           <div
-            data-tray-dialog={trayDialog || undefined}
             css={(t) =>
               css({
-                transition: "0.2s background ease-out",
-                background: t.colors.backgroundSecondary,
-                "&[data-tray-dialog]": {
-                  "@media(max-width: 600px)": {
-                    paddingTop: "6rem",
-                  },
-                },
                 ".image-container": {
                   width: `calc(100vh - ${t.navBarHeight})`, // Needs to mirror tray dialog height
                   maxWidth: "100%",
@@ -897,15 +992,6 @@ export const Auction = ({
                 },
               })
             }
-            style={{
-              background: transparent
-                ? "none"
-                : seed == null
-                  ? undefined
-                  : parseInt(seed.background) === 0
-                    ? "#d5d7e1"
-                    : "#e1d7d5",
-            }}
           >
             <div
               className="image-container"
@@ -926,6 +1012,7 @@ export const Auction = ({
 
                 ".meta-container": {
                   fontSize: t.text.sizes.base,
+                  color: t.colors.textNormal,
                   ".error": {
                     width: "30rem",
                     maxWidth: "100%",
@@ -951,35 +1038,38 @@ export const Auction = ({
           >
             {isDesktopLayout && (
               <div
-                css={css({
-                  position: "absolute",
-                  left: 0,
-                  bottom: 0,
-                  right: 0,
-                  display: "flex",
-                  alignItems: "flex-end",
-                  padding: "1.6rem",
-                  "@media (min-width: 996px)": {
-                    padding: "3.2rem",
-                  },
-
-                  ".bidding-form": {
+                css={(t) =>
+                  css({
+                    position: "absolute",
+                    left: 0,
+                    bottom: 0,
+                    right: 0,
                     display: "flex",
-                    flexDirection: "column",
                     alignItems: "flex-end",
-                    gap: "1.6rem",
-                    ".meta-container": {
+                    padding: "1.6rem",
+                    "@media (min-width: 996px)": {
+                      padding: "3.2rem",
+                    },
+
+                    ".bidding-form": {
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "flex-end",
-                      gap: "0.8rem",
+                      gap: "1.6rem",
+                      ".meta-container": {
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        gap: "0.8rem",
+                        color: t.colors.textDimmedAlpha,
+                      },
+                      ".input-container": {
+                        maxWidth: "20rem",
+                        ".input": { textAlign: "right" },
+                      },
                     },
-                    ".input-container": {
-                      maxWidth: "20rem",
-                      ".input": { textAlign: "right" },
-                    },
-                  },
-                })}
+                  })
+                }
               >
                 <div
                   style={{
@@ -1013,30 +1103,26 @@ export const Auction = ({
                       {"\u2197"}
                     </button>
                   )}
-                  {auction?.settled != null &&
-                    !auction.settled &&
-                    !isNounderReward && (
-                      <Switch
-                        label="Hide UI"
-                        align="right"
-                        value={hideUI}
-                        onChange={setHideUI}
-                        className="hover-hideable"
-                        css={(t) =>
-                          css({
-                            ":not([data-selected])": {
-                              color: t.colors.textDimmed,
-                            },
-                          })
-                        }
-                      />
-                    )}
+                  <Switch
+                    label="Hide UI"
+                    align="right"
+                    value={hideUI}
+                    onChange={setHideUI}
+                    className="hover-hideable"
+                    css={(t) =>
+                      css({
+                        ":not([data-selected])": {
+                          color: t.colors.textDimmed,
+                        },
+                      })
+                    }
+                  />
                 </div>
                 <div className="hideable">{biddingForm}</div>
               </div>
             )}
 
-            {children?.({ auction, currentAuction })}
+            {children?.({ nounId, auction, currentAuction })}
 
             {(isDesktopLayout || !showBids) && (
               <Dialog
@@ -1080,10 +1166,6 @@ export const Auction = ({
                 // boxShadow: t.shadows.elevationHigh,
                 padding: "1.6rem",
 
-                ".meta-container": {
-                  fontSize: t.text.sizes.button,
-                },
-
                 ".bidding-form": {
                   display: "flex",
                   flexDirection: "column",
@@ -1092,6 +1174,11 @@ export const Auction = ({
                     display: "flex",
                     flexDirection: "column",
                     gap: "0.8rem",
+                    fontSize: t.text.sizes.button,
+                    "em, button": {
+                      color: t.colors.textDimmed,
+                      fontWeight: t.text.weights.emphasis,
+                    },
                   },
                   ".input-container": { padding: "0.8rem 1.4rem" },
                 },
@@ -1207,7 +1294,7 @@ const BidListing = ({ bids }) => (
                 transactionHash={bid.transactionHash}
                 className="amount"
               >
-                Ξ<FormattedEth value={bid.amount} />
+                Ξ<FormattedEth value={bid.amount} tokenSymbol={null} />
               </ChainExporerTransactionLink>
             </div>
             <ChainExporerTransactionLink
