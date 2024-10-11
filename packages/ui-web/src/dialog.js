@@ -89,16 +89,16 @@ const ModalDialog = React.forwardRef(
     }, [isOpen, tray]);
 
     // TODO
-    // React.useEffect(() => {
-    //   if (!isOpen) return;
+    React.useEffect(() => {
+      if (!isOpen) return;
 
-    //   if (matchMedia("(max-width: 600px)").matches) {
-    //     modalRef.current.scrollIntoView({
-    //       behavior: "instant",
-    //       block: "start",
-    //     });
-    //   }
-    // }, [isOpen]);
+      if (matchMedia("(max-width: 600px)").matches) {
+        modalRef.current.scrollIntoView({
+          behavior: "instant",
+          block: "start",
+        });
+      }
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
