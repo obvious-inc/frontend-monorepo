@@ -47,6 +47,7 @@ const ModalDialog = React.forwardRef(
     dialogRef,
   ) => {
     const modalRef = React.useRef(null);
+    const topFillerRef = React.useRef(null);
 
     const { modalProps, underlayProps } = useModalOverlay(
       { isDismissable: true },
@@ -93,7 +94,7 @@ const ModalDialog = React.forwardRef(
       if (!isOpen) return;
 
       if (matchMedia("(max-width: 600px)").matches) {
-        modalRef.current.scrollIntoView({
+        topFillerRef.current.scrollIntoView({
           behavior: "instant",
           block: "start",
         });
@@ -194,6 +195,7 @@ const ModalDialog = React.forwardRef(
             style={{ paddingTop: "100vh" }}
           />
           <div
+            ref={topFillerRef}
             className="tray-only"
             css={(t) =>
               css({
