@@ -1175,7 +1175,7 @@ export const Auction = ({
                     flexDirection: "column",
                     gap: "0.8rem",
                     fontSize: t.text.sizes.button,
-                    "em, button": {
+                    "em, .account-preview-trigger": {
                       color: t.colors.textDimmed,
                       fontWeight: t.text.weights.emphasis,
                     },

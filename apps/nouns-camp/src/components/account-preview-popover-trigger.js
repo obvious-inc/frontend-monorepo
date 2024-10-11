@@ -86,6 +86,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       return (
         <button
           ref={triggerRef}
+          className="account-preview-trigger"
           css={css({
             outline: "none",
             "@media(hover: hover)": {
