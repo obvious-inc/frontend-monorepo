@@ -962,7 +962,9 @@ export const Auction = ({
             })
           }
           style={{
-            position: "relative",
+            // position: "relative",
+            position: "sticky",
+            top: 0,
             background: transparent
               ? "none"
               : seed == null
@@ -976,13 +978,11 @@ export const Auction = ({
           <div
             css={(t) =>
               css({
-                ".image-container": {
-                  width: `calc(100vh - ${t.navBarHeight})`, // Needs to mirror tray dialog height
-                  maxWidth: "100%",
-                  margin: "0 auto",
-                  aspectRatio: "1/1",
-                  transition: "0.2s opacity ease-out",
-                },
+                width: `calc(100vh - ${t.navBarHeight})`, // Needs to mirror tray dialog height
+                maxWidth: "100%",
+                margin: "0 auto",
+                aspectRatio: "1/1",
+                transition: "0.2s opacity ease-out",
                 img: {
                   display: "block",
                   width: "100%",
@@ -992,13 +992,9 @@ export const Auction = ({
                 },
               })
             }
+            style={{ opacity: nounImageDataUri == null ? 0 : 1 }}
           >
-            <div
-              className="image-container"
-              style={{ opacity: nounImageDataUri == null ? 0 : 1 }}
-            >
-              {nounImageDataUri != null && <img src={nounImageDataUri} />}
-            </div>
+            {nounImageDataUri != null && <img src={nounImageDataUri} />}
           </div>
           <div
             data-hide-ui={hideUI || undefined}
