@@ -4,6 +4,7 @@ const NativeSelect = ({
   groupedOptions,
   renderSelectedOption,
   onChange,
+  disabled = false,
   style,
   selectProps,
   ...props
@@ -27,7 +28,13 @@ const NativeSelect = ({
       <select
         value={value}
         onChange={onChange}
-        style={{ position: "absolute", inset: 0, opacity: 0 }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: 0,
+          cursor: disabled ? undefined : "pointer",
+        }}
+        disabled={disabled}
         {...selectProps}
       >
         {groupedOptions

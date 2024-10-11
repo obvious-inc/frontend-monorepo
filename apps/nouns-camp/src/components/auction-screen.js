@@ -42,23 +42,11 @@ const AuctionScreen = () => {
             component: NounsSelect,
             props: {
               selectedNounId: nounId,
-              auctionNounId: auction == null ? null : String(auction.nounId),
+              currentAuctionNounId:
+                auction == null ? null : String(auction.nounId),
               onChange: (e) => {
                 setSearchParams({ noun: e.target.value });
               },
-              renderSelectedOption: () => (
-                <>
-                  Noun {nounId}
-                  <CaretDownIcon
-                    style={{
-                      display: "inline-flex",
-                      width: "0.9rem",
-                      height: "auto",
-                      marginLeft: "0.4rem",
-                    }}
-                  />
-                </>
-              ),
             },
           },
         ]}
@@ -70,6 +58,7 @@ const AuctionScreen = () => {
               href: "/new",
               prefetch: true,
             },
+            desktopOnly: true,
           },
           treasuryData != null && {
             label: (
@@ -99,25 +88,31 @@ const AuctionScreen = () => {
         }}
       >
         <div
-          css={css({
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "flex-end",
-          })}
+          css={(t) =>
+            css({
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              ".filler": {
+                flex: 1,
+                background: t.colors.backgroundPrimary,
+              },
+            })
+          }
         >
           <Auction nounId={nounId} showBids transparent />
+          <div className="filler" />
         </div>
       </Layout>
     </EmotionThemeProvider>
   );
 };
 
-const NounsSelect = ({ selectedNounId, auctionNounId, ...props }) => {
+const NounsSelect = ({ selectedNounId, currentAuctionNounId, ...props }) => {
   const options =
-    auctionNounId == null
+    currentAuctionNounId == null
       ? []
-      : Array.from({ length: parseInt(auctionNounId) })
+      : Array.from({ length: parseInt(currentAuctionNounId) })
           .map((_, i) => ({
             label: `Noun ${i + 1}`,
             value: String(i + 1),
@@ -128,7 +123,19 @@ const NounsSelect = ({ selectedNounId, auctionNounId, ...props }) => {
     <NativeSelect
       value={selectedNounId}
       options={options}
-      selectProps={{ css: css({ cursor: "pointer" }) }}
+      renderSelectedOption={() => (
+        <>
+          Noun {selectedNounId}
+          <CaretDownIcon
+            style={{
+              display: "inline-block",
+              width: "0.9rem",
+              height: "auto",
+              marginLeft: "0.35em",
+            }}
+          />
+        </>
+      )}
       {...props}
     />
   );

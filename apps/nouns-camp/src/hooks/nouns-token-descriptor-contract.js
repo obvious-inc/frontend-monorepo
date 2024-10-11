@@ -4,7 +4,7 @@ import { resolveIdentifier } from "../contracts.js";
 
 const { address: contractAddress } = resolveIdentifier("descriptor");
 
-export const useGenerateSVGImage = (seed) => {
+export const useGenerateSVGImage = (seed, { enabled = true } = {}) => {
   const { data } = useReadContract({
     address: contractAddress,
     chainId: CHAIN_ID,
@@ -31,7 +31,7 @@ export const useGenerateSVGImage = (seed) => {
     functionName: "generateSVGImage",
     args: [seed],
     query: {
-      enabled: seed != null,
+      enabled: enabled && seed != null,
     },
   });
 

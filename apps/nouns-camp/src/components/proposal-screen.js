@@ -1674,17 +1674,16 @@ const ProposalScreen = ({ proposalId }) => {
                       size="small"
                       proposalId={proposalId}
                       style={{
-                        marginLeft: "0.6rem",
+                        margin: "0 0.5em",
                         transform: "translateY(-1.5px)",
                       }}
                     />
                   )}
                   <CaretDownIcon
                     style={{
-                      display: "inline-flex",
+                      display: "inline-block",
                       width: "0.9rem",
                       height: "auto",
-                      marginLeft: "0.4rem",
                     }}
                   />
                 </>
@@ -2210,7 +2209,6 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
     <NativeSelect
       value={selectedProposalId}
       groupedOptions={groupedOptions}
-      selectProps={{ css: css({ cursor: "pointer" }) }}
       {...props}
     />
   );

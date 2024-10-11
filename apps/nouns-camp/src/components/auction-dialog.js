@@ -7,6 +7,7 @@ import { css, ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import NextLink from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { array as arrayUtils } from "@shades/common/utils";
+import { buildDataUriFromSeed as buildNounDataUriFromSeed } from "@shades/common/nouns";
 import { useInterval, useMatchMedia } from "@shades/common/react";
 import {
   Cross as CrossIcon,
@@ -21,7 +22,7 @@ import Input from "@shades/ui-web/input";
 import { CHAIN_ID } from "@/constants/env";
 import { getTheme } from "@/theme";
 import { getChain as getSupportedChain } from "@/utils/chains";
-import { useActions } from "@/store";
+import { useActions, useNoun } from "@/store";
 import usePublicClient from "@/hooks/public-client";
 import {
   useAuction as useContractAuction,
@@ -42,25 +43,47 @@ import FormattedDateWithTooltip from "@/components/formatted-date-with-tooltip";
 import ChainExporerTransactionLink from "@/components/chain-explorer-transaction-link";
 import { useSearchParams } from "@/hooks/navigation";
 import NativeSelect from "@/components/native-select";
+import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger";
+import { FormattedEthWithConditionalTooltip as FormattedEth } from "./transaction-list";
 
 const chain = getSupportedChain(CHAIN_ID);
 
-const useAuction = ({ nounId, watch = false, enabled = true } = {}) => {
+const useAuctionData = ({
+  nounId: customNounId,
+  watch = false,
+  enabled = true,
+} = {}) => {
   const contractAuction = useContractAuction({
     watch,
-    enabled: enabled && nounId == null,
+    enabled: enabled && customNounId == null,
   });
 
   const { subgraphFetch } = useActions();
 
-  const { data: subgraphAuction } = useQuery({
-    queryKey: ["auction", String(nounId)],
-    onError: console.log,
+  const nounId = (() => {
+    if (customNounId != null) return customNounId;
+    if (contractAuction == null) return null;
+    return String(contractAuction.nounId);
+  })();
+
+  const { data: isNounderReward } = useQuery({
+    queryKey: ["auction", nounId],
     queryFn: async () => {
       const { noun, auction } = await subgraphFetch({
         query: `{
           noun(id: ${nounId}) {
             id
+            seed {
+              head
+              glasses
+              body
+              background
+              accessory
+            }
+            owner {
+              id
+              delegate { id }
+            }
           }
           auction(id: ${nounId}) {
             id
@@ -81,38 +104,79 @@ const useAuction = ({ nounId, watch = false, enabled = true } = {}) => {
         }`,
       });
 
-      if (noun == null) throw new Error("not-found");
+      const isNounderReward = noun != null && auction == null;
 
-      if (auction == null)
-        return {
-          nounId,
-          nounderReward: true,
-        };
-
-      return auction;
+      return isNounderReward;
     },
     enabled: enabled && nounId != null,
   });
 
+  const noun = useNoun(nounId);
+
   return React.useMemo(() => {
-    if (nounId != null) return subgraphAuction;
-    if (contractAuction == null) return null;
+    if (nounId != null)
+      return {
+        noun,
+        auction: noun?.auction,
+        isNounderReward,
+      };
+
+    if (contractAuction == null) return {};
+
     const parseTimestamp = (unixSeconds) =>
       new Date(parseInt(unixSeconds) * 1000);
+
     return {
-      ...contractAuction,
-      nounId: String(contractAuction.nounId),
-      bidderId: contractAuction.bidder.toLowerCase(),
-      amount: String(contractAuction.amount),
-      startTimestamp: parseTimestamp(contractAuction.startTime),
-      endTimestamp: parseTimestamp(contractAuction.endTime),
+      noun,
+      auction: {
+        ...noun?.auction,
+        ...contractAuction,
+        nounId: String(contractAuction.nounId),
+        bidderId: contractAuction.bidder.toLowerCase(),
+        amount: String(contractAuction.amount),
+        startTimestamp: parseTimestamp(contractAuction.startTime),
+        endTimestamp: parseTimestamp(contractAuction.endTime),
+      },
+      isNounderReward,
     };
-  }, [nounId, contractAuction, subgraphAuction]);
+  }, [nounId, noun, contractAuction, isNounderReward]);
 };
 
-const useBids = (nounId) => {
-  const auction = useAuction({ nounId });
-  return auction?.bids ?? [];
+const useLazySeed = (nounId) => {
+  const noun = useNoun(nounId);
+  const currentContractSeed = useNounSeed(nounId, {
+    enabled: noun?.seed == null,
+  });
+  const currentSeed = noun?.seed ?? currentContractSeed;
+  const lastSeedRef = React.useRef(currentSeed);
+  React.useEffect(() => {
+    if (currentSeed != null) lastSeedRef.current = currentSeed;
+  });
+  return currentSeed ?? lastSeedRef.current;
+};
+
+const buildDataUriWithNounsSDK = (seed) => {
+  if (seed == null) return null;
+
+  try {
+    return buildNounDataUriFromSeed(seed, { transparent: true });
+  } catch (e) {
+    // This will throw if the nouns sdk package isn’t up-to-date with the
+    // specified seed
+    return null;
+  }
+};
+
+const useNounImageDataUri = (seed) => {
+  const nounsSDKDataUri = buildDataUriWithNounsSDK(seed);
+
+  const base64Svg = useGenerateSVGImage(seed, {
+    // Fall back to onchain generation if local fails
+    enabled: nounsSDKDataUri == null,
+  });
+
+  if (nounsSDKDataUri != null) return nounsSDKDataUri;
+  return base64Svg == null ? null : `data:image/svg+xml;base64,${base64Svg}`;
 };
 
 const AuctionDialog = ({ isOpen }) => {
@@ -163,6 +227,13 @@ const AuctionDialog = ({ isOpen }) => {
                     <NounsSelect
                       selectedNounId={auction.nounId}
                       auctionNounId={currentAuction?.nounId}
+                      onChange={(e) => {
+                        setSearchParams((params) => {
+                          const nextParams = new URLSearchParams(params);
+                          nextParams.set("noun", e.target.value);
+                          return nextParams;
+                        });
+                      }}
                     />
                   </h1>
                 )}
@@ -228,27 +299,36 @@ export const Auction = ({
 
   const customNounId = React.useDeferredValue(eagerCustomNounId);
 
-  const currentAuction = useAuction({ watch: customNounId == null });
-  const customAuction = useAuction({
+  const {
+    auction: customAuction,
+    noun: customNoun,
+    isNounderReward,
+  } = useAuctionData({
     nounId: customNounId,
     enabled: customNounId != null,
   });
-  const auction = customNounId == null ? currentAuction : customAuction;
+  const { auction: currentAuction, noun: currentNoun } = useAuctionData({
+    watch: customAuction == null || !customAuction.settled,
+  });
+  const isCurrentAuction =
+    customNounId == null || customNounId === currentAuction?.nounId;
 
-  const auctionNounId = React.useDeferredValue(auction?.nounId);
-  const nounId = customNounId ?? auctionNounId;
+  const auction = isCurrentAuction ? currentAuction : customAuction;
+  const noun = isCurrentAuction ? currentNoun : customNoun;
+
+  const bids = auction?.bids ?? [];
+
+  const deferredAuctionNounId = React.useDeferredValue(auction?.nounId);
+
+  // Defer noun id to prevent downstream performance issues
+  const nounId = customNounId ?? deferredAuctionNounId;
 
   const reservePrice = useReservePrice();
   const minBidIncrementPercentage = useMinBidIncrementPercentage();
 
-  const currentSeed = useNounSeed(nounId);
-  const lastSeedRef = React.useRef(currentSeed);
-  React.useEffect(() => {
-    if (currentSeed != null) lastSeedRef.current = currentSeed;
-  });
-  const seed = currentSeed ?? lastSeedRef.current;
+  const seed = useLazySeed(nounId);
 
-  const base64Svg = useGenerateSVGImage(seed);
+  const nounImageDataUri = useNounImageDataUri(seed);
 
   const minBidValue = (() => {
     if (auction == null) return null;
@@ -259,16 +339,20 @@ export const Auction = ({
     return amount + (amount / 100n) * BigInt(minBidIncrementPercentage);
   })();
 
+  // Refence by noun id to prevent issues when switching between nouns
+  // (speficifically when starting a new auction)
   const [pendingBidByNounId, setPendingBids] = React.useState(() => {
     if (minBidValue == null) return {};
     return { [nounId]: formatEther(minBidValue) };
   });
+  const pendingBid = pendingBidByNounId[nounId];
 
   const [hideUI, setHideUI] = React.useState(false);
+
+  // We hide simulation errors before the user first press submit to prevent
+  // users not interested in bidding getting "insufficient funds" errors
   const [showBidSimulationErrors, setShowBidSimulationErrors] =
     React.useState(false);
-
-  const pendingBid = pendingBidByNounId[nounId];
 
   const isBidValid = (() => {
     if (minBidValue == null || pendingBid == null || pendingBid.trim() === "")
@@ -319,7 +403,10 @@ export const Auction = ({
     receiptError: settleReceiptError,
   } = useSettleCurrentAndCreateNewAuction({
     enabled:
-      connectedWalletAccountAddress != null && hasEnded && !auction?.settled,
+      isCurrentAuction &&
+      connectedWalletAccountAddress != null &&
+      hasEnded &&
+      !auction?.settled,
   });
 
   const hasPendingSettleReceipt =
@@ -334,9 +421,8 @@ export const Auction = ({
       setPendingBids({ [nounId]: formatEther(minBidValue) });
   }, [nounId, pendingBid, minBidValue]);
 
-  const bids = useBids(nounId);
-
   const [showBidsDialog, setShowBidsDialog] = React.useState(false);
+  const [showCountdown, setShowCountdown] = React.useState(true);
 
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
 
@@ -397,71 +483,162 @@ export const Auction = ({
           })
         }
       >
-        {auction != null && !auction.nounderReward && !hasEnded && (
-          <div>
-            Auction ends in{" "}
-            <em>
-              <Now>
-                {(nowMillis) => {
-                  // TODO: auction end behavior
-                  const secondsLeft = Math.max(
-                    0,
-                    Math.ceil(
-                      (auction.endTimestamp.getTime() - nowMillis) / 1000,
-                    ),
-                  );
+        {auction != null && !hasEnded && (
+          <button
+            onClick={() => {
+              setShowCountdown((s) => !s);
+            }}
+            style={{ display: "block" }}
+          >
+            {showCountdown ? (
+              <>
+                Auction ends in{" "}
+                <em>
+                  <Now>
+                    {(nowMillis) => {
+                      // TODO: auction end behavior
+                      const secondsLeft = Math.max(
+                        0,
+                        Math.ceil(
+                          (auction.endTimestamp.getTime() - nowMillis) / 1000,
+                        ),
+                      );
 
-                  const hours = Math.floor(secondsLeft / 60 / 60);
-                  const minutes = Math.floor(secondsLeft / 60) - hours * 60;
-                  const seconds = secondsLeft - hours * 60 * 60 - minutes * 60;
+                      const hours = Math.floor(secondsLeft / 60 / 60);
+                      const minutes = Math.floor(secondsLeft / 60) - hours * 60;
+                      const seconds =
+                        secondsLeft - hours * 60 * 60 - minutes * 60;
 
-                  return (
-                    <>
-                      {hours}h {minutes}m{" "}
-                      <span style={{ fontVariantNumeric: "tabular-nums" }}>
-                        {String(seconds).padStart(2, "0")}
-                      </span>
-                      s
-                    </>
-                  );
-                }}
-              </Now>
-            </em>
-          </div>
+                      return (
+                        <>
+                          {hours}h {minutes}m{" "}
+                          <span style={{ fontVariantNumeric: "tabular-nums" }}>
+                            {String(seconds).padStart(2, "0")}
+                          </span>
+                          s
+                        </>
+                      );
+                    }}
+                  </Now>
+                </em>
+              </>
+            ) : (
+              <>
+                Auction ends on{" "}
+                <em>
+                  <FormattedDateWithTooltip
+                    disableRelative
+                    month="short"
+                    day="numeric"
+                    hour="numeric"
+                    minute="numeric"
+                    second="numeric"
+                    value={auction.endTimestamp}
+                  />
+                </em>
+              </>
+            )}
+          </button>
         )}
-        <div>
-          {(() => {
-            if (auction == null) return <>&nbsp;</>;
+        {(() => {
+          const renderNounRepresentation = () => {
+            const { delegateId, ownerId } = noun;
+            const isDelegating =
+              delegateId != null && ownerId != null && ownerId !== delegateId;
+            return (
+              <div>
+                {isDelegating ? (
+                  <>
+                    Represented by{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={delegateId}
+                    />
+                    , delegated from{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={ownerId}
+                    />
+                  </>
+                ) : (
+                  <>
+                    Represented and owned by{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={ownerId}
+                    />
+                  </>
+                )}
+              </div>
+            );
+          };
 
-            if (auction.nounderReward) return "Nounder reward";
+          if (isNounderReward) {
+            return (
+              <>
+                <div>
+                  <NounPreviewPopoverTrigger nounId={nounId} /> rewarded to
+                  Nounders
+                </div>
+                {renderNounRepresentation()}
+              </>
+            );
+          }
 
-            if (auction.amount == 0)
-              return hasEnded ? "Auction ended without bids" : "No bids yet";
+          if (auction == null) return <div>&nbsp;</div>;
 
-            if (hasEnded)
-              return (
-                <>
-                  Auction won by{" "}
+          if (auction.amount == 0)
+            return (
+              <div>
+                {hasEnded ? "Auction ended without bids" : "No bids yet"}
+              </div>
+            );
+
+          if (hasEnded)
+            return (
+              <>
+                <div>
+                  Auction{" "}
+                  {!isDesktopLayout && (
+                    <>
+                      for <NounPreviewPopoverTrigger nounId={nounId} />{" "}
+                    </>
+                  )}
+                  won by{" "}
                   <AccountPreviewPopoverTrigger
                     showAvatar
                     accountAddress={auction.bidderId}
                   />{" "}
-                  (Ξ{formatEther(auction.amount)})
-                </>
-              );
-
-            return (
-              <>
-                Current bid: <em>Ξ{formatEther(auction.amount)}</em> (by{" "}
-                <AccountPreviewPopoverTrigger
-                  accountAddress={auction.bidderId}
-                  style={{ fontWeight: "400" }}
-                />
-                )
+                  (Ξ
+                  <FormattedEth value={auction.amount} />) on{" "}
+                  <FormattedDateWithTooltip
+                    disableRelative
+                    disableTooltip
+                    month="short"
+                    day="numeric"
+                    year="numeric"
+                    value={auction.endTimestamp}
+                  />
+                </div>
+                {renderNounRepresentation()}
               </>
             );
-          })()}
-        </div>
+
+          return (
+            <div>
+              Current bid:{" "}
+              <em>
+                Ξ<FormattedEth value={auction.amount} />
+              </em>{" "}
+              (by{" "}
+              <AccountPreviewPopoverTrigger
+                accountAddress={auction.bidderId}
+                style={{ fontWeight: "400" }}
+              />
+              )
+            </div>
+          );
+        })()}
 
         {hasEnded ? (
           <>
@@ -497,7 +674,7 @@ export const Auction = ({
       </div>
 
       {(() => {
-        if (auction == null || auction.settled || auction.nounderReward)
+        if (auction?.settled == null || auction.settled || isNounderReward)
           return null;
 
         if (connectedWalletAccountAddress == null)
@@ -732,11 +909,9 @@ export const Auction = ({
           >
             <div
               className="image-container"
-              style={{ opacity: base64Svg == null ? 0 : 1 }}
+              style={{ opacity: nounImageDataUri == null ? 0 : 1 }}
             >
-              {base64Svg != null && (
-                <img src={`data:image/svg+xml;base64,${base64Svg}`} />
-              )}
+              {nounImageDataUri != null && <img src={nounImageDataUri} />}
             </div>
           </div>
           <div
@@ -816,7 +991,7 @@ export const Auction = ({
                     gap: "0.8rem",
                   }}
                 >
-                  {isDesktopLayout && bids.length > 1 && (
+                  {isDesktopLayout && bids.length > 0 && (
                     <button
                       className="hideable"
                       css={(t) =>
@@ -838,11 +1013,10 @@ export const Auction = ({
                       {"\u2197"}
                     </button>
                   )}
-                  {auction != null &&
+                  {auction?.settled != null &&
                     !auction.settled &&
-                    !auction.nounderReward && (
+                    !isNounderReward && (
                       <Switch
-                        // size="small"
                         label="Hide UI"
                         align="right"
                         value={hideUI}
@@ -882,96 +1056,11 @@ export const Auction = ({
                         setShowBidsDialog(false);
                       }}
                     />
-                    <div
-                      css={(t) =>
-                        css({
-                          '[role="list"]': {
-                            // borderTop: "0.1rem solid",
-                            // borderColor: t.colors.borderLight,
-                            '[role="listitem"]': {
-                              "::after, :first-of-type::before": {
-                                pointerEvents: "none",
-                                display: "block",
-                                height: "1px",
-                                width: "100%",
-                                content: '""',
-                                background: `linear-gradient(90deg, transparent 0%, ${t.colors.borderLight} 20%, ${t.colors.borderLight} 80%, transparent 100%)`,
-                              },
-                              ".container": {
-                                display: "flex",
-                                gap: "0.8rem",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                padding: "1.6rem 0",
-                                ".account, .amount": {
-                                  fontWeight: t.text.weights.emphasis,
-                                  color: t.colors.textDimmed,
-                                },
-                                ".timestamp": {
-                                  fontSize: t.text.sizes.small,
-                                  color: t.colors.textDimmed,
-                                },
-                              },
-                            },
-                            a: {
-                              textDecoration: "none",
-                              "@media(hover: hover)": {
-                                cursor: "pointer",
-                                "&:hover": { textDecoration: "underline" },
-                              },
-                            },
-                          },
-                        })
-                      }
-                    >
+                    <div>
                       {bids.length === 0 ? (
                         <>No bids</>
                       ) : (
-                        <div role="list">
-                          {arrayUtils
-                            .sortBy(
-                              { value: (b) => b.blockTimestamp, order: "desc" },
-                              bids,
-                            )
-                            .map((bid) => (
-                              <div role="listitem" key={bid.id}>
-                                <div className="container">
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <AccountPreviewPopoverTrigger
-                                      showAvatar
-                                      accountAddress={bid.bidderId}
-                                      className="account"
-                                    />{" "}
-                                    bid{" "}
-                                    <ChainExporerTransactionLink
-                                      transactionHash={bid.transactionHash}
-                                      className="amount"
-                                    >
-                                      Ξ{formatEther(bid.amount)}
-                                    </ChainExporerTransactionLink>
-                                  </div>
-                                  <ChainExporerTransactionLink
-                                    transactionHash={bid.transactionHash}
-                                    className="timestamp"
-                                  >
-                                    <FormattedDateWithTooltip
-                                      tinyRelative
-                                      relativeDayThreshold={7}
-                                      month="short"
-                                      day="numeric"
-                                      year={
-                                        getDateYear(bid.blockTimestamp) !==
-                                        getDateYear(new Date())
-                                          ? "numeric"
-                                          : undefined
-                                      }
-                                      value={bid.blockTimestamp}
-                                    />
-                                  </ChainExporerTransactionLink>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
+                        <BidListing bids={bids} />
                       )}
                     </div>
                   </div>
@@ -1002,7 +1091,7 @@ export const Auction = ({
                   ".meta-container": {
                     display: "flex",
                     flexDirection: "column",
-                    gap: "0.4rem",
+                    gap: "0.8rem",
                   },
                   ".input-container": { padding: "0.8rem 1.4rem" },
                 },
@@ -1011,7 +1100,7 @@ export const Auction = ({
           >
             {biddingForm}
 
-            {showBids && bids.length > 1 && (
+            {showBids && bids.length > 0 && (
               <div
                 css={(t) =>
                   css({
@@ -1023,45 +1112,11 @@ export const Auction = ({
                       color: t.colors.textDimmed,
                       padding: "1.6rem 0",
                     },
-                    '[role="list"]': {
-                      borderTop: "0.1rem solid",
-                      borderColor: t.colors.borderLight,
-                      '[role="listitem"]': {
-                        display: "flex",
-                        gap: "0.8rem",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "1.6rem 0",
-                        borderBottom: "0.1rem solid",
-                        borderColor: t.colors.borderLight,
-                        ".amount": {
-                          fontSize: t.text.sizes.small,
-                        },
-                      },
-                    },
                   })
                 }
               >
                 <h2>All bids</h2>
-                <div role="list">
-                  {arrayUtils
-                    .sortBy(
-                      { value: (b) => b.blockTimestamp, order: "desc" },
-                      bids,
-                    )
-                    .map((bid) => (
-                      <div role="listitem" key={bid.id}>
-                        <div>
-                          <AccountPreviewPopoverTrigger
-                            showAvatar
-                            accountAddress={bid.bidderId}
-                            style={{ fontWeight: "400" }}
-                          />
-                        </div>
-                        <div className="amount">Ξ{formatEther(bid.amount)}</div>
-                      </div>
-                    ))}
-                </div>
+                <BidListing bids={bids} />
               </div>
             )}
           </div>
@@ -1093,14 +1148,89 @@ const NounsSelect = ({ selectedNounId, auctionNounId, ...props }) => {
           }))
           .toReversed();
 
-  return (
-    <NativeSelect
-      value={selectedNounId}
-      options={options}
-      selectProps={{ css: css({ cursor: "pointer" }) }}
-      {...props}
-    />
-  );
+  return <NativeSelect value={selectedNounId} options={options} {...props} />;
 };
+
+const BidListing = ({ bids }) => (
+  <div
+    role="list"
+    css={(t) =>
+      css({
+        '[role="listitem"]': {
+          "::after, :first-of-type::before": {
+            pointerEvents: "none",
+            display: "block",
+            height: "1px",
+            width: "100%",
+            content: '""',
+            background: `linear-gradient(90deg, transparent 0%, ${t.colors.borderLight} 20%, ${t.colors.borderLight} 80%, transparent 100%)`,
+          },
+          ".container": {
+            display: "flex",
+            gap: "0.8rem",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "1.6rem 0",
+            ".account, .amount": {
+              fontWeight: t.text.weights.emphasis,
+              color: t.colors.textDimmed,
+            },
+            ".timestamp": {
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+            },
+          },
+        },
+        a: {
+          textDecoration: "none",
+          "@media(hover: hover)": {
+            cursor: "pointer",
+            "&:hover": { textDecoration: "underline" },
+          },
+        },
+      })
+    }
+  >
+    {arrayUtils
+      .sortBy({ value: (b) => b.blockTimestamp, order: "desc" }, bids)
+      .map((bid) => (
+        <div role="listitem" key={bid.id}>
+          <div className="container">
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <AccountPreviewPopoverTrigger
+                showAvatar
+                accountAddress={bid.bidderId}
+                className="account"
+              />{" "}
+              bid{" "}
+              <ChainExporerTransactionLink
+                transactionHash={bid.transactionHash}
+                className="amount"
+              >
+                Ξ<FormattedEth value={bid.amount} />
+              </ChainExporerTransactionLink>
+            </div>
+            <ChainExporerTransactionLink
+              transactionHash={bid.transactionHash}
+              className="timestamp"
+            >
+              <FormattedDateWithTooltip
+                tinyRelative
+                relativeDayThreshold={7}
+                month="short"
+                day="numeric"
+                year={
+                  getDateYear(bid.blockTimestamp) !== getDateYear(new Date())
+                    ? "numeric"
+                    : undefined
+                }
+                value={bid.blockTimestamp}
+              />
+            </ChainExporerTransactionLink>
+          </div>
+        </div>
+      ))}
+  </div>
+);
 
 export default AuctionDialog;
