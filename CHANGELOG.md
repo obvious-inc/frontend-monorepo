@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.34] - 2024-10-13
+
+### 🚜 Refactor
+
+- *(proposals)* Simplify `fetchProposal` by removing `chainId`
+- *(store-selectors)* Sort by `timestamp` instead of `blockNumber`
+
+### 🎨 Styling
+
+- *(gitignore)* Fix newline at end of the file
+
+### ⚙️ Miscellaneous Tasks
+
+- *(store)* Update `proposalCandidates` query format
+
 ## [1.3.0-alpha.33] - 2024-10-13
 
 ### 🐛 Bug Fixes
