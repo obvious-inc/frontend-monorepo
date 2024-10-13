@@ -1148,33 +1148,35 @@ const createStore = ({ initialState, publicClient }) =>
                 signatures
                 calldatas
               }
-            # proposalCandidates(
-            #   orderBy: createdBlock,
-            #   orderDirection: desc,
-            #   skip: ${skip},
-            #   first: ${first}
-            # ) {
-            #   id
-            #   slug
-            #   proposer
-            #   createdBlock
-            #   canceledBlock
-            #   lastUpdatedBlock
-            #   canceledTimestamp
-            #   createdTimestamp
-            #   lastUpdatedTimestamp
-            #   latestVersion {
-            #     id
-            #     content {
-            #       title
-            #       matchingProposalIds
-            #       proposalIdToUpdate
-            #       contentSignatures {
-            #         ...CandidateContentSignatureFields
-            #       }
-            #     }
-            #   }
-            # }
+          #   proposalCandidates(
+          #     orderBy: createdBlock,
+          #     orderDirection: desc,
+          #     skip: ${skip},
+          #     first: ${first}
+          #   ) {
+          #     id
+          #     slug
+          #     proposer
+          #     createdBlock
+          #     canceledBlock
+          #     lastUpdatedBlock
+          #     canceledTimestamp
+          #     createdTimestamp
+          #     lastUpdatedTimestamp
+          #     createdTransactionHash
+          #     canceledTransactionHash
+          #     latestVersion {
+          #       id
+          #       content {
+          #         title
+          #         matchingProposalIds
+          #         proposalIdToUpdate
+          #         contentSignatures {
+          #           ...CandidateContentSignatureFields
+          #         }
+          #       }
+          #     }
+          #   }
             }`,
         });
 
