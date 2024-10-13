@@ -2498,7 +2498,7 @@ export const useMainFeedItems = (categories, { enabled = true }) => {
               });
 
         return arrayUtils.sortBy(
-          { value: (i) => i.blockNumber ?? 0, order: "desc" },
+          { value: (i) => i.timestamp ?? 0, order: "desc" },
           feedItems,
         );
       },
