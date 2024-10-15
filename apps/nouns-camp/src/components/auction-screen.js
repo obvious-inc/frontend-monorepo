@@ -44,8 +44,7 @@ const AuctionScreen = () => {
             component: NounsSelect,
             props: {
               selectedNounId: nounId,
-              currentAuctionNounId:
-                auction == null ? null : String(auction.nounId),
+              currentAuctionNounId: currentAuction?.nounId,
               onChange: (e) => {
                 setSearchParams({ noun: e.target.value });
               },

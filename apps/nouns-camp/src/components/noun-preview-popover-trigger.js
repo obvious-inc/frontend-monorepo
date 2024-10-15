@@ -57,6 +57,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
       return (
         <button
           ref={triggerRef}
+          className="noun-preview-trigger"
           css={css({
             outline: "none",
             "@media(hover: hover)": {

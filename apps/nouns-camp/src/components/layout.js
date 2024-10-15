@@ -1,5 +1,5 @@
 import React from "react";
-import { css } from "@emotion/react";
+import { css, keyframes } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
@@ -21,12 +21,26 @@ import {
   useState as useSessionState,
   useActions as useSessionActions,
 } from "@/session-provider";
+import useFeatureFlag from "@/hooks/feature-flag";
 import { useDialog } from "../hooks/global-dialogs.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import useAccountDisplayName from "../hooks/account-display-name.js";
+import {
+  useAuctionData,
+  useLazySeed,
+  useNounImageDataUri,
+} from "@/components/auction-dialog";
 import AccountAvatar from "./account-avatar.js";
 import LogoSymbol from "./logo-symbol.js";
-import useFeatureFlag from "@/hooks/feature-flag.js";
+
+const flipAnimation = keyframes({
+  "0%,52%,100%": {
+    transform: "rotate3d(1,1,1,0deg)",
+  },
+  "2%, 50%": {
+    transform: "rotate3d(0.4,1,0,180deg)",
+  },
+});
 
 const TreasuryDialog = React.lazy(() => import("./treasury-dialog.js"));
 
@@ -276,7 +290,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             alignItems: "center",
             gap: "0.2rem",
             overflow: "hidden",
-            padding: "1rem 1.6rem",
+            padding: "1rem 1.6rem 1rem 1.3rem",
             "@media (min-width: 600px)": {
               padding: "1rem",
             },
@@ -290,14 +304,16 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     display: "inline-block",
                     width: "1.8rem",
                     height: "auto",
-                    verticalAlign: "sub",
-                    transform: "translateY(0.1rem) scale(1.05)",
+                    backfaceVisibility: "hidden",
                   })}
                   style={{
                     filter: isTestnet ? "invert(1)" : undefined,
                   }}
                 />
               );
+
+              const showChainName = isTestnet;
+              const showCampTitle = !showChainName && pathname !== "/";
 
               if (enableAuction && pathname === "/")
                 return {
@@ -307,16 +323,51 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     onClick: () => {
                       openAuctionDialog();
                     },
+                    style: {
+                      height: "2.8rem",
+                      minWidth: "2.8rem",
+                      paddingBlock: 0,
+                      perspective: "200vmax",
+                    },
                   },
-                  label: <>{logo}</>,
-                };
-
-              if (pathname === "/")
-                return {
-                  to: "/",
                   label: (
                     <>
-                      {logo}
+                      <div
+                        className="flippable-container"
+                        css={css({
+                          position: "relative",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          width: "1.8rem",
+                          height: "1.8rem",
+                          animation: `${flipAnimation} 18s linear 10s infinite`,
+                          transition: "0.25s transform ease-out",
+                          transformStyle: "preserve-3d",
+                          svg: { display: "block" },
+                        })}
+                      >
+                        {logo}
+                        <div
+                          css={css({
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            backfaceVisibility: "hidden",
+                            transform:
+                              "translateX(-50%) translateY(-50%) rotate3d(0.4,1,0,180deg)",
+                            width: "2rem",
+                            height: "2rem",
+                            img: {
+                              display: "block",
+                              width: "100%",
+                              height: "100%",
+                              borderRadius: "0.3rem",
+                            },
+                          })}
+                        >
+                          <AuctionNounImage />
+                        </div>
+                      </div>
                       {isTestnet && (
                         <span
                           css={css({
@@ -339,17 +390,20 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 label: (
                   <>
                     {logo}
-                    <span
-                      css={css({
-                        display: "none",
-                        "@media(min-width: 600px)": {
-                          display: "inline",
-                          marginLeft: "0.6rem",
-                        },
-                      })}
-                    >
-                      {isTestnet ? chain.name : "Camp"}
-                    </span>
+
+                    {(showChainName || showCampTitle) && (
+                      <span
+                        css={css({
+                          display: "none",
+                          "@media(min-width: 600px)": {
+                            display: "inline",
+                            marginLeft: "0.6rem",
+                          },
+                        })}
+                      >
+                        {showChainName ? chain.name : "Camp"}
+                      </span>
+                    )}
                   </>
                 ),
               };
@@ -389,6 +443,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   data-desktop-only={item.desktopOnly}
                   css={(t) =>
                     css({
+                      display: "inline-flex",
+                      alignItems: "center",
+                      height: "2.8rem",
+                      minWidth: "2.8rem",
+
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       fontSize: t.fontSizes.base,
@@ -402,6 +461,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         cursor: "pointer",
                         ":hover": {
                           background: t.colors.backgroundModifierHover,
+                          ".flippable-container": {
+                            animation: "none",
+                            transform: "rotate3d(0.4,1,0,180deg)",
+                          },
                         },
                       },
                     })
@@ -777,5 +840,13 @@ export const MainContentContainer = ({
     )}
   </div>
 );
+
+const AuctionNounImage = () => {
+  const { auction } = useAuctionData();
+  const seed = useLazySeed(auction?.nounId);
+  const imageDataUri = useNounImageDataUri(seed);
+  if (imageDataUri == null) return null;
+  return <img src={imageDataUri} />;
+};
 
 export default Layout;

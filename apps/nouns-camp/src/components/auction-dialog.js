@@ -155,11 +155,11 @@ export const useLazySeed = (nounId) => {
   return currentSeed ?? lastSeedRef.current;
 };
 
-const buildDataUriWithNounsSDK = (seed) => {
+const buildDataUriWithNounsSDK = (seed, { transparent = false } = {}) => {
   if (seed == null) return null;
 
   try {
-    return buildNounDataUriFromSeed(seed, { transparent: true });
+    return buildNounDataUriFromSeed(seed, { transparent });
   } catch (e) {
     // This will throw if the nouns sdk package isn’t up-to-date with the
     // specified seed
@@ -167,8 +167,8 @@ const buildDataUriWithNounsSDK = (seed) => {
   }
 };
 
-const useNounImageDataUri = (seed) => {
-  const nounsSDKDataUri = buildDataUriWithNounsSDK(seed);
+export const useNounImageDataUri = (seed, { transparent = false } = {}) => {
+  const nounsSDKDataUri = buildDataUriWithNounsSDK(seed, { transparent });
 
   const base64Svg = useGenerateSVGImage(seed, {
     // Fall back to onchain generation if local fails
@@ -408,7 +408,7 @@ export const Auction = ({
 
   const seed = useLazySeed(nounId);
 
-  const nounImageDataUri = useNounImageDataUri(seed);
+  const nounImageDataUri = useNounImageDataUri(seed, { transparent: true });
 
   const minBidValue = (() => {
     if (auction == null) return null;
@@ -1171,7 +1171,7 @@ export const Auction = ({
                     flexDirection: "column",
                     gap: "0.8rem",
                     fontSize: t.text.sizes.button,
-                    "em, .account-preview-trigger": {
+                    "em, .account-preview-trigger, .noun-preview-trigger": {
                       color: t.colors.textDimmed,
                       fontWeight: t.text.weights.emphasis,
                     },
