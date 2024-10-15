@@ -144,7 +144,7 @@ const ModalDialog = React.forwardRef(
                   outline: "none",
                   overflow: "hidden",
                   minHeight: "min-content",
-                  scrollSnapAlign: "end",
+                  // scrollSnapAlign: "end",
                   // Fade in from bottom
                   animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
                 },
