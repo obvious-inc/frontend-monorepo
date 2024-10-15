@@ -254,7 +254,7 @@ const ModalDialog = React.forwardRef(
             css={(t) =>
               css({
                 background: t.colors.dialogBackground,
-                scrollSnapAlign: "end",
+                // scrollSnapAlign: "end",
               })
             }
             style={{

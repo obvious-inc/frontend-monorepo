@@ -340,7 +340,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                           alignItems: "center",
                           width: "1.8rem",
                           height: "1.8rem",
-                          animation: `${flipAnimation} 18s linear 10s infinite`,
+                          animation: `${flipAnimation} 24s linear 12s infinite`,
                           transition: "0.25s transform ease-out",
                           transformStyle: "preserve-3d",
                           svg: { display: "block" },
