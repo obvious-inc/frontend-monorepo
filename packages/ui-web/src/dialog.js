@@ -67,6 +67,8 @@ const ModalDialog = React.forwardRef(
       setViewportData,
     ] = React.useState({});
 
+    const isViewportCovered = visualViewportInset > 0;
+
     // Sync visual viewport inset
     React.useEffect(() => {
       if (!isOpen) return;
@@ -142,6 +144,7 @@ const ModalDialog = React.forwardRef(
         <div
           data-variant={variant}
           data-fits-in-viewport={fitsInViewport}
+          data-viewport-covered={isViewportCovered}
           {...underlayProps}
           {...customUnderlayProps}
           css={[
@@ -193,9 +196,10 @@ const ModalDialog = React.forwardRef(
                     minHeight: "min-content",
                     animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
                   },
-                  '&[data-fits-in-viewport="false"]': {
-                    ".modal": { scrollSnapAlign: "end" },
-                  },
+                  '&[data-fits-in-viewport="false"],&[data-viewport-covered="true"]':
+                    {
+                      ".modal": { scrollSnapAlign: "end" },
+                    },
                   "@media (min-width: 600px)": {
                     padding: "0 1.6rem",
                     ".modal": {
@@ -312,7 +316,7 @@ const ModalDialog = React.forwardRef(
                 paddingTop:
                   visualViewportHeight == null
                     ? undefined
-                    : `${visualViewportHeight - dialogHeight - navBarHeight}px`,
+                    : `${Math.min(0, visualViewportHeight - dialogHeight - navBarHeight)}px`,
               }}
             />
             <div
@@ -326,7 +330,7 @@ const ModalDialog = React.forwardRef(
             />
           </div>
           <div
-            className="snap-tray-only tray-bottom-edge-filler"
+            className="snap-tray-only"
             css={(t) =>
               css({
                 background: t.colors.dialogBackground,
