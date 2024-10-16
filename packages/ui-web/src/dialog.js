@@ -320,7 +320,7 @@ const ModalDialog = React.forwardRef(
                 paddingTop:
                   visualViewportHeight == null
                     ? undefined
-                    : `${Math.min(0, visualViewportHeight - dialogHeight - navBarHeight)}px`,
+                    : `${Math.max(0, visualViewportHeight - dialogHeight - navBarHeight)}px`,
               }}
             />
             <div
