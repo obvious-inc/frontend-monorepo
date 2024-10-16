@@ -88,7 +88,14 @@ const AuctionScreen = () => {
           background,
         }}
       >
-        <div css={css({ flex: 1, display: "flex", flexDirection: "column" })}>
+        <div
+          css={css({
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "flex-end",
+          })}
+        >
           <Auction nounId={nounId} stickyNoun showBids transparent />
           <EmotionThemeProvider theme={preferredTheme}>
             <div
@@ -96,6 +103,9 @@ const AuctionScreen = () => {
                 css({
                   flex: 1,
                   background: t.colors.dialogBackground,
+                  "@media(min-width: 600px)": {
+                    display: "none",
+                  },
                 })
               }
             />

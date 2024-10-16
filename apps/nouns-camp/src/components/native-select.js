@@ -19,7 +19,7 @@ const NativeSelect = ({
     <span
       style={{
         position: "relative",
-        display: "inline-block",
+        display: "inline-flex",
         ...style,
       }}
       {...props}
