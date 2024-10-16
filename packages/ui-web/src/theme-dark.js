@@ -84,6 +84,7 @@ export default {
   name: "dark",
   colorScheme: "dark",
   sidebarWidth: "25rem",
+  navBarHeight: "4.5rem",
   avatars: {
     borderRadius: "50%",
     size: "1.8rem",

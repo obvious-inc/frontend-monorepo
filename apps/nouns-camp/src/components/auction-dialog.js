@@ -182,6 +182,7 @@ export const useNounImageDataUri = (seed, { transparent = false } = {}) => {
 const AuctionDialog = ({ isOpen }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const nounId = searchParams.get("noun");
+  const isDesktopLayout = useMatchMedia("(min-width: 600px)");
 
   const close = () => {
     setSearchParams((params) => {
@@ -191,19 +192,24 @@ const AuctionDialog = ({ isOpen }) => {
       return nextParams;
     });
   };
+
   return (
     <Dialog
       isOpen={isOpen}
       onRequestClose={close}
       tray
+      trayMode={isDesktopLayout ? undefined : "snap"}
       width="124.4rem"
       height="auto"
     >
       {({ titleProps }) => (
         <Auction
-          trayDialog
           nounId={nounId}
-          nounContainerStyle={{ flex: 1, minHeight: 0 }}
+          nounContainerStyle={{
+            flex: 1,
+            minHeight: 0,
+            paddingTop: isDesktopLayout ? 0 : "6rem",
+          }}
         >
           {({ nounId, auction, currentAuction }) => (
             <div
@@ -354,7 +360,6 @@ const AuctionDialog = ({ isOpen }) => {
 
 export const Auction = ({
   nounId: eagerCustomNounId,
-  trayDialog = false,
   showBids = false,
   transparent = false,
   nounContainerStyle,
@@ -949,20 +954,13 @@ export const Auction = ({
     <>
       <EmotionThemeProvider theme={getTheme("light")}>
         <div
-          data-tray-dialog={trayDialog || undefined}
           css={(t) =>
             css({
               transition: "0.2s background ease-out",
               background: t.colors.backgroundSecondary,
-              "&[data-tray-dialog]": {
-                "@media(max-width: 600px)": {
-                  paddingTop: "6rem",
-                },
-              },
             })
           }
           style={{
-            // position: "relative",
             position: "sticky",
             top: 0,
             background: transparent

@@ -35,10 +35,11 @@ const ModalDialog = React.forwardRef(
     {
       isOpen,
       onRequestClose,
-      width = "62rem",
+      width,
       height,
       transparent,
       tray = false,
+      trayMode,
       backdrop = "normal",
       modalProps: customModalProps,
       underlayProps: customUnderlayProps,
@@ -62,13 +63,7 @@ const ModalDialog = React.forwardRef(
     );
 
     const [
-      {
-        visualViewportHeight,
-        visualViewportInset,
-        navBarHeight,
-        // modalHeight,
-        dialogHeight,
-      },
+      { visualViewportHeight, visualViewportInset, dialogHeight, navBarHeight },
       setViewportData,
     ] = React.useState({});
 
@@ -78,15 +73,11 @@ const ModalDialog = React.forwardRef(
 
       const update = () => {
         setViewportData({
-          // innerHeight: window.innerHeight,
-          // visualViewportHeight: window.visualViewport.height,
-          // visualHeight: window.innerHeight - window.visualViewport.height,
-          navBarHeight: navBarFillerRef.current.offsetHeight,
-          modalHeight: modalRef.current.offsetHeight,
-          dialogHeight: dialogRef.current.offsetHeight,
           visualViewportHeight: window.visualViewport.height,
           visualViewportInset:
             window.innerHeight - window.visualViewport.height,
+          dialogHeight: dialogRef.current.offsetHeight,
+          navBarHeight: navBarFillerRef.current.offsetHeight,
         });
       };
 
@@ -117,40 +108,40 @@ const ModalDialog = React.forwardRef(
       };
     }, [isOpen, dialogRef]);
 
-    // TODO
+    const fitsInViewport =
+      visualViewportHeight == null ||
+      visualViewportHeight > dialogHeight + navBarHeight;
+
+    const variant = (() => {
+      if (!isSmallDevice) {
+        if (!tray) return "regular";
+        return trayMode === "snap" ? "snap-tray" : "tray";
+      }
+
+      // Always use snap behavior if the content fits inside the viewport
+      if (fitsInViewport || trayMode === "snap") return "snap-tray";
+
+      return "tray";
+    })();
+
     React.useEffect(() => {
       if (!isOpen) return;
 
-      if (isSmallDevice) {
+      if (["tray", "snap-tray"].includes(variant)) {
         navBarFillerRef.current.scrollIntoView({
           behavior: "instant",
           block: "start",
         });
       }
-    }, [isSmallDevice, isOpen]);
+    }, [variant, isOpen]);
 
     if (!isOpen) return null;
-
-    // console.log("heree", {
-    //   visualViewportHeight,
-    //   visualViewportInset,
-    //   navBarHeight,
-    //   modalHeight,
-    //   fitsInViewport,
-    // });
-
-    const variant = (() => {
-      if (!isSmallDevice) return tray ? "tray" : "regular";
-      const fitsInViewport =
-        visualViewportHeight == null ||
-        visualViewportHeight > dialogHeight + navBarHeight;
-      return fitsInViewport ? "snap-tray" : "tray";
-    })();
 
     return (
       <Overlay>
         <div
           data-variant={variant}
+          data-fits-in-viewport={fitsInViewport}
           {...underlayProps}
           {...customUnderlayProps}
           css={[
@@ -160,6 +151,7 @@ const ModalDialog = React.forwardRef(
                 // to specify this on anything that’s outside the root div
                 colorScheme: t.name === "dark" ? "dark" : "light",
 
+                // Container defaults
                 position: "fixed",
                 zIndex: 10,
                 top: 0,
@@ -167,70 +159,99 @@ const ModalDialog = React.forwardRef(
                 width: "100%",
                 height: "100%",
                 overflow: "auto",
-                background: "var(--background, hsl(0 0% 0% / 40%))",
+                background: "var(--background, hsl(0 0% 0% / 40%))", // Backdrop color
+
+                // Modal defaults
                 ".modal": {
                   width: "100%",
                   color: t.colors.textNormal,
                   background: t.colors.dialogBackground,
-                  borderTopLeftRadius: "0.6rem",
-                  borderTopRightRadius: "0.6rem",
-                  display: "flex",
-                  flexDirection: "column",
                   outline: "none",
-                  overflow: "hidden",
-                  minHeight: "min-content",
-                  // scrollSnapAlign: "end",
-                  // Fade in from bottom
-                  animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
+                  margin: "auto", // Center
                 },
-                '&[data-variant="snap-tray"]': {
-                  scrollSnapType: "y mandatory",
-                },
+
+                // Shared reset
                 '&:not([data-variant="snap-tray"])': {
                   ".snap-tray-only": { display: "none" },
-                },
-                // "Desktop mode"
-                "@media (min-width: 600px)": {
-                  padding: "0 1.6rem",
-                  ".modal": {
-                    maxWidth: "var(--max-width)",
-                    margin: "auto", // center in all directions
-                  },
-                  // No scroll snap behavior on desktop
-                  scrollSnapType: "none",
-                  ".snap-tray-only": { display: "none" },
-                  // Default to centered dialogs on desktop if not explicitly set to tray
                   '&:not([data-variant="tray"])': {
-                    padding: "2.8rem",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    ".modal": {
-                      borderRadius: "0.6rem",
-                      height: "var(--desktop-set-height, auto)",
-                      maxHeight:
-                        "var(--desktop-set-height, min(calc(100% - 3rem), 82rem))",
-                      animation: `${centeredEnterAnimationDesktop} 0.2s ease-out backwards`,
-                    },
                     ".tray-only": { display: "none" },
                   },
-                  '&[data-variant="tray"]': {
+                },
+
+                // == Variant specifics == //
+
+                // Snap tray
+                '&[data-variant="snap-tray"]': {
+                  scrollSnapType: "y mandatory",
+                  ".modal": {
+                    borderTopLeftRadius: "0.6rem",
+                    borderTopRightRadius: "0.6rem",
                     display: "flex",
                     flexDirection: "column",
+                    outline: "none",
+                    overflow: "hidden",
+                    minHeight: "min-content",
+                    animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
+                  },
+                  '&[data-fits-in-viewport="false"]': {
+                    ".modal": { scrollSnapAlign: "end" },
+                  },
+                  "@media (min-width: 600px)": {
+                    padding: "0 1.6rem",
                     ".modal": {
-                      // Desktop trays are always "fullscreen"
-                      minHeight: `var(--desktop-set-height, calc(100dvh - ${t.navBarHeight}))`,
+                      width: "var(--specified-dialog-width, 62rem)",
+                      maxWidth: "100%",
                       animation: `${trayEnterAnimationDesktop} 0.2s ease-out backwards`,
                     },
+                  },
+                },
+
+                // Regular tray
+                '&[data-variant="tray"]': {
+                  display: "flex",
+                  flexDirection: "column",
+                  ".modal": {
+                    borderTopLeftRadius: "0.6rem",
+                    borderTopRightRadius: "0.6rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    outline: "none",
+                    overflow: "hidden",
+                    minHeight: "min-content",
+                    animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
+                  },
+                  "@media (min-width: 600px)": {
+                    padding: "0 1.6rem",
+                    ".modal": {
+                      width: "var(--specified-dialog-width, 62rem)",
+                      maxWidth: "100%",
+                      // Desktop trays always expand all the way to the top
+                      minHeight: `var(--specified-dialog-height, calc(100dvh - ${t.navBarHeight}))`,
+                      animation: `${trayEnterAnimationDesktop} 0.2s ease-out backwards`,
+                    },
+                  },
+                },
+
+                // Regular centered dialog
+                '&[data-variant="regular"]': {
+                  padding: "2.8rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  ".modal": {
+                    borderRadius: "0.6rem",
+                    width: "var(--specified-dialog-width, 62rem)",
+                    maxWidth: "100%",
+                    height: "var(--specified-dialog-height, auto)",
+                    animation: `${centeredEnterAnimationDesktop} 0.2s ease-out backwards`,
                   },
                 },
               }),
             customUnderlayProps?.css,
           ]}
           style={{
-            // "--viewport-height":
-            //   viewportHeight == null ? undefined : `${viewportHeight}px`,
-            "--max-width": width,
+            "--specified-dialog-width": width,
+            "--specified-dialog-height": height,
             "--background": transparent
               ? "none"
               : backdrop === "light"
@@ -238,7 +259,7 @@ const ModalDialog = React.forwardRef(
                 : undefined,
           }}
         >
-          <div className="snap-tray-only" css={css({ paddingTop: "50dvh" })} />
+          <div className="snap-tray-only" style={{ paddingTop: "50dvh" }} />
           <div
             className="snap-tray-only"
             css={(t) =>
@@ -271,7 +292,6 @@ const ModalDialog = React.forwardRef(
             {...modalProps}
             {...customModalProps}
             css={[customModalProps?.css]}
-            style={{ "--desktop-set-height": height }}
           >
             <Dialog
               ref={dialogRef}
@@ -288,12 +308,6 @@ const ModalDialog = React.forwardRef(
             </Dialog>
             <div
               className="snap-tray-only"
-              // css={(t) =>
-              //   css({
-              //     // background: t.colors.dialogBackground,
-              //     // scrollSnapAlign: "end",
-              //   })
-              // }
               style={{
                 paddingTop:
                   visualViewportHeight == null
@@ -303,12 +317,6 @@ const ModalDialog = React.forwardRef(
             />
             <div
               className="snap-tray-only"
-              // css={(t) =>
-              //   css({
-              //     // background: t.colors.dialogBackground,
-              //     // scrollSnapAlign: "end",
-              //   })
-              // }
               style={{
                 paddingTop:
                   visualViewportInset == null
@@ -316,16 +324,16 @@ const ModalDialog = React.forwardRef(
                     : `${visualViewportInset}px`,
               }}
             />
-            <div
-              className="snap-tray-only"
-              css={(t) =>
-                css({
-                  background: t.colors.dialogBackground,
-                  paddingTop: "50dvh",
-                })
-              }
-            />
           </div>
+          <div
+            className="snap-tray-only tray-bottom-edge-filler"
+            css={(t) =>
+              css({
+                background: t.colors.dialogBackground,
+                paddingTop: "50dvh",
+              })
+            }
+          />
         </div>
       </Overlay>
     );

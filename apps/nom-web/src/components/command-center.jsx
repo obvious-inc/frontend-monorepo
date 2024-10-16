@@ -122,22 +122,11 @@ const AlwaysOpenComboboxInDialog = ({
       width="66rem"
       isOpen
       onRequestClose={onRequestClose}
-      modalProps={{
-        css: (t) =>
-          css({
-            background: t.colors.backgroundSecondary,
-            "@media (min-width: 600px)": {
-              position: "relative",
-              top: "9rem",
-              maxHeight: "calc(100% - 16rem)",
-            },
-          }),
-      }}
       underlayProps={{
         css: css({
-          "@media (min-width: 600px)": {
-            padding: "0 2.8rem",
-            alignItems: "flex-start",
+          '&[data-variant="regular"]': {
+            display: "block",
+            paddingTop: "12rem",
           },
         }),
       }}

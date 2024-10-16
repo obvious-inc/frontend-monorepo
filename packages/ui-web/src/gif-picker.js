@@ -319,6 +319,7 @@ export const PopoverOrTrayDialog = ({
       <Dialog
         isOpen={isOpen}
         onRequestClose={close}
+        tray
         underlayProps={{ css: css({ ".modal": { background: "none" } }) }}
       >
         <button
