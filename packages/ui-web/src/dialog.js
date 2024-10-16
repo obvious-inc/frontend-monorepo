@@ -67,9 +67,7 @@ const ModalDialog = React.forwardRef(
       setViewportData,
     ] = React.useState({});
 
-    const isViewportCovered = visualViewportInset > 0;
-
-    // Sync visual viewport inset
+    // Sync visual viewport and dialog size state
     React.useEffect(() => {
       if (!isOpen) return;
 
@@ -95,6 +93,7 @@ const ModalDialog = React.forwardRef(
         }
         scheduleUpdate();
       };
+      window.visualViewport.addEventListener("resize", resizeHandler);
 
       const observer = new ResizeObserver(() => {
         scheduleUpdate();
@@ -109,6 +108,10 @@ const ModalDialog = React.forwardRef(
         observer.disconnect();
       };
     }, [isOpen, dialogRef]);
+
+    const isViewportCovered =
+      typeof window !== "undefined" &&
+      visualViewportInset > window.innerHeight / 4;
 
     const fitsInViewport =
       visualViewportHeight == null ||
@@ -313,6 +316,7 @@ const ModalDialog = React.forwardRef(
             <div
               className="snap-tray-only"
               style={{
+                // This pads short dialogs to fill the available space
                 paddingTop:
                   visualViewportHeight == null
                     ? undefined
@@ -322,6 +326,8 @@ const ModalDialog = React.forwardRef(
             <div
               className="snap-tray-only"
               style={{
+                // This pads the dialog to make sure soft keyboards don’t hide
+                // inputs that are placed at the bottom of the dialog container
                 paddingTop:
                   visualViewportInset == null
                     ? undefined
