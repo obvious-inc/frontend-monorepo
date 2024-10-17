@@ -1,6 +1,8 @@
 import { useWallet } from "./wallet.js";
 
-const canaryFeatures = ["auction"];
+const canaryFeatures = [
+  // "auction"
+];
 const betaFeatures = [];
 
 const isCanarySession =
