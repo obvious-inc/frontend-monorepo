@@ -1,6 +1,6 @@
 import ClientAppProvider from "@/app/client-app-provider";
 import { build as buildMetadata } from "@/utils/metadata";
-import AuctionScreen from "@/components/auction-screen";
+import NounScreen from "@/components/noun-screen";
 
 export const metadata = buildMetadata({
   title: "Auction",
@@ -10,7 +10,7 @@ export const metadata = buildMetadata({
 export default function Page() {
   return (
     <ClientAppProvider>
-      <AuctionScreen />
+      <NounScreen />
     </ClientAppProvider>
   );
 }
