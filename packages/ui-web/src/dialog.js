@@ -241,7 +241,7 @@ const ModalDialog = React.forwardRef(
 
                 // Regular centered dialog
                 '&[data-variant="regular"]': {
-                  padding: "2.8rem",
+                  padding: "1.6rem 2.8rem",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
