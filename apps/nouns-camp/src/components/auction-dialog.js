@@ -41,10 +41,10 @@ import { useGenerateSVGImage } from "@/hooks/nouns-token-descriptor-contract";
 import AccountPreviewPopoverTrigger from "@/components/account-preview-popover-trigger";
 import FormattedDateWithTooltip from "@/components/formatted-date-with-tooltip";
 import ChainExporerTransactionLink from "@/components/chain-explorer-transaction-link";
-import { useSearchParams } from "@/hooks/navigation";
 import NativeSelect from "@/components/native-select";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger";
 import { FormattedEthWithConditionalTooltip as FormattedEth } from "./transaction-list";
+import { useDialog } from "@/hooks/global-dialogs";
 
 const chain = getSupportedChain(CHAIN_ID);
 
@@ -131,7 +131,7 @@ export const useAuctionData = ({
       auction: {
         ...noun?.auction,
         ...contractAuction,
-        nounId: String(contractAuction.nounId),
+        nounId: parseInt(contractAuction.nounId),
         bidderId: contractAuction.bidder.toLowerCase(),
         amount: String(contractAuction.amount),
         startTimestamp: parseTimestamp(contractAuction.startTime),
@@ -179,19 +179,58 @@ export const useNounImageDataUri = (seed, { transparent = false } = {}) => {
   return base64Svg == null ? null : `data:image/svg+xml;base64,${base64Svg}`;
 };
 
-const AuctionDialog = ({ isOpen }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const nounId = searchParams.get("noun");
+const AuctionDialog = ({ isOpen, close }) => {
+  // const [, setSearchParams] = useSearchParams();
   const isDesktopLayout = useMatchMedia("(min-width: 600px)");
 
-  const close = () => {
-    setSearchParams((params) => {
-      const nextParams = new URLSearchParams(params);
-      nextParams.delete("noun");
-      nextParams.delete("dialog");
-      return nextParams;
-    });
-  };
+  const { data, open } = useDialog("auction");
+
+  const specifiedNounId = (() => {
+    const customNounPrefix = "noun-";
+    if (!data.startsWith(customNounPrefix)) return null; // Current auction
+    const nounId = parseInt(data.slice(customNounPrefix.length));
+    return nounId || null;
+  })();
+  console.log({ specifiedNounId });
+
+  const { auction: currentAuction } = useAuctionData();
+
+  const nounId = specifiedNounId ?? currentAuction?.nounId;
+
+  useKeyboardShortcuts(
+    {
+      ArrowLeft: (e) => {
+        if (isEventTargetInputOrTextArea(e.target)) return;
+        if (nounId === 1) {
+          open("current");
+          return;
+        }
+        if (nounId == null) return;
+        open(`noun-${nounId - 1}`);
+      },
+      ArrowRight: (e) => {
+        if (isEventTargetInputOrTextArea(e.target)) return;
+        if (specifiedNounId == null) {
+          open("noun-1");
+          return;
+        }
+        if (nounId == null || currentAuction == null) return;
+        const nextNounId = nounId + 1;
+        console.log(
+          nextNounId === currentAuction.nounId
+            ? "current"
+            : `noun-${nextNounId}`,
+          { nextNounId, auctionNounId: currentAuction.nounId },
+        );
+        open(
+          nextNounId === currentAuction.nounId
+            ? "current"
+            : `noun-${nextNounId}`,
+        );
+      },
+    },
+    { enabled: isOpen },
+  );
 
   return (
     <Dialog
@@ -204,154 +243,141 @@ const AuctionDialog = ({ isOpen }) => {
     >
       {({ titleProps }) => (
         <Auction
-          nounId={nounId}
+          nounId={specifiedNounId}
           nounContainerStyle={{
             flex: 1,
             minHeight: 0,
             paddingTop: isDesktopLayout ? 0 : "6rem",
           }}
         >
-          {({ nounId, auction, currentAuction }) => (
+          <div
+            className="hideable"
+            css={css({
+              display: "flex",
+              alignItems: "flex-start",
+              padding: "1.6rem",
+              "@media (min-width: 996px)": {
+                padding: "3.2rem",
+              },
+            })}
+          >
             <div
-              className="hideable"
-              css={css({
-                display: "flex",
-                alignItems: "flex-start",
-                padding: "1.6rem",
-                "@media (min-width: 996px)": {
-                  padding: "3.2rem",
-                },
-              })}
+              css={(t) =>
+                css({
+                  flex: 1,
+                  minWidth: 0,
+                  h1: { fontSize: t.text.sizes.base },
+                })
+              }
             >
-              <div
-                css={(t) =>
-                  css({
-                    flex: 1,
-                    minWidth: 0,
-                    h1: { fontSize: t.text.sizes.base },
-                  })
-                }
-              >
-                <div style={{ display: "flex", gap: "1px" }}>
-                  <Button
-                    size="small"
-                    variant="transparent"
-                    css={css({ width: "2.8rem", padding: 0 })}
-                    disabled={(() => {
-                      const prevNounId = parseInt(nounId) - 1;
-                      return prevNounId < 1 && currentAuction == null;
-                    })()}
-                    onClick={() => {
-                      const prevNounId = parseInt(nounId) - 1;
-                      if (prevNounId >= 1) {
-                        setSearchParams((params) => {
-                          const nextParams = new URLSearchParams(params);
-                          nextParams.set("noun", prevNounId);
-                          return nextParams;
-                        });
-                        return;
-                      }
-                      if (currentAuction == null) return;
-                      setSearchParams((params) => {
-                        const nextParams = new URLSearchParams(params);
-                        nextParams.set("noun", parseInt(currentAuction.nounId));
-                        return nextParams;
-                      });
-                    }}
-                  >
-                    &larr;
-                  </Button>
-                  <h1 {...titleProps}>
-                    <NounsSelect
-                      selectedNounId={nounId}
-                      auctionNounId={currentAuction?.nounId}
-                      onChange={(e) => {
-                        setSearchParams((params) => {
-                          const nextParams = new URLSearchParams(params);
-                          nextParams.set("noun", e.target.value);
-                          return nextParams;
-                        });
-                      }}
-                      renderSelectedOption={(option) => (
-                        <Button
-                          size="small"
-                          variant="transparent"
-                          component="div"
-                          className="trigger"
-                          isLoading={nounId == null && option == null}
-                        >
-                          Noun {nounId ?? option?.value}
-                        </Button>
-                      )}
-                      css={(t) =>
-                        css({
-                          display: "block",
-                          "@media(hover: hover)": {
-                            ":hover .trigger": {
-                              background: t.colors.backgroundModifierNormal,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </h1>
-                  <Button
-                    size="small"
-                    variant="transparent"
-                    css={css({ width: "2.8rem", padding: 0 })}
-                    disabled={currentAuction == null}
-                    onClick={() => {
-                      setSearchParams((params) => {
-                        const nextParams = new URLSearchParams(params);
-                        const nextNounId = parseInt(nounId) + 1;
-                        nextParams.set(
-                          "noun",
-                          nextNounId > parseInt(currentAuction.nounId)
-                            ? 1
-                            : nextNounId,
-                        );
-                        return nextParams;
-                      });
-                    }}
-                  >
-                    &rarr;
-                  </Button>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: "0.8rem" }}>
-                {auction != null && (
-                  <Button
-                    component={NextLink}
-                    href={
-                      auction.nounId === currentAuction?.nounId
-                        ? "/auction"
-                        : `/auction?noun=${nounId}`
-                    }
-                    size="small"
-                    css={css({ width: "2.8rem", padding: 0 })}
-                  >
-                    <FullscreenIcon
-                      style={{
-                        width: "1.2rem",
-                        height: "auto",
-                        margin: "auto",
-                        transform: "scaleX(-1)",
-                      }}
-                    />
-                  </Button>
-                )}
+              <div style={{ display: "flex", gap: "1px" }}>
                 <Button
                   size="small"
-                  onClick={close}
+                  variant="transparent"
                   css={css({ width: "2.8rem", padding: 0 })}
+                  disabled={(() => {
+                    const prevNounId = nounId - 1;
+                    return prevNounId < 1 && currentAuction == null;
+                  })()}
+                  onClick={() => {
+                    const prevNounId = nounId - 1;
+                    if (prevNounId >= 1) {
+                      open(`noun-${prevNounId}`);
+                      return;
+                    }
+                    if (currentAuction == null) return;
+                    open(`noun-${currentAuction.nounId}`);
+                  }}
                 >
-                  <CrossIcon
-                    style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+                  &larr;
+                </Button>
+                <h1 {...titleProps}>
+                  <NounsSelect
+                    selectedNounId={nounId}
+                    auctionNounId={currentAuction?.nounId}
+                    onChange={(e) => {
+                      const nounId = parseInt(e.target.value);
+                      open(
+                        nounId === currentAuction?.nounId
+                          ? "current"
+                          : `noun-${nounId}`,
+                      );
+                    }}
+                    renderSelectedOption={(option) => (
+                      <Button
+                        size="small"
+                        variant="transparent"
+                        component="div"
+                        className="trigger"
+                        isLoading={nounId == null && option == null}
+                      >
+                        Noun {nounId ?? option?.value}
+                      </Button>
+                    )}
+                    css={(t) =>
+                      css({
+                        display: "block",
+                        "@media(hover: hover)": {
+                          ":hover .trigger": {
+                            background: t.colors.backgroundModifierNormal,
+                          },
+                        },
+                      })
+                    }
                   />
+                </h1>
+                <Button
+                  size="small"
+                  variant="transparent"
+                  css={css({ width: "2.8rem", padding: 0 })}
+                  disabled={currentAuction == null}
+                  onClick={() => {
+                    const nextNounId = nounId + 1;
+                    open(
+                      nextNounId === currentAuction.nounId
+                        ? "current"
+                        : `noun-${
+                            nextNounId > currentAuction.nounId ? 1 : nextNounId
+                          }`,
+                    );
+                  }}
+                >
+                  &rarr;
                 </Button>
               </div>
             </div>
-          )}
+            <div style={{ display: "flex", gap: "0.8rem" }}>
+              <Button
+                component={NextLink}
+                href={
+                  specifiedNounId == null
+                    ? "/auction"
+                    : `/nouns/${specifiedNounId}`
+                }
+                prefetch
+                size="small"
+                css={css({ width: "2.8rem", padding: 0 })}
+              >
+                <FullscreenIcon
+                  style={{
+                    width: "1.2rem",
+                    height: "auto",
+                    margin: "auto",
+                    transform: "scaleX(-1)",
+                  }}
+                />
+              </Button>
+              <Button
+                size="small"
+                onClick={close}
+                css={css({ width: "2.8rem", padding: 0 })}
+              >
+                <CrossIcon
+                  style={{ width: "1.5rem", height: "auto", margin: "auto" }}
+                />
+              </Button>
+            </div>
+          </div>
         </Auction>
       )}
     </Dialog>
@@ -359,15 +385,13 @@ const AuctionDialog = ({ isOpen }) => {
 };
 
 export const Auction = ({
-  nounId: eagerCustomNounId,
+  nounId: eagerSpecifiedNounId,
   showBids = false,
   transparent = false,
   nounContainerStyle,
   children,
 }) => {
   const inputRef = React.useRef();
-
-  const [, setSearchParams] = useSearchParams();
 
   const {
     address: connectedWalletAccountAddress,
@@ -382,21 +406,21 @@ export const Auction = ({
 
   const isDesktopLayout = useMatchMedia("(min-width: 600px)");
 
-  const customNounId = React.useDeferredValue(eagerCustomNounId);
+  const specifiedNounId = React.useDeferredValue(eagerSpecifiedNounId);
 
   const {
     auction: customAuction,
     noun: customNoun,
     isNounderReward,
   } = useAuctionData({
-    nounId: customNounId,
-    enabled: customNounId != null,
+    nounId: specifiedNounId,
+    enabled: specifiedNounId != null,
   });
   const { auction: currentAuction, noun: currentNoun } = useAuctionData({
     watch: customAuction == null || !customAuction.settled,
   });
   const isCurrentAuction =
-    customNounId == null || customNounId === currentAuction?.nounId;
+    specifiedNounId == null || specifiedNounId === currentAuction?.nounId;
 
   const auction = isCurrentAuction ? currentAuction : customAuction;
   const noun = isCurrentAuction ? currentNoun : customNoun;
@@ -406,7 +430,7 @@ export const Auction = ({
   const deferredAuctionNounId = React.useDeferredValue(auction?.nounId);
 
   // Defer noun id to prevent downstream performance issues
-  const nounId = customNounId ?? deferredAuctionNounId;
+  const nounId = specifiedNounId ?? deferredAuctionNounId;
 
   const reservePrice = useReservePrice();
   const minBidIncrementPercentage = useMinBidIncrementPercentage();
@@ -512,40 +536,6 @@ export const Auction = ({
   const isConnectedToTargetChain = CHAIN_ID === connectedChainId;
 
   const buttonSize = isDesktopLayout ? "medium" : "large";
-
-  useKeyboardShortcuts({
-    ArrowLeft: (e) => {
-      if (isEventTargetInputOrTextArea(e.target)) return;
-      const prevNounId = parseInt(nounId) - 1;
-      if (prevNounId >= 1) {
-        setSearchParams((params) => {
-          const nextParams = new URLSearchParams(params);
-          nextParams.set("noun", prevNounId);
-          return nextParams;
-        });
-        return;
-      }
-      if (currentAuction == null) return;
-      setSearchParams((params) => {
-        const nextParams = new URLSearchParams(params);
-        nextParams.set("noun", parseInt(currentAuction.nounId));
-        return nextParams;
-      });
-    },
-    ArrowRight: (e) => {
-      if (currentAuction == null) return;
-      if (isEventTargetInputOrTextArea(e.target)) return;
-      setSearchParams((params) => {
-        const nextParams = new URLSearchParams(params);
-        const nextNounId = parseInt(nounId) + 1;
-        nextParams.set(
-          "noun",
-          nextNounId > parseInt(currentAuction.nounId) ? 1 : nextNounId,
-        );
-        return nextParams;
-      });
-    },
-  });
 
   const biddingForm = (
     <div className="bidding-form">
@@ -661,8 +651,11 @@ export const Auction = ({
             return (
               <>
                 <div>
-                  <NounPreviewPopoverTrigger nounId={nounId} /> rewarded to
-                  Nounders
+                  <NounPreviewPopoverTrigger
+                    showAvatar={false}
+                    nounId={nounId}
+                  />{" "}
+                  rewarded to Nounders
                 </div>
                 {renderNounRepresentation()}
               </>
@@ -1116,7 +1109,7 @@ export const Auction = ({
               </div>
             )}
 
-            {children?.({ nounId, auction, currentAuction })}
+            {children}
 
             {(isDesktopLayout || !showBids) && (
               <Dialog
@@ -1222,7 +1215,7 @@ const NounsSelect = ({ selectedNounId, auctionNounId, ...props }) => {
   const options =
     auctionNounId == null
       ? []
-      : Array.from({ length: parseInt(auctionNounId) })
+      : Array.from({ length: auctionNounId })
           .map((_, i) => ({
             label: `Noun ${i + 1}`,
             value: String(i + 1),

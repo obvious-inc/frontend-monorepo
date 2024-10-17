@@ -5,21 +5,27 @@ import { css, ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import NextLink from "next/link";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import { getTheme } from "@/theme";
-import { useSearchParams } from "@/hooks/navigation.js";
+import { useSearchParams, useNavigate } from "@/hooks/navigation";
 import useTreasuryData from "@/hooks/treasury-data";
 import usePreferredTheme from "@/hooks/preferred-theme";
+import useKeyboardShortcuts, {
+  isEventTargetInputOrTextArea,
+} from "@/hooks/keyboard-shortcuts";
 import Layout from "./layout.js";
 import { Auction, useAuctionData, useLazySeed } from "./auction-dialog.js";
 import NativeSelect from "./native-select.js";
+import { useRouter } from "next/navigation.js";
 
-const AuctionScreen = () => {
+const NounScreen = ({ nounId: eagerSpecifiedNounId }) => {
   const preferredTheme = usePreferredTheme();
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  const nextRouter = useRouter();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const treasuryData = useTreasuryData();
 
-  const specifiedNounId = React.useDeferredValue(searchParams.get("noun"));
+  const specifiedNounId = React.useDeferredValue(eagerSpecifiedNounId);
 
   const { auction: customAuction } = useAuctionData({
     nounId: specifiedNounId,
@@ -35,6 +41,48 @@ const AuctionScreen = () => {
   const seed = useLazySeed(nounId);
   const background = parseInt(seed?.background) === 0 ? "#d5d7e1" : "#e1d7d5";
 
+  useKeyboardShortcuts({
+    ArrowLeft: (e) => {
+      if (isEventTargetInputOrTextArea(e.target)) return;
+      const prevNounId = parseInt(nounId) - 1;
+      navigate(prevNounId >= 1 ? `/nouns/${prevNounId}` : "/auction");
+    },
+    ArrowRight: (e) => {
+      if (currentAuction == null) return;
+      if (isEventTargetInputOrTextArea(e.target)) return;
+      const nextNounId = parseInt(nounId) + 1;
+      navigate(
+        nextNounId === currentAuction.nounId
+          ? "/auction"
+          : nextNounId > currentAuction.nounId
+            ? "/nouns/1"
+            : `/nouns/${nextNounId}`,
+      );
+    },
+  });
+
+  // Prefetch adjecent pages to make keyboard nav snappier
+  React.useEffect(() => {
+    const currentNounId = specifiedNounId ?? currentAuction?.nounId;
+
+    if (currentNounId == null) return;
+
+    const prefetch = (nounId) => {
+      if (nounId == null) return;
+      nextRouter.prefetch(
+        nounId === currentAuction?.nounId ? "/auction" : `/nouns/${nounId}`,
+      );
+    };
+
+    const prevNounId =
+      currentNounId === 1 ? currentAuction?.nounId : currentNounId - 1;
+    const nextNounId =
+      currentNounId === currentAuction?.nounId ? 1 : currentNounId + 1;
+
+    prefetch(prevNounId);
+    prefetch(nextNounId);
+  }, [nextRouter, specifiedNounId, currentAuction]);
+
   return (
     <EmotionThemeProvider theme={getTheme("light")}>
       <Layout
@@ -46,7 +94,12 @@ const AuctionScreen = () => {
               selectedNounId: nounId,
               currentAuctionNounId: currentAuction?.nounId,
               onChange: (e) => {
-                setSearchParams({ noun: e.target.value });
+                const nounId = parseInt(e.target.value);
+                navigate(
+                  nounId === currentAuction?.nounId
+                    ? "/auction"
+                    : `/nouns/${nounId}`,
+                );
               },
             },
           },
@@ -122,7 +175,10 @@ const NounsSelect = ({ selectedNounId, currentAuctionNounId, ...props }) => {
       ? []
       : Array.from({ length: parseInt(currentAuctionNounId) })
           .map((_, i) => ({
-            label: `Noun ${i + 1}`,
+            label:
+              i + 1 === parseInt(currentAuctionNounId)
+                ? `Noun ${i + 1} (Auction)`
+                : `Noun ${i + 1}`,
             value: String(i + 1),
           }))
           .toReversed();
@@ -149,4 +205,4 @@ const NounsSelect = ({ selectedNounId, currentAuctionNounId, ...props }) => {
   );
 };
 
-export default AuctionScreen;
+export default NounScreen;

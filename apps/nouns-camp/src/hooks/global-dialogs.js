@@ -1,4 +1,5 @@
 import React from "react";
+import { array as arrayUtils } from "@shades/common/utils";
 import { useSearchParams } from "./navigation.js";
 
 const ReactLazyWithPreload = (fetcher) => {
@@ -15,6 +16,13 @@ const dialogs = [
     search: true,
     component: ReactLazyWithPreload(
       () => import("../components/auction-dialog.js"),
+    ),
+  },
+  {
+    key: "treasury",
+    search: true,
+    component: ReactLazyWithPreload(
+      () => import("../components/treasury-dialog.js"),
     ),
   },
   {
@@ -61,10 +69,10 @@ const dialogs = [
   },
 ];
 
-const searchParamDialogKeys = dialogs.filter((d) => d.search).map((d) => d.key);
+const dialogsByKey = arrayUtils.indexBy((d) => d.key, dialogs);
 
 const preload = (key) => {
-  const { component } = dialogs.find((d) => d.key === key);
+  const { component } = dialogsByKey[key];
   return component.preload();
 };
 
@@ -73,27 +81,25 @@ export const Provider = ({ children }) => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const openSearchParamsDialogKey = searchParams.get("dialog");
-
   const openDialogs = React.useMemo(() => {
-    if (
-      openSearchParamsDialogKey == null ||
-      searchParamDialogKeys.every((key) => key != openSearchParamsDialogKey)
-    )
-      return openLocalDialogs;
-
-    const openDialogs = new Map(openLocalDialogs);
-    openDialogs.set(openSearchParamsDialogKey, true);
-    return openDialogs;
-  }, [openLocalDialogs, openSearchParamsDialogKey]);
+    return dialogs.reduce((dialogMap, d) => {
+      const dialogState = d.search
+        ? searchParams.get(d.key)
+        : openLocalDialogs.get(d.key);
+      if (dialogState == null) return dialogMap;
+      dialogMap.set(d.key, dialogState);
+      return dialogMap;
+    }, new Map());
+  }, [searchParams, openLocalDialogs]);
 
   const open = React.useCallback(
     (key, data) => {
-      if (searchParamDialogKeys.includes(key)) {
+      const dialogConfig = dialogsByKey[key];
+      if (dialogConfig.search) {
         setSearchParams(
           (currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
-            nextParams.set("dialog", key);
+            nextParams.set(key, data ?? 1);
             return nextParams;
           },
           { replace: true },
@@ -111,11 +117,12 @@ export const Provider = ({ children }) => {
 
   const close = React.useCallback(
     (key) => {
-      if (searchParamDialogKeys.includes(key)) {
+      const dialogConfig = dialogsByKey[key];
+      if (dialogConfig.search) {
         setSearchParams(
           (currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
-            nextParams.delete("dialog");
+            nextParams.delete(key);
             return nextParams;
           },
           { replace: true },
@@ -133,15 +140,16 @@ export const Provider = ({ children }) => {
 
   const toggle = React.useCallback(
     (key) => {
-      if (searchParamDialogKeys.includes(key)) {
+      const dialogConfig = dialogsByKey[key];
+      if (dialogConfig.search) {
         setSearchParams(
           (currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
-            if (nextParams.get("dialog") === key) {
-              nextParams.delete("dialog");
+            if (nextParams.has(key)) {
+              nextParams.delete(key);
               return nextParams;
             }
-            nextParams.set("dialog", key);
+            nextParams.set(key, 1);
             return nextParams;
           },
           { replace: true },

@@ -2,36 +2,36 @@ import React from "react";
 import { css, keyframes } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
+import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   CaretDown as CaretDownIcon,
   DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 import {
   getChain as getSupportedChain,
   isTestnet as isTestnetChain,
-} from "../utils/chains.js";
-import { useAccount, useAccountStreams, useDelegate } from "../store.js";
-import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
-import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
+} from "@/utils/chains";
+import { useAccount, useAccountStreams, useDelegate } from "@/store";
+import { useNavigate } from "@/hooks/navigation";
+import { useWallet, useWalletAuthentication } from "@/hooks/wallet";
 import {
   useState as useSessionState,
   useActions as useSessionActions,
 } from "@/session-provider";
 import useFeatureFlag from "@/hooks/feature-flag";
-import { useDialog } from "../hooks/global-dialogs.js";
-import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
+import { useDialog } from "@/hooks/global-dialogs";
+import { useConnectedFarcasterAccounts } from "@/hooks/farcaster";
+import useAccountDisplayName from "@/hooks/account-display-name";
 import {
   useAuctionData,
   useLazySeed,
   useNounImageDataUri,
 } from "@/components/auction-dialog";
-import AccountAvatar from "./account-avatar.js";
-import LogoSymbol from "./logo-symbol.js";
+import AccountAvatar from "@/components/account-avatar";
+import LogoSymbol from "@/components/logo-symbol";
 
 const flipAnimation = keyframes({
   "0%,52%,100%": {
@@ -41,8 +41,6 @@ const flipAnimation = keyframes({
     transform: "rotate3d(0.4,1,0,180deg)",
   },
 });
-
-const TreasuryDialog = React.lazy(() => import("./treasury-dialog.js"));
 
 const Layout = ({
   scrollContainerRef,
@@ -136,6 +134,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
 
   const { open: openAuctionDialog, preload: preloadAuctionDialog } =
     useDialog("auction");
+  const { open: openTreasuryDialog } = useDialog("treasury");
   const { open: openAccountDialog } = useDialog("account");
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
@@ -145,8 +144,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     "account-authentication",
   );
   const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
-  const [isTreasuryDialogOpen, toggleTreasuryDialog] =
-    useSearchParamToggleState("treasury", { replace: true });
 
   const {
     address: connectedWalletAccountAddress,
@@ -228,7 +225,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         openSettingsDialog();
         break;
       case "open-treasury-dialog":
-        toggleTreasuryDialog();
+        openTreasuryDialog();
         break;
       case "setup-farcaster":
         openFarcasterSetupDialog();
@@ -767,15 +764,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
           </ul>
         </div>
       </div>
-
-      <ErrorBoundary fallback={null}>
-        <React.Suspense fallback={null}>
-          <TreasuryDialog
-            isOpen={isTreasuryDialogOpen}
-            close={toggleTreasuryDialog}
-          />
-        </React.Suspense>
-      </ErrorBoundary>
     </>
   );
 };

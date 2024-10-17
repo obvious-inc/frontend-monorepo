@@ -21,25 +21,6 @@ const useRead = ({ enabled = true, ...options }) =>
 
 const useWrite = ({ enabled = true, ...simulateOptions }) => {
   const {
-    data: transactionHash,
-    writeContractAsync,
-    status: callStatus,
-    error: callError,
-    reset: resetCall,
-  } = useWriteContract({
-    query: { enabled },
-  });
-
-  const {
-    data: receipt,
-    status: receiptStatus,
-    error: receiptError,
-  } = useWaitForTransactionReceipt({
-    hash: transactionHash,
-    query: { enabled },
-  });
-
-  const {
     data: simulationResult,
     isSuccess: isSimulationSuccess,
     status: simulationStatus,
@@ -51,6 +32,31 @@ const useWrite = ({ enabled = true, ...simulateOptions }) => {
     query: { enabled },
   });
 
+  const {
+    data: transactionHash,
+    writeContractAsync,
+    status: callStatus,
+    error: callError,
+    reset: resetCall,
+  } = useWriteContract({
+    query: { enabled },
+  });
+
+  const userRejectedRequest =
+    callError != null &&
+    callError.shortMessage.toLowerCase().includes("user rejected the request");
+
+  const call = () => writeContractAsync(simulationResult.request);
+
+  const {
+    data: receipt,
+    status: receiptStatus,
+    error: receiptError,
+  } = useWaitForTransactionReceipt({
+    hash: transactionHash,
+    query: { enabled },
+  });
+
   React.useEffect(() => {
     resetCall();
   }, [simulationResult, resetCall]);
@@ -58,11 +64,9 @@ const useWrite = ({ enabled = true, ...simulateOptions }) => {
   return {
     simulationStatus: !enabled ? "idle" : simulationStatus,
     simulationError,
-    call: isSimulationSuccess
-      ? () => writeContractAsync(simulationResult.request)
-      : null,
-    callStatus,
-    callError,
+    call: isSimulationSuccess ? call : null,
+    callStatus: userRejectedRequest ? "idle" : callStatus,
+    callError: userRejectedRequest ? null : callError,
     receipt,
     receiptStatus: transactionHash == null ? "idle" : receiptStatus,
     receiptError,
