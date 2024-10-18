@@ -191,7 +191,6 @@ const AuctionDialog = ({ isOpen, close }) => {
     const nounId = parseInt(data.slice(customNounPrefix.length));
     return nounId || null;
   })();
-  console.log({ specifiedNounId });
 
   const { auction: currentAuction } = useAuctionData();
 
@@ -216,12 +215,6 @@ const AuctionDialog = ({ isOpen, close }) => {
         }
         if (nounId == null || currentAuction == null) return;
         const nextNounId = nounId + 1;
-        console.log(
-          nextNounId === currentAuction.nounId
-            ? "current"
-            : `noun-${nextNounId}`,
-          { nextNounId, auctionNounId: currentAuction.nounId },
-        );
         open(
           nextNounId === currentAuction.nounId
             ? "current"

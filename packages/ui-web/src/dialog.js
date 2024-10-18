@@ -162,6 +162,20 @@ const ModalDialog = React.forwardRef(
       if (!isOpen) return;
       if (variant !== "snap-tray") return;
 
+      const close = () => {
+        el.dataset.closing = "true";
+        el.addEventListener("animationend", () => {
+          closeRef.current();
+          setClosing(false);
+        });
+        // Fallback
+        setTimeout(() => {
+          closeRef.current();
+          setClosing(false);
+        }, 500);
+        setClosing(true);
+      };
+
       const { current: el } = underlayRef;
 
       let isTouching = false;
@@ -171,11 +185,12 @@ const ModalDialog = React.forwardRef(
         let scrollEndTimeoutHandle;
 
         return () => {
+          if (isTouching) return;
+
           if (scrollEndTimeoutHandle != null)
             clearTimeout(scrollEndTimeoutHandle);
 
           // End swipe after 250ms
-          // (250 seems to be a good fit for iOS Safari, scroll events)
           scrollEndTimeoutHandle = setTimeout(() => {
             swipeData = null;
           }, 250);
@@ -191,7 +206,7 @@ const ModalDialog = React.forwardRef(
             return;
           }
 
-          if (swipeData.direction === "up" && !isTouching) {
+          if (swipeData.direction === "up") {
             // Ignore up swipes
             return;
           }
@@ -204,24 +219,14 @@ const ModalDialog = React.forwardRef(
 
           swipeData.lastScrollTopTimestamp = Date.now();
           swipeData.lastScrollTop = scrollTop;
-          // We update the swipe direction until touching stops
-          if (swipeData.direction == null || isTouching)
-            swipeData.direction = direction;
+          if (swipeData.direction == null) swipeData.direction = direction;
 
-          if (isTouching) return;
+          const modalRect = modalRef.current.getBoundingClientRect();
+          const isPastMidStop =
+            modalRect.top >= window.visualViewport.height / 2;
 
-          if (velocity > 2) {
-            el.dataset.closing = "true";
-            el.addEventListener("animationend", () => {
-              closeRef.current();
-              setClosing(false);
-            });
-            // Fallback
-            setTimeout(() => {
-              closeRef.current();
-              setClosing(false);
-            }, 500);
-            setClosing(true);
+          if (velocity > 3 || (isPastMidStop && velocity > 0.2)) {
+            close();
           }
         };
       })();
@@ -240,7 +245,7 @@ const ModalDialog = React.forwardRef(
         for (const [name, handler] of eventHandlers)
           el.removeEventListener(name, handler);
       };
-    }, [variant, isOpen]);
+    }, [variant, isOpen, modalRef]);
 
     if (!isOpen) return null;
 
