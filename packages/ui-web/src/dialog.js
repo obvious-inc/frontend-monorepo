@@ -222,10 +222,13 @@ const ModalDialog = React.forwardRef(
           if (swipeData.direction == null) swipeData.direction = direction;
 
           const modalRect = modalRef.current.getBoundingClientRect();
+
+          const isPastCloseThreshold =
+            modalRect.top >= window.visualViewport.height * 0.9;
           const isPastMidStop =
             modalRect.top >= window.visualViewport.height / 2;
 
-          if (velocity > 3 || (isPastMidStop && velocity > 0.2)) {
+          if (isPastCloseThreshold || (isPastMidStop && velocity > 0.2)) {
             close();
           }
         };
@@ -386,7 +389,10 @@ const ModalDialog = React.forwardRef(
                 : undefined,
           }}
         >
-          <div className="snap-tray-only" style={{ paddingTop: "50dvh" }} />
+          <div
+            className="snap-tray-only"
+            style={{ paddingTop: "50dvh", scrollSnapAlign: "start" }}
+          />
           <div
             className="snap-tray-only"
             css={(t) =>
