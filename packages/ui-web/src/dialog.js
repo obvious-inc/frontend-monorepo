@@ -7,6 +7,10 @@ const trayEnterAnimation = keyframes({
   "0%": { opacity: 0, transform: "translateY(min(100%, 50vh))" },
   "100%": { opacity: 1, transform: "translateY(0)" },
 });
+const trayLeaveAnimation = keyframes({
+  "0%": { opacity: 1, transform: "translateY(0)" },
+  "100%": { opacity: 0, transform: "translateY(min(100%, 50vh))" },
+});
 const trayEnterAnimationDesktop = keyframes({
   "0%": { opacity: 0, transform: "translateY(2vh)" },
   "100%": { opacity: 1, transform: "translateY(0)" },
@@ -48,9 +52,16 @@ const ModalDialog = React.forwardRef(
     },
     externalDialogRef,
   ) => {
+    const underlayRef = React.useRef(null);
     const modalRef = React.useRef(null);
     const internalDialogRef = React.useRef(null);
     const navBarFillerRef = React.useRef(null);
+
+    const closeRef = React.useRef(onRequestClose);
+
+    React.useEffect(() => {
+      closeRef.current = onRequestClose;
+    });
 
     const dialogRef = externalDialogRef ?? internalDialogRef;
 
@@ -62,16 +73,40 @@ const ModalDialog = React.forwardRef(
       modalRef,
     );
 
+    const [isClosing, setClosing] = React.useState(false);
     const [
       { visualViewportHeight, visualViewportInset, dialogHeight, navBarHeight },
       setViewportData,
     ] = React.useState({});
 
+    const isViewportCovered =
+      typeof window !== "undefined" &&
+      visualViewportInset > window.innerHeight / 4;
+
+    const fitsInViewport =
+      visualViewportHeight == null ||
+      visualViewportHeight > dialogHeight + navBarHeight;
+
+    const variant = (() => {
+      if (!isSmallDevice) {
+        if (!tray) return "regular";
+        return trayMode === "snap" ? "snap-tray" : "tray";
+      }
+
+      // Always use snap behavior if the content fits inside the viewport
+      if (fitsInViewport || trayMode === "snap") return "snap-tray";
+
+      return "tray";
+    })();
+
     // Sync visual viewport and dialog size state
     React.useEffect(() => {
       if (!isOpen) return;
 
+      let cancelled = false;
+
       const update = () => {
+        if (cancelled) return;
         setViewportData({
           visualViewportHeight: window.visualViewport.height,
           visualViewportInset:
@@ -104,31 +139,13 @@ const ModalDialog = React.forwardRef(
       update();
 
       return () => {
+        cancelled = true;
         window.visualViewport.removeEventListener("resize", resizeHandler);
         observer.disconnect();
       };
     }, [isOpen, dialogRef]);
 
-    const isViewportCovered =
-      typeof window !== "undefined" &&
-      visualViewportInset > window.innerHeight / 4;
-
-    const fitsInViewport =
-      visualViewportHeight == null ||
-      visualViewportHeight > dialogHeight + navBarHeight;
-
-    const variant = (() => {
-      if (!isSmallDevice) {
-        if (!tray) return "regular";
-        return trayMode === "snap" ? "snap-tray" : "tray";
-      }
-
-      // Always use snap behavior if the content fits inside the viewport
-      if (fitsInViewport || trayMode === "snap") return "snap-tray";
-
-      return "tray";
-    })();
-
+    // Tray initial scroll position
     React.useEffect(() => {
       if (!isOpen) return;
 
@@ -140,14 +157,101 @@ const ModalDialog = React.forwardRef(
       }
     }, [variant, isOpen]);
 
+    // Snap tray "swipe-down-to-close"
+    React.useEffect(() => {
+      if (!isOpen) return;
+      if (variant !== "snap-tray") return;
+
+      const { current: el } = underlayRef;
+
+      let isTouching = false;
+
+      const handleScroll = (() => {
+        let swipeData = null;
+        let scrollEndTimeoutHandle;
+
+        return () => {
+          if (scrollEndTimeoutHandle != null)
+            clearTimeout(scrollEndTimeoutHandle);
+
+          // End swipe after 250ms
+          // (250 seems to be a good fit for iOS Safari, scroll events)
+          scrollEndTimeoutHandle = setTimeout(() => {
+            swipeData = null;
+          }, 250);
+
+          const { scrollTop } = el;
+
+          // Swipe start
+          if (swipeData == null) {
+            swipeData = {
+              lastScrollTop: scrollTop,
+              lastScrollTopTimestamp: Date.now(),
+            };
+            return;
+          }
+
+          if (swipeData.direction === "up" && !isTouching) {
+            // Ignore up swipes
+            return;
+          }
+
+          const scrollTopDelta = scrollTop - swipeData.lastScrollTop;
+          const timeDelta = Date.now() - swipeData.lastScrollTopTimestamp;
+
+          const direction = scrollTopDelta > 0 ? "up" : "down";
+          const velocity = Math.abs(scrollTopDelta / timeDelta);
+
+          swipeData.lastScrollTopTimestamp = Date.now();
+          swipeData.lastScrollTop = scrollTop;
+          // We update the swipe direction until touching stops
+          if (swipeData.direction == null || isTouching)
+            swipeData.direction = direction;
+
+          if (isTouching) return;
+
+          if (velocity > 2) {
+            el.dataset.closing = "true";
+            el.addEventListener("animationend", () => {
+              closeRef.current();
+              setClosing(false);
+            });
+            // Fallback
+            setTimeout(() => {
+              closeRef.current();
+              setClosing(false);
+            }, 500);
+            setClosing(true);
+          }
+        };
+      })();
+
+      const eventHandlers = [
+        ["scroll", handleScroll],
+        ["touchstart", () => (isTouching = true)],
+        ["touchend", () => (isTouching = false)],
+        ["touchmove", () => (isTouching = true)],
+      ];
+
+      for (const [name, handler] of eventHandlers)
+        el.addEventListener(name, handler, { passive: true });
+
+      return () => {
+        for (const [name, handler] of eventHandlers)
+          el.removeEventListener(name, handler);
+      };
+    }, [variant, isOpen]);
+
     if (!isOpen) return null;
 
     return (
       <Overlay>
         <div
+          ref={underlayRef}
           data-variant={variant}
           data-fits-in-viewport={fitsInViewport}
           data-viewport-covered={isViewportCovered}
+          data-closing={isClosing || undefined}
           {...underlayProps}
           {...customUnderlayProps}
           css={[
@@ -165,6 +269,7 @@ const ModalDialog = React.forwardRef(
                 width: "100%",
                 height: "100%",
                 overflow: "auto",
+                transition: "0.1s background ease-out",
                 background: "var(--background, hsl(0 0% 0% / 40%))", // Backdrop color
 
                 // Modal defaults
@@ -189,6 +294,8 @@ const ModalDialog = React.forwardRef(
                 // Snap tray
                 '&[data-variant="snap-tray"]': {
                   scrollSnapType: "y mandatory",
+                  scrollbarWidth: "none", // Firefox
+                  "&::-webkit-scrollbar": { display: "none" }, // Safari & Chrome
                   ".modal": {
                     borderTopLeftRadius: "0.6rem",
                     borderTopRightRadius: "0.6rem",
@@ -197,7 +304,15 @@ const ModalDialog = React.forwardRef(
                     outline: "none",
                     overflow: "hidden",
                     minHeight: "min-content",
-                    animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
+                    animation: `${trayEnterAnimation} 0.325s ease-out forwards`,
+                  },
+                  '&[data-closing="true"]': {
+                    pointerEvents: "none",
+                    background: "hsl(0 0% 0% / 0%)",
+                    ".snap-tray-shadow": { display: "none" },
+                    ".modal": {
+                      animation: `${trayLeaveAnimation} 0.325s ease-out forwards`,
+                    },
                   },
                   '&[data-fits-in-viewport="false"],&[data-viewport-covered="true"]':
                     {
@@ -208,7 +323,7 @@ const ModalDialog = React.forwardRef(
                     ".modal": {
                       width: "var(--specified-dialog-width, 62rem)",
                       maxWidth: "100%",
-                      animation: `${trayEnterAnimationDesktop} 0.2s ease-out backwards`,
+                      animation: `${trayEnterAnimationDesktop} 0.2s ease-out forwards`,
                     },
                   },
                 },
@@ -225,7 +340,7 @@ const ModalDialog = React.forwardRef(
                     outline: "none",
                     overflow: "hidden",
                     minHeight: "min-content",
-                    animation: `${trayEnterAnimation} 0.325s ease-out backwards`,
+                    animation: `${trayEnterAnimation} 0.325s ease-out forwards`,
                   },
                   "@media (min-width: 600px)": {
                     padding: "0 1.6rem",
@@ -234,7 +349,7 @@ const ModalDialog = React.forwardRef(
                       maxWidth: "100%",
                       // Desktop trays always expand all the way to the top
                       minHeight: `var(--specified-dialog-height, calc(100dvh - ${t.navBarHeight}))`,
-                      animation: `${trayEnterAnimationDesktop} 0.2s ease-out backwards`,
+                      animation: `${trayEnterAnimationDesktop} 0.2s ease-out forwards`,
                     },
                   },
                 },
@@ -250,7 +365,7 @@ const ModalDialog = React.forwardRef(
                     width: "var(--specified-dialog-width, 62rem)",
                     maxWidth: "100%",
                     height: "var(--specified-dialog-height, auto)",
-                    animation: `${centeredEnterAnimationDesktop} 0.2s ease-out backwards`,
+                    animation: `${centeredEnterAnimationDesktop} 0.2s ease-out forwards`,
                   },
                 },
               }),
@@ -290,7 +405,7 @@ const ModalDialog = React.forwardRef(
             }
           />
           <div
-            className="snap-tray-only"
+            className="snap-tray-only snap-tray-shadow"
             css={(t) => css({ boxShadow: t.shadows.elevationHigh })}
           />
           <div
