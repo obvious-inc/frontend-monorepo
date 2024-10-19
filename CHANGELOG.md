@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.37] - 2024-10-19
+
+### 🐛 Bug Fixes
+
+- *(propose-screen)* Ensure proper bigint comparisons
+
 ## [1.3.0-alpha.36] - 2024-10-19
 
 ### 🐛 Bug Fixes
