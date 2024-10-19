@@ -60,7 +60,7 @@
     "react-stately": "3.33.0",
     "slate": "0.103.0",
     "slate-history": "0.109.0",
-    "slate-react": "0.110.1",
+    "slate-react": "0.110.2",
     "tinykeys": "3.0.0",
     "use-debounce": "10.0.4",
     "viem": "2.21.8",
