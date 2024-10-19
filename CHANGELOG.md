@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.36] - 2024-10-19
+
+### 🐛 Bug Fixes
+
+- *(propose-screen)* Correct `payerTopUpValue` calculation
+- *(propose-screen)* Handle NaN values in top-up logic
+
 ## [1.3.0-alpha.35] - 2024-10-19
 
 ### 🚀 Features

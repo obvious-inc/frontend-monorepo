@@ -100,13 +100,15 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
     }
   }, BigInt(0));
 
-  const treasuryData = useTreasuryData();
   const payerTopUpValueData = useTokenBuyerEthNeeded(usdcSumValue);
-
+  const treasuryData = useTreasuryData();
+  const executorEthBalance = Number(treasuryData?.balances.executor.eth);
   const payerTopUpValue =
-    treasuryData && treasuryData.balances.executor.eth < payerTopUpValueData
+    isNaN(executorEthBalance) || isNaN(payerTopUpValueData)
       ? 0
-      : payerTopUpValueData;
+      : executorEthBalance > payerTopUpValueData
+        ? payerTopUpValueData
+        : 0;
 
   const submit = async () => {
     // const buildCandidateSlug = (title) => {
