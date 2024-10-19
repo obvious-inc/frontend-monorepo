@@ -23,7 +23,7 @@ import {
   useProposalThreshold,
   useActiveProposalId,
 } from "../hooks/dao-contract.js";
-import { useActions/*, useAccountProposalCandidates*/ } from "../store.js";
+import { useActions /*, useAccountProposalCandidates*/ } from "../store.js";
 import { useNavigate, useSearchParams } from "../hooks/navigation.js";
 import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import {
@@ -39,6 +39,7 @@ import {
 import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
+import useTreasuryData from "@/hooks/treasury-data";
 
 const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const navigate = useNavigate();
@@ -99,7 +100,13 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
     }
   }, BigInt(0));
 
-  const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  const treasuryData = useTreasuryData();
+  const payerTopUpValueData = useTokenBuyerEthNeeded(usdcSumValue);
+
+  const payerTopUpValue =
+    treasuryData && treasuryData.balances.executor.eth < payerTopUpValueData
+      ? 0
+      : payerTopUpValueData;
 
   const submit = async () => {
     // const buildCandidateSlug = (title) => {
@@ -365,7 +372,8 @@ const SubmitDialog = ({
             <p>
               Your voting power ({votingPower}) does not meet the required
               proposal threshold ({proposalThreshold + 1}
-              ). {/*Consider{" "}
+              ).{" "}
+              {/*Consider{" "}
               <Link
                 underline
                 component="button"

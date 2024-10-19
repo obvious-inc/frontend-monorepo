@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.35] - 2024-10-19
+
+### 🚀 Features
+
+- *(propose-screen)* Enhance `payerTopUpValue` logic
+
+### ◀️ Revert
+
+- *(deps)* Bump zustand from 4.5.5 to 5.0.0 (#706)
+
 ## [1.3.0-alpha.34] - 2024-10-13
 
 ### 🚜 Refactor
