@@ -104,9 +104,9 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const payerTopUpValueData = useTokenBuyerEthNeeded(usdcSumValue);
 
   const payerTopUpValue =
-    treasuryData && treasuryData.balances.executor.eth < payerTopUpValueData
-      ? 0
-      : payerTopUpValueData;
+    Number(treasuryData?.balances.executor.eth) > payerTopUpValueData
+      ? payerTopUpValueData
+      : 0;
 
   const submit = async () => {
     // const buildCandidateSlug = (title) => {
