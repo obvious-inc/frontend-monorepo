@@ -179,7 +179,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.13.1
-        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.8.0(@swc/core@1.7.36(@swc/helpers@0.5.13)))(wrangler@3.81.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.11.0(@swc/core@1.7.36(@swc/helpers@0.5.13)))(wrangler@3.81.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -196,8 +196,8 @@ importers:
         specifier: 1.13.5
         version: 1.13.5(eslint@8.57.1)
       vercel:
-        specifier: 37.8.0
-        version: 37.8.0(@swc/core@1.7.36(@swc/helpers@0.5.13))
+        specifier: 37.11.0
+        version: 37.11.0(@swc/core@1.7.36(@swc/helpers@0.5.13))
       wrangler:
         specifier: 3.81.0
         version: 3.81.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
@@ -3462,8 +3462,8 @@ packages:
     resolution: {integrity: sha512-pKT8fRnfyYk2MgvyB6fn6ipJPCdfZwiKDdw7vB+HL50rjboEBHDVBEcnwfkEpVSp2AjNtoaOUH7zG+bVC/rvSg==}
     engines: {node: '>=14.6'}
 
-  '@vercel/next@4.3.15':
-    resolution: {integrity: sha512-mg9iBmZm39CCMUfSLs4biP0NOOvUAFUqRORypMIOAe1AVhGg5aX1czTFMy9IOGAfwKlwTFTKeHDNDBi4YEWw1g==}
+  '@vercel/next@4.3.16':
+    resolution: {integrity: sha512-kSi4jYYW+szLaoNwsb3dzBOujuUSE1v8vvZ3gEjVXZLWWchEYzZHKGRmecBQjGe/7mqoMNJIrrDLVYS8oTMTQA==}
 
   '@vercel/nft@0.27.3':
     resolution: {integrity: sha512-oySTdDSzUAFDXpsSLk9Q943o+/Yu/+TCFxnehpFQEf/3khi2stMpTHPVNwFdvZq/Z4Ky93lE+MGHpXCRpMkSCA==}
@@ -7678,8 +7678,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vercel@37.8.0:
-    resolution: {integrity: sha512-cnk+3Q7W+H2EDgCL43x4dcISTyNwnhg9/ERqgh3fH5Ye7iOSsaGgL028XKXMEX63MihneDSf5CYiwSeXbOt8ZA==}
+  vercel@37.11.0:
+    resolution: {integrity: sha512-LCTKg4zxfHFBYULLcIEEi9CxFnywd0y0cUd23wdajqBKSBcEqrR2z77v0uU1G5dzlvqmL7dpAHXYu55jNU1GeA==}
     engines: {node: '>= 16'}
     hasBin: true
 
@@ -8935,7 +8935,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.8.0(@swc/core@1.7.36(@swc/helpers@0.5.13)))(wrangler@3.81.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.11.0(@swc/core@1.7.36(@swc/helpers@0.5.13)))(wrangler@3.81.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.12.1
       ast-types: 0.14.2
@@ -8949,7 +8949,7 @@ snapshots:
       package-manager-manager: 0.2.0
       pcre-to-regexp: 1.1.0
       semver: 7.6.3
-      vercel: 37.8.0(@swc/core@1.7.36(@swc/helpers@0.5.13))
+      vercel: 37.11.0(@swc/core@1.7.36(@swc/helpers@0.5.13))
       wrangler: 3.81.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
@@ -12264,7 +12264,7 @@ snapshots:
     dependencies:
       '@upstash/redis': 1.34.0
 
-  '@vercel/next@4.3.15':
+  '@vercel/next@4.3.16':
     dependencies:
       '@vercel/nft': 0.27.3
     transitivePeerDependencies:
@@ -17305,13 +17305,13 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vercel@37.8.0(@swc/core@1.7.36(@swc/helpers@0.5.13)):
+  vercel@37.11.0(@swc/core@1.7.36(@swc/helpers@0.5.13)):
     dependencies:
       '@vercel/build-utils': 8.4.11
       '@vercel/fun': 1.1.0
       '@vercel/go': 3.2.0
       '@vercel/hydrogen': 1.0.9
-      '@vercel/next': 4.3.15
+      '@vercel/next': 4.3.16
       '@vercel/node': 3.2.23(@swc/core@1.7.36(@swc/helpers@0.5.13))
       '@vercel/python': 4.3.1
       '@vercel/redwood': 2.1.8
