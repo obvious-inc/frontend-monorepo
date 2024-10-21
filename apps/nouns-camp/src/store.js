@@ -1213,7 +1213,7 @@ const createStore = ({ initialState, publicClient }) =>
                 },
                 first: 1000
               ) {
-                content { matchingProposalIds }
+                content { proposalIdToUpdate, matchingProposalIds }
                 proposal { id }
               }
             }`,
