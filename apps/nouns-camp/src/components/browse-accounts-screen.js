@@ -42,10 +42,10 @@ export const useVotes = ({ start, end } = {}) => {
                 ${[
                   start == null
                     ? null
-                 : `# blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
+                 : `blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
                   end == null
                     ? null
-                 : `# blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
+                 : `blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
                 ].join(",")}
               }
             ) {
@@ -109,10 +109,10 @@ export const useRevoteCount = ({ start, end } = {}) => {
                 'reason_not: ""',
                 start == null
                   ? ""
-                  : `# blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
+                  : `blockTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
                 end == null
                   ? ""
-                  : `# blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
+                  : `blockTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
               ]
                 .filter(Boolean)
                 .join(",")}
