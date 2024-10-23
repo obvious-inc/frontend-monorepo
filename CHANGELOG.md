@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.39] - 2024-10-23
+
+### 🐛 Bug Fixes
+
+- *(nouns-camp)* Uncomment `blockTimestamp` fields for `votes`
+- *(store)* Uncomment proposal state fields
+- *(store)* Enable `delegator` field in queries
+
+### ◀️ Revert
+
+- *(deps)* Bump the next group with 3 updates (#724)
+
 ## [1.3.0-alpha.38] - 2024-10-23
 
 ### 🐛 Bug Fixes
