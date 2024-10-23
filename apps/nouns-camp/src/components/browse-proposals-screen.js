@@ -415,12 +415,12 @@ const BrowseProposalsScreen = () => {
               endBlock
             # updatePeriodEndBlock
             # objectionPeriodEndBlock
-            # canceledBlock
-            # canceledTimestamp
-            # queuedBlock
-            # queuedTimestamp
-            # executedBlock
-            # executedTimestamp
+              canceledBlock
+              canceledTimestamp
+              queuedBlock
+              queuedTimestamp
+              executedBlock
+              executedTimestamp
               forVotes
               againstVotes
               abstainVotes
