@@ -179,7 +179,7 @@ importers:
     devDependencies:
       '@cloudflare/next-on-pages':
         specifier: 1.13.1
-        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.12.0(@swc/core@1.7.39(@swc/helpers@0.5.13)))(wrangler@3.82.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+        version: 1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.12.1(@swc/core@1.7.39(@swc/helpers@0.5.13)))(wrangler@3.82.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       dotenv:
         specifier: 16.4.5
         version: 16.4.5
@@ -196,8 +196,8 @@ importers:
         specifier: 1.13.5
         version: 1.13.5(eslint@8.57.1)
       vercel:
-        specifier: 37.12.0
-        version: 37.12.0(@swc/core@1.7.39(@swc/helpers@0.5.13))
+        specifier: 37.12.1
+        version: 37.12.1(@swc/core@1.7.39(@swc/helpers@0.5.13))
       wrangler:
         specifier: 3.82.0
         version: 3.82.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
@@ -7816,8 +7816,8 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  vercel@37.12.0:
-    resolution: {integrity: sha512-q4MxHfNHWeCijEMCcildxGWHDzAhrvdvQkXOqXhRsPJxK23x7AhptjKNHsz/MfGiDrhcjh6rJYhtAQZnfNEbzQ==}
+  vercel@37.12.1:
+    resolution: {integrity: sha512-KjiAU1sVEtaRI/2XwjM1XQdo2Ja4xyeMtVvPXt4+dab0Bpl+p2P9sW19eQr65iM1/XUyZ/kd8Oupv3Xe9E4UXA==}
     engines: {node: '>= 16'}
     hasBin: true
 
@@ -9057,7 +9057,7 @@ snapshots:
     dependencies:
       mime: 3.0.0
 
-  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.12.0(@swc/core@1.7.39(@swc/helpers@0.5.13)))(wrangler@3.82.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@cloudflare/next-on-pages@1.13.1(bufferutil@4.0.8)(utf-8-validate@5.0.10)(vercel@37.12.1(@swc/core@1.7.39(@swc/helpers@0.5.13)))(wrangler@3.82.0(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       acorn: 8.12.1
       ast-types: 0.14.2
@@ -9071,7 +9071,7 @@ snapshots:
       package-manager-manager: 0.2.0
       pcre-to-regexp: 1.1.0
       semver: 7.6.3
-      vercel: 37.12.0(@swc/core@1.7.39(@swc/helpers@0.5.13))
+      vercel: 37.12.1(@swc/core@1.7.39(@swc/helpers@0.5.13))
       wrangler: 3.82.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
@@ -17563,7 +17563,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  vercel@37.12.0(@swc/core@1.7.39(@swc/helpers@0.5.13)):
+  vercel@37.12.1(@swc/core@1.7.39(@swc/helpers@0.5.13)):
     dependencies:
       '@vercel/build-utils': 8.4.11
       '@vercel/fun': 1.1.0
