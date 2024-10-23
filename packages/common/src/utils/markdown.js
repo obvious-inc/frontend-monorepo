@@ -331,9 +331,31 @@ export const getFirstParagraph = (string) => {
 
 export const blockquote = (string) =>
   string
-    .split("\n")
-    .map((l) => `> ${l}`)
-    .join("\n");
+    // https://www.unicode.org/reports/tr18/#Line_Boundaries
+    .split(/(\r\n|(?!\r\n)[\n-\r\x85\u2028\u2029])/)
+    .reduce((acc, part, i, parts) => {
+      if (i % 2 !== 0) return acc; // break part
+      const [line, breakCharacters] = [part, parts[i + 1]];
+      if (breakCharacters != null) return acc + "> " + line + breakCharacters;
+      if (line === "") return acc;
+      return acc + "> " + line;
+    }, "");
+
+// This will throw if the input isn’t a valid blockquote string
+export const unquote = (markdownBlockquote) =>
+  markdownBlockquote
+    // https://www.unicode.org/reports/tr18/#Line_Boundaries
+    .split(/(\r\n|(?!\r\n)[\n-\r\x85\u2028\u2029])/)
+    .reduce((acc, part, i, parts) => {
+      if (i % 2 !== 0) return acc; // break part
+      const [line, breakCharacters] = [part, parts[i + 1]];
+      if (line[0] !== ">") throw new Error("invalid blockquote");
+
+      const unquotedLine = line[1] === " " ? line.slice(2) : line.slice(1);
+      if (breakCharacters != null) return acc + unquotedLine + breakCharacters;
+      if (unquotedLine === "") return acc;
+      return acc + unquotedLine;
+    }, "");
 
 export const getFirstImage = (text) => {
   const blocks = toMessageBlocks(text);

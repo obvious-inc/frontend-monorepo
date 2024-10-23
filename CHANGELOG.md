@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.38] - 2024-10-23
+
+### 🐛 Bug Fixes
+
+- *(camp)* Don’t overwrite main candidate with update candidates
+- *(camp)* Correctly apply and remove markdown blockquotes
+
+### ⚙️ Miscellaneous Tasks
+
+- *(build)* Update Node.js version matrix
+
 ## [1.3.0-alpha.37] - 2024-10-19
 
 ### 🐛 Bug Fixes
