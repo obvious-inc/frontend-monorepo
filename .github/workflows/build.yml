@@ -76,7 +76,7 @@ jobs:
 
     strategy: # Allows you to create a matrix for job configuration.
       matrix:
-        node-version: [18.x, 19.x, 20.x, 21.x, 22.x] # Running tests across different environments.
+        node-version: [20.x, 21.x, 22.x] # Running tests across different environments.
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps: # The sequence of tasks that make up a job.
