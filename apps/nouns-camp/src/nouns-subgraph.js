@@ -18,7 +18,7 @@ export const VOTE_FIELDS = `
   fragment VoteFields on Vote {
     id
     blockNumber
-  # blockTimestamp
+    blockTimestamp
   # transactionHash
     reason
     supportDetailed
