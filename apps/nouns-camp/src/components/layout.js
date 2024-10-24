@@ -259,14 +259,14 @@ const NavBar = ({
                   display: "block",
                   width: "2.4rem",
                   height: "2.4rem",
-                  borderRadius: "0.3rem",
+                  borderRadius: "0.4rem",
                 }}
               />
               <svg className="progress-outline" viewBox="0 0 32 32">
                 <rect
                   width="30"
                   height="30"
-                  rx="6"
+                  rx="7"
                   x="1"
                   y="1"
                   pathLength="99"
