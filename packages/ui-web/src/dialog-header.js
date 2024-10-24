@@ -4,11 +4,14 @@ import Button from "./button.js";
 
 const DialogHeader = ({ title, subtitle, titleProps, dismiss, ...props }) => (
   <header
+    data-has-dimiss={dismiss != null || undefined}
     css={css({
       display: "grid",
       gridTemplateColumns: "minmax(0,1fr) auto",
       alignItems: "flex-start",
       margin: "0 0 1.5rem",
+      // Offsets the title to align with the dismiss button
+      "&[data-has-dismiss]": { paddingTop: "0.1em" },
       "@media (min-width: 600px)": {
         margin: "0 0 2rem",
       },

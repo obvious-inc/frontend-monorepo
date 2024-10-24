@@ -246,6 +246,8 @@ const createStore = ({ initialState, publicClient }) =>
   createZustandStore((set) => {
     const mergeSubgraphEntitiesIntoStore = (storeState, subgraphEntities) =>
       Object.entries(subgraphEntities).reduce((stateAcc, [key, value]) => {
+        if (value == null) return stateAcc;
+
         const mergeIntoStore = (state) => mergeStoreState(stateAcc, state);
         switch (key) {
           case "account":
@@ -287,10 +289,21 @@ const createStore = ({ initialState, publicClient }) =>
             });
           }
 
+          case "noun":
+            return mergeIntoStore({
+              nounsById: { [value.id]: value },
+            });
+
           case "nouns":
             return mergeIntoStore({
               nounsById: arrayUtils.indexBy((n) => n.id, value),
             });
+
+          case "auction": {
+            return mergeIntoStore({
+              nounsById: { [value.id]: { auction: value } },
+            });
+          }
 
           case "auctions": {
             const auctionsByNounId = arrayUtils.indexBy((a) => a.id, value);

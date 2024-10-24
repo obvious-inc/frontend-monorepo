@@ -84,6 +84,8 @@ const TreasuryDialog = ({ isOpen, close }) => {
         close();
       }}
       width="44rem"
+      // Forces snap mode when the tray variant is used
+      trayMode="snap"
     >
       {(props) =>
         data == null ? (
@@ -173,10 +175,10 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
   return (
     <div
       css={css({
-        flex: 1,
-        minHeight: 0,
-        display: "flex",
-        flexDirection: "column",
+        // flex: 1,
+        // minHeight: 0,
+        // display: "flex",
+        // flexDirection: "column",
       })}
     >
       <DialogHeader
@@ -194,9 +196,9 @@ const Content = ({ balances, rates, aprs, totals, titleProps, dismiss }) => {
       />
       <main
         css={css({
-          flex: 1,
-          minHeight: 0,
-          overflow: "auto",
+          // flex: 1,
+          // minHeight: 0,
+          // overflow: "auto",
           padding: "0.5rem 1.5rem 1.5rem",
           "@media (min-width: 600px)": {
             padding: "0 2rem 2rem",

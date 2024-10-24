@@ -1,19 +1,27 @@
 import React from "react";
+import NextLink from "next/link";
 import { css } from "@emotion/react";
 import { useQuery } from "@tanstack/react-query";
 import { array as arrayUtils, date as dateUtils } from "@shades/common/utils";
 import * as Popover from "@shades/ui-web/popover";
 import Spinner from "@shades/ui-web/spinner";
+import Button from "@shades/ui-web/button";
 import InlineButton from "@shades/ui-web/inline-button";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import {
+  DotsHorizontal as DotsHorizontalIcon,
+  Fullscreen as FullscreenIcon,
+} from "@shades/ui-web/icons";
 import { useActions, useNoun } from "../store.js";
 import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
+import { buildEtherscanLink } from "@/utils/etherscan";
 import { useTransferMeta as useNounTransferMeta } from "@/hooks/noun-transfers";
-import InlineVerticalSeparator from "./inline-vertical-separator.js";
 import NounAvatar from "./noun-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import ChainExplorerTransactionLink from "./chain-explorer-transaction-link.js";
+import { useDialog } from "@/hooks/global-dialogs.js";
 
 const NounPreviewPopoverTrigger = React.forwardRef(
   (
@@ -57,6 +65,7 @@ const NounPreviewPopoverTrigger = React.forwardRef(
       return (
         <button
           ref={triggerRef}
+          className="noun-preview-trigger"
           css={css({
             outline: "none",
             "@media(hover: hover)": {
@@ -218,7 +227,7 @@ const NounStatus = ({ nounId }) => {
       css={(t) =>
         css({
           padding: "1rem 1.2rem",
-          borderTop: "0.1rem solid",
+          borderBottom: "0.1rem solid",
           borderColor: t.colors.borderLighter,
           fontSize: t.text.sizes.small,
           color: t.colors.textDimmed,
@@ -262,7 +271,7 @@ const NounContextStatus = ({ nounId, contextAccount }) => {
           display: "grid",
           rowGap: "0.4rem",
           padding: "1rem 1.2rem",
-          borderTop: "0.1rem solid",
+          borderBottom: "0.1rem solid",
           borderColor: t.colors.borderLighter,
           fontSize: t.text.sizes.small,
           color: t.colors.textDimmed,
@@ -424,12 +433,11 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
   const noun = useNoun(nounId);
   const { fetchNoun } = useActions();
 
-  const firstEventTimestamp =
-    noun?.events?.[noun.events.length - 1]?.blockTimestamp;
-
   const auction = noun?.auction;
 
   const isAuctionOngoing = auction?.endTimestamp > Date.now();
+
+  const { open: openAuctionDialog } = useDialog("auction");
 
   useQuery({ queryKey: ["noun", nounId], queryFn: () => fetchNoun(nounId) });
 
@@ -460,133 +468,62 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
         </div>
       ) : (
         <>
-          <div
-            css={(t) =>
-              css({
-                display: "flex",
-                alignItems: "center",
-                padding: "1rem 1.2rem",
-                gap: "1rem",
-                color: t.colors.textDimmed,
-                lineHeight: 1.25,
-              })
-            }
-          >
-            <NounAvatarWithDelegationStatusIndicator
-              nounId={nounId}
-              avatarOnly
-              size="3.2rem"
-              contextAccount={contextAccount}
-            />
-
-            <div css={css({ flex: 1, minWidth: 0 })}>
-              <a
-                href={`https://nouns.wtf/noun/${nounId}`}
-                rel="noreferrer"
-                target="_blank"
-                css={(t) =>
-                  css({
-                    fontWeight: t.text.weights.smallHeader,
-                    color: t.colors.textNormal,
-                    textDecoration: "none",
-                    "@media(hover: hover)": {
-                      ":hover [data-hover-underline]": {
-                        textDecoration: "underline",
-                      },
-                    },
-                  })
-                }
-              >
-                <h2
-                  data-hover-underline
+          {(() => {
+            if (isAuctionOngoing) {
+              return (
+                <div
                   css={(t) =>
                     css({
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      color: t.colors.header,
-                      fontSize: t.text.sizes.large,
-                      fontWeight: t.text.weights.header,
+                      padding: "1rem 1.2rem",
+                      borderBottom: "0.1rem solid",
+                      borderColor: t.colors.borderLighter,
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                      button: {
+                        fontWeight: t.text.weights.emphasis,
+                        "@media(hover: hover)": {
+                          cursor: "pointer",
+                          ":hover": {
+                            textDecoration: "underline",
+                          },
+                        },
+                      },
                     })
                   }
                 >
-                  Noun {nounId}
-                </h2>
-              </a>
+                  {(() => {
+                    const auctionTrigger = (
+                      <button onClick={() => openAuctionDialog()}>
+                        Auction
+                      </button>
+                    );
 
-              <div
-                css={(t) =>
-                  css({
-                    fontSize: t.text.sizes.small,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    color: t.colors.textDimmed,
-                  })
-                }
-              >
-                {isAuctionOngoing ? (
-                  (() => {
                     const { minutes, hours } = dateUtils.differenceUnits(
                       auction.endTimestamp,
                       new Date(),
                     );
 
                     if (minutes < 1)
-                      return <>Auction ends in less than 1 minute</>;
+                      return <>{auctionTrigger} ends in less than 1 minute</>;
 
                     if (hours <= 1)
                       return (
                         <>
-                          Auction ends in {Math.max(minutes, 0)}{" "}
+                          {auctionTrigger} ends in {Math.max(minutes, 0)}{" "}
                           {minutes === 1 ? "minute" : "minutes"}
                         </>
                       );
 
-                    return <>Auction ends in {hours} hours</>;
-                  })()
-                ) : (
-                  <>
-                    {auction?.startTimestamp != null ? (
+                    return (
                       <>
-                        Born{" "}
-                        <FormattedDateWithTooltip
-                          disableRelative
-                          disableTooltip
-                          month="short"
-                          day="numeric"
-                          year="numeric"
-                          value={auction.startTimestamp}
-                        />
+                        {auctionTrigger} ends in {hours} hours
                       </>
-                    ) : firstEventTimestamp != null ? (
-                      <>
-                        <FormattedDateWithTooltip
-                          disableRelative
-                          disableTooltip
-                          month="short"
-                          day="numeric"
-                          year="numeric"
-                          value={firstEventTimestamp}
-                        />
-                      </>
-                    ) : null}
-                    {auction?.amount && (
-                      <>
-                        <InlineVerticalSeparator />
-                        Auctioned for{" "}
-                        <FormattedEthWithConditionalTooltip
-                          decimals={4}
-                          truncationDots={false}
-                          value={auction?.amount}
-                        />
-                      </>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-          {(() => {
+                    );
+                  })()}
+                </div>
+              );
+            }
+
             if (noun?.owner?.id == null) return null;
 
             if (contextAccount == null || isAuctionOngoing)
@@ -599,6 +536,167 @@ const NounPreview = React.forwardRef(({ nounId, contextAccount }, ref) => {
               />
             );
           })()}
+          <div
+            css={css({
+              display: "flex",
+              alignItems: "center",
+              padding: "1rem 1.2rem",
+              gap: "1.6rem",
+            })}
+          >
+            <div css={css({ flex: 1, minWidth: 0 })}>
+              <NextLink
+                prefetch
+                href={`/nouns/${nounId}`}
+                css={css({
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                  color: "inherit",
+                  textDecoration: "none",
+                  lineHeight: 1.25,
+                })}
+              >
+                <NounAvatarWithDelegationStatusIndicator
+                  nounId={nounId}
+                  avatarOnly
+                  size="3.2rem"
+                  contextAccount={contextAccount}
+                />
+
+                <div css={css({ flex: 1, minWidth: 0 })}>
+                  <h2
+                    css={(t) =>
+                      css({
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        color: t.colors.header,
+                        fontSize: t.text.sizes.large,
+                        fontWeight: t.text.weights.header,
+                      })
+                    }
+                  >
+                    Noun {nounId}
+                  </h2>
+
+                  {auction?.startTimestamp != null && (
+                    <div
+                      css={(t) =>
+                        css({
+                          fontSize: t.text.sizes.small,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          color: t.colors.textDimmed,
+                        })
+                      }
+                    >
+                      Born{" "}
+                      <FormattedDateWithTooltip
+                        disableRelative
+                        disableTooltip
+                        month="short"
+                        day="numeric"
+                        year="numeric"
+                        value={auction.startTimestamp}
+                      />
+                    </div>
+                  )}
+                </div>
+              </NextLink>
+            </div>
+            <div
+              css={css({
+                display: "flex",
+                alignItems: "center",
+                gap: "0.6rem",
+              })}
+            >
+              <Button
+                size="default"
+                onClick={() => openAuctionDialog(`noun-${nounId}`)}
+                icon={
+                  <FullscreenIcon
+                    style={{
+                      width: "1.2rem",
+                      height: "auto",
+                      transform: "scaleX(-1)",
+                    }}
+                  />
+                }
+              />
+
+              <DropdownMenu.Root
+                placement="bottom end"
+                offset={18}
+                crossOffset={5}
+              >
+                <DropdownMenu.Trigger asChild>
+                  <Button
+                    size="default"
+                    icon={
+                      <DotsHorizontalIcon
+                        style={{ width: "1.8rem", height: "auto" }}
+                      />
+                    }
+                  />
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content
+                  css={css({
+                    width: "min-content",
+                    minWidth: "min-content",
+                    maxWidth: "calc(100vw - 2rem)",
+                  })}
+                  items={[
+                    { id: "open-etherscan", label: "Etherscan" },
+                    { id: "open-nounswap", label: "NounSwap" },
+                    { id: "open-probe", label: "Probe" },
+                    { id: "open-nouns-terminal", label: "Nouns Terminal" },
+                  ]}
+                  onAction={(key) => {
+                    switch (key) {
+                      case "open-etherscan": {
+                        const { address: nounsTokenContractAddress } =
+                          resolveContractIdentifier("token");
+                        window.open(
+                          buildEtherscanLink(
+                            `/token/${nounsTokenContractAddress}?a=${nounId}`,
+                          ),
+                          "_blank",
+                        );
+                        break;
+                      }
+
+                      case "open-nounswap":
+                        window.open(
+                          `https://nounswap.wtf?nounId=${nounId}`,
+                          "_blank",
+                        );
+                        break;
+
+                      case "open-probe":
+                        window.open(
+                          `https://probe.wtf/nouns/${nounId}`,
+                          "_blank",
+                        );
+                        break;
+
+                      case "open-nouns-terminal":
+                        window.open(
+                          `https://nouns.sh/noun/${nounId}`,
+                          "_blank",
+                        );
+                        break;
+                    }
+                  }}
+                >
+                  {(item) => (
+                    <DropdownMenu.Item>{item.label}</DropdownMenu.Item>
+                  )}
+                </DropdownMenu.Content>
+              </DropdownMenu.Root>
+            </div>
+          </div>
         </>
       )}
     </div>
