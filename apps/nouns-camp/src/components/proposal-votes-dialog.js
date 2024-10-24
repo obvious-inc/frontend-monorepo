@@ -1,12 +1,12 @@
 import React from "react";
 import { css } from "@emotion/react";
-import NextLink from "next/link";
 import { array as arrayUtils } from "@shades/common/utils";
 import Select from "@shades/ui-web/select";
 import Switch from "@shades/ui-web/switch";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
+import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import {
   useProposal,
   useProposalCandidate,
@@ -46,6 +46,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
 
   const [showReason, setShowReason] = React.useState(false);
   const [sortStrategy, setSortStrategy] = React.useState("voting-power");
+  const [expandedRepostId, setExpandedRepostId] = React.useState(null);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTab = searchParams.get("votes-dialog-tab") ?? "for";
@@ -59,12 +60,9 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
     const votes = (proposal.votes ?? []).map((v) => ({ ...v, type: "vote" }));
 
     const feedbackPosts = [
-      ...(proposal.feedbackPosts_ ?? []),
-      ...(candidate?.feedbackPosts_ ?? []),
-    ].map((p) => ({
-      ...p,
-      type: "feedback-post",
-    }));
+      ...(proposal.feedbackPosts ?? []),
+      ...(candidate?.feedbackPosts ?? []),
+    ].map((p) => ({ ...p, type: "feedback-post" }));
 
     return arrayUtils.sortBy("createdBlock", [...votes, ...feedbackPosts]);
   }, [proposal, candidate]);
@@ -135,22 +133,27 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
               listStyle: "none",
               fontSize: "0.875em",
               marginBottom: "0.8rem",
-              li: {
+              "& > li": {
                 position: "relative",
                 border: "0.1rem solid",
                 borderRadius: "0.5rem",
                 borderColor: t.colors.borderLighter,
                 padding: "0.4rem 0.6rem",
+                paddingRight: "2.6rem",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
-                ".repost-link": {
-                  display: "block",
+                ".expand-button": {
                   position: "absolute",
-                  inset: 0,
+                  top: 0,
+                  right: 0,
+                  padding: "0.8rem",
+                  "@media(hover: hover)": {
+                    cursor: "pointer",
+                  },
                 },
               },
-              "li + li": { marginTop: "0.6rem" },
+              "& > li + li": { marginTop: "0.6rem" },
             },
           });
         }}
@@ -206,22 +209,18 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                           2: "abstain",
                         }[p.support];
 
-                        const search = new URLSearchParams(searchParams);
-                        search.set("votes-dialog-tab", supportWord);
+                        const postIndex = ascendingPosts.indexOf(p);
+                        const extractReposts = createRepostExtractor(
+                          ascendingPosts.slice(0, postIndex),
+                        );
+                        const [, strippedReason] = extractReposts(p.reason);
+                        const isExpanded = expandedRepostId === p.id;
 
                         return (
                           <li key={p.id}>
-                            {p.type === "vote" && (
-                              <NextLink
-                                className="repost-link"
-                                href={`?${search}#${p.id}`}
-                              />
-                            )}
                             <AccountPreviewPopoverTrigger
                               showAvatar
                               accountAddress={p.voterId}
-                              // relative to make it appear on top of the overlay link
-                              style={{ position: "relative" }}
                             />
                             {(() => {
                               if (isRevote) return null;
@@ -237,10 +236,28 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                             })()}
                             :{" "}
                             <PostReasonRichText
-                              text={p.reason}
-                              compact={p.type !== "vote"}
-                              inline={p.type === "vote"}
+                              text={strippedReason}
+                              compact={isExpanded}
+                              inline={!isExpanded}
                             />
+                            <button
+                              className="expand-button"
+                              onClick={() =>
+                                setExpandedRepostId((id) =>
+                                  id === p.id ? null : p.id,
+                                )
+                              }
+                            >
+                              <CaretDownIcon
+                                style={{
+                                  width: "0.85em",
+                                  height: "auto",
+                                  transform: isExpanded
+                                    ? "scaleY(-1)"
+                                    : undefined,
+                                }}
+                              />
+                            </button>
                           </li>
                         );
                       })}
