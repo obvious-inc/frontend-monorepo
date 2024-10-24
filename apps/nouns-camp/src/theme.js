@@ -33,4 +33,12 @@ const themes = {
   },
 };
 
-export const getTheme = (key) => themes[key];
+export const getTheme = (key) => {
+  const theme = themes[key];
+  if (theme == null) throw new Error(key);
+  return {
+    ...theme,
+    sidebarWidth: "40rem",
+    navBarHeight: "4.7rem",
+  };
+};

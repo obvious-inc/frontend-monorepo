@@ -93,6 +93,7 @@ const Content = ({ titleProps, dismiss }) => {
       dismiss={dismiss}
       title="Settings"
       submitLabel={null}
+      noFooter
       controls={[
         {
           key: "theme",
@@ -183,7 +184,6 @@ const Content = ({ titleProps, dismiss }) => {
               throw new Error(`Unsupported setting type: "${type}"`);
           }
         })}
-      cancelLabel="Close"
     >
       <div
         css={(t) =>

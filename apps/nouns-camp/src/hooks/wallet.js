@@ -38,17 +38,19 @@ export const Provider = ({ children }) => {
   return (
     <Context.Provider value={{ openDialog }}>
       {children}
-      <Dialog isOpen={isOpen} onRequestClose={closeDialog} width="36rem">
-        {({ titleProps }) => (
-          <ConnectDialogContent
-            titleProps={titleProps}
-            dismiss={closeDialog}
-            onSuccess={() => {
-              closeDialog();
-            }}
-          />
-        )}
-      </Dialog>
+      {isOpen && (
+        <Dialog isOpen={isOpen} onRequestClose={closeDialog} width="36rem">
+          {({ titleProps }) => (
+            <ConnectDialogContent
+              titleProps={titleProps}
+              dismiss={closeDialog}
+              onSuccess={() => {
+                closeDialog();
+              }}
+            />
+          )}
+        </Dialog>
+      )}
     </Context.Provider>
   );
 };

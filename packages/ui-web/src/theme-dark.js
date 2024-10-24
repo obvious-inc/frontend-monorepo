@@ -13,6 +13,7 @@ const primaryTintDarker = createPrimary({ saturation: 1, lightness: 0.43 });
 const primaryTintLighter = createPrimary({ saturation: 1, lightness: 0.6 });
 const primaryTransparent = createPrimary({ opacity: 0.4 });
 const primaryTransparentSoft = createPrimary({ opacity: 0.15 });
+const primaryTransparentStrong = createPrimary({ opacity: 0.6 });
 const textNormal = "hsl(0 0% 83%)";
 const textDimmed = "hsl(0 0% 60%)";
 const textDimmedModifierHover = "hsl(0 0% 66%)";
@@ -84,6 +85,7 @@ export default {
   name: "dark",
   colorScheme: "dark",
   sidebarWidth: "25rem",
+  navBarHeight: "4.5rem",
   avatars: {
     borderRadius: "50%",
     size: "1.8rem",
@@ -129,6 +131,7 @@ export default {
     primaryModifierHover: primaryTintDarker,
     primaryTransparent,
     primaryTransparentSoft,
+    primaryTransparentStrong,
     textNormal,
     textDimmedModifierHover,
     textDimmed,
@@ -147,7 +150,6 @@ export default {
     textDanger,
     link: primaryTintLighter,
     linkModifierHover: createPrimary({ saturation: 1, lightness: 0.65 }),
-    borderNormal: "hsl(0 0% 100% / 20%)",
     borderStrong: "hsl(0, 0%, 100%, 0.5)",
     borderLight: "hsl(0, 0%, 100%, 0.16)",
     borderLighter: "hsl(0, 0%, 100%, 0.1)",

@@ -1,14 +1,15 @@
 import { css } from "@emotion/react";
 import { Switch as ReactAriaSwitch } from "react-aria-components";
 
-const Switch = ({ label, size, align, ...props }) => (
+const Switch = ({ label, size, align, variant, ...props }) => (
   <ReactAriaSwitch
     {...props}
     data-size={size}
     data-align={align}
+    data-variant={variant}
     css={(t) =>
       css({
-        display: "flex",
+        display: "inline-flex",
         alignItems: "center",
         gap: "0.8rem",
         fontSize: t.text.sizes.base,
@@ -33,13 +34,13 @@ const Switch = ({ label, size, align, ...props }) => (
             transition: "transform 0.2s",
           },
         },
+        '&[data-variant="light"] .indicator': {
+          background: t.colors.backgroundModifierStrong,
+        },
         "&[data-selected] .indicator": {
           background: t.colors.primary,
           "&:before": { transform: "translateX(calc(100% - 0.2rem))" },
         },
-        // "&[data-hovered]:not(&[data-selected]) .indicator": {
-        //   background: t.colors.borderNormal,
-        // },
         "&[data-focus-visible] .indicator": {
           boxShadow: t.shadows.focus,
         },

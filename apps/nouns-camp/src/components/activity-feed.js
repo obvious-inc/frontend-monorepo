@@ -395,13 +395,10 @@ const FeedItem = React.memo(
 
       return (
         <span
-          data-timestamp
           css={(t) =>
             css({
               fontSize: t.text.sizes.small,
               color: t.colors.textDimmed,
-              padding: "0.15rem 0",
-              display: "inline-block",
             })
           }
         >
@@ -550,7 +547,19 @@ const FeedItem = React.memo(
             >
               <div
                 css={(t) =>
-                  css({ flex: 1, minWidth: 0, color: t.colors.textDimmed })
+                  css({
+                    flex: 1,
+                    minWidth: 0,
+                    color: t.colors.textDimmed,
+                    ".interactive": {
+                      color: t.colors.textDimmed,
+                      fontWeight: t.text.weights.emphasis,
+                      "@media(hover: hover)": {
+                        cursor: "pointer",
+                        ":hover": { textDecoration: "underline" },
+                      },
+                    },
+                  })
                 }
               >
                 <ItemTitle
@@ -1043,6 +1052,8 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
   const proposal = useProposal(item.proposalId ?? item.targetProposalId);
   const candidate = useProposalCandidate(item.candidateId);
 
+  const { open: openAuctionDialog } = useDialog("auction");
+
   const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
       const title =
@@ -1105,19 +1116,37 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
         case "auction-started":
           return (
             <>
-              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
-              started
+              <button
+                className="interactive"
+                onClick={() => openAuctionDialog(`noun-${item.nounId}`)}
+              >
+                Auction
+              </button>{" "}
+              for <NounPreviewPopoverTrigger nounId={item.nounId} /> started
             </>
           );
         case "auction-ended":
           return (
             <>
-              Auction for <NounPreviewPopoverTrigger nounId={item.nounId} /> won
-              by{" "}
-              <AccountPreviewPopoverTrigger
-                accountAddress={item.bidderAccount}
-              />{" "}
-              for <FormattedEthWithConditionalTooltip value={item.bidAmount} />
+              <button
+                className="interactive"
+                onClick={() => openAuctionDialog(`noun-${item.nounId}`)}
+              >
+                Auction
+              </button>{" "}
+              for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
+              {item.bidderAccount == null ? (
+                <>ended without bids</>
+              ) : (
+                <>
+                  won by{" "}
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={item.bidderAccount}
+                  />{" "}
+                  for{" "}
+                  <FormattedEthWithConditionalTooltip value={item.bidAmount} />
+                </>
+              )}
             </>
           );
         case "auction-settled":
@@ -1474,13 +1503,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
           {author} placed a bid of{" "}
           <FormattedEthWithConditionalTooltip value={item.amount} /> for{" "}
           <NounPreviewPopoverTrigger nounId={item.nounId} /> at the{" "}
-          <a
-            href={`https://nouns.wtf/noun/${item.nounId}`}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Auction House
-          </a>
+          <NextLink href="/auction">Auction House</NextLink>
         </>
       );
 

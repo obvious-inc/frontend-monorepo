@@ -56,12 +56,14 @@ const addressByIdentifierByChainId = {
     "usdc-token": "0xebcc972b6b3eb15c0592be1871838963d0b94278",
     "steth-token": "0x3e3fe7dbc6b4c189e7128855dd526361c49b40af",
     "wsteth-token": "0xb82381a3fbd3fafa77b3a7be693342618240067b",
+    "$nouns-token": "0x0000000000000000000000000000000000000000",
 
     // Nouns contracts
     dao: "0x35d2670d7c8931aacdd37c89ddcb0638c3c44a57",
     executor: "0x07e5d6a1550ad5e597a9b0698a474aa080a2fb28",
     data: "0x9040f720aa8a693f950b9cf94764b4b06079d002",
     token: "0x4c4674bb72a096855496a7204962297bd7e12b85",
+    descriptor: "0x79e04ebcdf1ac2661697b23844149b43acc002d5",
     "auction-house": "0x488609b7113fcf3b761a05956300d605e8f6bcaf",
     "auction-house-admin": "0x9a19e520d9cd6c40ecc79623f16390a68962b7e9",
     "fork-escrow": "0xa15b495deb1b77f066b0c286fdb640c81ef356c4",

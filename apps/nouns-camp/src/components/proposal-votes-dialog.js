@@ -382,7 +382,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
             )}
           />
           <Switch
-            value={showReason}
+            isSelected={showReason}
             onChange={setShowReason}
             label="Show reason"
           />

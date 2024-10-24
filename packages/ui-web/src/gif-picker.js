@@ -319,7 +319,8 @@ export const PopoverOrTrayDialog = ({
       <Dialog
         isOpen={isOpen}
         onRequestClose={close}
-        underlayProps={{ css: css({ "[data-modal]": { background: "none" } }) }}
+        tray
+        underlayProps={{ css: css({ ".modal": { background: "none" } }) }}
       >
         <button
           onClick={close}
