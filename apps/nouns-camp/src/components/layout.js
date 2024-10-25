@@ -219,6 +219,12 @@ const NavBar = ({
               borderRadius: "0.6rem",
               position: "relative",
               overflow: "visible",
+              "&:focus-visible": {
+                boxShadow: "none",
+                ".progress-outline rect": {
+                  stroke: t.colors.primary,
+                },
+              },
               ".noun-image": {
                 background: t.colors.backgroundModifierNormal,
               },
@@ -938,7 +944,7 @@ const AuctionNounImage = (props) => {
   const { auction } = useAuctionData();
   const seed = useLazySeed(auction?.nounId);
   const imageDataUri = useNounImageDataUri(seed);
-  if (imageDataUri == null) return null;
+  if (imageDataUri == null) return <div {...props} />;
   return <img src={imageDataUri} {...props} />;
 };
 
