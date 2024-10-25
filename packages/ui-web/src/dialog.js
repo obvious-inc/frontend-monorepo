@@ -43,7 +43,7 @@ const ModalDialog = React.forwardRef(
       height,
       transparent,
       tray = false,
-      trayMode,
+      trayViewportCoveredBehavior = "ignore",
       backdrop = "normal",
       modalProps: customModalProps,
       underlayProps: customUnderlayProps,
@@ -56,7 +56,6 @@ const ModalDialog = React.forwardRef(
     const modalRef = React.useRef(null);
     const internalDialogRef = React.useRef(null);
     const navBarFillerRef = React.useRef(null);
-    const fillerPadderRef = React.useRef(null);
 
     const closeRef = React.useRef(onRequestClose);
 
@@ -89,15 +88,8 @@ const ModalDialog = React.forwardRef(
       visualViewportHeight > dialogHeight + navBarHeight;
 
     const variant = (() => {
-      if (!isSmallDevice) {
-        if (!tray) return "regular";
-        return trayMode === "snap" ? "snap-tray" : "tray";
-      }
-
-      // Always use snap behavior if the content fits inside the viewport
-      if (fitsInViewport || trayMode === "snap") return "snap-tray";
-
-      return "tray";
+      if (isSmallDevice) return "snap-tray";
+      return tray ? "tray" : "regular";
     })();
 
     // Sync visual viewport and dialog size state
@@ -157,6 +149,22 @@ const ModalDialog = React.forwardRef(
         });
       }
     }, [variant, isOpen]);
+
+    // Snap to bottom when viewport is covered (by soft keyboard)
+    React.useEffect(() => {
+      if (!isOpen) return;
+      if (!["tray", "snap-tray"].includes(variant)) return;
+
+      if (
+        isViewportCovered &&
+        trayViewportCoveredBehavior === "snap-to-bottom"
+      ) {
+        modalRef.current.scrollIntoView({
+          behavior: "instant",
+          block: "bottom",
+        });
+      }
+    }, [variant, isOpen, isViewportCovered, trayViewportCoveredBehavior]);
 
     // Snap tray "swipe-down-to-close"
     React.useEffect(() => {
@@ -260,6 +268,7 @@ const ModalDialog = React.forwardRef(
           data-variant={variant}
           data-fits-in-viewport={fitsInViewport}
           data-viewport-covered={isViewportCovered}
+          data-tray-viewport-covered-behavior={trayViewportCoveredBehavior}
           data-closing={isClosing || undefined}
           {...underlayProps}
           {...customUnderlayProps}
@@ -321,8 +330,13 @@ const ModalDialog = React.forwardRef(
                     flexDirection: "column",
                     outline: "none",
                     overflow: "hidden",
-                    minHeight: "min-content",
+                    // minHeight: "min-content",
+                    minHeight: `calc(100dvh - ${t.navBarHeight})`,
                     animation: `${trayEnterAnimation} 0.325s ease-out forwards`,
+                  },
+                  '&[data-fits-in-viewport="false"]': {
+                    scrollSnapType: "y proximity",
+                    ".modal": { scrollSnapAlign: "end" },
                   },
                   '&[data-closing="true"]': {
                     pointerEvents: "none",
@@ -332,7 +346,7 @@ const ModalDialog = React.forwardRef(
                       animation: `${trayLeaveAnimation} 0.325s ease-out forwards`,
                     },
                   },
-                  '&[data-fits-in-viewport="false"],&[data-viewport-covered="true"]':
+                  '&[data-viewport-covered="true"][data-viewport-covered-behavior="snap-to-bottom"]':
                     {
                       ".modal": { scrollSnapAlign: "end" },
                     },
@@ -446,46 +460,66 @@ const ModalDialog = React.forwardRef(
             {...customModalProps}
             css={[customModalProps?.css]}
           >
+            {/* <div
+              className="snap-tray-only"
+              css={(t) =>
+                css({
+                  position: "relative",
+                  ".handle": {
+                    position: "absolute",
+                    top: "0.4rem",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    height: "0.4rem",
+                    width: "3.2rem",
+                    borderRadius: "0.2rem",
+                    background: t.light
+                      ? t.colors.backgroundTertiary
+                      : t.colors.borderLighter,
+                    boxShadow: t.shadows.elevationLow,
+                  },
+                })
+              }
+            >
+              <div className="handle" />
+            </div> */}
             <Dialog
               ref={dialogRef}
               {...dialogProps}
               variant={variant}
               className="dialog"
             >
-              {(props) => children?.({ ...props, variant }) ?? children}
+              {(props) =>
+                typeof children === "function"
+                  ? children({ ...props, variant })
+                  : children
+              }
             </Dialog>
-            <div
-              ref={fillerPadderRef}
-              className="snap-tray-only"
-              style={{
-                // This pads short dialogs to fill the available space
-                paddingTop:
-                  visualViewportHeight == null
-                    ? undefined
-                    : `${Math.max(0, visualViewportHeight - dialogHeight - navBarHeight)}px`,
-              }}
-            />
-            <div
-              className="snap-tray-only"
-              style={{
-                // This pads the dialog to make sure soft keyboards don’t hide
-                // inputs that are placed at the bottom of the dialog container
-                paddingTop:
-                  visualViewportInset == null
-                    ? undefined
-                    : `${visualViewportInset}px`,
-              }}
-            />
+            {trayViewportCoveredBehavior === "snap-to-bottom" && (
+              <div
+                className="snap-tray-only"
+                style={{
+                  // This pads the dialog to make sure soft keyboards don’t hide
+                  // inputs that are placed at the bottom of the dialog container
+                  paddingTop:
+                    visualViewportInset == null
+                      ? undefined
+                      : `${visualViewportInset}px`,
+                }}
+              />
+            )}
           </div>
-          <div
-            className="snap-tray-only"
-            css={(t) =>
-              css({
-                background: t.colors.dialogBackground,
-                paddingTop: "50dvh",
-              })
-            }
-          />
+          {fitsInViewport && (
+            <div
+              className="snap-tray-only"
+              css={(t) =>
+                css({
+                  background: t.colors.dialogBackground,
+                  paddingTop: "50dvh",
+                })
+              }
+            />
+          )}
         </div>
       </Overlay>
     );

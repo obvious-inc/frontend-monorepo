@@ -84,8 +84,6 @@ const TreasuryDialog = ({ isOpen, close }) => {
         close();
       }}
       width="44rem"
-      // Forces snap mode when the tray variant is used
-      trayMode="snap"
     >
       {(props) =>
         data == null ? (

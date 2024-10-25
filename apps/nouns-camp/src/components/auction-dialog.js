@@ -239,7 +239,6 @@ const AuctionDialog = ({ isOpen, close }) => {
       isOpen={isOpen}
       onRequestClose={closeAndClearSearchState}
       tray
-      trayMode={isDesktopLayout ? undefined : "snap"}
       width="124.4rem"
       height="auto"
     >
@@ -388,7 +387,7 @@ const AuctionDialog = ({ isOpen, close }) => {
 
 export const Auction = ({
   nounId: eagerSpecifiedNounId,
-  showBids = false,
+  showBids = true,
   transparent = false,
   nounContainerStyle,
   children,
