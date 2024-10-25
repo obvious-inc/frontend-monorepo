@@ -124,7 +124,7 @@ export const DELEGATION_EVENT_FIELDS = `
     }
     newDelegate { id }
     previousDelegate { id }
-    delegator { id }
+  # delegator { id }
     blockNumber
     blockTimestamp
   }`;
@@ -409,7 +409,7 @@ const parseDelegationEvent = (e) => {
   const parsedData = {
     ...e,
     blockTimestamp: parseTimestamp(e.blockTimestamp),
-    delegatorId: e.delegator?.id,
+    delegatorId: e.noun?.owner?.id,
     newAccountId: e.newDelegate?.id,
     previousAccountId: e.previousDelegate?.id,
     nounId: e.noun?.id,
