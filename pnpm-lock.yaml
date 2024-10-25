@@ -160,8 +160,8 @@ importers:
         specifier: 0.109.0
         version: 0.109.0(slate@0.110.2)
       slate-react:
-        specifier: 0.110.2
-        version: 0.110.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(slate@0.110.2)
+        specifier: 0.110.3
+        version: 0.110.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(slate@0.110.2)
       tinykeys:
         specifier: 3.0.0
         version: 3.0.0
@@ -7274,8 +7274,8 @@ packages:
     peerDependencies:
       slate: '>=0.65.3'
 
-  slate-react@0.110.2:
-    resolution: {integrity: sha512-J5M4FHFAXmHWdz3wCixhFZcO3/hX6u1VOM6zSlIs7g43hGp0o9woo4zcCm1xgGB8m/BWYucQCq2n2t3g4PIjug==}
+  slate-react@0.110.3:
+    resolution: {integrity: sha512-AS8PPjwmsFS3Lq0MOEegLVlFoxhyos68G6zz2nW4sh3WeTXV7pX0exnwtY1a/docn+J3LGQO11aZXTenPXA/kg==}
     peerDependencies:
       react: '>=18.2.0'
       react-dom: '>=18.2.0'
@@ -14509,7 +14509,7 @@ snapshots:
       debug: 4.3.7
       enhanced-resolve: 5.17.1
       eslint: 8.57.1
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.1)
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0)(eslint@8.57.1))(eslint@8.57.1)
       fast-glob: 3.3.2
       get-tsconfig: 4.8.1
       is-bun-module: 1.2.1
@@ -14522,7 +14522,7 @@ snapshots:
       - eslint-import-resolver-webpack
       - supports-color
 
-  eslint-module-utils@2.12.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.1):
+  eslint-module-utils@2.12.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0)(eslint@8.57.1))(eslint@8.57.1):
     dependencies:
       debug: 4.3.7
     optionalDependencies:
@@ -14544,7 +14544,7 @@ snapshots:
       doctrine: 2.1.0
       eslint: 8.57.1
       eslint-import-resolver-node: 0.3.9
-      eslint-module-utils: 2.12.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3)(eslint@8.57.1)
+      eslint-module-utils: 2.12.0(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-import-resolver-typescript@3.6.3(@typescript-eslint/parser@7.2.0(eslint@8.57.1)(typescript@4.9.5))(eslint-import-resolver-node@0.3.9)(eslint-plugin-import@2.30.0)(eslint@8.57.1))(eslint@8.57.1)
       hasown: 2.0.2
       is-core-module: 2.15.1
       is-glob: 4.0.3
@@ -17198,7 +17198,7 @@ snapshots:
       is-plain-object: 5.0.0
       slate: 0.110.2
 
-  slate-react@0.110.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(slate@0.110.2):
+  slate-react@0.110.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(slate@0.110.2):
     dependencies:
       '@juggle/resize-observer': 3.4.0
       direction: 1.0.4
