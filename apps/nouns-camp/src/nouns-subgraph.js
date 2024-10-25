@@ -74,14 +74,14 @@ export const FULL_PROPOSAL_FIELDS = `
     endBlock
   # updatePeriodEndBlock
   # objectionPeriodEndBlock
-    canceledBlock
-    canceledTimestamp
+  # canceledBlock
+  # canceledTimestamp
   # canceledTransactionHash
-    queuedBlock
-    queuedTimestamp
+  # queuedBlock
+  # queuedTimestamp
   # queuedTransactionHash
-    executedBlock
-    executedTimestamp
+  # executedBlock
+  # executedTimestamp
   # executedTransactionHash
     targets
     signatures

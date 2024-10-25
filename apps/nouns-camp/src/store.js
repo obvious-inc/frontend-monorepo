@@ -974,12 +974,12 @@ const createStore = ({ initialState, publicClient }) =>
                   endBlock
                 # updatePeriodEndBlock
                 # objectionPeriodEndBlock
-                  canceledBlock
-                  canceledTimestamp
-                  queuedBlock
-                  queuedTimestamp
-                  executedBlock
-                  executedTimestamp
+                # canceledBlock
+                # canceledTimestamp
+                # queuedBlock
+                # queuedTimestamp
+                # executedBlock
+                # executedTimestamp
                   forVotes
                   againstVotes
                   abstainVotes
@@ -1127,14 +1127,14 @@ const createStore = ({ initialState, publicClient }) =>
                 endBlock
               # updatePeriodEndBlock
               # objectionPeriodEndBlock
-                canceledBlock
-                canceledTimestamp
+              # canceledBlock
+              # canceledTimestamp
               # canceledTransactionHash
-                queuedBlock
-                queuedTimestamp
+              # queuedBlock
+              # queuedTimestamp
               # queuedTransactionHash
-                executedBlock
-                executedTimestamp
+              # executedBlock
+              # executedTimestamp
               # executedTransactionHash
                 forVotes
                 againstVotes
@@ -1346,12 +1346,12 @@ const createStore = ({ initialState, publicClient }) =>
                     endBlock
                   # updatePeriodEndBlock
                   # objectionPeriodEndBlock
-                    canceledBlock
-                    canceledTimestamp
-                    queuedBlock
-                    queuedTimestamp
-                    executedBlock
-                    executedTimestamp
+                  # canceledBlock
+                  # canceledTimestamp
+                  # queuedBlock
+                  # queuedTimestamp
+                  # executedBlock
+                  # executedTimestamp
                     forVotes
                     againstVotes
                     abstainVotes
