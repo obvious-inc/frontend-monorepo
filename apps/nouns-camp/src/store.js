@@ -483,108 +483,111 @@ const createStore = ({ initialState, publicClient }) =>
       return subgraphEntities;
     };
 
-    const fetchProposalsVersions = async (proposalIds) =>
-      subgraphFetch({
-        query: `{
-          proposalVersions(
-            where: {
-              proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
-            }
-          ) {
-            createdAt
-            createdBlock
-            createdTransactionHash
-            updateMessage
-            proposal { id }
-          }
-        }`,
-      });
+    const fetchProposalsVersions = async  () => Promise.resolve(null)
+    // const fetchProposalsVersions = async (proposalIds) =>
+    //   subgraphFetch({
+    //     query: `{
+    //       proposalVersions(
+    //         where: {
+    //           proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
+    //         }
+    //       ) {
+    //         createdAt
+    //         createdBlock
+    //         createdTransactionHash
+    //         updateMessage
+    //         proposal { id }
+    //       }
+    //     }`,
+    //   });
 
-    const fetchCandidatesFeedbackPosts = (candidateIds) =>
-      subgraphFetch({
-        query: `
-          ${CANDIDATE_FEEDBACK_FIELDS}
-          query {
-            candidateFeedbacks(
-              where: {
-                candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
-              },
-              first: 1000
-            ) {
-              ...CandidateFeedbackFields
-            }
-          }`,
-      });
+    const fetchCandidatesFeedbackPosts = async  () => Promise.resolve(null)
+    // const fetchCandidatesFeedbackPosts = (candidateIds) =>
+    //   subgraphFetch({
+    //     query: `
+    //       ${CANDIDATE_FEEDBACK_FIELDS}
+    //       query {
+    //         candidateFeedbacks(
+    //           where: {
+    //             candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
+    //           },
+    //           first: 1000
+    //         ) {
+    //           ...CandidateFeedbackFields
+    //         }
+    //       }`,
+    //   });
 
-    const fetchProposalCandidate = async (rawId) => {
-      const [account, ...slugParts] = rawId.split("-");
-      const id = [account.toLowerCase(), ...slugParts].join("-");
-
-      const data = await subgraphFetch({
-        query: `
-          ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-          ${CANDIDATE_FEEDBACK_FIELDS}
-          query {
-            proposalCandidate(id: ${JSON.stringify(id)}) {
-              id
-              slug
-              proposer
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              createdTransactionHash
-              canceledTransactionHash
-              latestVersion {
-                id
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    ...CandidateContentSignatureFields
-                  }
-                }
-              }
-              versions {
-                id
-                createdBlock
-                createdTimestamp
-                updateMessage
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  proposalIdToUpdate
-                }
-              }
-            }
-
-            candidateFeedbacks(
-              where: {
-                candidate_: { id: ${JSON.stringify(id)} }
-              }
-            ) {
-              ...CandidateFeedbackFields
-            }
-          }`,
-      });
-
-      if (data.proposalCandidate == null)
-        return Promise.reject(new Error("not-found"));
-
-      return data.proposalCandidate;
-    };
+    const fetchProposalCandidate = async  () => Promise.resolve(null)
+    // const fetchProposalCandidate = async (rawId) => {
+    //   const [account, ...slugParts] = rawId.split("-");
+    //   const id = [account.toLowerCase(), ...slugParts].join("-");
+    //
+    //   const data = await subgraphFetch({
+    //     query: `
+    //       ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+    //       ${CANDIDATE_FEEDBACK_FIELDS}
+    //       query {
+    //         proposalCandidate(id: ${JSON.stringify(id)}) {
+    //           id
+    //           slug
+    //           proposer
+    //           canceledTimestamp
+    //           createdTimestamp
+    //           lastUpdatedTimestamp
+    //           createdBlock
+    //           canceledBlock
+    //           lastUpdatedBlock
+    //           createdTransactionHash
+    //           canceledTransactionHash
+    //           latestVersion {
+    //             id
+    //             content {
+    //               title
+    //               description
+    //               targets
+    //               values
+    //               signatures
+    //               calldatas
+    //               matchingProposalIds
+    //               proposalIdToUpdate
+    //               contentSignatures {
+    //                 ...CandidateContentSignatureFields
+    //               }
+    //             }
+    //           }
+    //           versions {
+    //             id
+    //             createdBlock
+    //             createdTimestamp
+    //             updateMessage
+    //             content {
+    //               title
+    //               description
+    //               targets
+    //               values
+    //               signatures
+    //               calldatas
+    //               proposalIdToUpdate
+    //             }
+    //           }
+    //         }
+    //
+    //         candidateFeedbacks(
+    //           where: {
+    //             candidate_: { id: ${JSON.stringify(id)} }
+    //           }
+    //         ) {
+    //           ...CandidateFeedbackFields
+    //         }
+    //       }`,
+    //   });
+    //
+    //   if (data.proposalCandidate == null)
+    //     return Promise.reject(new Error("not-found"));
+    //
+    //   return data.proposalCandidate;
+    // };
 
     const fetchProposals = async (ids) => {
       if (ids == null || ids.length === 0) return [];
