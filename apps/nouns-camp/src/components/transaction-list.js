@@ -816,9 +816,9 @@ export const FormattedEthWithConditionalTooltip = ({
   const ethString = (() => {
     switch (currency) {
       case "eth":
-        return formatEther(value);
+        return formatEther(value ?? 0);
       case "usdc":
-        return formatUnits(value, 6);
+        return formatUnits(value ?? 0, 6);
       default:
         throw new Error();
     }

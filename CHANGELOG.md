@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.41] - 2024-10-26
+
+### 🐛 Bug Fixes
+
+- *(transaction-list)* Handle undefined `value` gracefully
+
 ## [1.3.0-alpha.40] - 2024-10-25
 
 ### 🐛 Bug Fixes
