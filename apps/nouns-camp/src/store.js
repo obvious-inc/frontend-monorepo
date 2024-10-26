@@ -536,7 +536,7 @@ const createStore = ({ initialState, publicClient }) =>
               canceledBlock
               lastUpdatedBlock
               createdTransactionHash
-            # canceledTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -624,7 +624,7 @@ const createStore = ({ initialState, publicClient }) =>
               canceledBlock
               lastUpdatedBlock
               createdTransactionHash
-            # canceledTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -1088,7 +1088,7 @@ const createStore = ({ initialState, publicClient }) =>
                 createdTimestamp
                 lastUpdatedTimestamp
                 createdTransactionHash
-              # canceledTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1129,13 +1129,13 @@ const createStore = ({ initialState, publicClient }) =>
               # objectionPeriodEndBlock
                 canceledBlock
                 canceledTimestamp
-              # canceledTransactionHash
+                canceledTransactionHash
                 queuedBlock
                 queuedTimestamp
-              # queuedTransactionHash
+                queuedTransactionHash
                 executedBlock
                 executedTimestamp
-              # executedTransactionHash
+                executedTransactionHash
                 forVotes
                 againstVotes
                 abstainVotes
