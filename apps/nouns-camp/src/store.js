@@ -1460,73 +1460,74 @@ const createStore = ({ initialState, publicClient }) =>
           }),
 
           (async () => {
-            // Fetch signatures, then content IDs, and finally the candidate versions
-            const { proposalCandidateSignatures } = await subgraphFetch({
-              query: `
-                query {
-                  proposalCandidateSignatures(
-                    where: { signer: "${id.toLowerCase()}" }
-                  ) {
-                    content { id }
-                  }
-                } `,
-            });
-
-            const contentIds = arrayUtils.unique(
-              proposalCandidateSignatures.map((s) => s.content.id),
-            );
-
-            const { proposalCandidateVersions } = await subgraphFetch({
-              query: `
-                query {
-                  proposalCandidateVersions(
-                    where: {
-                      content_in: [${contentIds.map((id) => `"${id}"`)}]
-                    }
-                  ) {
-                    id
-                  }
-                } `,
-            });
-
-            return subgraphFetch({
-              query: `
-                ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-                query {
-                  proposalCandidates(
-                    where: {
-                      latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
-                    }
-                  ) {
-                    id
-                    slug
-                    proposer
-                    canceledTimestamp
-                    createdTimestamp
-                    lastUpdatedTimestamp
-                    createdBlock
-                    canceledBlock
-                    lastUpdatedBlock
-                    latestVersion {
-                      id
-                        content {
-                        title
-                        description
-                        targets
-                        values
-                        signatures
-                        calldatas
-                        matchingProposalIds
-                        proposalIdToUpdate
-                        contentSignatures {
-                          ...CandidateContentSignatureFields
-                        }
-                      }
-                    }
-                    versions { id }
-                  }
-                }`,
-            });
+            return Promise.resolve({ proposalCandidates: null });
+            // // Fetch signatures, then content IDs, and finally the candidate versions
+            // const { proposalCandidateSignatures } = await subgraphFetch({
+            //   query: `
+            //     query {
+            //       proposalCandidateSignatures(
+            //         where: { signer: "${id.toLowerCase()}" }
+            //       ) {
+            //         content { id }
+            //       }
+            //     } `,
+            // });
+            //
+            // const contentIds = arrayUtils.unique(
+            //   proposalCandidateSignatures.map((s) => s.content.id),
+            // );
+            //
+            // const { proposalCandidateVersions } = await subgraphFetch({
+            //   query: `
+            //     query {
+            //       proposalCandidateVersions(
+            //         where: {
+            //           content_in: [${contentIds.map((id) => `"${id}"`)}]
+            //         }
+            //       ) {
+            //         id
+            //       }
+            //     } `,
+            // });
+            //
+            // return subgraphFetch({
+            //   query: `
+            //     ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+            //     query {
+            //       proposalCandidates(
+            //         where: {
+            //           latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
+            //         }
+            //       ) {
+            //         id
+            //         slug
+            //         proposer
+            //         canceledTimestamp
+            //         createdTimestamp
+            //         lastUpdatedTimestamp
+            //         createdBlock
+            //         canceledBlock
+            //         lastUpdatedBlock
+            //         latestVersion {
+            //           id
+            //             content {
+            //             title
+            //             description
+            //             targets
+            //             values
+            //             signatures
+            //             calldatas
+            //             matchingProposalIds
+            //             proposalIdToUpdate
+            //             contentSignatures {
+            //               ...CandidateContentSignatureFields
+            //             }
+            //           }
+            //         }
+            //         versions { id }
+            //       }
+            //     }`,
+            // });
           })(),
 
           PropdatesSubgraph.fetchPropdatesByAccount(id),
