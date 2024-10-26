@@ -19,7 +19,7 @@ export const VOTE_FIELDS = `
     id
     blockNumber
     blockTimestamp
-  # transactionHash
+    transactionHash
     reason
     supportDetailed
     votes
