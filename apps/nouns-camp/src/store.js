@@ -483,108 +483,111 @@ const createStore = ({ initialState, publicClient }) =>
       return subgraphEntities;
     };
 
-    const fetchProposalsVersions = async (proposalIds) =>
-      subgraphFetch({
-        query: `{
-          proposalVersions(
-            where: {
-              proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
-            }
-          ) {
-            createdAt
-            createdBlock
-            createdTransactionHash
-            updateMessage
-            proposal { id }
-          }
-        }`,
-      });
+    const fetchProposalsVersions = async  () => Promise.resolve(null)
+    // const fetchProposalsVersions = async (proposalIds) =>
+    //   subgraphFetch({
+    //     query: `{
+    //       proposalVersions(
+    //         where: {
+    //           proposal_in: [${proposalIds.map((id) => `"${id}"`)}]
+    //         }
+    //       ) {
+    //         createdAt
+    //         createdBlock
+    //         createdTransactionHash
+    //         updateMessage
+    //         proposal { id }
+    //       }
+    //     }`,
+    //   });
 
-    const fetchCandidatesFeedbackPosts = (candidateIds) =>
-      subgraphFetch({
-        query: `
-          ${CANDIDATE_FEEDBACK_FIELDS}
-          query {
-            candidateFeedbacks(
-              where: {
-                candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
-              },
-              first: 1000
-            ) {
-              ...CandidateFeedbackFields
-            }
-          }`,
-      });
+    const fetchCandidatesFeedbackPosts = async  () => Promise.resolve(null)
+    // const fetchCandidatesFeedbackPosts = (candidateIds) =>
+    //   subgraphFetch({
+    //     query: `
+    //       ${CANDIDATE_FEEDBACK_FIELDS}
+    //       query {
+    //         candidateFeedbacks(
+    //           where: {
+    //             candidate_in: [${candidateIds.map((id) => JSON.stringify(id))}]
+    //           },
+    //           first: 1000
+    //         ) {
+    //           ...CandidateFeedbackFields
+    //         }
+    //       }`,
+    //   });
 
-    const fetchProposalCandidate = async (rawId) => {
-      const [account, ...slugParts] = rawId.split("-");
-      const id = [account.toLowerCase(), ...slugParts].join("-");
-
-      const data = await subgraphFetch({
-        query: `
-          ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-          ${CANDIDATE_FEEDBACK_FIELDS}
-          query {
-            proposalCandidate(id: ${JSON.stringify(id)}) {
-              id
-              slug
-              proposer
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              createdTransactionHash
-            # canceledTransactionHash
-              latestVersion {
-                id
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    ...CandidateContentSignatureFields
-                  }
-                }
-              }
-              versions {
-                id
-                createdBlock
-                createdTimestamp
-                updateMessage
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  proposalIdToUpdate
-                }
-              }
-            }
-
-            candidateFeedbacks(
-              where: {
-                candidate_: { id: ${JSON.stringify(id)} }
-              }
-            ) {
-              ...CandidateFeedbackFields
-            }
-          }`,
-      });
-
-      if (data.proposalCandidate == null)
-        return Promise.reject(new Error("not-found"));
-
-      return data.proposalCandidate;
-    };
+    const fetchProposalCandidate = async  () => Promise.resolve(null)
+    // const fetchProposalCandidate = async (rawId) => {
+    //   const [account, ...slugParts] = rawId.split("-");
+    //   const id = [account.toLowerCase(), ...slugParts].join("-");
+    //
+    //   const data = await subgraphFetch({
+    //     query: `
+    //       ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+    //       ${CANDIDATE_FEEDBACK_FIELDS}
+    //       query {
+    //         proposalCandidate(id: ${JSON.stringify(id)}) {
+    //           id
+    //           slug
+    //           proposer
+    //           canceledTimestamp
+    //           createdTimestamp
+    //           lastUpdatedTimestamp
+    //           createdBlock
+    //           canceledBlock
+    //           lastUpdatedBlock
+    //           createdTransactionHash
+    //           canceledTransactionHash
+    //           latestVersion {
+    //             id
+    //             content {
+    //               title
+    //               description
+    //               targets
+    //               values
+    //               signatures
+    //               calldatas
+    //               matchingProposalIds
+    //               proposalIdToUpdate
+    //               contentSignatures {
+    //                 ...CandidateContentSignatureFields
+    //               }
+    //             }
+    //           }
+    //           versions {
+    //             id
+    //             createdBlock
+    //             createdTimestamp
+    //             updateMessage
+    //             content {
+    //               title
+    //               description
+    //               targets
+    //               values
+    //               signatures
+    //               calldatas
+    //               proposalIdToUpdate
+    //             }
+    //           }
+    //         }
+    //
+    //         candidateFeedbacks(
+    //           where: {
+    //             candidate_: { id: ${JSON.stringify(id)} }
+    //           }
+    //         ) {
+    //           ...CandidateFeedbackFields
+    //         }
+    //       }`,
+    //   });
+    //
+    //   if (data.proposalCandidate == null)
+    //     return Promise.reject(new Error("not-found"));
+    //
+    //   return data.proposalCandidate;
+    // };
 
     const fetchProposals = async (ids) => {
       if (ids == null || ids.length === 0) return [];
@@ -624,7 +627,7 @@ const createStore = ({ initialState, publicClient }) =>
               canceledBlock
               lastUpdatedBlock
               createdTransactionHash
-            # canceledTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -974,12 +977,12 @@ const createStore = ({ initialState, publicClient }) =>
                   endBlock
                 # updatePeriodEndBlock
                 # objectionPeriodEndBlock
-                # canceledBlock
-                # canceledTimestamp
-                # queuedBlock
-                # queuedTimestamp
-                # executedBlock
-                # executedTimestamp
+                  canceledBlock
+                  canceledTimestamp
+                  queuedBlock
+                  queuedTimestamp
+                  executedBlock
+                  executedTimestamp
                   forVotes
                   againstVotes
                   abstainVotes
@@ -1048,7 +1051,7 @@ const createStore = ({ initialState, publicClient }) =>
                     or: [
                       { newDelegate: "${id}" },
                       { previousDelegate: "${id}" },
-                    # { delegator: "${id}" }
+                      { delegator: "${id}" }
                     ]
                   }
                 ) {
@@ -1088,7 +1091,7 @@ const createStore = ({ initialState, publicClient }) =>
                 createdTimestamp
                 lastUpdatedTimestamp
                 createdTransactionHash
-              # canceledTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1127,15 +1130,15 @@ const createStore = ({ initialState, publicClient }) =>
                 endBlock
               # updatePeriodEndBlock
               # objectionPeriodEndBlock
-              # canceledBlock
-              # canceledTimestamp
-              # canceledTransactionHash
-              # queuedBlock
-              # queuedTimestamp
-              # queuedTransactionHash
-              # executedBlock
-              # executedTimestamp
-              # executedTransactionHash
+                canceledBlock
+                canceledTimestamp
+                canceledTransactionHash
+                queuedBlock
+                queuedTimestamp
+                queuedTransactionHash
+                executedBlock
+                executedTimestamp
+                executedTransactionHash
                 forVotes
                 againstVotes
                 abstainVotes
@@ -1346,12 +1349,12 @@ const createStore = ({ initialState, publicClient }) =>
                     endBlock
                   # updatePeriodEndBlock
                   # objectionPeriodEndBlock
-                  # canceledBlock
-                  # canceledTimestamp
-                  # queuedBlock
-                  # queuedTimestamp
-                  # executedBlock
-                  # executedTimestamp
+                    canceledBlock
+                    canceledTimestamp
+                    queuedBlock
+                    queuedTimestamp
+                    executedBlock
+                    executedTimestamp
                     forVotes
                     againstVotes
                     abstainVotes
@@ -1450,7 +1453,7 @@ const createStore = ({ initialState, publicClient }) =>
                     or: [
                       { newDelegate: "${id}" },
                       { previousDelegate: "${id}" },
-                      # { delegator: "${id}" }
+                      { delegator: "${id}" }
                     ]
                   }
                   ) {
@@ -1460,73 +1463,74 @@ const createStore = ({ initialState, publicClient }) =>
           }),
 
           (async () => {
-            // Fetch signatures, then content IDs, and finally the candidate versions
-            const { proposalCandidateSignatures } = await subgraphFetch({
-              query: `
-                query {
-                  proposalCandidateSignatures(
-                    where: { signer: "${id.toLowerCase()}" }
-                  ) {
-                    content { id }
-                  }
-                } `,
-            });
-
-            const contentIds = arrayUtils.unique(
-              proposalCandidateSignatures.map((s) => s.content.id),
-            );
-
-            const { proposalCandidateVersions } = await subgraphFetch({
-              query: `
-                query {
-                  proposalCandidateVersions(
-                    where: {
-                      content_in: [${contentIds.map((id) => `"${id}"`)}]
-                    }
-                  ) {
-                    id
-                  }
-                } `,
-            });
-
-            return subgraphFetch({
-              query: `
-                ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
-                query {
-                  proposalCandidates(
-                    where: {
-                      latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
-                    }
-                  ) {
-                    id
-                    slug
-                    proposer
-                    canceledTimestamp
-                    createdTimestamp
-                    lastUpdatedTimestamp
-                    createdBlock
-                    canceledBlock
-                    lastUpdatedBlock
-                    latestVersion {
-                      id
-                        content {
-                        title
-                        description
-                        targets
-                        values
-                        signatures
-                        calldatas
-                        matchingProposalIds
-                        proposalIdToUpdate
-                        contentSignatures {
-                          ...CandidateContentSignatureFields
-                        }
-                      }
-                    }
-                    versions { id }
-                  }
-                }`,
-            });
+            return Promise.resolve({ proposalCandidates: null });
+            // // Fetch signatures, then content IDs, and finally the candidate versions
+            // const { proposalCandidateSignatures } = await subgraphFetch({
+            //   query: `
+            //     query {
+            //       proposalCandidateSignatures(
+            //         where: { signer: "${id.toLowerCase()}" }
+            //       ) {
+            //         content { id }
+            //       }
+            //     } `,
+            // });
+            //
+            // const contentIds = arrayUtils.unique(
+            //   proposalCandidateSignatures.map((s) => s.content.id),
+            // );
+            //
+            // const { proposalCandidateVersions } = await subgraphFetch({
+            //   query: `
+            //     query {
+            //       proposalCandidateVersions(
+            //         where: {
+            //           content_in: [${contentIds.map((id) => `"${id}"`)}]
+            //         }
+            //       ) {
+            //         id
+            //       }
+            //     } `,
+            // });
+            //
+            // return subgraphFetch({
+            //   query: `
+            //     ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+            //     query {
+            //       proposalCandidates(
+            //         where: {
+            //           latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
+            //         }
+            //       ) {
+            //         id
+            //         slug
+            //         proposer
+            //         canceledTimestamp
+            //         createdTimestamp
+            //         lastUpdatedTimestamp
+            //         createdBlock
+            //         canceledBlock
+            //         lastUpdatedBlock
+            //         latestVersion {
+            //           id
+            //             content {
+            //             title
+            //             description
+            //             targets
+            //             values
+            //             signatures
+            //             calldatas
+            //             matchingProposalIds
+            //             proposalIdToUpdate
+            //             contentSignatures {
+            //               ...CandidateContentSignatureFields
+            //             }
+            //           }
+            //         }
+            //         versions { id }
+            //       }
+            //     }`,
+            // });
           })(),
 
           PropdatesSubgraph.fetchPropdatesByAccount(id),
@@ -1537,10 +1541,10 @@ const createStore = ({ initialState, publicClient }) =>
         // Fetch all versions of created proposals
         fetchProposalsVersions(proposals.map((p) => p.id));
         // Fetch feedback for voter's candies (candidates tab)
-        fetchCandidatesFeedbackPosts(proposalCandidates.map((c) => c.id));
+        fetchCandidatesFeedbackPosts(proposalCandidates?.map((c) => c.id) ?? []);
         // Fetch Candidates the voter has commented on
         fetchProposalCandidates(
-          arrayUtils.unique(candidateFeedbacks.map((p) => p.candidateId)),
+          arrayUtils.unique(candidateFeedbacks?.map((p) => p.candidateId) ?? []),
         );
         // Fetch relevant noun data
         fetchNounsByIds(
@@ -1556,10 +1560,10 @@ const createStore = ({ initialState, publicClient }) =>
         fetchProposals(
           arrayUtils.unique([
             ...votes.map((p) => p.proposalId),
-            ...proposalFeedbacks.map((p) => p.proposalId),
-            ...sponsoredProposalCandidates.map(
+            ...proposalFeedbacks?.map((p) => p.proposalId) ?? [],
+            ...sponsoredProposalCandidates?.map(
               (c) => c.latestVersion?.proposalId,
-            ),
+            ) ?? [],
             ...propdates.map((p) => p.proposalId),
           ]),
         );
@@ -1785,7 +1789,7 @@ const createStore = ({ initialState, publicClient }) =>
                       or: [
                         { newDelegate: "${voterAddress}" },
                         { previousDelegate: "${voterAddress}" },
-                        # { delegator: "${voterAddress}" }
+                        { delegator: "${voterAddress}" }
                       ]
                     }
                   ]

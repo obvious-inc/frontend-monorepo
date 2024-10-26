@@ -1211,7 +1211,7 @@ const VoterList = ({ sortStrategy }) => {
           first: 1000,
           where: {
             votes_: {
-            # blockTimestamp_gt: "${dateRangeStart}"
+              blockTimestamp_gt: "${dateRangeStart}"
             }
           }
         ) {
