@@ -1,40 +1,54 @@
 import React from "react";
-import { css } from "@emotion/react";
+import { css, keyframes } from "@emotion/react";
 import NextLink from "next/link";
 import { usePathname } from "next/navigation";
-import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
+import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   CaretDown as CaretDownIcon,
   DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 import {
   getChain as getSupportedChain,
   isTestnet as isTestnetChain,
-} from "../utils/chains.js";
-import { useAccount, useAccountStreams, useDelegate } from "../store.js";
-import { useSearchParamToggleState, useNavigate } from "../hooks/navigation.js";
-import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
+} from "@/utils/chains";
+import { useAccount, useAccountStreams, useDelegate } from "@/store";
+import { useNavigate } from "@/hooks/navigation";
+import { useWallet, useWalletAuthentication } from "@/hooks/wallet";
 import {
   useState as useSessionState,
   useActions as useSessionActions,
 } from "@/session-provider";
-import { useDialog } from "../hooks/global-dialogs.js";
-import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
-import useAccountDisplayName from "../hooks/account-display-name.js";
-import AccountAvatar from "./account-avatar.js";
-import LogoSymbol from "./logo-symbol.js";
+import { useDialog } from "@/hooks/global-dialogs";
+import { useConnectedFarcasterAccounts } from "@/hooks/farcaster";
+import useAccountDisplayName from "@/hooks/account-display-name";
+import {
+  useAuctionData,
+  useLazySeed,
+  useNounImageDataUri,
+} from "@/components/auction-dialog";
+import AccountAvatar from "@/components/account-avatar";
+import LogoSymbol from "@/components/logo-symbol";
 
-const TreasuryDialog = React.lazy(() => import("./treasury-dialog.js"));
+const flipAnimation = keyframes({
+  "0%,52%,100%": {
+    transform: "rotate3d(1,1,1,0deg)",
+  },
+  "2%, 50%": {
+    transform: "rotate3d(0.4,1,0,180deg)",
+  },
+});
 
 const Layout = ({
   scrollContainerRef,
   navigationStack = [],
   actions,
   scrollView = true,
+  hideAuction = true,
   children,
+  ...props
 }) => (
   <div
     css={(t) =>
@@ -49,8 +63,13 @@ const Layout = ({
         height: "100%",
       })
     }
+    {...props}
   >
-    <NavBar navigationStack={navigationStack} actions={actions} />
+    <NavBar
+      navigationStack={navigationStack}
+      actions={actions}
+      hideAuction={hideAuction}
+    />
     <div
       css={css({
         position: "relative",
@@ -107,14 +126,20 @@ const defaultActions = [
   },
 ];
 
-const NavBar = ({ navigationStack, actions: actions_ }) => {
-  const actions = actions_ ?? defaultActions;
-
+const NavBar = ({
+  navigationStack,
+  actions: actions_,
+  hideAuction = false,
+}) => {
+  let actions = actions_ ?? defaultActions;
   const pathname = usePathname();
   const navigate = useNavigate();
 
   const isDesktop = useMatchMedia("(min-width: 600px)");
 
+  const { open: openAuctionDialog, preload: preloadAuctionDialog } =
+    useDialog("auction");
+  const { open: openTreasuryDialog } = useDialog("treasury");
   const { open: openAccountDialog } = useDialog("account");
   const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
@@ -124,8 +149,17 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     "account-authentication",
   );
   const { open: openFarcasterSetupDialog } = useDialog("farcaster-setup");
-  const [isTreasuryDialogOpen, toggleTreasuryDialog] =
-    useSearchParamToggleState("treasury", { replace: true });
+
+  const { auction } = useAuctionData();
+  const auctionProgress = (() => {
+    if (auction == null) return 0;
+    const now = Date.now();
+    const start = auction.startTimestamp.getTime();
+    const end = auction.endTimestamp.getTime();
+    const duration = end - start;
+    const elapsed = Math.max(0, now - start);
+    return elapsed / duration;
+  })();
 
   const {
     address: connectedWalletAccountAddress,
@@ -164,6 +198,93 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
   const hasStreams =
     useAccountStreams(connectedWalletAccountAddress).length > 0;
 
+  if (!hideAuction) {
+    actions = [
+      ...actions,
+      {
+        key: "auction-dialog",
+        component: "button",
+        onSelect: () => {
+          openAuctionDialog();
+        },
+        buttonProps: {
+          style: {
+            "--progress": auctionProgress,
+          },
+          css: (t) =>
+            css({
+              display: "flex",
+              marginLeft: "0.4rem",
+              marginRight: "0.8rem",
+              borderRadius: "0.6rem",
+              position: "relative",
+              overflow: "visible",
+              "&:focus-visible": {
+                boxShadow: "none",
+                ".progress-outline rect": {
+                  stroke: t.colors.primary,
+                },
+              },
+              ".noun-image": {
+                background: t.colors.backgroundModifierNormal,
+              },
+              ".progress-outline": {
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "calc(100% + 0.4rem)",
+                height: "calc(100% + 0.4rem)",
+                transform: "translateX(-50%) translateY(-50%)",
+                pointerEvents: "none",
+              },
+              ".progress-outline rect": {
+                fill: "none",
+                // stroke: t.colors.borderNormal,
+                stroke: t.colors.primaryTransparentStrong,
+                strokeWidth: 2,
+                strokeDasharray:
+                  "calc(var(--progress) * 100) calc((1 - var(--progress)) * 100)",
+                strokeDashoffset: "-9",
+                transition: "stroke-dashoffset 1s linear, stroke 0.1s ease-out",
+              },
+              "@media(hover: hover)": {
+                cursor: "pointer",
+                ":not([disabled]):hover": {
+                  background: "none",
+                  ".progress-outline rect": {
+                    stroke: t.colors.primary,
+                  },
+                },
+              },
+            }),
+          icon: (
+            <>
+              <AuctionNounImage
+                className="noun-image"
+                style={{
+                  display: "block",
+                  width: "2.4rem",
+                  height: "2.4rem",
+                  borderRadius: "0.4rem",
+                }}
+              />
+              <svg className="progress-outline" viewBox="0 0 32 32">
+                <rect
+                  width="30"
+                  height="30"
+                  rx="7"
+                  x="1"
+                  y="1"
+                  pathLength="99"
+                />
+              </svg>
+            </>
+          ),
+        },
+      },
+    ];
+  }
+
   const visibleActions = isDesktop
     ? actions
     : actions.filter((a) => !a.desktopOnly);
@@ -185,15 +306,21 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
       case "copy-account-address":
         navigator.clipboard.writeText(userAccountAddress);
         break;
-      case "open-auction":
-        window.open("https://lilnouns.wtf", "_blank");
-        break;
       case "open-warpcast":
+        window.open("https://warpcast.com/~/channel/lil-nouns", "_blank");
+        break;
+      case "open-camp-changelog":
         window.open("https://warpcast.com/~/channel/lilnouns", "_blank");
         break;
-      // case "open-changelog":
-      //   window.open("https://warpcast.com/~/channel/camp", "_blank");
-      //   break;
+      case "open-camp-github":
+        window.open(
+          "https://github.com/lilnouns/lilnouns-camp",
+          "_blank",
+        );
+        break;
+      case "navigate-to-auction":
+        navigate("/auction");
+        break;
       case "navigate-to-proposal-listing":
         navigate("/proposals");
         break;
@@ -207,7 +334,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
         openSettingsDialog();
         break;
       case "open-treasury-dialog":
-        toggleTreasuryDialog();
+        openTreasuryDialog();
         break;
       case "setup-farcaster":
         openFarcasterSetupDialog();
@@ -239,6 +366,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
     }
   };
 
+  React.useEffect(() => {
+    if (!hideAuction) preloadAuctionDialog();
+  }, [hideAuction, preloadAuctionDialog]);
+
   return (
     <>
       <div
@@ -265,45 +396,115 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
             alignItems: "center",
             gap: "0.2rem",
             overflow: "hidden",
-            padding: "1rem 1.6rem",
+            padding: "1rem 1.6rem 1rem 1.3rem",
             "@media (min-width: 600px)": {
               padding: "1rem",
             },
           })}
         >
           {[
-            {
-              to: "/",
-              label: (
-                <>
-                  <LogoSymbol
-                    css={css({
-                      display: "inline-block",
-                      width: "1.8rem",
-                      height: "auto",
-                      verticalAlign: "sub",
-                      transform: "translateY(0.1rem) scale(1.05)",
-                    })}
-                    style={{
-                      filter: isTestnet ? "invert(1)" : undefined,
-                    }}
-                  />
-                  {(pathname !== "/" || isTestnet) && (
-                    <span
+            (() => {
+              const logo = (
+                <LogoSymbol
+                  css={css({
+                    display: "inline-block",
+                    width: "1.8rem",
+                    height: "auto",
+                    backfaceVisibility: "hidden",
+                  })}
+                  style={{
+                    filter: isTestnet ? "invert(1)" : undefined,
+                  }}
+                />
+              );
+
+              if (pathname !== "/")
+                return {
+                  to: "/",
+                  label: (
+                    <>
+                      {logo}
+                      <span
+                        css={css({
+                          display: "none",
+                          "@media(min-width: 600px)": {
+                            display: "inline",
+                            marginLeft: "0.6rem",
+                          },
+                        })}
+                      >
+                        {isTestnet ? chain.name : "Camp"}
+                      </span>
+                    </>
+                  ),
+                };
+
+              return {
+                key: "root-logo",
+                component: "div",
+                props: {
+                  style: {
+                    pointerEvents: "none",
+                    height: "2.8rem",
+                    minWidth: "2.8rem",
+                    paddingBlock: 0,
+                    perspective: "200vmax",
+                  },
+                },
+                label: (
+                  <>
+                    <div
                       css={css({
-                        display: "none",
-                        "@media(min-width: 600px)": {
-                          display: "inline",
-                          marginLeft: "0.6rem",
-                        },
+                        position: "relative",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        width: "1.8rem",
+                        height: "1.8rem",
+                        animation: `${flipAnimation} 24s linear 12s infinite`,
+                        transition: "0.25s transform ease-out",
+                        transformStyle: "preserve-3d",
+                        svg: { display: "block" },
                       })}
                     >
-                      {isTestnet ? chain.name : "Camp"}
-                    </span>
-                  )}
-                </>
-              ),
-            },
+                      {logo}
+                      <div
+                        css={css({
+                          position: "absolute",
+                          top: "50%",
+                          left: "50%",
+                          backfaceVisibility: "hidden",
+                          transform:
+                            "translateX(-50%) translateY(-50%) rotate3d(0.4,1,0,180deg)",
+                          width: "2.4rem",
+                          height: "2.4rem",
+                          svg: {
+                            display: "block",
+                            width: "100%",
+                            height: "100%",
+                            borderRadius: "0.3rem",
+                          },
+                        })}
+                      >
+                        <NoggleImage />
+                      </div>
+                    </div>
+                    {isTestnet && (
+                      <span
+                        css={css({
+                          display: "none",
+                          "@media(min-width: 600px)": {
+                            display: "inline",
+                            marginLeft: "0.6rem",
+                          },
+                        })}
+                      >
+                        {chain.name}
+                      </span>
+                    )}
+                  </>
+                ),
+              };
+            })(),
             ...navigationStack,
           ].map((item, index) => {
             const [Component, componentProps] =
@@ -317,7 +518,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     },
                   ];
             return (
-              <React.Fragment key={item.to}>
+              <React.Fragment key={item.key ?? item.to}>
                 {index > 0 && (
                   <span
                     data-index={index}
@@ -339,6 +540,11 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   data-desktop-only={item.desktopOnly}
                   css={(t) =>
                     css({
+                      display: "inline-flex",
+                      alignItems: "center",
+                      height: "2.8rem",
+                      minWidth: "2.8rem",
+
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       fontSize: t.fontSizes.base,
@@ -352,6 +558,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         cursor: "pointer",
                         ":hover": {
                           background: t.colors.backgroundModifierHover,
+                          // ".flippable-container": {
+                          //   animation: "none",
+                          //   transform: "rotate3d(0.4,1,0,180deg)",
+                          // },
                         },
                       },
                     })
@@ -400,7 +610,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       variant: "default",
                       isLoading: requestWalletAccess == null || isLoadingWallet,
                       disabled: requestWalletAccess == null || isLoadingWallet,
-                      style: { marginLeft: "0.9rem", marginRight: "0.4rem" },
+                      style: { marginLeft: "0.8rem", marginRight: "0.4rem" },
                     },
                     label: (
                       <>
@@ -418,7 +628,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                         isLoading: isLoadingWallet,
                         disabled:
                           switchWalletToTargetChain == null || isLoadingWallet,
-                        style: { marginLeft: "0.9rem" },
+                        style: { marginLeft: "0.8rem" },
                       },
                       label: `Switch to ${CHAIN_ID === 1 ? "Mainnet" : chain.name}`,
                     }
@@ -428,6 +638,10 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   id: "dao",
                   title: "DAO",
                   children: [
+                    // {
+                    //   id: "navigate-to-auction",
+                    //   label: "Auction",
+                    // },
                     {
                       id: "navigate-to-proposal-listing",
                       label: "Proposals",
@@ -448,18 +662,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   title: "External",
                   children: [
                     {
-                      id: "open-auction",
-                      label: (
-                        <>
-                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
-                            Nouns auction
-                          </span>
-                          {"\u2197"}
-                        </>
-                      ),
-                      textValue: "Nouns auction",
-                    },
-                    {
                       id: "open-warpcast",
                       textValue: "Farcaster",
                       label: (
@@ -479,12 +681,24 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                   children: [
                     { id: "open-settings-dialog", label: "Settings" },
                     {
-                      id: "open-changelog",
+                      id: "open-camp-changelog",
                       textValue: "Changelog",
                       label: (
                         <>
                           <span style={{ flex: 1, marginRight: "0.8rem" }}>
                             Changelog
+                          </span>
+                          {"\u2197"}
+                        </>
+                      ),
+                    },
+                    {
+                      id: "open-camp-github",
+                      textValue: "Github",
+                      label: (
+                        <>
+                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
+                            GitHub
                           </span>
                           {"\u2197"}
                         </>
@@ -506,6 +720,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       },
                     ].filter(Boolean),
                     buttonProps: {
+                      style: { display: "flex" },
                       icon: (
                         <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
                       ),
@@ -568,6 +783,14 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                     },
                   ],
                   buttonProps: {
+                    css: css({
+                      display: "flex",
+                      "@media(max-width: 600px)": {
+                        paddingInline: "0.4rem",
+                        marginLeft: "0.3rem",
+                        ".account-display-name": { display: "none" },
+                      },
+                    }),
                     iconRight: (
                       <CaretDownIcon
                         style={{ width: "0.9rem", height: "auto" }}
@@ -583,11 +806,7 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                       })}
                     >
                       {pathname === "/" && (
-                        <div
-                          css={css({
-                            "@media(max-width: 600px)": { display: "none" },
-                          })}
-                        >
+                        <div className="account-display-name">
                           {userAccountDisplayName}
                         </div>
                       )}
@@ -602,44 +821,46 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
                 a.type === "separator" ? (
                   <li key={i} role="separator" aria-orientation="vertical" />
                 ) : a.type === "dropdown" ? (
-                  <DropdownMenu.Root key={i} placement="bottom">
-                    <DropdownMenu.Trigger asChild>
-                      <Button
-                        variant={a.buttonVariant ?? "transparent"}
-                        size="small"
-                        {...a.buttonProps}
-                      >
-                        {a.label}
-                      </Button>
-                    </DropdownMenu.Trigger>
-                    <DropdownMenu.Content
-                      css={css({
-                        width: "min-content",
-                        minWidth: "min-content",
-                        maxWidth: "calc(100vw - 2rem)",
-                      })}
-                      items={a.items}
-                      onAction={handleDropDownAction}
-                    >
-                      {(item) => (
-                        <DropdownMenu.Section
-                          title={item.title}
-                          items={item.children}
+                  <li key={a.key ?? i} data-desktop-only={a.desktopOnly}>
+                    <DropdownMenu.Root placement="bottom">
+                      <DropdownMenu.Trigger asChild>
+                        <Button
+                          variant={a.buttonVariant ?? "transparent"}
+                          size="small"
+                          {...a.buttonProps}
                         >
-                          {(item) => (
-                            <DropdownMenu.Item
-                              primary={item.primary}
-                              textValue={item.textValue}
-                            >
-                              {item.label}
-                            </DropdownMenu.Item>
-                          )}
-                        </DropdownMenu.Section>
-                      )}
-                    </DropdownMenu.Content>
-                  </DropdownMenu.Root>
+                          {a.label}
+                        </Button>
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content
+                        css={css({
+                          width: "min-content",
+                          minWidth: "min-content",
+                          maxWidth: "calc(100vw - 2rem)",
+                        })}
+                        items={a.items}
+                        onAction={handleDropDownAction}
+                      >
+                        {(item) => (
+                          <DropdownMenu.Section
+                            title={item.title}
+                            items={item.children}
+                          >
+                            {(item) => (
+                              <DropdownMenu.Item
+                                primary={item.primary}
+                                textValue={item.textValue}
+                              >
+                                {item.label}
+                              </DropdownMenu.Item>
+                            )}
+                          </DropdownMenu.Section>
+                        )}
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                  </li>
                 ) : (
-                  <li key={i} data-desktop-only={a.desktopOnly}>
+                  <li key={a.key ?? i} data-desktop-only={a.desktopOnly}>
                     <Button
                       variant={a.buttonVariant ?? "transparent"}
                       size="small"
@@ -654,15 +875,6 @@ const NavBar = ({ navigationStack, actions: actions_ }) => {
           </ul>
         </div>
       </div>
-
-      <ErrorBoundary fallback={null}>
-        <React.Suspense fallback={null}>
-          <TreasuryDialog
-            isOpen={isTreasuryDialogOpen}
-            close={toggleTreasuryDialog}
-          />
-        </React.Suspense>
-      </ErrorBoundary>
     </>
   );
 };
@@ -726,6 +938,64 @@ export const MainContentContainer = ({
       </div>
     )}
   </div>
+);
+
+const AuctionNounImage = (props) => {
+  const { auction } = useAuctionData();
+  const seed = useLazySeed(auction?.nounId);
+  const imageDataUri = useNounImageDataUri(seed);
+  if (imageDataUri == null) return <div {...props} />;
+  return <img src={imageDataUri} {...props} />;
+};
+
+const NoggleImage = () => (
+  <svg
+    fill="none"
+    width="160"
+    height="60"
+    shapeRendering="crispEdges"
+    viewBox="0 0 160 60"
+  >
+    <g fill="#d53c5e">
+      <path d="m90 0h-60v10h60z" />
+      <path d="m160 0h-60v10h60z" />
+      <path d="m40 10h-10v10h10z" />
+    </g>
+    <path d="m60 10h-20v10h20z" fill="#fff" />
+    <path d="m80 10h-20v10h20z" fill="#000" />
+    <path d="m90 10h-10v10h10z" fill="#d53c5e" />
+    <path d="m110 10h-10v10h10z" fill="#d53c5e" />
+    <path d="m130 10h-20v10h20z" fill="#fff" />
+    <path d="m150 10h-20v10h20z" fill="#000" />
+    <path d="m160 10h-10v10h10z" fill="#d53c5e" />
+    <path d="m40 20h-40v10h40z" fill="#d53c5e" />
+    <path d="m60 20h-20v10h20z" fill="#fff" />
+    <path d="m80 20h-20v10h20z" fill="#000" />
+    <path d="m110 20h-30v10h30z" fill="#d53c5e" />
+    <path d="m130 20h-20v10h20z" fill="#fff" />
+    <path d="m150 20h-20v10h20z" fill="#000" />
+    <path d="m160 20h-10v10h10z" fill="#d53c5e" />
+    <path d="m10 30h-10v10h10z" fill="#d53c5e" />
+    <path d="m40 30h-10v10h10z" fill="#d53c5e" />
+    <path d="m60 30h-20v10h20z" fill="#fff" />
+    <path d="m80 30h-20v10h20z" fill="#000" />
+    <path d="m90 30h-10v10h10z" fill="#d53c5e" />
+    <path d="m110 30h-10v10h10z" fill="#d53c5e" />
+    <path d="m130 30h-20v10h20z" fill="#fff" />
+    <path d="m150 30h-20v10h20z" fill="#000" />
+    <path d="m160 30h-10v10h10z" fill="#d53c5e" />
+    <path d="m10 40h-10v10h10z" fill="#d53c5e" />
+    <path d="m40 40h-10v10h10z" fill="#d53c5e" />
+    <path d="m60 40h-20v10h20z" fill="#fff" />
+    <path d="m80 40h-20v10h20z" fill="#000" />
+    <path d="m90 40h-10v10h10z" fill="#d53c5e" />
+    <path d="m110 40h-10v10h10z" fill="#d53c5e" />
+    <path d="m130 40h-20v10h20z" fill="#fff" />
+    <path d="m150 40h-20v10h20z" fill="#000" />
+    <path d="m160 40h-10v10h10z" fill="#d53c5e" />
+    <path d="m90 50h-60v10h60z" fill="#d53c5e" />
+    <path d="m160 50h-60v10h60z" fill="#d53c5e" />
+  </svg>
 );
 
 export default Layout;

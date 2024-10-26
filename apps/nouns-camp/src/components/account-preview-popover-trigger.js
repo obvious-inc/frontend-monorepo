@@ -8,7 +8,10 @@ import {
   array as arrayUtils,
 } from "@shades/common/utils";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
-import { DotsHorizontal as DotsHorizontalIcon } from "@shades/ui-web/icons";
+import {
+  DotsHorizontal as DotsHorizontalIcon,
+  Fullscreen as FullscreenIcon,
+} from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
@@ -86,6 +89,7 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       return (
         <button
           ref={triggerRef}
+          className="account-preview-trigger"
           css={css({
             outline: "none",
             "@media(hover: hover)": {
@@ -215,7 +219,7 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
         flexDirection: "column",
         width: "min-content",
         maxWidth: "min(36.4rem, calc(100vw - 2rem))",
-        minWidth: "min(32rem, calc(100vw - 2rem))",
+        minWidth: "min(27.8rem, calc(100vw - 2rem))",
         borderRadius: "0.4rem",
         overflow: "hidden",
       })}
@@ -318,7 +322,8 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
                   </>
                 ) : (
                   <>
-                    votes{ownedNouns.length > 3 && <> ({ownedNouns.length})</>}
+                    votes
+                    {ownedNouns.length > 3 && <> ({ownedNouns.length})</>}
                   </>
                 )}{" "}
                 to{" "}
@@ -416,9 +421,16 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
             component={NextLink}
             prefetch
             href={accountLink}
-          >
-            View profile
-          </Button>
+            icon={
+              <FullscreenIcon
+                style={{
+                  width: "1.2rem",
+                  height: "auto",
+                  transform: "scaleX(-1)",
+                }}
+              />
+            }
+          />
           <DropdownMenu.Root placement="bottom end" offset={18} crossOffset={5}>
             <DropdownMenu.Trigger asChild>
               <Button

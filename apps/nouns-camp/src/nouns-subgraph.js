@@ -379,6 +379,8 @@ const parseAccount = (data) => {
 const parseNoun = (data) => {
   const parsedData = { ...data };
 
+  if (data.id != null) parsedData.id = parseInt(data.id);
+
   if (data.seed != null)
     parsedData.seed = objectUtils.mapValues((v) => parseInt(v), data.seed);
 
@@ -422,7 +424,11 @@ const parseDelegationEvent = (e) => {
 };
 
 const parseAuction = (a) => {
-  const parsedData = { nounId: a.id, ...a };
+  const parsedData = { ...a };
+
+  if (a.id != null) parsedData.nounId = parseInt(a.id);
+
+  if (a.bidder?.id != null) parsedData.bidderId = a.bidder.id;
 
   if (a.bids != null)
     parsedData.bids = a.bids.map((b) => ({

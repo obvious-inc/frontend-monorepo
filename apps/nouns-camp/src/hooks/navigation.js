@@ -6,17 +6,17 @@ import {
 } from "next/navigation";
 
 export const useNavigate = () => {
-  const router = useRouter();
+  const nextRouter = useRouter();
   return React.useCallback(
-    (to, { replace = false } = {}) => {
+    (href, { replace = false } = {}) => {
       if (replace) {
-        router.replace(to);
+        nextRouter.replace(href);
         return;
       }
 
-      router.push(to);
+      nextRouter.push(href);
     },
-    [router],
+    [nextRouter],
   );
 };
 
