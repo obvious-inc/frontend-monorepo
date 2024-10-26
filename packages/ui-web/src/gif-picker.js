@@ -316,33 +316,7 @@ export const PopoverOrTrayDialog = ({
   return (
     <>
       {trigger}
-      <Dialog
-        isOpen={isOpen}
-        onRequestClose={close}
-        underlayProps={{ css: css({ "[data-modal]": { background: "none" } }) }}
-      >
-        <button
-          onClick={close}
-          css={css({
-            padding: "0.8rem",
-            display: "block",
-            margin: "0 auto",
-          })}
-        >
-          <div
-            css={(t) =>
-              css({
-                height: "0.4rem",
-                width: "4.2rem",
-                borderRadius: "0.2rem",
-                background: t.light
-                  ? t.colors.backgroundTertiary
-                  : t.colors.textMuted,
-                boxShadow: t.shadows.elevationLow,
-              })
-            }
-          />
-        </button>
+      <Dialog isOpen={isOpen} onRequestClose={close} transparent tray>
         <div
           css={(t) =>
             css({

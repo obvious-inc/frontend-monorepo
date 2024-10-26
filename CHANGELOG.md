@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.43] - 2024-10-26
+
+### 🚀 Features
+
+- Implement auction section (#734)
+- *(landing-screen)* Enable auction bids filter
+
+### 🐛 Bug Fixes
+
+- *(auction-dialog)* Uncomment `txHash` field for bids
+- *(store)* Correct indentation for `txHash` of bids
+
+### 🎨 Styling
+
+- *(browse-accounts-screen)* Fix indentation in template string
+
 ## [1.3.0-alpha.42] - 2024-10-26
 
 ### 🚀 Features

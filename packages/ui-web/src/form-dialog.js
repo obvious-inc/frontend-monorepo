@@ -15,6 +15,7 @@ const FormDialog = ({
   submit,
   submitLabel = "Save",
   cancelLabel = "Cancel",
+  noFooter = false,
   children,
 }) => {
   const firstInputRef = React.useRef();
@@ -150,18 +151,20 @@ const FormDialog = ({
       </main>
       {children}
 
-      <DialogFooter
-        cancel={dismiss}
-        cancelButtonLabel={cancelLabel}
-        submitButtonLabel={submitLabel}
-        submitButtonProps={{
-          type: "submit",
-          form: "dialog-form",
-          isLoading: hasPendingSubmit,
-          disabled: !hasChanges || !hasRequiredInput || hasPendingSubmit,
-          style: { minWidth: "8rem" },
-        }}
-      />
+      {!noFooter && (
+        <DialogFooter
+          cancel={dismiss}
+          cancelButtonLabel={cancelLabel}
+          submitButtonLabel={submitLabel}
+          submitButtonProps={{
+            type: "submit",
+            form: "dialog-form",
+            isLoading: hasPendingSubmit,
+            disabled: !hasChanges || !hasRequiredInput || hasPendingSubmit,
+            style: { minWidth: "8rem" },
+          }}
+        />
+      )}
     </div>
   );
 };

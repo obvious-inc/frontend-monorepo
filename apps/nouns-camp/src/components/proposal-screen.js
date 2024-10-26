@@ -10,7 +10,7 @@ import {
   array as arrayUtils,
   reloadPageOnce,
 } from "@shades/common/utils";
-import { ErrorBoundary, useFetch } from "@shades/common/react";
+import { ErrorBoundary, useFetch, useMatchMedia } from "@shades/common/react";
 import {
   CaretDown as CaretDownIcon,
   Clock as ClockIcon,
@@ -1545,7 +1545,8 @@ const StreamStatus = ({ transaction }) => {
 };
 const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
-  const isDesktopLayout = useMatchDesktopLayout();
+  const isSmallScreen = useMatchMedia("(max-width: 600px)");
+  const isTouchScreen = useMatchMedia("(pointer: coarse)");
 
   const proposal = useProposal(proposalId);
 
@@ -1603,9 +1604,13 @@ const ProposalScreen = ({ proposalId }) => {
   const getActions = () => {
     if (proposal == null) return [];
     const actions = [];
-    if (!isDesktopLayout && navigator?.share) {
+    if (isTouchScreen && navigator?.share) {
       actions.push({
-        label: <ShareIcon css={css({ width: "1.7rem" })} />,
+        buttonProps: {
+          // Margin to compensate for less padding on icon buttons
+          style: { display: "flex", marginInline: "0.3rem" },
+          icon: <ShareIcon css={css({ width: "1.6rem" })} />,
+        },
         onSelect: () => {
           navigator
             .share({ url: `/proposals/${proposalId}` })
@@ -1669,25 +1674,23 @@ const ProposalScreen = ({ proposalId }) => {
                 if (value === proposalId) return;
                 navigate(`/proposals/${value}`);
               },
+              style: { alignItems: "center" },
               renderSelectedOption: () => (
                 <>
                   Proposal {proposalId}
-                  {proposal?.state != null && (
+                  {!isSmallScreen && proposal?.state != null && (
                     <ProposalStateTag
                       size="small"
                       proposalId={proposalId}
-                      style={{
-                        marginLeft: "0.6rem",
-                        transform: "translateY(-1.5px)",
-                      }}
+                      style={{ marginLeft: "0.5em" }}
                     />
                   )}
                   <CaretDownIcon
                     style={{
-                      display: "inline-flex",
+                      marginLeft: "0.4em",
+                      display: "inline-block",
                       width: "0.9rem",
                       height: "auto",
-                      marginLeft: "0.4rem",
                     }}
                   />
                 </>
@@ -2213,7 +2216,6 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
     <NativeSelect
       value={selectedProposalId}
       groupedOptions={groupedOptions}
-      selectProps={{ css: css({ cursor: "pointer" }) }}
       {...props}
     />
   );
