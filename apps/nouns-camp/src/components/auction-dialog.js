@@ -98,7 +98,7 @@ export const useAuctionData = ({
               amount
               blockNumber
               blockTimestamp
-            # txHash
+              txHash
               bidder { id }
             }
           }
