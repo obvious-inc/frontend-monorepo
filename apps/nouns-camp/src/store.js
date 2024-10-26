@@ -1622,7 +1622,7 @@ const createStore = ({ initialState, publicClient }) =>
                     amount
                     blockNumber
                     blockTimestamp
-                  # txHash
+                    txHash
                     bidder { id }
                   }
                 }
