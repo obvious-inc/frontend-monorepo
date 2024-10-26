@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.42] - 2024-10-26
+
+### 🚀 Features
+
+- *(store)* Uncomment transaction hash fields
+
+### 🐛 Bug Fixes
+
+- *(nouns-camp)* Uncomment `blockTimestamp` fields for `votes`
+- *(store)* Uncomment proposal state fields
+- *(store)* Enable `delegator` field in queries
+- *(nouns-subgraph)* Re-enable `transactionHash` field for votes
+- *(store)* Handle undefined `proposalCandidates` gracefully
+- *(store)* Handle undefined feedbacks and candidates
+
+### 🚜 Refactor
+
+- *(store)* Simplify `proposalCandidates` fetch logic
+- *(store)* Stub out `fetchProposalsVersions`, `fetchCandidatesFeedbackPosts`, and `fetchProposalCandidate`
+
 ## [1.3.0-alpha.41] - 2024-10-26
 
 ### 🐛 Bug Fixes
