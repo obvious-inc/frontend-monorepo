@@ -536,7 +536,7 @@ const createStore = ({ initialState, publicClient }) =>
               canceledBlock
               lastUpdatedBlock
               createdTransactionHash
-            # canceledTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -624,7 +624,7 @@ const createStore = ({ initialState, publicClient }) =>
               canceledBlock
               lastUpdatedBlock
               createdTransactionHash
-            # canceledTransactionHash
+              canceledTransactionHash
               latestVersion {
                 id
                 content {
@@ -974,12 +974,12 @@ const createStore = ({ initialState, publicClient }) =>
                   endBlock
                 # updatePeriodEndBlock
                 # objectionPeriodEndBlock
-                # canceledBlock
-                # canceledTimestamp
-                # queuedBlock
-                # queuedTimestamp
-                # executedBlock
-                # executedTimestamp
+                  canceledBlock
+                  canceledTimestamp
+                  queuedBlock
+                  queuedTimestamp
+                  executedBlock
+                  executedTimestamp
                   forVotes
                   againstVotes
                   abstainVotes
@@ -1048,7 +1048,7 @@ const createStore = ({ initialState, publicClient }) =>
                     or: [
                       { newDelegate: "${id}" },
                       { previousDelegate: "${id}" },
-                    # { delegator: "${id}" }
+                      { delegator: "${id}" }
                     ]
                   }
                 ) {
@@ -1088,7 +1088,7 @@ const createStore = ({ initialState, publicClient }) =>
                 createdTimestamp
                 lastUpdatedTimestamp
                 createdTransactionHash
-              # canceledTransactionHash
+                canceledTransactionHash
                 latestVersion {
                   id
                   content {
@@ -1127,15 +1127,15 @@ const createStore = ({ initialState, publicClient }) =>
                 endBlock
               # updatePeriodEndBlock
               # objectionPeriodEndBlock
-              # canceledBlock
-              # canceledTimestamp
-              # canceledTransactionHash
-              # queuedBlock
-              # queuedTimestamp
-              # queuedTransactionHash
-              # executedBlock
-              # executedTimestamp
-              # executedTransactionHash
+                canceledBlock
+                canceledTimestamp
+                canceledTransactionHash
+                queuedBlock
+                queuedTimestamp
+                queuedTransactionHash
+                executedBlock
+                executedTimestamp
+                executedTransactionHash
                 forVotes
                 againstVotes
                 abstainVotes
@@ -1346,12 +1346,12 @@ const createStore = ({ initialState, publicClient }) =>
                     endBlock
                   # updatePeriodEndBlock
                   # objectionPeriodEndBlock
-                  # canceledBlock
-                  # canceledTimestamp
-                  # queuedBlock
-                  # queuedTimestamp
-                  # executedBlock
-                  # executedTimestamp
+                    canceledBlock
+                    canceledTimestamp
+                    queuedBlock
+                    queuedTimestamp
+                    executedBlock
+                    executedTimestamp
                     forVotes
                     againstVotes
                     abstainVotes
@@ -1450,7 +1450,7 @@ const createStore = ({ initialState, publicClient }) =>
                     or: [
                       { newDelegate: "${id}" },
                       { previousDelegate: "${id}" },
-                      # { delegator: "${id}" }
+                      { delegator: "${id}" }
                     ]
                   }
                   ) {
@@ -1785,7 +1785,7 @@ const createStore = ({ initialState, publicClient }) =>
                       or: [
                         { newDelegate: "${voterAddress}" },
                         { previousDelegate: "${voterAddress}" },
-                        # { delegator: "${voterAddress}" }
+                        { delegator: "${voterAddress}" }
                       ]
                     }
                   ]

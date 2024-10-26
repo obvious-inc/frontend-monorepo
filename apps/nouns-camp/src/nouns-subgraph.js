@@ -18,7 +18,7 @@ export const VOTE_FIELDS = `
   fragment VoteFields on Vote {
     id
     blockNumber
-  # blockTimestamp
+    blockTimestamp
   # transactionHash
     reason
     supportDetailed
@@ -74,15 +74,15 @@ export const FULL_PROPOSAL_FIELDS = `
     endBlock
   # updatePeriodEndBlock
   # objectionPeriodEndBlock
-  # canceledBlock
-  # canceledTimestamp
-  # canceledTransactionHash
-  # queuedBlock
-  # queuedTimestamp
-  # queuedTransactionHash
-  # executedBlock
-  # executedTimestamp
-  # executedTransactionHash
+    canceledBlock
+    canceledTimestamp
+    canceledTransactionHash
+    queuedBlock
+    queuedTimestamp
+    queuedTransactionHash
+    executedBlock
+    executedTimestamp
+    executedTransactionHash
     targets
     signatures
     calldatas
@@ -124,7 +124,7 @@ export const DELEGATION_EVENT_FIELDS = `
     }
     newDelegate { id }
     previousDelegate { id }
-  # delegator { id }
+    delegator { id }
     blockNumber
     blockTimestamp
   }`;
@@ -409,7 +409,7 @@ const parseDelegationEvent = (e) => {
   const parsedData = {
     ...e,
     blockTimestamp: parseTimestamp(e.blockTimestamp),
-    delegatorId: e.noun?.owner?.id,
+    delegatorId: e.delegator?.id,
     newAccountId: e.newDelegate?.id,
     previousAccountId: e.previousDelegate?.id,
     nounId: e.noun?.id,
