@@ -1049,7 +1049,7 @@ const feedFilterCategoryItems = [
     key: "auction-excluding-bids",
     title: "Auction winners & settlements",
   },
-  // { key: "auction-bids", title: "Auction bids" },
+  { key: "auction-bids", title: "Auction bids" },
   // { key: "propdates", title: "Propdate posts" },
 ];
 const defaultSelectedFeedFilterCategories = [
@@ -1057,7 +1057,7 @@ const defaultSelectedFeedFilterCategories = [
   // "candidates",
   "noun-representation",
   "auction-excluding-bids",
-  // "auction-bids",
+  "auction-bids",
   // "propdates",
 ];
 const useFeedFilterCategories = () => {
