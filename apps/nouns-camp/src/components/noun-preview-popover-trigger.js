@@ -734,10 +734,11 @@ const NounAvatarWithDelegationStatusIndicator = ({
   avatarOnly = false,
 }) => {
   const noun = useNoun(nounId);
-  const isDelegated = noun.ownerId !== noun.delegateId;
+  const isDelegated = noun != null && noun.ownerId !== noun.delegateId;
 
-  const isOwner = contextAccount === noun.ownerId;
-  const isDelegate = isDelegated && contextAccount === noun.delegateId;
+  const isOwner = noun != null && contextAccount === noun.ownerId;
+  const isDelegate =
+    noun != null && isDelegated && contextAccount === noun.delegateId;
 
   return (
     <div
@@ -771,7 +772,7 @@ const NounAvatarWithDelegationStatusIndicator = ({
       }
     >
       <div className="avatar-container">
-        <NounAvatar id={noun.id} size={size} />
+        <NounAvatar id={nounId} size={size} />
         {isDelegated && (isDelegate || isOwner) && (
           <div
             className="delegation-status-indicator"
@@ -782,7 +783,7 @@ const NounAvatarWithDelegationStatusIndicator = ({
           </div>
         )}
       </div>
-      {!avatarOnly && <div className="noun-id">{noun.id}</div>}
+      {!avatarOnly && <div className="noun-id">{nounId}</div>}
     </div>
   );
 };
