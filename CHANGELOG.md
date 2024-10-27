@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.44] - 2024-10-27
+
+### 🐛 Bug Fixes
+
+- *(camp)* Don’t assume noun is present in cache
+- *(camp)* Fetch all held nouns
+
 ## [1.3.0-alpha.43] - 2024-10-26
 
 ### 🚀 Features
