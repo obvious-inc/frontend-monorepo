@@ -1027,7 +1027,7 @@ const createStore = ({ initialState, publicClient }) =>
                 account(id: "${id.toLowerCase()}") {
                   id
                   delegate { id }
-                  nouns {
+                  nouns(first: 1000) {
                     id
                     seed {
                       head
@@ -1045,6 +1045,7 @@ const createStore = ({ initialState, publicClient }) =>
                 transferEvents(
                   orderBy: blockNumber,
                   orderDirection: desc,
+                  first: 1000,
                   where: {
                     or: [
                       { newHolder: "${id}" },
@@ -1057,6 +1058,7 @@ const createStore = ({ initialState, publicClient }) =>
                 delegationEvents(
                   orderBy: blockNumber,
                   orderDirection: desc,
+                  first: 1000,
                   where: {
                     or: [
                       { newDelegate: "${id}" },
