@@ -39,3 +39,6 @@ export const truncate = (charCount, string) =>
   string?.trim().length > charCount
     ? `${string.trim().slice(0, charCount).trim()}...`
     : string;
+
+export const getLineCount = (string) =>
+  string.split(/\r\n|(?!\r\n)[\n-\r\x85\u2028\u2029]/).length;
