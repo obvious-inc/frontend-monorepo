@@ -708,7 +708,7 @@ const FeedItem = React.memo(
             <ItemBody
               text={itemBody}
               displayImages={item.type === "event"}
-              truncateLines={!isIsolatedContext}
+              truncateLines
             />
           )}
           {authorReplyCasts?.map((cast) => (
