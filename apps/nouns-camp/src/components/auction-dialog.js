@@ -1,7 +1,7 @@
 "use client";
 
 import getDateYear from "date-fns/getYear";
-import { formatEther, parseEther } from "viem";
+import { formatEther, formatGwei, parseEther } from "viem";
 import React from "react";
 import { css, ThemeProvider as EmotionThemeProvider } from "@emotion/react";
 import NextLink from "next/link";
@@ -22,6 +22,7 @@ import Input from "@shades/ui-web/input";
 import { CHAIN_ID } from "@/constants/env";
 import { getTheme } from "@/theme";
 import { getChain as getSupportedChain } from "@/utils/chains";
+import { resolveIdentifier as resolveContractIdentifier } from "@/contracts";
 import { useActions, useNoun } from "@/store";
 import usePublicClient from "@/hooks/public-client";
 import {
@@ -46,6 +47,8 @@ import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger";
 import { FormattedEthWithConditionalTooltip as FormattedEth } from "./transaction-list";
 import { useDialog } from "@/hooks/global-dialogs";
 import { useSearchParams } from "@/hooks/navigation";
+
+const ONE_GWEI = 1_000_000_000n;
 
 const chain = getSupportedChain(CHAIN_ID);
 
@@ -450,11 +453,17 @@ export const Auction = ({
     return amount + (amount / 100n) * BigInt(minBidIncrementPercentage);
   })();
 
+  const suggestedBidValue = (() => {
+    if (minBidValue == null) return null;
+    const minSuggestedValue = ONE_GWEI * 10_000_000n; // 0.01 ETH
+    return minBidValue < minSuggestedValue ? minSuggestedValue : minBidValue;
+  })();
+
   // Refence by noun id to prevent issues when switching between nouns
   // (speficifically when starting a new auction)
   const [pendingBidByNounId, setPendingBids] = React.useState(() => {
-    if (minBidValue == null) return {};
-    return { [nounId]: formatEther(minBidValue) };
+    if (suggestedBidValue == null) return {};
+    return { [nounId]: formatEther(suggestedBidValue) };
   });
   const pendingBid = pendingBidByNounId[nounId];
 
@@ -541,9 +550,9 @@ export const Auction = ({
 
   React.useEffect(() => {
     if (nounId == null) return;
-    if (minBidValue != null && pendingBid == null)
-      setPendingBids({ [nounId]: formatEther(minBidValue) });
-  }, [nounId, pendingBid, minBidValue]);
+    if (suggestedBidValue != null && pendingBid == null)
+      setPendingBids({ [nounId]: formatEther(suggestedBidValue) });
+  }, [nounId, pendingBid, suggestedBidValue]);
 
   const [showBidsDialog, setShowBidsDialog] = React.useState(false);
   const [showCountdown, setShowCountdown] = React.useState(true);
@@ -633,8 +642,15 @@ export const Auction = ({
         {(() => {
           const renderNounRepresentation = () => {
             const { delegateId, ownerId } = noun;
+
+            const { address: auctionHouseAddress } =
+              resolveContractIdentifier("auction-house");
+
+            if (ownerId === auctionHouseAddress) return null;
+
             const isDelegating =
               delegateId != null && ownerId != null && ownerId !== delegateId;
+
             return (
               <div>
                 {isDelegating ? (
@@ -891,11 +907,12 @@ export const Auction = ({
                     setShowBidSimulationErrors(false);
                     setPendingBids({ [nounId]: e.target.value.trim() });
                   }}
-                  placeholder={
-                    minBidValue == null
-                      ? "..."
-                      : `${formatEther(minBidValue)} or more`
-                  }
+                  placeholder={(() => {
+                    // Don’t show smaller than 0.00001 ETH amounts
+                    if (minBidValue == null || minBidValue < ONE_GWEI * 10_000n)
+                      return "...";
+                    return `${formatEther(minBidValue)} or more`;
+                  })()}
                 />
                 <div
                   data-simulating={
@@ -947,11 +964,38 @@ export const Auction = ({
                 })
               }
             >
-              {minBidValue == null ? (
-                <>&nbsp;</>
-              ) : (
-                <>Bid needs to be Ξ{formatEther(minBidValue)} or more</>
-              )}
+              {(() => {
+                if (minBidValue == null) return <>&nbsp;</>;
+
+                const gweiThreshold = ONE_GWEI * 100_000n; // 0.0001 ETH
+                const formatEtherScientificNotation = (value) =>
+                  parseFloat(formatEther(value)).toExponential();
+
+                const formattedAmount =
+                  minBidValue < ONE_GWEI
+                    ? `${minBidValue.toLocaleString()} Wei (Ξ${formatEtherScientificNotation(minBidValue)})`
+                    : minBidValue < gweiThreshold
+                      ? `${formatGwei(minBidValue)} Gwei (Ξ${formatEtherScientificNotation(minBidValue)})`
+                      : `Ξ${formatEther(minBidValue)}`;
+                return (
+                  <>
+                    Bid needs to be{" "}
+                    <button
+                      onClick={() =>
+                        setPendingBids({ [nounId]: formatEther(minBidValue) })
+                      }
+                      css={css({
+                        display: "inline",
+                        textDecoration: "underline",
+                        cursor: "pointer",
+                      })}
+                    >
+                      {formattedAmount}
+                    </button>{" "}
+                    or more
+                  </>
+                );
+              })()}
             </div>
           </>
         );
