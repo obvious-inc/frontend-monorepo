@@ -42,9 +42,9 @@ import {
   VOTE_FIELDS,
   CANDIDATE_FEEDBACK_FIELDS,
   PROPOSAL_FEEDBACK_FIELDS,
-  CANDIDATE_CONTENT_SIGNATURE_FIELDS,
   DELEGATION_EVENT_FIELDS,
   TRANSFER_EVENT_FIELDS,
+  FULL_PROPOSAL_CANDIDATE_FIELDS,
 } from "./nouns-subgraph.js";
 import * as PropdatesSubgraph from "./propdates-subgraph.js";
 
@@ -535,37 +535,11 @@ const createStore = ({ initialState, publicClient }) =>
 
       const data = await subgraphFetch({
         query: `
-          ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+          ${FULL_PROPOSAL_CANDIDATE_FIELDS}
           ${CANDIDATE_FEEDBACK_FIELDS}
           query {
             proposalCandidate(id: ${JSON.stringify(id)}) {
-              id
-              slug
-              proposer
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              createdTransactionHash
-              canceledTransactionHash
-              latestVersion {
-                id
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    ...CandidateContentSignatureFields
-                  }
-                }
-              }
+              ...FullProposalCandidateFields
               versions {
                 id
                 createdBlock
@@ -620,40 +594,14 @@ const createStore = ({ initialState, publicClient }) =>
       if (ids == null || ids.length === 0) return [];
       return subgraphFetch({
         query: `
-          ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+          ${FULL_PROPOSAL_CANDIDATE_FIELDS}
           query {
             proposalCandidates(
               where: {
                 id_in: [${ids.map((id) => JSON.stringify(id))}]
               }
             ) {
-              id
-              slug
-              proposer
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              createdTransactionHash
-              canceledTransactionHash
-              latestVersion {
-                id
-                content {
-                  title
-                  description
-                  targets
-                  values
-                  signatures
-                  calldatas
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    ...CandidateContentSignatureFields
-                  }
-                }
-              }
+              ...FullProposalCandidateFields
             }
           }`,
       });
@@ -1088,40 +1036,19 @@ const createStore = ({ initialState, publicClient }) =>
       fetchProposalCandidatesByAccount: (accountAddress) =>
         subgraphFetch({
           query: `
-            ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+            ${FULL_PROPOSAL_CANDIDATE_FIELDS}
             query {
               proposalCandidates(
                 where: { proposer: "${accountAddress}" }
               ) {
-                id
-                slug
-                proposer
-                createdBlock
-                canceledBlock
-                lastUpdatedBlock
-                canceledTimestamp
-                createdTimestamp
-                lastUpdatedTimestamp
-                createdTransactionHash
-                canceledTransactionHash
-                latestVersion {
-                  id
-                  content {
-                    title
-                    matchingProposalIds
-                    proposalIdToUpdate
-                    contentSignatures {
-                      ...CandidateContentSignatureFields
-                    }
-                  }
-                }
+                ...FullProposalCandidateFields
               }
             }`,
         }),
       fetchBrowseScreenData: async (client, { skip = 0, first = 1000 }) => {
         const { proposals, proposalCandidates } = await subgraphFetch({
           query: `
-            ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+            ${FULL_PROPOSAL_CANDIDATE_FIELDS}
             query {
               proposals(
                 orderBy: createdBlock,
@@ -1168,28 +1095,7 @@ const createStore = ({ initialState, publicClient }) =>
                 skip: ${skip},
                 first: ${first}
               ) {
-                id
-                slug
-                proposer
-                createdBlock
-                canceledBlock
-                lastUpdatedBlock
-                canceledTimestamp
-                createdTimestamp
-                lastUpdatedTimestamp
-                createdTransactionHash
-                canceledTransactionHash
-                latestVersion {
-                  id
-                  content {
-                    title
-                    matchingProposalIds
-                    proposalIdToUpdate
-                    contentSignatures {
-                      ...CandidateContentSignatureFields
-                    }
-                  }
-                }
+                ...FullProposalCandidateFields
               }
             }`,
         });
@@ -1337,7 +1243,7 @@ const createStore = ({ initialState, publicClient }) =>
                 ${VOTE_FIELDS}
                 ${CANDIDATE_FEEDBACK_FIELDS}
                 ${PROPOSAL_FEEDBACK_FIELDS}
-                ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+                ${FULL_PROPOSAL_CANDIDATE_FIELDS}
                 ${DELEGATION_EVENT_FIELDS}
                 ${TRANSFER_EVENT_FIELDS}
                 query {
@@ -1383,26 +1289,7 @@ const createStore = ({ initialState, publicClient }) =>
                     first: ${first},
                     where: { proposer: "${id}" }
                   ) {
-                    id
-                    slug
-                    proposer
-                    createdBlock
-                    canceledBlock
-                    lastUpdatedBlock
-                    canceledTimestamp
-                    createdTimestamp
-                    lastUpdatedTimestamp
-                    latestVersion {
-                      id
-                        content {
-                        title
-                        matchingProposalIds
-                        proposalIdToUpdate
-                        contentSignatures {
-                        ...CandidateContentSignatureFields
-                        }
-                      }
-                    }
+                    ...FullProposalCandidateFields
                   }
                   votes(
                     orderBy: blockNumber,
@@ -1505,38 +1392,14 @@ const createStore = ({ initialState, publicClient }) =>
 
             return subgraphFetch({
               query: `
-                ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+                ${FULL_PROPOSAL_CANDIDATE_FIELDS}
                 query {
                   proposalCandidates(
                     where: {
                       latestVersion_in: [${proposalCandidateVersions.map((v) => `"${v.id}"`)}]
                     }
                   ) {
-                    id
-                    slug
-                    proposer
-                    canceledTimestamp
-                    createdTimestamp
-                    lastUpdatedTimestamp
-                    createdBlock
-                    canceledBlock
-                    lastUpdatedBlock
-                    latestVersion {
-                      id
-                        content {
-                        title
-                        description
-                        targets
-                        values
-                        signatures
-                        calldatas
-                        matchingProposalIds
-                        proposalIdToUpdate
-                        contentSignatures {
-                          ...CandidateContentSignatureFields
-                        }
-                      }
-                    }
+                    ...FullProposalCandidateFields
                     versions { id }
                   }
                 }`,

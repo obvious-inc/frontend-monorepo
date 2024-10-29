@@ -30,6 +30,7 @@ import { useSearchParams } from "../hooks/navigation.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import DateRangePicker from "./date-range-picker.js";
 import ProposalList from "./proposal-list.js";
+import { FULL_PROPOSAL_CANDIDATE_FIELDS } from "@/nouns-subgraph.js";
 
 const NEW_THRESHOLD_IN_DAYS = 3;
 const ACTIVE_THRESHOLD_IN_DAYS = 5;
@@ -360,40 +361,16 @@ const BrowseCandidatesScreen = () => {
 
       const fetchCandidates = async (page = 1) => {
         const { proposalCandidates } = await subgraphFetch({
-          query: `{
+          query: `
+          ${FULL_PROPOSAL_CANDIDATE_FIELDS}
+          query {
             proposalCandidates(
               orderBy: createdBlock,
               orderDirection: desc,
               first: ${pageSize},
               skip: ${(page - 1) * pageSize},
             ) {
-              id
-              slug
-              proposer
-              createdBlock
-              canceledBlock
-              lastUpdatedBlock
-              canceledTimestamp
-              createdTimestamp
-              lastUpdatedTimestamp
-              latestVersion {
-                id
-                content {
-                  title
-                  matchingProposalIds
-                  proposalIdToUpdate
-                  contentSignatures {
-                    canceled
-                    createdBlock
-                    createdTimestamp
-                    expirationTimestamp
-                    signer {
-                      id
-                      nounsRepresented { id }
-                    }
-                  }
-                }
-              }
+              ...FullProposalCandidateFields
             }
           }`,
         });

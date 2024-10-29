@@ -1,4 +1,4 @@
-import { notFound as nextNotFound } from "next/navigation";
+import { notFound as nextNotFound, permanentRedirect } from "next/navigation";
 import {
   string as stringUtils,
   markdown as markdownUtils,
@@ -20,6 +20,7 @@ const fetchCandidate = async (id) => {
         proposalCandidate(id: ${JSON.stringify(id)}) {
           id
           slug
+          number
           proposer
           createdBlock
           canceledBlock
@@ -43,11 +44,48 @@ const fetchCandidate = async (id) => {
 
   return parseCandidate(data.proposalCandidate);
 };
-const parseId = (id) => normalizeId(decodeURIComponent(id));
+
+const fetchCandidateByNumber = async (number) => {
+  const data = await subgraphFetch({
+    query: `
+      query {
+        proposalCandidates(where: {number: ${JSON.stringify(number)}}) {
+          id
+          slug
+          number
+          proposer
+          createdBlock
+          canceledBlock
+          lastUpdatedBlock
+          canceledTimestamp
+          createdTimestamp
+          lastUpdatedTimestamp
+          latestVersion {
+            id
+            content {
+              description
+              matchingProposalIds
+              proposalIdToUpdate
+            }
+          }
+        }
+      }`,
+  });
+
+  if (data?.proposalCandidates?.length == 0) return null;
+
+  return parseCandidate(data.proposalCandidates[0]);
+};
+
+const parseId = (id) =>
+  isNaN(Number(id)) ? normalizeId(decodeURIComponent(id)) : id;
 
 export async function generateMetadata({ params }) {
   const candidateId = parseId(params.id);
-  const candidate = await fetchCandidate(candidateId);
+
+  const candidate = isNaN(Number(params.id))
+    ? await fetchCandidate(parseId(params.id))
+    : await fetchCandidateByNumber(params.id);
 
   // Can’t notFound() here since we might be on a testnet
   if (candidate == null) nextNotFound();
@@ -87,9 +125,15 @@ export async function generateMetadata({ params }) {
 }
 
 export default async function Page({ params }) {
-  const candidate = await fetchCandidate(parseId(params.id));
+  const candidate = isNaN(Number(params.id))
+    ? await fetchCandidate(parseId(params.id))
+    : await fetchCandidateByNumber(params.id);
 
   if (candidate == null) nextNotFound();
+
+  if (!isNaN(Number(params.id))) {
+    permanentRedirect(`/candidates/${candidate.id}`);
+  }
 
   return (
     <ClientAppProvider>
