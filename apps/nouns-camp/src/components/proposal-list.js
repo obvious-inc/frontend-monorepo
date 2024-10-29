@@ -678,7 +678,10 @@ const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
           {showScoreStack && <div />}
           <div>
             <div className="small dimmed nowrap">
-              {isProposalUpdate ? "Proposal update" : "Candidate"} by{" "}
+              {isProposalUpdate
+                ? "Proposal update"
+                : `Candidate ${candidate.number}`}{" "}
+              by{" "}
               <em
                 data-show={hasBeenOnScreen}
                 css={(t) =>
