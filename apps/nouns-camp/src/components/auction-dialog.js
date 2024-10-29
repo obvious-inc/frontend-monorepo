@@ -981,13 +981,18 @@ export const Auction = ({
                   <>
                     Bid needs to be{" "}
                     <button
+                      data-highlight={
+                        pendingBid !== formatEther(minBidValue) || undefined
+                      }
                       onClick={() =>
                         setPendingBids({ [nounId]: formatEther(minBidValue) })
                       }
                       css={css({
                         display: "inline",
-                        textDecoration: "underline",
                         cursor: "pointer",
+                        "&[data-highlight]": {
+                          textDecoration: "underline",
+                        },
                       })}
                     >
                       {formattedAmount}
