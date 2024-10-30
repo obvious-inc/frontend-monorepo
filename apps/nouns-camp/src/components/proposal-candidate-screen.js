@@ -1475,7 +1475,9 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
         label: <ShareIcon css={css({ width: "1.7rem" })} />,
         onSelect: () => {
           navigator
-            .share({ url: `/candidates/${encodeURIComponent(candidateId)}` })
+            .share({
+              url: `/candidates/${encodeURIComponent(candidate.number ?? candidateId)}`,
+            })
             .catch((error) => console.error("Error sharing", error));
         },
       });

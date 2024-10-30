@@ -99,7 +99,7 @@ export const FULL_PROPOSAL_FIELDS = `
   # feedbackPosts { ...ProposalFeedbackFields }
   }`;
 
-export const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
+const CANDIDATE_CONTENT_SIGNATURE_FIELDS = `
   fragment CandidateContentSignatureFields on ProposalCandidateSignature {
     reason
     canceled
@@ -137,6 +137,39 @@ export const TRANSFER_EVENT_FIELDS = `
     previousHolder { id }
     blockNumber
     blockTimestamp
+  }`;
+
+export const FULL_PROPOSAL_CANDIDATE_FIELDS = `
+  ${CANDIDATE_CONTENT_SIGNATURE_FIELDS}
+  fragment FullProposalCandidateFields on ProposalCandidate {
+    id
+    slug
+    number
+    proposer
+    canceledTimestamp
+    createdTimestamp
+    lastUpdatedTimestamp
+    createdBlock
+    canceledBlock
+    lastUpdatedBlock
+    createdTransactionHash
+    canceledTransactionHash
+    latestVersion {
+      id
+      content {
+        title
+        description
+        targets
+        values
+        signatures
+        calldatas
+        matchingProposalIds
+        proposalIdToUpdate
+        contentSignatures {
+          ...CandidateContentSignatureFields
+        }
+      }
+    }
   }`;
 
 const parseMarkdownDescription = (string) => {

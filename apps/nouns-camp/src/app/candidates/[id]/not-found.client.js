@@ -27,6 +27,8 @@ export default function NotFound() {
               />
               .
             </>
+          ) : !isNaN(Number(params.id)) ? (
+            `No candidate with number "${params.id}" found.`
           ) : (
             `"${proposerId}" is not a valid account address.`
           )

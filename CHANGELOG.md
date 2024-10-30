@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.45] - 2024-10-30
+
+### 🚀 Features
+
+- *(camp)* Improve min bid formatting and suggest bid amount
+- *(camp)* Add `/candidates/:number` route + add number to candie listings
+- *(camp)* Always truncate large feed item bodies
+- *(camp)* Make reposts and replies expandable
+
 ## [1.3.0-alpha.44] - 2024-10-27
 
 ### 🐛 Bug Fixes
