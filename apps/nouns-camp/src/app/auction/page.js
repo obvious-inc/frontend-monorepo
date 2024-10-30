@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect } from "react";
 import ClientAppProvider from "@/app/client-app-provider";
 import { build as buildMetadata } from "@/utils/metadata";
