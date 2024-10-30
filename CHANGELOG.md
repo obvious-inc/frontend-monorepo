@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.46] - 2024-10-30
+
+### 🚀 Features
+
+- *(auction)* Add temporary redirect to main site
+
+### 🐛 Bug Fixes
+
+- *(auction)* Add client-side rendering directive
+
 ## [1.3.0-alpha.45] - 2024-10-30
 
 ### 🚀 Features
