@@ -87,6 +87,12 @@ updates:
       - dependency-name: "next"
         update-types:
           - "version-update:semver-major"
+      - dependency-name: "@next/*"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint-config-next"
+        update-types:
+          - "version-update:semver-major"
       - dependency-name: "zustand"
         update-types:
           - "version-update:semver-major"
