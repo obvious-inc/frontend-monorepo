@@ -2198,6 +2198,7 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
             ) {
               id
               title
+              proposer { id }
             }
           }`,
         });

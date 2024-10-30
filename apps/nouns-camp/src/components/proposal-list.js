@@ -344,10 +344,8 @@ const ProposalList = ({
                       sortStrategy={sortStrategy}
                       {...props}
                     />
-                  ) : isAddress(item.id) ? (
-                    <AccountListItem address={item.id} {...props} />
                   ) : (
-                    <></>
+                    <AccountListItem address={item.id} {...props} />
                   )}
                 </li>
               );
