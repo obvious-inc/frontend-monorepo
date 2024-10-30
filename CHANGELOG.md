@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0-alpha.47] - 2024-10-30
+
+### 🚜 Refactor
+
+- *(auction)* Comment out unused `buildMetadata`
+
 ## [1.3.0-alpha.46] - 2024-10-30
 
 ### 🚀 Features
