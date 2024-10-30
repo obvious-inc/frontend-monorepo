@@ -43,7 +43,6 @@ import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Tag from "./tag.js";
 import VotesTagGroup from "./votes-tag-group.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
-import { isAddress } from "viem";
 
 const ProposalVotesDialog = React.lazy(
   () => import("./proposal-votes-dialog.js"),
