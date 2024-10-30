@@ -1430,16 +1430,19 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
       if (item.authorAccount == null)
         return (
           <>
-            <span
+            <a
+              href={`https://warpcast.com/${item.authorUsername}`}
+              target="_blank"
+              rel="noreferrer"
               css={(t) =>
                 css({
-                  color: t.colors.textNormal,
-                  fontWeight: t.text.weights.emphasis,
+                  color: `${t.colors.textNormal} !important`,
+                  fontWeight: `${t.text.weights.emphasis} !important`,
                 })
               }
             >
               {item.authorDisplayName}
-            </span>{" "}
+            </a>{" "}
             commented
             {!isIsolatedContext && (
               <>
