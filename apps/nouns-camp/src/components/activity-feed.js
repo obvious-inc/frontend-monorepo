@@ -2,19 +2,26 @@ import getDateYear from "date-fns/getYear";
 import React from "react";
 import NextLink from "next/link";
 import { css, keyframes } from "@emotion/react";
-import { array as arrayUtils } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  string as stringUtils,
+} from "@shades/common/utils";
 import { useHasBeenOnScreen } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Avatar from "@shades/ui-web/avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import { FarcasterGate as FarcasterGateIcon } from "@shades/ui-web/icons";
-import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
-import { isSucceededState as isSucceededProposalState } from "../utils/proposals.js";
+import {
+  FarcasterGate as FarcasterGateIcon,
+  CaretDown as CaretDownIcon,
+} from "@shades/ui-web/icons";
+import { resolveIdentifier as resolveContractIdentifier } from "@/contracts";
+import { REPOST_REGEX } from "@/utils/votes-and-feedbacks";
+import { isSucceededState as isSucceededProposalState } from "@/utils/proposals";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   makeUrlId as makeCandidateUrlId,
-} from "../utils/candidates.js";
+} from "@/utils/candidates";
 import { useWallet } from "../hooks/wallet.js";
 import { useState as useSessionState } from "@/session-provider";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -276,6 +283,11 @@ const FeedItem = React.memo(
     createRepostHref,
     ...item
   }) => {
+    const [
+      expandedReplyTargetAndRepostIds,
+      setExpandedReplyTargetAndRepostIds,
+    ] = React.useState([]);
+
     const { address: connectedAccount_ } = useWallet();
     const { address: loggedInAccount } = useSessionState();
     const userAccountAddress = connectedAccount_ ?? loggedInAccount;
@@ -625,49 +637,46 @@ const FeedItem = React.memo(
                 marginBottom: hasReposts || hasBody ? "1.6rem" : 0,
               }}
             >
-              {item.replies.map(({ body, target }) => (
-                <li key={target.id}>
-                  <div css={css({ fontSize: "0.875em" })}>
-                    <QuotedVoteOrFeedbackPost
-                      item={target}
-                      href={(() => {
-                        if (isIsolatedContext) return `#${target.id}`;
-                        if (target.proposalId != null)
-                          return `/proposals/${target.proposalId}?tab=activity#${target.id}`;
-                        if (target.candidateId != null)
-                          return `/candidates/${encodeURIComponent(
-                            makeCandidateUrlId(target.candidateId),
-                          )}?tab=activity${target.id}`;
-                        console.error("Invalid reply target", target);
-                        return null;
-                      })()}
-                    />
-                  </div>
-                  <div className="reply-area">
-                    <div className="reply-line-container">
-                      <div className="reply-line" />
-                    </div>
-                    <div className="body-container">
-                      <MarkdownRichText
-                        text={body}
-                        // displayImages={displayImages}
-                        compact
-                        css={css({
-                          // Make all headings small
-                          "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-                          "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": {
-                            marginTop: "1.5em",
-                          },
-                          "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
-                            {
-                              marginBottom: "0.625em",
-                            },
-                        })}
+              {item.replies.map(({ body, target, ...replyTargetPost }) => {
+                return (
+                  <li key={target.id}>
+                    <div css={css({ fontSize: "0.875em" })}>
+                      <QuotedVoteOrFeedbackPost
+                        item={target}
+                        href={(() => {
+                          if (isIsolatedContext) return `#${target.id}`;
+                          if (target.proposalId != null)
+                            return `/proposals/${target.proposalId}?tab=activity#${target.id}`;
+                          if (target.candidateId != null)
+                            return `/candidates/${encodeURIComponent(
+                              makeCandidateUrlId(target.candidateId),
+                            )}?tab=activity${target.id}`;
+                          console.error("Invalid reply target", target);
+                          return null;
+                        })()}
+                        isExpanded={expandedReplyTargetAndRepostIds.includes(
+                          replyTargetPost.id,
+                        )}
+                        onToggleExpanded={() => {
+                          setExpandedReplyTargetAndRepostIds((ids) =>
+                            ids.includes(replyTargetPost.id)
+                              ? ids.filter((id) => id !== replyTargetPost.id)
+                              : [...ids, replyTargetPost.id],
+                          );
+                        }}
                       />
                     </div>
-                  </div>
-                </li>
-              ))}
+                    <div className="reply-area">
+                      <div className="reply-line-container">
+                        <div className="reply-line" />
+                      </div>
+                      <div className="body-container">
+                        <CompactMarkdownRichText text={body} />
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
           {item.reposts?.length > 0 && (
@@ -699,6 +708,16 @@ const FeedItem = React.memo(
                       );
                       return null;
                     })()}
+                    isExpanded={expandedReplyTargetAndRepostIds.includes(
+                      voteOrFeedbackPost.id,
+                    )}
+                    onToggleExpanded={() => {
+                      setExpandedReplyTargetAndRepostIds((ids) =>
+                        ids.includes(voteOrFeedbackPost.id)
+                          ? ids.filter((id) => id !== voteOrFeedbackPost.id)
+                          : [...ids, voteOrFeedbackPost.id],
+                      );
+                    }}
                   />
                 </li>
               ))}
@@ -708,7 +727,7 @@ const FeedItem = React.memo(
             <ItemBody
               text={itemBody}
               displayImages={item.type === "event"}
-              truncateLines={!isIsolatedContext}
+              truncateLines
             />
           )}
           {authorReplyCasts?.map((cast) => (
@@ -1013,20 +1032,7 @@ const ItemBody = React.memo(
               : undefined,
           }}
         >
-          <MarkdownRichText
-            text={text}
-            displayImages={displayImages}
-            compact
-            css={css({
-              // Make all headings small
-              "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-              "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-              "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
-                {
-                  marginBottom: "0.625em",
-                },
-            })}
-          />
+          <CompactMarkdownRichText text={text} displayImages={displayImages} />
         </div>
 
         {isEnabled && (
@@ -1839,84 +1845,132 @@ const Signal = ({ positive, negative, ...props }) => (
   />
 );
 
-const QuotedVoteOrFeedbackPost = ({ href, item }) => (
-  <div
-    css={(t) =>
-      css({
-        position: "relative",
-        border: "0.1rem solid",
-        borderRadius: "0.5rem",
-        borderColor: t.colors.borderLighter,
-        padding: "0.4rem 0.6rem",
-        whiteSpace: "nowrap",
-        overflow: "hidden",
-        textOverflow: "ellipsis",
-      })
-    }
-  >
-    {href != null && (
-      <NextLink
-        href={href}
-        style={{ display: "block", position: "absolute", inset: 0 }}
-      />
-    )}
-    <AccountPreviewPopoverTrigger
-      showAvatar
-      accountAddress={item.voterId}
-      style={{ position: "relative" }}
-    />
-    <span
+const QuotedVoteOrFeedbackPost = ({
+  href,
+  item,
+  isExpanded,
+  onToggleExpanded,
+}) => {
+  // Strip reposts (some risk of stripping unintened content here (it’s fine))
+  const quotedText = item.reason.replaceAll(REPOST_REGEX, "");
+  const enableExpansion =
+    stringUtils.getLineCount(quotedText.trim()) > 1 || quotedText.length > 100;
+
+  return (
+    <div
+      data-expandable={enableExpansion || undefined}
       css={(t) =>
         css({
-          fontWeight: t.text.weights.emphasis,
-          "[data-for]": { color: t.colors.textPositive },
-          "[data-against]": { color: t.colors.textNegative },
-          "[data-abstain]": { color: t.colors.textDimmed },
+          position: "relative",
+          border: "0.1rem solid",
+          borderRadius: "0.5rem",
+          borderColor: t.colors.borderLighter,
+          padding: "0.4rem 0.6rem",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          "&[data-expandable]": {
+            paddingRight: "2.6rem",
+          },
+          ".expand-button": {
+            position: "absolute",
+            top: 0,
+            right: 0,
+            padding: "0.8rem",
+            "@media(hover: hover)": {
+              cursor: "pointer",
+            },
+          },
         })
       }
     >
-      {" "}
-      {(() => {
-        if (item.type === "feedback-post") {
+      {href != null && (
+        <NextLink
+          href={href}
+          style={{ display: "block", position: "absolute", inset: 0 }}
+        />
+      )}
+      <AccountPreviewPopoverTrigger
+        showAvatar
+        accountAddress={item.voterId}
+        style={{ position: "relative" }}
+      />
+      <span
+        css={(t) =>
+          css({
+            fontWeight: t.text.weights.emphasis,
+            "[data-for]": { color: t.colors.textPositive },
+            "[data-against]": { color: t.colors.textNegative },
+            "[data-abstain]": { color: t.colors.textDimmed },
+          })
+        }
+      >
+        {" "}
+        {(() => {
+          if (item.type === "feedback-post") {
+            switch (item.support) {
+              case 0:
+                return <Signal negative>(against signal)</Signal>;
+              case 1:
+                return <Signal positive>(for signal)</Signal>;
+              case 2:
+                return <Signal>(comment)</Signal>;
+            }
+          }
+
           switch (item.support) {
             case 0:
-              return <Signal negative>(against signal)</Signal>;
+              return <Signal negative>(against)</Signal>;
             case 1:
-              return <Signal positive>(for signal)</Signal>;
+              return <Signal positive>(for)</Signal>;
             case 2:
-              return <Signal>(comment)</Signal>;
+              return <Signal>(abstained)</Signal>;
           }
-        }
-
-        switch (item.support) {
-          case 0:
-            return <Signal negative>(against)</Signal>;
-          case 1:
-            return <Signal positive>(for)</Signal>;
-          case 2:
-            return <Signal>(abstained)</Signal>;
-        }
-      })()}
-    </span>
-    :{" "}
-    <MarkdownRichText
-      text={item.reason}
-      displayImages={false}
-      inline
-      css={css({
-        // Make all headings small
-        "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-        "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
-        "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
-          marginBottom: "0.625em",
-        },
-      })}
-    />
-  </div>
-);
+        })()}
+      </span>
+      :{" "}
+      <CompactMarkdownRichText
+        inline={enableExpansion && !isExpanded}
+        text={item.reason.replaceAll(REPOST_REGEX, "")}
+      />
+      {enableExpansion && (
+        <button className="expand-button" onClick={onToggleExpanded}>
+          <CaretDownIcon
+            style={{
+              width: "0.85em",
+              height: "auto",
+              transform: isExpanded ? "scaleY(-1)" : undefined,
+            }}
+          />
+        </button>
+      )}
+    </div>
+  );
+};
 
 const AccountDisplayName = ({ address }) => {
   return useAccountDisplayName(address);
 };
+
+const CompactMarkdownRichText = ({
+  text,
+  inline = false,
+  displayImages = false,
+}) => (
+  <MarkdownRichText
+    text={text}
+    displayImages={!inline && displayImages}
+    compact={!inline}
+    inline={inline}
+    css={css({
+      // Make all headings small
+      "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+      "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": { marginTop: "1.5em" },
+      "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)": {
+        marginBottom: "0.625em",
+      },
+    })}
+  />
+);
 
 export default ActivityFeed;
