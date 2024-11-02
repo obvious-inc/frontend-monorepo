@@ -309,6 +309,9 @@ const NavBar = ({
       case "open-warpcast":
         window.open("https://warpcast.com/~/channel/nouns", "_blank");
         break;
+      case "open-flows":
+        window.open("https://flows.wtf", "_blank");
+        break;
       case "open-camp-changelog":
         window.open("https://warpcast.com/~/channel/camp", "_blank");
         break;
@@ -668,6 +671,18 @@ const NavBar = ({
                         <>
                           <span style={{ flex: 1, marginRight: "0.8rem" }}>
                             Farcaster
+                          </span>
+                          {"\u2197"}
+                        </>
+                      ),
+                    },
+                    {
+                      id: "open-flows",
+                      textValue: "Flows",
+                      label: (
+                        <>
+                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
+                            Flows
                           </span>
                           {"\u2197"}
                         </>
