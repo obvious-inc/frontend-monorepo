@@ -992,16 +992,25 @@ const FeedItem = React.memo(
 );
 
 const ItemBody = React.memo(
-  ({ text, displayImages, truncateLines: enableLineTruncation }) => {
+  ({
+    text,
+    displayImages,
+    collapse = true,
+    truncateLines: enableLineTruncation,
+  }) => {
     const containerRef = React.useRef();
 
-    const [isCollapsed_, setCollapsed] = React.useState(enableLineTruncation);
+    const [isForceExpanded, setForceExpanded] = React.useState(false);
+
+    const isExpanded = !collapse || isForceExpanded;
+
+    const [isTruncated_, setTruncated] = React.useState(enableLineTruncation);
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
       React.useState(null);
 
     const applyLineTruncation =
       enableLineTruncation && exceedsTruncationThreshold;
-    const isCollapsed = applyLineTruncation && isCollapsed_;
+    const isTruncated = applyLineTruncation && isTruncated_;
 
     React.useEffect(() => {
       const observer = new ResizeObserver(() => {
@@ -1025,27 +1034,31 @@ const ItemBody = React.memo(
           ref={containerRef}
           css={css({ overflow: "hidden" })}
           style={{
-            maxHeight: isCollapsed
+            maxHeight: isTruncated
               ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
               : // https://stackoverflow.com/questions/11289166/chrome-on-android-resizes-font
                 "999999px",
-            maskImage: isCollapsed
+            maskImage: isTruncated
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
           }}
         >
-          <CompactMarkdownRichText text={text} displayImages={displayImages} />
+          <CompactMarkdownRichText
+            inline={!isExpanded}
+            text={text}
+            displayImages={displayImages}
+          />
         </div>
 
         {applyLineTruncation && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
-              onClick={() => setCollapsed((c) => !c)}
+              onClick={() => setTruncated((s) => !s)}
               size="small"
               color={(t) => t.colors.textDimmed}
             >
-              {isCollapsed ? "Expand..." : "Collapse"}
+              {isTruncated ? "Expand..." : "Collapse"}
             </Link>
           </div>
         )}
