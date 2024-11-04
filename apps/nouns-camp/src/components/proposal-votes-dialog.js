@@ -224,10 +224,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
     switch (sortStrategy) {
       case "voting-power":
         return arrayUtils.sortBy(
-          {
-            value: (v) => voteCountByAddress[v.voterId] ?? v.votes,
-            order: "desc",
-          },
+          { value: (v) => v.votes, order: "desc" },
           (v) => v.reason != null && v.reason.trim() !== "",
           { value: (v) => v.createdBlock },
           votes,
@@ -235,7 +232,6 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
       case "chronological":
         return arrayUtils.sortBy(
           { value: (v) => v.createdBlock },
-          { value: (v) => v.votesCast, order: "desc" },
           { value: (v) => v.votes, order: "desc" },
           { value: (v) => v.id },
           votes,
@@ -246,7 +242,10 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
     }
   };
 
-  const renderVoteList = (votes, { emptyPlaceholder = true, header } = {}) => {
+  const renderVoteList = (
+    votes,
+    { sort = true, emptyPlaceholder = true, header } = {},
+  ) => {
     if (emptyPlaceholder && votes.length === 0)
       return (
         <div css={css({ padding: "2.4rem 0", fontStyle: "italic" })}>
@@ -309,7 +308,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
         }}
       >
         {header != null && <li>{header}</li>}
-        {sortVotes(votes).map((v) => {
+        {(sort ? sortVotes(votes) : votes).map((v) => {
           const voteIndex = ascendingPosts.indexOf(v);
           const extractReposts = createRepostExtractor(
             ascendingPosts.slice(0, voteIndex),
@@ -549,8 +548,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
               { value: "voting-power", label: "By voting power" },
               {
                 value: "chronological",
-                label: "Chronological / Attendance",
-                triggerLabel: "Chronological",
+                label: "Chronological",
               },
             ]}
             onChange={setSortStrategy}
@@ -569,7 +567,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                       })
                     }
                   >
-                    {option.triggerLabel ?? option.label}
+                    {option.label}
                   </em>
                 </>
               );
@@ -651,6 +649,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
               <div className="votes-column">
                 <h2>{hasEnded ? "Absent" : "Yet to vote"}</h2>
                 {renderVoteList(accountsNotVoted, {
+                  sort: false,
                   emptyPlaceholder: false,
                   header: (
                     <div
@@ -748,6 +747,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                 )}
               </p>
               {renderVoteList(accountsNotVoted, {
+                sort: false,
                 emptyPlaceholder: false,
               })}
             </Tabs.Item>
