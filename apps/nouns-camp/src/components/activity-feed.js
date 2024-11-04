@@ -999,8 +999,9 @@ const ItemBody = React.memo(
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
       React.useState(null);
 
-    const isEnabled = enableLineTruncation && exceedsTruncationThreshold;
-    const isCollapsed = isEnabled && isCollapsed_;
+    const applyLineTruncation =
+      enableLineTruncation && exceedsTruncationThreshold;
+    const isCollapsed = applyLineTruncation && isCollapsed_;
 
     React.useEffect(() => {
       const observer = new ResizeObserver(() => {
@@ -1026,7 +1027,8 @@ const ItemBody = React.memo(
           style={{
             maxHeight: isCollapsed
               ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
-              : undefined,
+              : // https://stackoverflow.com/questions/11289166/chrome-on-android-resizes-font
+                "999999px",
             maskImage: isCollapsed
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
@@ -1035,7 +1037,7 @@ const ItemBody = React.memo(
           <CompactMarkdownRichText text={text} displayImages={displayImages} />
         </div>
 
-        {isEnabled && (
+        {applyLineTruncation && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
