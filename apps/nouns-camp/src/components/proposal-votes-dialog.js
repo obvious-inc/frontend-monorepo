@@ -1,5 +1,7 @@
 import React from "react";
 import { css } from "@emotion/react";
+import { useQuery } from "@tanstack/react-query";
+import { useReadContracts } from "wagmi";
 import { array as arrayUtils } from "@shades/common/utils";
 import Select from "@shades/ui-web/select";
 import Switch from "@shades/ui-web/switch";
@@ -8,22 +10,30 @@ import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
 import {
+  useActions,
   useProposal,
   useProposalCandidate,
   useProposalFetch,
-} from "../store.js";
-import { useSearchParams } from "../hooks/navigation.js";
-import { createRepostExtractor } from "../utils/votes-and-feedbacks.js";
+} from "@/store";
+import { CHAIN_ID } from "@/constants/env";
+import { resolveIdentifier as resolveContractIdentifier } from "@/contracts";
+import { isFinalState as isFinalProposalState } from "@/utils/proposals";
+import { createRepostExtractor } from "@/utils/votes-and-feedbacks";
+import useBlockNumber from "@/hooks/block-number";
+import { useSearchParams } from "@/hooks/navigation";
 import {
   useProposalDynamicQuorum,
   useDynamicQuorumParamsAt,
-} from "../hooks/dao-contract.js";
-import useScrollToHash from "../hooks/scroll-to-hash.js";
-import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
+} from "@/hooks/dao-contract";
+import useScrollToHash from "@/hooks/scroll-to-hash";
+import useMatchDesktopLayout from "@/hooks/match-desktop-layout";
 import MarkdownRichText from "./markdown-rich-text.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import * as Tabs from "./tabs.js";
 import VotingBar from "./voting-bar.js";
+import FormattedNumber from "./formatted-number";
+
+const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
 const ProposalVotesDialog = ({ proposalId, isOpen, close }) => (
   <Dialog
@@ -37,6 +47,40 @@ const ProposalVotesDialog = ({ proposalId, isOpen, close }) => (
     {(props) => <Content dismiss={close} proposalId={proposalId} {...props} />}
   </Dialog>
 );
+
+const useVoteCountsAtBlock = ({ addresses, blockNumber }) => {
+  const { address: nounsTokenContractAddress } =
+    resolveContractIdentifier("token");
+
+  const { data } = useReadContracts({
+    contracts: addresses.map((address) => ({
+      address: nounsTokenContractAddress,
+      chainId: CHAIN_ID,
+      abi: [
+        {
+          inputs: [{ type: "address" }, { type: "uint256" }],
+          name: "getPriorVotes",
+          outputs: [{ type: "uint96" }],
+          type: "function",
+        },
+      ],
+      functionName: "getPriorVotes",
+      args: [address, blockNumber],
+    })),
+    query: {
+      enabled: blockNumber != null,
+    },
+  });
+
+  if (data == null) return {};
+
+  return data.reduce((acc, { status, result: voteCount }, index) => {
+    if (status !== "success") return acc;
+    const address = addresses[index];
+    acc[address] = Number(voteCount);
+    return acc;
+  }, {});
+};
 
 const Content = ({ proposalId, titleProps, dismiss }) => {
   const isDesktopLayout = useMatchDesktopLayout();
@@ -54,6 +98,13 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
   const quorum = useProposalDynamicQuorum(proposalId);
   const quorumParams = useDynamicQuorumParamsAt(proposal?.createdBlock);
 
+  const latestBlockNumber = useBlockNumber();
+  const endBlock = proposal?.objectionPeriodEndBlock ?? proposal?.endBlock;
+
+  const hasEnded =
+    isFinalProposalState(proposal?.state) ||
+    latestBlockNumber > Number(endBlock);
+
   const ascendingPosts = React.useMemo(() => {
     if (proposal == null) return [];
 
@@ -70,6 +121,86 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
   useScrollToHash({ behavior: "smooth" });
 
   useProposalFetch(proposalId);
+
+  const { subgraphFetch } = useActions();
+
+  const {
+    data: {
+      accounts: recentlyVotedAccounts = [],
+      proposalCount: recentProposalCount,
+    } = {},
+  } = useQuery({
+    queryKey: ["accounts-not-voted", proposalId],
+    queryFn: async () => {
+      const dayCount = 30;
+      const proposalCreatedTimestampSeconds = Math.floor(
+        proposal.createdTimestamp.getTime() / 1000,
+      );
+
+      const { proposals } = await subgraphFetch({
+        query: `{
+          proposals(
+            where: {
+              and: [
+                { canceledBlock: null },
+                { createdTimestamp_gte: ${proposalCreatedTimestampSeconds - dayCount * ONE_DAY_IN_SECONDS} },
+                { createdTimestamp_lt: ${proposalCreatedTimestampSeconds} },
+              ]
+            },
+            first: 1000
+          ) {
+            votes(first: 1000) {
+              voter { id }
+            }
+          }
+        }`,
+      });
+      const proposalCount = proposals.length;
+      const votes = proposals.flatMap((p) => p.votes);
+      const votesByAccount = arrayUtils.groupBy((v) => v.voterId, votes);
+      const voterIds = Object.keys(votesByAccount);
+      const { delegates } = await subgraphFetch({
+        query: `{
+          delegates(
+            where: {
+              id_in: [${voterIds.map((id) => `"${id}"`)}],
+              delegatedVotes_gt: 0
+            }
+          ) {
+            id
+            delegatedVotes
+            nounsRepresented { id }
+          }
+        }`,
+      });
+      return {
+        proposalCount,
+        accounts: delegates.map((d) => {
+          const votes = votesByAccount[d.id];
+          return {
+            id: d.id,
+            voterId: d.id,
+            votes: d.delegatedVotes,
+            votesCast: votes.length,
+          };
+        }),
+      };
+    },
+    enabled: proposal?.createdTimestamp != null,
+  });
+
+  const accountAddressesVoted = (proposal?.votes ?? []).map((v) => v.voterId);
+  const accountsNotVoted = arrayUtils.sortBy(
+    { value: (a) => a.votesCast, order: "desc" },
+    { value: (a) => a.votes, order: "desc" },
+    { value: (a) => a.id },
+    recentlyVotedAccounts.filter((a) => !accountAddressesVoted.includes(a.id)),
+  );
+
+  const voteCountByAddress = useVoteCountsAtBlock({
+    addresses: accountsNotVoted.map((a) => a.id),
+    blockNumber: proposal?.startBlock,
+  });
 
   if (proposal == null) return null;
 
@@ -93,20 +224,30 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
     switch (sortStrategy) {
       case "voting-power":
         return arrayUtils.sortBy(
-          { value: (v) => v.votes, order: "desc" },
+          {
+            value: (v) => voteCountByAddress[v.voterId] ?? v.votes,
+            order: "desc",
+          },
           (v) => v.reason != null && v.reason.trim() !== "",
+          { value: (v) => v.createdBlock },
           votes,
         );
       case "chronological":
-        return arrayUtils.sortBy("createdBlock", votes);
+        return arrayUtils.sortBy(
+          { value: (v) => v.createdBlock },
+          { value: (v) => v.votesCast, order: "desc" },
+          { value: (v) => v.votes, order: "desc" },
+          { value: (v) => v.id },
+          votes,
+        );
 
       default:
         throw new Error();
     }
   };
 
-  const renderVoteList = (votes) => {
-    if (votes.length === 0)
+  const renderVoteList = (votes, { emptyPlaceholder = true, header } = {}) => {
+    if (emptyPlaceholder && votes.length === 0)
       return (
         <div css={css({ padding: "2.4rem 0", fontStyle: "italic" })}>
           No votes
@@ -123,6 +264,15 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
             ".vote-item + .vote-item": { marginTop: "1.6rem" },
             '[data-show-reason="true"] .vote-item + .vote-item': {
               marginTop: "3.2rem",
+            },
+            ".vote-header": {
+              color: t.colors.textDimmed,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              button: {
+                color: t.colors.textNormal,
+              },
             },
             ".vote-body": {
               margin: "0.625em 0 0",
@@ -158,6 +308,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
           });
         }}
       >
+        {header != null && <li>{header}</li>}
         {sortVotes(votes).map((v) => {
           const voteIndex = ascendingPosts.indexOf(v);
           const extractReposts = createRepostExtractor(
@@ -178,7 +329,29 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                   avatarFallback
                   accountAddress={v.voterId}
                 />{" "}
-                ({v.votes})
+                ({voteCountByAddress[v.voterId] ?? v.votes})
+                {v.votesCast != null && (
+                  <>
+                    {" "}
+                    &middot;{" "}
+                    <Tooltip.Root>
+                      <Tooltip.Trigger asChild>
+                        <span css={(t) => css({ color: t.colors.textDimmed })}>
+                          <FormattedNumber
+                            value={v.votesCast / recentProposalCount}
+                            style="percent"
+                            maximumFractionDigits={0}
+                          />{" "}
+                          attendance
+                        </span>
+                      </Tooltip.Trigger>
+                      <Tooltip.Content>
+                        Voted on {v.votesCast} of {recentProposalCount}{" "}
+                        proposals
+                      </Tooltip.Content>
+                    </Tooltip.Root>
+                  </>
+                )}
                 {showReason ? (
                   isRevote && <> revoted</>
                 ) : hasReason ? (
@@ -376,27 +549,31 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
               { value: "voting-power", label: "By voting power" },
               {
                 value: "chronological",
-                label: "Chronological",
+                label: "Chronological / Attendance",
+                triggerLabel: "Chronological",
               },
             ]}
             onChange={setSortStrategy}
             fullWidth={false}
             width="max-content"
-            renderTriggerContent={(value, options) => (
-              <>
-                Order:{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      fontStyle: "normal",
-                      fontWeight: t.text.weights.emphasis,
-                    })
-                  }
-                >
-                  {options.find((o) => o.value === value)?.label}
-                </em>
-              </>
-            )}
+            renderTriggerContent={(value, options) => {
+              const option = options.find((o) => o.value === value);
+              return (
+                <>
+                  Order:{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    {option.triggerLabel ?? option.label}
+                  </em>
+                </>
+              );
+            }}
           />
           <Switch
             isSelected={showReason}
@@ -416,7 +593,7 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                 height: "100%",
                 display: "grid",
                 gap: "3.2rem",
-                gridTemplateColumns: "repeat(3, minmax(0,1fr))",
+                gridTemplateColumns: "repeat(4, minmax(0,1fr))",
                 ".votes-column": {
                   minHeight: 0,
                   display: "flex",
@@ -470,6 +647,27 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                   </div>
                 );
               })}
+
+              <div className="votes-column">
+                <h2>{hasEnded ? "Absent" : "Yet to vote"}</h2>
+                {renderVoteList(accountsNotVoted, {
+                  emptyPlaceholder: false,
+                  header: (
+                    <div
+                      css={(t) =>
+                        css({
+                          color: t.colors.textDimmed,
+                          padding: "0 0 2.8rem",
+                        })
+                      }
+                    >
+                      {hasEnded
+                        ? "Attendance reflects voter participation rate at the time of the the proposal"
+                        : "Attendance reflects voter participation on proposals from the last 30 days"}
+                    </div>
+                  ),
+                })}
+              </div>
             </div>
           </main>
         </>
@@ -533,6 +731,26 @@ const Content = ({ proposalId, titleProps, dismiss }) => {
                 </Tabs.Item>
               );
             })}
+            <Tabs.Item title={hasEnded ? "Absent" : "Yet to vote"}>
+              <p
+                css={(t) =>
+                  css({
+                    color: t.colors.textDimmed,
+                    margin: "0 0 3.2rem",
+                  })
+                }
+              >
+                {hasEnded
+                  ? "Attendance reflects voter participation rate at the time of the the proposal"
+                  : "Attendance reflects voter participation on proposals from the last 30 days"}
+                {recentProposalCount != null && (
+                  <> ({recentProposalCount} proposals)</>
+                )}
+              </p>
+              {renderVoteList(accountsNotVoted, {
+                emptyPlaceholder: false,
+              })}
+            </Tabs.Item>
           </Tabs.Root>
         </main>
       )}
