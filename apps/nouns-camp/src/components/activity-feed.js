@@ -8,6 +8,7 @@ import {
 } from "@shades/common/utils";
 import { useHasBeenOnScreen } from "@shades/common/react";
 import Spinner from "@shades/ui-web/spinner";
+import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Avatar from "@shades/ui-web/avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
@@ -196,13 +197,18 @@ const ActivityFeed = ({
           fontSize: t.text.sizes.base,
           '[role="listitem"]': {
             scrollMargin: "calc(3.2rem + 1.6rem) 0",
+            '&[data-type="vote"]': {
+              ".avatar-container": {
+                paddingTop: "2rem",
+              },
+            },
           },
           '[role="listitem"] + [role="listitem"]': {
             marginTop: "var(--vertical-spacing)",
           },
           '[data-pending="true"]': { opacity: 0.6 },
-          "[data-nowrap]": { whiteSpace: "nowrap" },
-          "[data-header]": {
+          ".nowrap": { whiteSpace: "nowrap" },
+          ".item-header": {
             display: "grid",
             gridTemplateColumns: "2rem minmax(0,1fr)",
             gridGap: "0.6rem",
@@ -215,8 +221,18 @@ const ActivityFeed = ({
                 ":hover": { textDecoration: "underline" },
               },
             },
+            ".subtitle-container": {
+              fontSize: t.text.sizes.small,
+              lineHeight: "calc(20/12)",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              a: {
+                fontWeight: t.text.weights.normal,
+              },
+            },
           },
-          "[data-avatar-button]": {
+          ".avatar-button": {
             display: "block",
             outline: "none",
             ":focus-visible [data-avatar]": {
@@ -232,7 +248,7 @@ const ActivityFeed = ({
               },
             },
           },
-          "[data-timeline-symbol]": {
+          ".timeline-symbol": {
             position: "relative",
             height: "2rem",
             width: "0.1rem",
@@ -435,10 +451,11 @@ const FeedItem = React.memo(
         ref={containerRef}
         id={item.id}
         role="listitem"
+        data-type={item.type}
         data-pending={item.isPending}
       >
-        <div data-header>
-          <div>
+        <div className="item-header">
+          <div className="avatar-container">
             {(() => {
               switch (item.type) {
                 case "farcaster-cast":
@@ -450,13 +467,14 @@ const FeedItem = React.memo(
                         <AccountPreviewPopoverTrigger
                           accountAddress={item.authorAccount}
                         >
-                          <button data-avatar-button>
+                          <button className="avatar-button">
                             <AccountAvatar
                               address={item.authorAccount}
                               fallbackImageUrl={item.authorAvatarUrl}
                               size="2rem"
                             />
                           </button>
+                          c
                         </AccountPreviewPopoverTrigger>
                       )}
                       <span
@@ -500,13 +518,13 @@ const FeedItem = React.memo(
                   }[nounTransferMeta.transferType];
 
                   if (authorAccount == null)
-                    return <div data-timeline-symbol />;
+                    return <div className="timeline-symbol" />;
 
                   return (
                     <AccountPreviewPopoverTrigger
                       accountAddress={authorAccount}
                     >
-                      <button data-avatar-button>
+                      <button className="avatar-button">
                         <AccountAvatar address={authorAccount} size="2rem" />
                       </button>
                     </AccountPreviewPopoverTrigger>
@@ -519,7 +537,7 @@ const FeedItem = React.memo(
                       <AccountPreviewPopoverTrigger
                         accountAddress={item.bidderAccount}
                       >
-                        <button data-avatar-button>
+                        <button className="avatar-button">
                           <AccountAvatar
                             address={item.bidderAccount}
                             size="2rem"
@@ -528,16 +546,16 @@ const FeedItem = React.memo(
                       </AccountPreviewPopoverTrigger>
                     );
 
-                  return <div data-timeline-symbol />;
+                  return <div className="timeline-symbol" />;
 
                 default:
                   return item.authorAccount == null ? (
-                    <div data-timeline-symbol />
+                    <div className="timeline-symbol" />
                   ) : (
                     <AccountPreviewPopoverTrigger
                       accountAddress={item.authorAccount}
                     >
-                      <button data-avatar-button>
+                      <button className="avatar-button">
                         <AccountAvatar
                           address={item.authorAccount}
                           size="2rem"
@@ -1002,7 +1020,7 @@ const ItemBody = React.memo(
 
     const [isForceExpanded, setForceExpanded] = React.useState(false);
 
-    const isExpanded = !collapse || isForceExpanded;
+    const isExpanded = isForceExpanded || !collapse;
 
     const [isTruncated_, setTruncated] = React.useState(enableLineTruncation);
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
@@ -1043,11 +1061,22 @@ const ItemBody = React.memo(
               : undefined,
           }}
         >
-          <CompactMarkdownRichText
-            inline={!isExpanded}
-            text={text}
-            displayImages={displayImages}
-          />
+          {isExpanded ? (
+            <CompactMarkdownRichText
+              text={text}
+              displayImages={displayImages}
+            />
+          ) : (
+            <div>
+              <Button
+                variant="transparent"
+                size="tiny"
+                onClick={() => setForceExpanded(true)}
+              >
+                ...
+              </Button>
+            </div>
+          )}
         </div>
 
         {applyLineTruncation && (
@@ -1077,13 +1106,11 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
 
   const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
-      const title =
-        proposal?.title == null || proposal.title.length > 130
-          ? `Proposal ${proposalId}`
-          : `${short ? proposalId : `Proposal ${proposalId}`}: ${
-              proposal.title
-            } `;
-
+      const title = short ? (
+        <span className="nowrap">Prop {proposalId}</span>
+      ) : (
+        proposal?.title
+      );
       return (
         <NextLink
           prefetch
@@ -1401,6 +1428,9 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
       })();
       return (
         <>
+          <div className="subtitle-container">
+            <ContextLink {...item} />
+          </div>
           {author}{" "}
           {(() => {
             switch (item.support) {
