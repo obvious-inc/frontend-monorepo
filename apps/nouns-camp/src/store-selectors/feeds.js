@@ -629,4 +629,5 @@ export const buildPropdateFeedItem = (p) => ({
   timestamp: p.blockTimestamp,
   proposalId: p.proposalId,
   transactionHash: p.transactionHash,
+  propdateId: p.id,
 });

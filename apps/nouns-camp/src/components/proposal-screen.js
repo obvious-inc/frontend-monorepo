@@ -83,13 +83,11 @@ import getDateYear from "date-fns/getYear";
 import StreamsDialog from "./streams-dialog.js";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import NativeSelect from "./native-select.js";
+import { useDialog } from "@/hooks/global-dialogs.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
   () => import("./proposal-edit-dialog.js"),
-);
-const ProposalVotesDialog = React.lazy(
-  () => import("./proposal-votes-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
@@ -100,11 +98,7 @@ const supportToString = (n) => {
   return nameBySupport[n];
 };
 
-const ProposalMainSection = ({
-  proposalId,
-  scrollContainerRef,
-  toggleVotesDialog,
-}) => {
+const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const latestBlockNumber = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const {
@@ -123,6 +117,8 @@ const ProposalMainSection = ({
 
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
+
+  const { open: openVoteOverviewDialog } = useDialog("vote-overview");
 
   const latestProposalVersionBlock = getLatestVersionBlock(proposal);
 
@@ -656,7 +652,9 @@ const ProposalMainSection = ({
 
                 {hasVotingStarted ? (
                   <button
-                    onClick={() => toggleVotesDialog()}
+                    onClick={() => {
+                      openVoteOverviewDialog(proposalId);
+                    }}
                     css={css({
                       display: "block",
                       width: "100%",
@@ -809,7 +807,9 @@ const ProposalMainSection = ({
               <>
                 {hasVotingStarted && (
                   <button
-                    onClick={() => toggleVotesDialog()}
+                    onClick={() => {
+                      openVoteOverviewDialog(proposalId);
+                    }}
                     style={{
                       display: "block",
                       width: "100%",
@@ -1547,11 +1547,6 @@ const ProposalScreen = ({ proposalId }) => {
 
   const proposal = useProposal(proposalId);
 
-  const [isVotesDialogOpen, toggleVotesDialog] = useSearchParamToggleState(
-    "votes",
-    { replace: true },
-  );
-
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
   const [hasPendingCancel, setPendingCancel] = React.useState(false);
@@ -1717,21 +1712,11 @@ const ProposalScreen = ({ proposalId }) => {
         ) : (
           <ProposalMainSection
             proposalId={proposalId}
-            toggleVotesDialog={toggleVotesDialog}
             scrollContainerRef={scrollContainerRef}
           />
         )}
       </Layout>
 
-      <ErrorBoundary fallback={null}>
-        <React.Suspense fallback={null}>
-          <ProposalVotesDialog
-            proposalId={proposalId}
-            isOpen={isVotesDialogOpen}
-            close={toggleVotesDialog}
-          />
-        </React.Suspense>
-      </ErrorBoundary>
       {isEditDialogOpen && proposal != null && (
         <ErrorBoundary
           onError={() => {

@@ -19,6 +19,13 @@ const dialogs = [
     ),
   },
   {
+    key: "vote-overview",
+    search: true,
+    component: ReactLazyWithPreload(
+      () => import("../components/proposal-votes-dialog.js"),
+    ),
+  },
+  {
     key: "treasury",
     search: true,
     component: ReactLazyWithPreload(
