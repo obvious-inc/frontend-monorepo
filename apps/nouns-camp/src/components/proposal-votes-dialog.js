@@ -27,6 +27,7 @@ import {
 } from "@/hooks/dao-contract";
 import useScrollToHash from "@/hooks/scroll-to-hash";
 import useMatchDesktopLayout from "@/hooks/match-desktop-layout";
+import { useDialog } from "@/hooks/global-dialogs";
 import MarkdownRichText from "./markdown-rich-text.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import * as Tabs from "./tabs.js";
@@ -35,18 +36,23 @@ import FormattedNumber from "./formatted-number";
 
 const ONE_DAY_IN_SECONDS = 24 * 60 * 60;
 
-const ProposalVotesDialog = ({ proposalId, isOpen, close }) => (
-  <Dialog
-    isOpen={isOpen}
-    onRequestClose={() => {
-      close();
-    }}
-    tray
-    width="126.4rem"
-  >
-    {(props) => <Content dismiss={close} proposalId={proposalId} {...props} />}
-  </Dialog>
-);
+const ProposalVotesDialog = ({ isOpen, close }) => {
+  const { data: proposalId } = useDialog("vote-overview");
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      tray
+      width="126.4rem"
+    >
+      {(props) => (
+        <Content dismiss={close} proposalId={proposalId} {...props} />
+      )}
+    </Dialog>
+  );
+};
 
 const useVoteCountsAtBlock = ({ addresses, blockNumber }) => {
   const { address: nounsTokenContractAddress } =

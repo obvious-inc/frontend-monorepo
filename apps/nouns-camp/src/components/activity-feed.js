@@ -7,13 +7,16 @@ import {
   string as stringUtils,
 } from "@shades/common/utils";
 import { useHasBeenOnScreen } from "@shades/common/react";
+import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import Link from "@shades/ui-web/link";
 import Avatar from "@shades/ui-web/avatar";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   FarcasterGate as FarcasterGateIcon,
   CaretDown as CaretDownIcon,
+  DotsHorizontal as DotsIcon,
 } from "@shades/ui-web/icons";
 import { resolveIdentifier as resolveContractIdentifier } from "@/contracts";
 import { REPOST_REGEX } from "@/utils/votes-and-feedbacks";
@@ -22,6 +25,7 @@ import {
   extractSlugFromId as extractSlugFromCandidateId,
   makeUrlId as makeCandidateUrlId,
 } from "@/utils/candidates";
+import { useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useState as useSessionState } from "@/session-provider";
 import useAccountDisplayName from "../hooks/account-display-name.js";
@@ -39,6 +43,7 @@ import MarkdownRichText from "./markdown-rich-text.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
 import NounsPreviewPopoverTrigger from "./nouns-preview-popover-trigger.js";
 import { useTransferMeta as useNounTransferMeta } from "@/hooks/noun-transfers";
+import useBlockNumber from "@/hooks/block-number";
 import {
   useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress,
   useSubmitTransactionLike,
@@ -49,9 +54,8 @@ import {
 } from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
-import { isTransactionHash } from "../utils/transactions.js";
 
-const BODY_TRUNCATION_HEIGHT_THRESHOLD = 250;
+const BODY_TRUNCATION_HEIGHT_THRESHOLD = 135;
 
 const heartBounceAnimation = keyframes({
   "0%": { transform: "scale(1)" },
@@ -64,26 +68,6 @@ const heartBounceAnimation = keyframes({
 //   "50%": { color: "var(--initial-color)" },
 //   "100%": { color: "var(--settle-color)" },
 // });
-
-const buildTimestampLink = (item) => {
-  if (item.type === "farcaster-cast") {
-    if (item.authorUsername == null) return null;
-    return `https://warpcast.com/${item.authorUsername}/${item.id}`;
-  }
-
-  if (
-    item.eventType === "propdate-posted" ||
-    item.eventType === "propdate-marked-completed"
-  ) {
-    // the id is what comes after "propdate-"
-    const propdateId = item.id.slice(9);
-    return `https://www.updates.wtf/update/${propdateId}`;
-  }
-
-  if (!isTransactionHash(item.transactionHash)) return null;
-
-  return buildEtherscanLink(`/tx/${item.transactionHash}`);
-};
 
 const ActivityFeed = ({
   context, // "proposal" | "candidate" | null
@@ -201,8 +185,8 @@ const ActivityFeed = ({
             marginTop: "var(--vertical-spacing)",
           },
           '[data-pending="true"]': { opacity: 0.6 },
-          "[data-nowrap]": { whiteSpace: "nowrap" },
-          "[data-header]": {
+          ".nowrap": { whiteSpace: "nowrap" },
+          ".item-header": {
             display: "grid",
             gridTemplateColumns: "2rem minmax(0,1fr)",
             gridGap: "0.6rem",
@@ -216,7 +200,7 @@ const ActivityFeed = ({
               },
             },
           },
-          "[data-avatar-button]": {
+          ".avatar-button": {
             display: "block",
             outline: "none",
             ":focus-visible [data-avatar]": {
@@ -232,7 +216,7 @@ const ActivityFeed = ({
               },
             },
           },
-          "[data-timeline-symbol]": {
+          ".timeline-symbol": {
             position: "relative",
             height: "2rem",
             width: "0.1rem",
@@ -387,58 +371,16 @@ const FeedItem = React.memo(
     const showMeta =
       hasLikes || hasBeenReposted || item.type === "farcaster-cast";
 
-    const renderTimestamp = (item) => {
-      const timestampLink = buildTimestampLink(item);
-
-      const formattedDate = (
-        <FormattedDateWithTooltip
-          tinyRelative
-          relativeDayThreshold={7}
-          month="short"
-          day="numeric"
-          year={
-            getDateYear(item.timestamp) !== getDateYear(new Date())
-              ? "numeric"
-              : undefined
-          }
-          value={item.timestamp}
-        />
-      );
-
-      return (
-        <span
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-            })
-          }
-        >
-          {timestampLink ? (
-            <a
-              href={timestampLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              css={css({ fontWeight: "normal !important" })}
-            >
-              {formattedDate}
-            </a>
-          ) : (
-            formattedDate
-          )}
-        </span>
-      );
-    };
-
     return (
       <div
         ref={containerRef}
         id={item.id}
         role="listitem"
+        data-type={item.type}
         data-pending={item.isPending}
       >
-        <div data-header>
-          <div>
+        <div className="item-header">
+          <div className="avatar-container">
             {(() => {
               switch (item.type) {
                 case "farcaster-cast":
@@ -450,13 +392,14 @@ const FeedItem = React.memo(
                         <AccountPreviewPopoverTrigger
                           accountAddress={item.authorAccount}
                         >
-                          <button data-avatar-button>
+                          <button className="avatar-button">
                             <AccountAvatar
                               address={item.authorAccount}
                               fallbackImageUrl={item.authorAvatarUrl}
                               size="2rem"
                             />
                           </button>
+                          c
                         </AccountPreviewPopoverTrigger>
                       )}
                       <span
@@ -500,13 +443,13 @@ const FeedItem = React.memo(
                   }[nounTransferMeta.transferType];
 
                   if (authorAccount == null)
-                    return <div data-timeline-symbol />;
+                    return <div className="timeline-symbol" />;
 
                   return (
                     <AccountPreviewPopoverTrigger
                       accountAddress={authorAccount}
                     >
-                      <button data-avatar-button>
+                      <button className="avatar-button">
                         <AccountAvatar address={authorAccount} size="2rem" />
                       </button>
                     </AccountPreviewPopoverTrigger>
@@ -519,7 +462,7 @@ const FeedItem = React.memo(
                       <AccountPreviewPopoverTrigger
                         accountAddress={item.bidderAccount}
                       >
-                        <button data-avatar-button>
+                        <button className="avatar-button">
                           <AccountAvatar
                             address={item.bidderAccount}
                             size="2rem"
@@ -528,16 +471,16 @@ const FeedItem = React.memo(
                       </AccountPreviewPopoverTrigger>
                     );
 
-                  return <div data-timeline-symbol />;
+                  return <div className="timeline-symbol" />;
 
                 default:
                   return item.authorAccount == null ? (
-                    <div data-timeline-symbol />
+                    <div className="timeline-symbol" />
                   ) : (
                     <AccountPreviewPopoverTrigger
                       accountAddress={item.authorAccount}
                     >
-                      <button data-avatar-button>
+                      <button className="avatar-button">
                         <AccountAvatar
                           address={item.authorAccount}
                           size="2rem"
@@ -553,7 +496,7 @@ const FeedItem = React.memo(
               css={css({
                 display: "flex",
                 alignItems: "flex-start",
-                gap: "1rem",
+                gap: "0.6rem",
                 cursor: "default",
               })}
             >
@@ -585,8 +528,10 @@ const FeedItem = React.memo(
                   <div style={{ padding: "0.5rem 0" }}>
                     <Spinner size="1rem" />
                   </div>
+                ) : !isOnScreen ? (
+                  <div style={{ width: "2rem" }} />
                 ) : (
-                  item.timestamp != null && renderTimestamp(item)
+                  <FeedItemActionDropdown context={context} item={item} />
                 )}
               </div>
             </div>
@@ -992,16 +937,25 @@ const FeedItem = React.memo(
 );
 
 const ItemBody = React.memo(
-  ({ text, displayImages, truncateLines: enableLineTruncation }) => {
+  ({
+    text,
+    displayImages,
+    collapse = false,
+    truncateLines: enableLineTruncation,
+  }) => {
     const containerRef = React.useRef();
 
-    const [isCollapsed_, setCollapsed] = React.useState(enableLineTruncation);
+    const [isForceExpanded, setForceExpanded] = React.useState(false);
+
+    const isExpanded = isForceExpanded || !collapse;
+
+    const [isTruncated_, setTruncated] = React.useState(enableLineTruncation);
     const [exceedsTruncationThreshold, setExceedsTruncationThreshold] =
       React.useState(null);
 
     const applyLineTruncation =
       enableLineTruncation && exceedsTruncationThreshold;
-    const isCollapsed = applyLineTruncation && isCollapsed_;
+    const isTruncated = applyLineTruncation && isTruncated_;
 
     React.useEffect(() => {
       const observer = new ResizeObserver(() => {
@@ -1025,27 +979,42 @@ const ItemBody = React.memo(
           ref={containerRef}
           css={css({ overflow: "hidden" })}
           style={{
-            maxHeight: isCollapsed
+            maxHeight: isTruncated
               ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
               : // https://stackoverflow.com/questions/11289166/chrome-on-android-resizes-font
                 "999999px",
-            maskImage: isCollapsed
+            maskImage: isTruncated
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
           }}
         >
-          <CompactMarkdownRichText text={text} displayImages={displayImages} />
+          {isExpanded ? (
+            <CompactMarkdownRichText
+              text={text}
+              displayImages={displayImages}
+            />
+          ) : (
+            <div>
+              <Button
+                variant="opaque"
+                size="tiny"
+                onClick={() => setForceExpanded(true)}
+              >
+                ...
+              </Button>
+            </div>
+          )}
         </div>
 
         {applyLineTruncation && (
           <div css={css({ margin: "0.8em 0" })}>
             <Link
               component="button"
-              onClick={() => setCollapsed((c) => !c)}
+              onClick={() => setTruncated((s) => !s)}
               size="small"
               color={(t) => t.colors.textDimmed}
             >
-              {isCollapsed ? "Expand..." : "Collapse"}
+              {isTruncated ? "Expand..." : "Collapse"}
             </Link>
           </div>
         )}
@@ -1067,10 +1036,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
       const title =
         proposal?.title == null || proposal.title.length > 130
           ? `Proposal ${proposalId}`
-          : `${short ? proposalId : `Proposal ${proposalId}`}: ${
-              proposal.title
-            } `;
-
+          : `${short ? proposalId : `Proposal ${proposalId}`}: ${proposal.title}`;
       return (
         <NextLink
           prefetch
@@ -1118,143 +1084,215 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
     </span>
   );
 
-  switch (item.type) {
-    case "event": {
-      switch (item.eventType) {
-        case "auction-started":
-          return (
-            <>
-              <button
-                className="interactive"
-                onClick={() => openAuctionDialog(`noun-${item.nounId}`)}
-              >
-                Auction
-              </button>{" "}
-              for <NounPreviewPopoverTrigger nounId={item.nounId} /> started
-            </>
-          );
-        case "auction-ended":
-          return (
-            <>
-              <button
-                className="interactive"
-                onClick={() => openAuctionDialog(`noun-${item.nounId}`)}
-              >
-                Auction
-              </button>{" "}
-              for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
-              {item.bidderAccount == null ? (
-                <>ended without bids</>
-              ) : (
-                <>
-                  won by{" "}
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={item.bidderAccount}
-                  />{" "}
-                  for{" "}
-                  <FormattedEthWithConditionalTooltip value={item.bidAmount} />
-                </>
-              )}
-            </>
-          );
-        case "auction-settled":
-          return <AuctionSettledItem item={item} />;
-
-        case "proposal-created":
-        case "proposal-updated":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              {item.eventType === "proposal-created" ? "created" : "updated"}
-              {item.authorAccount != null && (
-                <>
-                  {" "}
-                  by{" "}
-                  <AccountPreviewPopoverTrigger
-                    showAvatar
-                    accountAddress={item.authorAccount}
-                  />
-                </>
-              )}
-            </>
-          );
-
-        case "candidate-created":
-        case "candidate-updated": {
-          const label =
-            context === "candidate" ? (
-              "Candidate"
-            ) : context === "proposal" ? (
-              <ContextLink {...item}>
-                {item.targetProposalId != null
-                  ? "Update candidate"
-                  : "Candidate"}
-              </ContextLink>
-            ) : item.targetProposalId != null ? (
+  const renderTitle = () => {
+    switch (item.type) {
+      case "event": {
+        switch (item.eventType) {
+          case "auction-started":
+            return (
               <>
-                <ContextLink {...item}>Update candidate</ContextLink> for{" "}
-                <ContextLink proposalId={item.targetProposalId} truncate />
+                <button
+                  className="interactive"
+                  onClick={() => openAuctionDialog(`noun-${item.nounId}`)}
+                >
+                  Auction
+                </button>{" "}
+                for <NounPreviewPopoverTrigger nounId={item.nounId} /> started
               </>
-            ) : (
+            );
+          case "auction-ended":
+            return (
               <>
-                Candidate <ContextLink {...item} />
+                <button
+                  className="interactive"
+                  onClick={() => openAuctionDialog(`noun-${item.nounId}`)}
+                >
+                  Auction
+                </button>{" "}
+                for <NounPreviewPopoverTrigger nounId={item.nounId} />{" "}
+                {item.bidderAccount == null ? (
+                  <>ended without bids</>
+                ) : (
+                  <>
+                    won by{" "}
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={item.bidderAccount}
+                    />{" "}
+                    for{" "}
+                    <FormattedEthWithConditionalTooltip
+                      value={item.bidAmount}
+                    />
+                  </>
+                )}
+              </>
+            );
+          case "auction-settled":
+            return <AuctionSettledItem item={item} />;
+
+          case "proposal-created":
+          case "proposal-updated":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                {item.eventType === "proposal-created" ? "created" : "updated"}
+                {item.authorAccount != null && (
+                  <>
+                    {" "}
+                    by{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={item.authorAccount}
+                    />
+                  </>
+                )}
               </>
             );
 
-          return (
-            <>
-              {label}{" "}
-              {item.eventType === "candidate-created" ? "created" : "updated"}
-              {item.authorAccount != null && (
-                <>
-                  {" "}
-                  by{" "}
-                  <AccountPreviewPopoverTrigger
-                    showAvatar
-                    accountAddress={item.authorAccount}
-                  />
-                </>
-              )}
-            </>
-          );
-        }
-
-        case "candidate-canceled":
-          return (
-            <>
-              {context === "proposal" ? (
-                <ContextLink {...item}>
-                  {item.targetProposalId == null
-                    ? "Candidate"
-                    : "Update candidate"}
-                </ContextLink>
-              ) : context === "candidate" ? (
+          case "candidate-created":
+          case "candidate-updated": {
+            const label =
+              context === "candidate" ? (
                 "Candidate"
-              ) : (
-                <ContextLink {...item} />
-              )}{" "}
-              was canceled
-            </>
-          );
-
-        case "proposal-started":
-          return (
-            <>
-              Voting{" "}
-              {context !== "proposal" && (
+              ) : context === "proposal" ? (
+                <ContextLink {...item}>
+                  {item.targetProposalId != null
+                    ? "Update candidate"
+                    : "Candidate"}
+                </ContextLink>
+              ) : item.targetProposalId != null ? (
                 <>
-                  for <ContextLink {...item} />
+                  <ContextLink {...item}>Update candidate</ContextLink> for{" "}
+                  <ContextLink proposalId={item.targetProposalId} truncate />
                 </>
-              )}{" "}
-              started{" "}
-            </>
-          );
+              ) : (
+                <>
+                  Candidate <ContextLink {...item} />
+                </>
+              );
 
-        case "proposal-ended":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              {isSucceededProposalState(proposal.state) ? (
+            return (
+              <>
+                {label}{" "}
+                {item.eventType === "candidate-created" ? "created" : "updated"}
+                {item.authorAccount != null && (
+                  <>
+                    {" "}
+                    by{" "}
+                    <AccountPreviewPopoverTrigger
+                      showAvatar
+                      accountAddress={item.authorAccount}
+                    />
+                  </>
+                )}
+              </>
+            );
+          }
+
+          case "candidate-canceled":
+            return (
+              <>
+                {context === "proposal" ? (
+                  <ContextLink {...item}>
+                    {item.targetProposalId == null
+                      ? "Candidate"
+                      : "Update candidate"}
+                  </ContextLink>
+                ) : context === "candidate" ? (
+                  "Candidate"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                was canceled
+              </>
+            );
+
+          case "proposal-started":
+            return (
+              <>
+                Voting{" "}
+                {context !== "proposal" && (
+                  <>
+                    for <ContextLink {...item} />
+                  </>
+                )}{" "}
+                started
+              </>
+            );
+
+          case "proposal-ended":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                {isSucceededProposalState(proposal.state) ? (
+                  <span
+                    css={(t) =>
+                      css({
+                        color: t.colors.textPositive,
+                        fontWeight: t.text.weights.emphasis,
+                      })
+                    }
+                  >
+                    succeeded
+                  </span>
+                ) : (
+                  <>
+                    was{" "}
+                    <span
+                      css={(t) =>
+                        css({
+                          color: t.colors.textNegative,
+                          fontWeight: t.text.weights.emphasis,
+                        })
+                      }
+                    >
+                      defeated
+                    </span>
+                  </>
+                )}
+              </>
+            );
+
+          case "proposal-objection-period-started":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                entered objection period
+              </>
+            );
+
+          case "proposal-queued":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                was queued for execution
+              </>
+            );
+
+          case "proposal-executed":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                was{" "}
                 <span
                   css={(t) =>
                     css({
@@ -1263,189 +1301,160 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
                     })
                   }
                 >
-                  succeeded
+                  executed
                 </span>
-              ) : (
-                <>
-                  was{" "}
-                  <span
-                    css={(t) =>
-                      css({
-                        color: t.colors.textNegative,
-                        fontWeight: t.text.weights.emphasis,
-                      })
-                    }
-                  >
-                    defeated
-                  </span>
-                </>
-              )}
-            </>
-          );
+              </>
+            );
 
-        case "proposal-objection-period-started":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              entered objection period
-            </>
-          );
-
-        case "proposal-queued":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              was queued for execution
-            </>
-          );
-
-        case "proposal-executed":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              was{" "}
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textPositive,
-                    fontWeight: t.text.weights.emphasis,
-                  })
-                }
-              >
-                executed
-              </span>
-            </>
-          );
-
-        case "proposal-canceled":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              was{" "}
-              <span
-                css={(t) =>
-                  css({
-                    color: t.colors.textNegative,
-                    fontWeight: t.text.weights.emphasis,
-                  })
-                }
-              >
-                canceled
-              </span>
-            </>
-          );
-
-        case "propdate-posted":
-          return (
-            <>
-              Propdate posted
-              {context !== "proposal" && (
-                <>
-                  {" "}
-                  for <ContextLink {...item} />
-                </>
-              )}
-            </>
-          );
-
-        case "propdate-marked-completed":
-          return (
-            <>
-              {context === "proposal" ? "Proposal" : <ContextLink {...item} />}{" "}
-              marked as completed via Propdate
-            </>
-          );
-
-        default:
-          throw new Error(`Unknown event "${item.eventType}"`);
-      }
-    }
-
-    case "vote":
-    case "feedback-post": {
-      const signalWord = (() => {
-        const isRepost =
-          item.reposts?.length > 0 &&
-          item.reposts.every((post) => post.support === item.support);
-
-        if (isRepost) return item.type === "vote" ? "revoted" : "reposted";
-
-        switch (item.type) {
-          case "vote":
-            return "voted";
-          case "feedback-post": {
-            if (item.support !== 2) return "signaled";
-
-            const isReplyWithoutAdditionalComment =
-              item.replies?.length > 0 &&
-              (item.body == null || item.body.trim() === "");
-
-            return isReplyWithoutAdditionalComment ? "replied" : "commented";
-          }
-          default:
-            throw new Error();
-        }
-      })();
-      return (
-        <>
-          {author}{" "}
-          {(() => {
-            switch (item.support) {
-              case 0:
-                return (
-                  <Signal negative>
-                    {signalWord} against
-                    {item.voteCount != null && <> ({item.voteCount})</>}
-                  </Signal>
-                );
-              case 1:
-                return (
-                  <Signal positive>
-                    {signalWord} for
-                    {item.voteCount != null && <> ({item.voteCount})</>}
-                  </Signal>
-                );
-              case 2:
-                return item.type === "vote" ? (
-                  <Signal>
-                    abstained
-                    {item.voteCount != null && <> ({item.voteCount})</>}
-                  </Signal>
-                ) : isIsolatedContext ? (
-                  signalWord
+          case "proposal-canceled":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
                 ) : (
-                  <>{signalWord} on</>
-                );
-            }
-          })()}
-          {!isIsolatedContext && (
-            <>
-              {" "}
-              <ContextLink short {...item} />
-            </>
-          )}
-        </>
-      );
-    }
+                  <ContextLink {...item} />
+                )}{" "}
+                was{" "}
+                <span
+                  css={(t) =>
+                    css({
+                      color: t.colors.textNegative,
+                      fontWeight: t.text.weights.emphasis,
+                    })
+                  }
+                >
+                  canceled
+                </span>
+              </>
+            );
 
-    case "farcaster-cast": {
-      if (item.authorAccount == null)
+          case "propdate-posted":
+            return (
+              <>
+                Propdate posted
+                {context !== "proposal" && (
+                  <>
+                    {" "}
+                    for <ContextLink {...item} />
+                  </>
+                )}
+              </>
+            );
+
+          case "propdate-marked-completed":
+            return (
+              <>
+                {context === "proposal" ? (
+                  "Proposal"
+                ) : (
+                  <ContextLink {...item} />
+                )}{" "}
+                marked as completed via Propdate
+              </>
+            );
+
+          default:
+            throw new Error(`Unknown event "${item.eventType}"`);
+        }
+      }
+
+      case "vote":
+      case "feedback-post": {
+        const signalWord = (() => {
+          const isRepost =
+            item.reposts?.length > 0 &&
+            item.reposts.every((post) => post.support === item.support);
+
+          if (isRepost) return item.type === "vote" ? "revoted" : "reposted";
+
+          switch (item.type) {
+            case "vote":
+              return "voted";
+            case "feedback-post": {
+              if (item.support !== 2) return "signaled";
+
+              const isReplyWithoutAdditionalComment =
+                item.replies?.length > 0 &&
+                (item.body == null || item.body.trim() === "");
+
+              return isReplyWithoutAdditionalComment ? "replied" : "commented";
+            }
+            default:
+              throw new Error();
+          }
+        })();
         return (
           <>
-            <a
-              href={`https://warpcast.com/${item.authorUsername}`}
-              target="_blank"
-              rel="noreferrer"
-              css={(t) =>
-                css({
-                  color: `${t.colors.textNormal} !important`,
-                  fontWeight: `${t.text.weights.emphasis} !important`,
-                })
+            {author}{" "}
+            {(() => {
+              switch (item.support) {
+                case 0:
+                  return (
+                    <Signal negative>
+                      {signalWord} against
+                      {item.voteCount != null && <> ({item.voteCount})</>}
+                    </Signal>
+                  );
+                case 1:
+                  return (
+                    <Signal positive>
+                      {signalWord} for
+                      {item.voteCount != null && <> ({item.voteCount})</>}
+                    </Signal>
+                  );
+                case 2:
+                  return item.type === "vote" ? (
+                    <Signal>
+                      abstained
+                      {item.voteCount != null && <> ({item.voteCount})</>}
+                    </Signal>
+                  ) : isIsolatedContext ? (
+                    signalWord
+                  ) : (
+                    <>{signalWord} on</>
+                  );
               }
-            >
-              {item.authorDisplayName}
-            </a>{" "}
-            commented
+            })()}
+            {!isIsolatedContext && (
+              <>
+                {" "}
+                <ContextLink short {...item} />
+              </>
+            )}
+          </>
+        );
+      }
+
+      case "farcaster-cast": {
+        if (item.authorAccount == null)
+          return (
+            <>
+              <a
+                href={`https://warpcast.com/${item.authorUsername}`}
+                target="_blank"
+                rel="noreferrer"
+                css={(t) =>
+                  css({
+                    color: `${t.colors.textNormal} !important`,
+                    fontWeight: `${t.text.weights.emphasis} !important`,
+                  })
+                }
+              >
+                {item.authorDisplayName}
+              </a>{" "}
+              commented
+              {!isIsolatedContext && (
+                <>
+                  {" "}
+                  on <ContextLink short {...item} />
+                </>
+              )}
+            </>
+          );
+
+        return (
+          <>
+            {author} commented{" "}
             {!isIsolatedContext && (
               <>
                 {" "}
@@ -1454,74 +1463,96 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
             )}
           </>
         );
+      }
 
-      return (
-        <>
-          {author} commented{" "}
-          {!isIsolatedContext && (
-            <>
-              {" "}
-              on <ContextLink short {...item} />
-            </>
-          )}
-        </>
-      );
+      case "candidate-signature":
+        return (
+          <>
+            {author} <Signal positive>sponsored candidate</Signal>
+            {!isIsolatedContext && (
+              <>
+                {" "}
+                <ContextLink short {...item} />
+              </>
+            )}
+          </>
+        );
+
+      case "noun-transfer":
+        return <NounTransferItem item={item} isOnScreen={isOnScreen} />;
+
+      case "noun-delegation":
+        return (
+          <>
+            {author}{" "}
+            {item.toAccount === item.authorAccount ? (
+              <>
+                stopped delegating to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.fromAccount}
+                />
+              </>
+            ) : (
+              <>
+                delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
+                <AccountPreviewPopoverTrigger
+                  showAvatar
+                  accountAddress={item.toAccount}
+                />
+              </>
+            )}
+          </>
+        );
+
+      case "auction-bid":
+        return (
+          <>
+            {author} placed a bid of{" "}
+            <FormattedEthWithConditionalTooltip value={item.amount} /> for{" "}
+            <NounPreviewPopoverTrigger nounId={item.nounId} /> at the{" "}
+            <NextLink href="/auction">Auction House</NextLink>
+          </>
+        );
+
+      default:
+        console.log(item);
+        throw new Error(`Unknown event type "${item.type}"`);
     }
+  };
 
-    case "candidate-signature":
-      return (
-        <>
-          {author} <Signal positive>sponsored candidate</Signal>
-          {!isIsolatedContext && (
-            <>
-              {" "}
-              <ContextLink short {...item} />
-            </>
-          )}
-        </>
-      );
-
-    case "noun-transfer":
-      return <NounTransferItem item={item} isOnScreen={isOnScreen} />;
-
-    case "noun-delegation":
-      return (
-        <>
-          {author}{" "}
-          {item.toAccount === item.authorAccount ? (
-            <>
-              stopped delegating to{" "}
-              <AccountPreviewPopoverTrigger
-                showAvatar
-                accountAddress={item.fromAccount}
-              />
-            </>
-          ) : (
-            <>
-              delegated <NounsPreviewPopoverTrigger nounIds={item.nouns} /> to{" "}
-              <AccountPreviewPopoverTrigger
-                showAvatar
-                accountAddress={item.toAccount}
-              />
-            </>
-          )}
-        </>
-      );
-
-    case "auction-bid":
-      return (
-        <>
-          {author} placed a bid of{" "}
-          <FormattedEthWithConditionalTooltip value={item.amount} /> for{" "}
-          <NounPreviewPopoverTrigger nounId={item.nounId} /> at the{" "}
-          <NextLink href="/auction">Auction House</NextLink>
-        </>
-      );
-
-    default:
-      console.log(item);
-      throw new Error(`Unknown event type "${item.type}"`);
-  }
+  return (
+    <>
+      {renderTitle()}
+      {item.timestamp != null && (
+        <span className="nowrap">
+          &nbsp;&middot;&nbsp;
+          <span
+            css={(t) =>
+              css({
+                lineHeight: "calc(20/12)",
+                fontSize: t.text.sizes.small,
+                color: t.colors.textDimmed,
+              })
+            }
+          >
+            <FormattedDateWithTooltip
+              tinyRelative
+              relativeDayThreshold={7}
+              month="short"
+              day="numeric"
+              year={
+                getDateYear(item.timestamp) !== getDateYear(new Date())
+                  ? "numeric"
+                  : undefined
+              }
+              value={item.timestamp}
+            />
+          </span>
+        </span>
+      )}
+    </>
+  );
 };
 
 const NounTransferItem = ({ item, isOnScreen }) => {
@@ -1977,5 +2008,231 @@ const CompactMarkdownRichText = ({
     })}
   />
 );
+
+const FeedItemActionDropdown = ({ context, item }) => {
+  const navigate = useNavigate();
+  const { open: openVoteOverviewDialog } = useDialog("vote-overview");
+
+  const latestBlockNumber = useBlockNumber();
+  const proposal = useProposal(item.proposalId);
+
+  const actionItems = (() => {
+    const itemCategory = (() => {
+      if (
+        item.type === "event"
+          ? item.eventType.startsWith("auction-")
+          : item.type.startsWith("auction-")
+      )
+        return "auction";
+      if (item.type === "event" && item.eventType.startsWith("propdate-"))
+        return "propdate";
+      if (item.proposalId != null) return "proposal";
+      if (item.candidateId != null) return "candidate";
+      if (item.type === "farcaster-cast") return "farcaster-cast";
+      return null;
+    })();
+
+    const mainSectionActionKeys = (() => {
+      switch (itemCategory) {
+        case "proposal": {
+          if (context === "proposal") return [];
+
+          const hasVotingStarted =
+            proposal?.startBlock != null &&
+            latestBlockNumber > Number(proposal.startBlock);
+
+          return hasVotingStarted
+            ? ["open-proposal", "open-vote-overview"]
+            : ["open-proposal"];
+        }
+        case "candidate":
+          return context === "candidate" ? [] : ["open-candidate"];
+        case "auction":
+          return ["open-auction"];
+        case "propdate":
+          return ["open-proposal"];
+        default:
+          return [];
+      }
+    })();
+
+    const bottomSectionActionKeys = (() => {
+      if (["vote", "feedback"].includes(item.type))
+        return ["open-block-explorer", "copy-link"];
+
+      switch (itemCategory) {
+        case "proposal":
+        case "candidate":
+        case "auction":
+          return ["open-block-explorer"];
+        case "propdate":
+          return ["open-updates-wtf", "open-block-explorer"];
+        case "farcaster-cast":
+          return ["open-farcaster-client"];
+        default:
+          return item.transactionHash != null ? ["open-block-explorer"] : [];
+      }
+    })();
+
+    const buildActionItem = (key) => {
+      const renderExternalLabel = (label) => (
+        <>
+          <span style={{ flex: 1, marginRight: "0.8rem" }}>{label}</span>
+          {"\u2197"}
+        </>
+      );
+
+      switch (key) {
+        case "open-proposal":
+          return { id: key, label: "Go to proposal" };
+        case "open-candidate":
+          return { id: key, label: "Go to candidate" };
+        case "open-auction":
+          return { id: key, label: "Go to auction" };
+        case "open-vote-overview":
+          return { id: key, label: "Open vote overview" };
+        case "open-block-explorer":
+          return {
+            id: key,
+            textValue: "View transaction on Etherscan",
+            label: renderExternalLabel("View transaction on Etherscan"),
+          };
+        case "open-farcaster-client":
+          return {
+            id: key,
+            textValue: "View on Warpcast",
+            label: renderExternalLabel("View on Warpcast"),
+          };
+        case "open-updates-wtf":
+          return {
+            id: key,
+            textValue: "View on updates.wtf",
+            label: renderExternalLabel("View on updates.wtf"),
+          };
+        case "copy-link":
+          return {
+            id: key,
+            label: "Copy link to clipboard",
+          };
+        default:
+          throw new Error(`Unknown action: "${key}"`);
+      }
+    };
+
+    const actionItems = [];
+
+    if (mainSectionActionKeys.length > 0)
+      actionItems.push({
+        id: "main",
+        children: mainSectionActionKeys.map(buildActionItem),
+      });
+
+    if (bottomSectionActionKeys.length > 0)
+      actionItems.push({
+        id: "misc",
+        children: bottomSectionActionKeys.map(buildActionItem),
+      });
+
+    return actionItems;
+  })();
+
+  const handleAction = (key) => {
+    switch (key) {
+      case "open-proposal":
+        navigate(`/proposals/${item.proposalId}`);
+        break;
+
+      case "open-candidate":
+        navigate(
+          `/candidates/${encodeURIComponent(
+            makeCandidateUrlId(item.candidateId),
+          )}`,
+        );
+        break;
+
+      case "open-auction":
+        navigate(`/nouns/${item.nounId}`);
+        break;
+
+      case "open-block-explorer":
+        window.open(
+          buildEtherscanLink(`/tx/${item.transactionHash}`),
+          "_blank",
+        );
+        break;
+
+      case "open-vote-overview":
+        openVoteOverviewDialog(item.proposalId);
+        break;
+
+      case "open-farcaster-client":
+        if (item.authorUsername == null) return;
+        window.open(
+          `https://warpcast.com/${item.authorUsername}/${item.id}`,
+          "_blank",
+        );
+        break;
+
+      case "open-updates-wtf":
+        window.open(
+          `https://www.updates.wtf/update/${item.propdateId}`,
+          "_blank",
+        );
+        break;
+
+      case "copy-link": {
+        if (!["vote", "feedback"].includes(item.type)) throw new Error();
+
+        const pathname =
+          item.candidateId != null
+            ? `/candidates/${encodeURIComponent(
+                makeCandidateUrlId(item.candidateId),
+              )}`
+            : `/proposals/${item.proposalId}`;
+        const url = `${location.origin}${pathname}?tab=activity#${item.id}`;
+        navigator.clipboard.writeText(url);
+        break;
+      }
+    }
+  };
+
+  return (
+    <DropdownMenu.Root placement="bottom end">
+      <DropdownMenu.Trigger asChild>
+        <Button
+          variant="transparent"
+          size="tiny"
+          icon={
+            <DotsIcon
+              css={(t) =>
+                css({
+                  width: "1.5rem",
+                  height: "auto",
+                  color: t.colors.textDimmed,
+                })
+              }
+            />
+          }
+          style={{ display: "block" }}
+        />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content
+        css={css({
+          width: "min-content",
+          minWidth: "min-content",
+          maxWidth: "calc(100vw - 2rem)",
+        })}
+        items={actionItems}
+        onAction={handleAction}
+      >
+        {(item) => (
+          <DropdownMenu.Section items={item.children}>
+            {(item) => <DropdownMenu.Item>{item.label}</DropdownMenu.Item>}
+          </DropdownMenu.Section>
+        )}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  );
+};
 
 export default ActivityFeed;

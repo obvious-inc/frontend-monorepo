@@ -6,7 +6,7 @@ import {
   date as dateUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
-import { ErrorBoundary, useIsOnScreen } from "@shades/common/react";
+import { useIsOnScreen } from "@shades/common/react";
 import {
   ArrowDownSmall as ArrowDownSmallIcon,
   DotsHorizontal as DotsHorizontalIcon,
@@ -45,10 +45,6 @@ import VotesTagGroup from "./votes-tag-group.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import { isAddress } from "viem";
 
-const ProposalVotesDialog = React.lazy(
-  () => import("./proposal-votes-dialog.js"),
-);
-
 const isDebugSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("debug") != null;
@@ -61,11 +57,6 @@ const ProposalList = ({
   forcePlaceholder,
   getItemProps,
 }) => {
-  const [searchParams, setSearchParams] = useSearchParams();
-
-  const votesOverviewDialogProposalId =
-    searchParams.get("vote-overview") || null;
-
   const showPlaceholders =
     forcePlaceholder || (isLoading && items.length === 0);
 
@@ -375,27 +366,6 @@ const ProposalList = ({
           })
         )}
       </ul>
-
-      {votesOverviewDialogProposalId != null && (
-        <ErrorBoundary fallback={null}>
-          <React.Suspense fallback={null}>
-            <ProposalVotesDialog
-              proposalId={votesOverviewDialogProposalId}
-              isOpen
-              close={() => {
-                setSearchParams(
-                  (p) => {
-                    const newParams = new URLSearchParams(p);
-                    newParams.delete("vote-overview");
-                    return newParams;
-                  },
-                  { replace: true },
-                );
-              }}
-            />
-          </React.Suspense>
-        </ErrorBoundary>
-      )}
     </>
   );
 };
