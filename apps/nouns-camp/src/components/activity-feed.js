@@ -2064,7 +2064,7 @@ const FeedItemActionDropdown = ({ context, item }) => {
         case "proposal":
         case "candidate":
         case "auction":
-          return ["open-block-explorer"];
+          return item.transactionHash != null ? ["open-block-explorer"] : [];
         case "propdate":
           return ["open-updates-wtf", "open-block-explorer"];
         case "farcaster-cast":
