@@ -1,3 +1,4 @@
+import getDateYear from "date-fns/getYear";
 import React from "react";
 import { css } from "@emotion/react";
 import NextLink from "next/link";
@@ -748,7 +749,13 @@ const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
                       value={promotedProposal.createdTimestamp}
                       day="numeric"
                       month="short"
-                    />{" "}
+                      year={
+                        getDateYear(promotedProposal.createdTimestamp) !==
+                        getDateYear(new Date())
+                          ? "numeric"
+                          : undefined
+                      }
+                    />
                   </>
                 ) : (
                   <>
@@ -761,6 +768,12 @@ const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
                           value={candidate.lastUpdatedTimestamp}
                           day="numeric"
                           month="short"
+                          year={
+                            getDateYear(candidate.lastUpdatedTimestamp) !==
+                            getDateYear(new Date())
+                              ? "numeric"
+                              : undefined
+                          }
                         />
                       </>
                     ) : mostRecentActivity === "feedback" ? (
@@ -772,6 +785,13 @@ const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
                           value={mostRecentFeedbackPost.createdTimestamp}
                           day="numeric"
                           month="short"
+                          year={
+                            getDateYear(
+                              mostRecentFeedbackPost.createdTimestamp,
+                            ) !== getDateYear(new Date())
+                              ? "numeric"
+                              : undefined
+                          }
                         />
                       </>
                     ) : (
@@ -783,6 +803,12 @@ const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
                           value={candidate.createdTimestamp}
                           day="numeric"
                           month="short"
+                          year={
+                            getDateYear(candidate.createdTimestamp) !==
+                            getDateYear(new Date())
+                              ? "numeric"
+                              : undefined
+                          }
                         />
                       </>
                     )}
@@ -1453,6 +1479,11 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
                 capitalize={false}
                 day="numeric"
                 month="long"
+                year={
+                  getDateYear(proposal.endTimestamp) !== getDateYear(new Date())
+                    ? "numeric"
+                    : undefined
+                }
               />
             </span>
           </>
@@ -1490,6 +1521,12 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
               capitalize={false}
               day="numeric"
               month="short"
+              year={
+                getDateYear(proposal.canceledTimestamp) !==
+                getDateYear(new Date())
+                  ? "numeric"
+                  : undefined
+              }
             />
           </span>
         </>
@@ -1507,6 +1544,12 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
               capitalize={false}
               day="numeric"
               month="short"
+              year={
+                getDateYear(proposal.executedTimestamp) !==
+                getDateYear(new Date())
+                  ? "numeric"
+                  : undefined
+              }
             />
           </span>
         </>
