@@ -1,0 +1,65 @@
+import { CHAIN_ID } from "./constants/env.js";
+
+const VOTE_FIELDS = `
+  fragment VoteFields on Vote {
+    id
+    voter
+    votesCount
+    tokenId
+    blockNumber
+    blockTimestamp
+    tokenId
+    transactionHash
+    recipientId
+    recipient {
+      id
+      title
+      tagline
+      isFlow
+    }
+  }`;
+
+const parseTimestamp = (unixSeconds) => new Date(parseInt(unixSeconds) * 1000);
+
+const parseVote = (v) => ({
+  ...v,
+  id: v.id,
+  blockNumber: BigInt(v.blockNumber),
+  blockTimestamp: parseTimestamp(v.blockTimestamp),
+});
+
+const subgraphUrl =
+  typeof window === "undefined"
+    ? process.env.FLOW_SUBGRAPH_URL
+    : "/subgraphs/flows";
+
+const subgraphFetch = async (query) => {
+  const response = await fetch(subgraphUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  });
+  if (response.ok) return response.json();
+  return Promise.reject(new Error(response.statusText));
+};
+
+export const fetchFlowVotes = async () => {
+  if (CHAIN_ID !== 1) return [];
+  const body = await subgraphFetch(`
+    ${VOTE_FIELDS}
+    query {
+      votes(
+        orderBy: "blockNumber",
+        orderDirection: "desc",
+        limit: 1000
+        where: { isStale: false }
+      ) {
+        items {
+          ...VoteFields
+        }
+      }
+    }`);
+
+  if (body.data.votes == null) throw new Error("not-found");
+  return body.data.votes.items.map(parseVote);
+};

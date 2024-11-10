@@ -23,6 +23,7 @@ import {
   buildCandidateFeed,
   buildPropdateFeedItem,
   buildNounsTokenRepresentationFeed,
+  buildFlowVotesFeed,
 } from "./store-selectors/feeds.js";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
@@ -47,6 +48,7 @@ import {
   FULL_PROPOSAL_CANDIDATE_FIELDS,
 } from "./nouns-subgraph.js";
 import * as PropdatesSubgraph from "./propdates-subgraph.js";
+import * as FlowsSubgraph from "./flows-subgraph.js";
 
 const createFeedbackPostCompositeId = (post) =>
   [post.proposalId, post.candidateId, post.reason, post.support, post.voterId]
@@ -140,6 +142,12 @@ const mergeAccounts = (a1, a2) => {
       // Delegation and transter events might have the same id (referencing the same tx)
       (e1, e2) => e1.id === e2.id && e1.type === e2.type,
       [...a2.events, ...a1.events],
+    );
+
+  if (a1.flowVotes != null && a2.flowVotes != null)
+    mergedAccount.flowVotes = arrayUtils.unique(
+      (v1, v2) => v1.id === v2.id,
+      [...a2.flowVotes, ...a1.flowVotes],
     );
 
   return mergedAccount;
@@ -1453,7 +1461,7 @@ const createStore = ({ initialState, publicClient }) =>
           getBlockTimestamp(startBlock),
           getBlockTimestamp(endBlock),
         ]);
-        const [propdates, { proposals }] = await Promise.all([
+        const [propdates, { proposals }, flowVotes] = await Promise.all([
           PropdatesSubgraph.fetchPropdates({ startBlock, endBlock }),
           subgraphFetch({
             query: `
@@ -1555,6 +1563,7 @@ const createStore = ({ initialState, publicClient }) =>
                 }
               }`,
           }),
+          FlowsSubgraph.fetchFlowVotes(),
         ]);
 
         (async () => {
@@ -1570,12 +1579,23 @@ const createStore = ({ initialState, publicClient }) =>
           );
         })();
 
+        const flowVotesByAccountId = objectUtils.mapValues(
+          (flowVotes, voter) => ({ id: voter, flowVotes }),
+          arrayUtils.groupBy((v) => v.voter, flowVotes),
+        );
+
         set((s) => ({
           propdatesByProposalId: objectUtils.merge(
             (ps1 = [], ps2 = []) =>
               arrayUtils.unique((p1, p2) => p1.id === p2.id, [...ps1, ...ps2]),
             s.propdatesByProposalId,
             arrayUtils.groupBy((d) => d.proposalId, propdates),
+          ),
+
+          accountsById: objectUtils.merge(
+            mergeAccounts,
+            s.accountsById,
+            flowVotesByAccountId,
           ),
         }));
       },
@@ -2350,6 +2370,7 @@ export const useMainFeedItems = (categories, { enabled = true }) => {
                 ...buildProposalItems(),
                 ...buildCandidateItems(),
                 ...buildPropdateItems(),
+                ...buildFlowVotesFeed(s),
               ]
             : categories.flatMap((category) => {
                 switch (category) {
@@ -2365,6 +2386,8 @@ export const useMainFeedItems = (categories, { enabled = true }) => {
                     return buildCandidateItems();
                   case "propdates":
                     return buildPropdateItems();
+                  case "flow-votes":
+                    return buildFlowVotesFeed(s);
                   default:
                     console.error(`Unrecognized category: "${category}"`);
                 }

@@ -8,6 +8,7 @@ import {
 } from "../utils/votes-and-feedbacks.js";
 import { getSponsorSignatures as getCandidateSponsorSignatures } from "../utils/candidates.js";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster.js";
+import { base } from "viem/chains";
 
 const createFarcasterCastItem = (cast) => {
   let displayName = pickFarcasterAccountDisplayName(cast.account);
@@ -631,3 +632,53 @@ export const buildPropdateFeedItem = (p) => ({
   transactionHash: p.transactionHash,
   propdateId: p.id,
 });
+
+const buildFlowVotesItems = (flowVotes, { contextAccount } = {}) => {
+  // For now we ignore votes on specific projects, just top level flows
+  const filteredFlowVotes = flowVotes.filter((v) => v.recipient.isFlow);
+
+  const flowDistributionItems = Object.entries(
+    arrayUtils.groupBy((v) => v.transactionHash, filteredFlowVotes),
+  ).map(([transactionHash, items]) => {
+    const totalVotes = items.reduce((acc, v) => acc + Number(v.votesCount), 0);
+
+    const votesGroupedByRecipientId = arrayUtils.groupBy(
+      (v) => v.recipientId,
+      items,
+    );
+    const votes = arrayUtils.sortBy(
+      { value: (i) => i.count, order: "desc" },
+      Object.entries(votesGroupedByRecipientId).map(([key, votes]) => ({
+        recipientId: key,
+        title: votes[0].recipient.title,
+        count: votes.reduce((acc, v) => acc + Number(v.votesCount), 0),
+      })),
+    );
+
+    return {
+      type: "flow-vote",
+      id: transactionHash,
+      blockNumber: items[0].blockNumber,
+      authorAccount: items[0].voter,
+      transactionHash: items[0].transactionHash,
+      chainId: base.id,
+      timestamp: items[0].blockTimestamp,
+      tokens: arrayUtils.unique(items.map((v) => v.tokenId)),
+      votes,
+      totalVotes,
+      contextAccount,
+    };
+  });
+
+  return arrayUtils.sortBy(
+    { value: (i) => Number(i.blockNumber) ?? 0, order: "desc" },
+    [...flowDistributionItems],
+  );
+};
+
+export const buildFlowVotesFeed = (storeState) => {
+  const flowVotes = Object.values(storeState.accountsById).flatMap(
+    (a) => a.flowVotes ?? [],
+  );
+  return buildFlowVotesItems(flowVotes);
+};
