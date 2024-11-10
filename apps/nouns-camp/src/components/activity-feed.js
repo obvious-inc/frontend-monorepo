@@ -399,7 +399,6 @@ const FeedItem = React.memo(
                               size="2rem"
                             />
                           </button>
-                          c
                         </AccountPreviewPopoverTrigger>
                       )}
                       <span
