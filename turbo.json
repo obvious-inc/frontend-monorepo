@@ -32,6 +32,7 @@
         "NEYNAR_API_KEY",
         "NOUNS_SUBGRAPH_URL",
         "PROPDATES_SUBGRAPH_URL",
+        "FLOWS_SUBGRAPH_URL",
         "SENTRY_AUTH_TOKEN",
         "SESSION_SEAL_SECRET",
         "TENDERLY_API_KEY",
