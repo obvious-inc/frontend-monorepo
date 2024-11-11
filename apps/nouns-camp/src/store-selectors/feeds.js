@@ -633,7 +633,7 @@ export const buildPropdateFeedItem = (p) => ({
   propdateId: p.id,
 });
 
-const buildFlowVotesItems = (flowVotes, { contextAccount } = {}) => {
+const buildFlowVotesItems = (flowVotes) => {
   const flowDistributionItems = Object.entries(
     arrayUtils.groupBy((v) => v.transactionHash, flowVotes),
   ).map(([transactionHash, items]) => {
@@ -663,7 +663,6 @@ const buildFlowVotesItems = (flowVotes, { contextAccount } = {}) => {
       tokens: arrayUtils.unique(items.map((v) => v.tokenId)),
       votes,
       totalVotes,
-      contextAccount,
     };
   });
 
