@@ -43,7 +43,7 @@ const subgraphFetch = async (query) => {
   return Promise.reject(new Error(response.statusText));
 };
 
-export const fetchFlowVotes = async () => {
+export const fetchFlowVotes = async (startTimestamp, endTimestamp) => {
   if (CHAIN_ID !== 1) return [];
 
   // For now we ignore votes on specific projects, just top level flows
@@ -70,7 +70,11 @@ export const fetchFlowVotes = async () => {
         orderBy: "blockNumber",
         orderDirection: "desc",
         limit: 1000
-        where: { recipientId_in: [${recipientIds.map((id) => `"${id}"`)}]  }
+        where: {
+          recipientId_in: [${recipientIds.map((id) => `"${id}"`)}],
+          blockTimestamp_gte: ${startTimestamp.getTime() / 1000},
+          blockTimestamp_lte: ${endTimestamp.getTime() / 1000}
+        }
       ) {
         items {
           ...VoteFields

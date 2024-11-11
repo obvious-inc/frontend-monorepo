@@ -1563,7 +1563,7 @@ const createStore = ({ initialState, publicClient }) =>
                 }
               }`,
           }),
-          FlowsSubgraph.fetchFlowVotes(),
+          FlowsSubgraph.fetchFlowVotes(startTimestamp, endTimestamp),
         ]);
 
         (async () => {
