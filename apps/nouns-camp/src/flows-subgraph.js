@@ -45,6 +45,24 @@ const subgraphFetch = async (query) => {
 
 export const fetchFlowVotes = async () => {
   if (CHAIN_ID !== 1) return [];
+
+  // For now we ignore votes on specific projects, just top level flows
+  const recipientsBody = await subgraphFetch(`
+    query {
+      grants(
+        limit: 1000
+        where: { isFlow: true }
+      ) {
+        items {
+          id
+        }
+      }
+    }`);
+
+  if (recipientsBody.data?.grants == null) throw new Error("not-found");
+
+  const recipientIds = recipientsBody.data.grants.items.map((g) => g.id);
+
   const body = await subgraphFetch(`
     ${VOTE_FIELDS}
     query {
@@ -52,7 +70,7 @@ export const fetchFlowVotes = async () => {
         orderBy: "blockNumber",
         orderDirection: "desc",
         limit: 1000
-        where: { isStale: false }
+        where: { recipientId_in: [${recipientIds.map((id) => `"${id}"`)}]  }
       ) {
         items {
           ...VoteFields
@@ -60,6 +78,7 @@ export const fetchFlowVotes = async () => {
       }
     }`);
 
-  if (body.data.votes == null) throw new Error("not-found");
-  return body.data.votes.items.map(parseVote);
+  if (body.data?.votes == null) throw new Error("not-found");
+
+  return body.data.votes.items.filter((v) => v.recipient.isFlow).map(parseVote);
 };

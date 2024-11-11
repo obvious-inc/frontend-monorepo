@@ -634,11 +634,8 @@ export const buildPropdateFeedItem = (p) => ({
 });
 
 const buildFlowVotesItems = (flowVotes, { contextAccount } = {}) => {
-  // For now we ignore votes on specific projects, just top level flows
-  const filteredFlowVotes = flowVotes.filter((v) => v.recipient.isFlow);
-
   const flowDistributionItems = Object.entries(
-    arrayUtils.groupBy((v) => v.transactionHash, filteredFlowVotes),
+    arrayUtils.groupBy((v) => v.transactionHash, flowVotes),
   ).map(([transactionHash, items]) => {
     const totalVotes = items.reduce((acc, v) => acc + Number(v.votesCount), 0);
 
