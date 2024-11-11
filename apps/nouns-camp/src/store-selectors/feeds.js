@@ -646,6 +646,7 @@ const buildFlowVotesItems = (flowVotes) => {
       (v) => v.recipientId,
       items,
     );
+
     const recipientVotes = arrayUtils.sortBy(
       { value: (i) => i.count, order: "desc" },
       Object.entries(votesGroupedByRecipientId).map(([key, votes]) => ({
