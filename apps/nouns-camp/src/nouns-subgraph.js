@@ -181,7 +181,7 @@ const parseMarkdownDescription = (string) => {
   return { title, body };
 };
 
-const parseFeedbackPost = (post) => ({
+export const parseFeedbackPost = (post) => ({
   id: post.id,
   // Useful to differentiate feedbacks from votes
   type: "feedback-post",
@@ -196,7 +196,7 @@ const parseFeedbackPost = (post) => ({
   candidateId: post.candidate?.id,
 });
 
-const parseProposalVote = (v) => ({
+export const parseProposalVote = (v) => ({
   id: v.id,
   // Useful to differentiate votes from feedbacks
   type: "vote",

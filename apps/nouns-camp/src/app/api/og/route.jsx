@@ -7,21 +7,15 @@ import {
   isSucceededState as isSucceededProposalState,
 } from "../../../utils/proposals";
 import React from "react";
-import {
-  createPublicClient,
-  formatEther,
-  formatUnits,
-  http,
-  isAddress as isEthereumAccountAddress,
-} from "viem";
+import { createPublicClient, formatEther, formatUnits, http } from "viem";
 import { getChain } from "../../../utils/chains";
 import { getJsonRpcUrl } from "../../../wagmi-config";
 import { CHAIN_ID } from "../../../constants/env";
-import { truncateAddress } from "../../../../../../packages/common/src/utils/ethereum";
 import { extractAmounts } from "../../../utils/transactions";
 import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
 import { date as dateUtils } from "@shades/common/utils";
 import { getTheme } from "@/theme";
+import { displayName, formatDate, getFonts } from "../og-utils";
 
 const theme = getTheme("light");
 
@@ -92,20 +86,6 @@ const SimpleCallout = ({ children }) => (
     {children}
   </div>
 );
-
-const formatDate = ({ value, ...options }) => {
-  if (!value) return null;
-  const formatter = new Intl.DateTimeFormat(undefined, options);
-  return formatter.format(
-    typeof value === "string" ? parseFloat(value) : value,
-  );
-};
-
-const displayName = ({ address, ensName }) => {
-  const isAddress = address != null && isEthereumAccountAddress(address);
-  const truncatedAddress = isAddress ? truncateAddress(address) : null;
-  return ensName ?? truncatedAddress;
-};
 
 const FormattedAmount = ({
   value,
@@ -485,35 +465,6 @@ const renderProposalStateText = ({ proposal, latestBlockNumber }) => {
       throw new Error();
     }
   }
-};
-
-const getFonts = async () => {
-  const fontName = "Inter";
-
-  const semiBoldResp = await fetch(
-    new URL("../../../assets/fonts/Inter-SemiBold.woff", import.meta.url),
-  );
-  const semiBoldFontArray = await semiBoldResp.arrayBuffer();
-
-  const boldResp = await fetch(
-    new URL("../../../assets/fonts/Inter-Bold.woff", import.meta.url),
-  );
-  const boldFontArray = await boldResp.arrayBuffer();
-
-  return [
-    {
-      data: semiBoldFontArray,
-      name: fontName,
-      weight: 400,
-      style: "normal",
-    },
-    {
-      data: boldFontArray,
-      name: fontName,
-      weight: 700,
-      style: "normal",
-    },
-  ];
 };
 
 const getCacheTimeSeconds = ({ proposal, latestBlockNumber }) => {

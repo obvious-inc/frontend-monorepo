@@ -50,9 +50,11 @@ const fetchProposal = async (id) => {
   return parseProposal(data.proposal);
 };
 
-export async function generateMetadata({ params }) {
-  const proposal = await fetchProposal(params.id);
+export async function generateMetadata({ params, searchParams }) {
+  const { vwr } = searchParams;
+  // could fetch the vote and show its info in the title/description og tags
 
+  const proposal = await fetchProposal(params.id);
   if (proposal == null) nextNotFound();
 
   const { title: parsedTitle, body } = proposal;
@@ -72,6 +74,40 @@ export async function generateMetadata({ params }) {
 
   const firstImage = markdownUtils.getFirstImage(body ?? "");
 
+  const og =
+    vwr != null
+      ? {
+          title,
+          description,
+          url: canonicalUrl,
+          images: `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${vwr}`,
+        }
+      : {
+          title,
+          description,
+          url: canonicalUrl,
+          images: firstImage?.url ?? "/opengraph-image.png",
+        };
+
+  const frame =
+    vwr != null
+      ? {
+          "fc:frame": "vNext",
+          "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${vwr}`,
+          "fc:frame:button:1": "View Vote",
+          "fc:frame:button:1:action": "link",
+          "fc:frame:button:1:target": canonicalUrl,
+        }
+      : firstImage?.url
+        ? {}
+        : {
+            "fc:frame": "vNext",
+            "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
+            "fc:frame:button:1": "View proposal",
+            "fc:frame:button:1:action": "link",
+            "fc:frame:button:1:target": canonicalUrl,
+          };
+
   return {
     title,
     description,
@@ -83,21 +119,8 @@ export async function generateMetadata({ params }) {
       card: firstImage?.url ? "summary_large_image" : "summary",
       images: firstImage?.url ?? "/opengraph-image.png",
     },
-    openGraph: {
-      title,
-      description,
-      url: canonicalUrl,
-      images: firstImage?.url ?? "/opengraph-image.png",
-    },
-    other: firstImage?.url
-      ? {} // start by showing frame only for proposals without images
-      : {
-          "fc:frame": "vNext",
-          "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
-          "fc:frame:button:1": "View proposal",
-          "fc:frame:button:1:action": "link",
-          "fc:frame:button:1:target": canonicalUrl,
-        },
+    openGraph: og,
+    other: frame,
   };
 }
 
