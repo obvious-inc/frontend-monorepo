@@ -88,7 +88,6 @@ const fetchProposalCandidate = async (id) => {
   const data = await subgraphFetch({
     query: `
       ${FULL_PROPOSAL_CANDIDATE_FIELDS}
-      ${CANDIDATE_FEEDBACK_FIELDS}
       query {
         proposalCandidate(id: ${JSON.stringify(id)}) {
           ...FullProposalCandidateFields
@@ -107,14 +106,6 @@ const fetchProposalCandidate = async (id) => {
               proposalIdToUpdate
             }
           }
-        }
-
-        candidateFeedbacks(
-          where: {
-            candidate_: { id: ${JSON.stringify(id)} }
-          }
-        ) {
-          ...CandidateFeedbackFields
         }
       }`,
   });
