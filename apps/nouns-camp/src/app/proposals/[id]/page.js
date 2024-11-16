@@ -89,7 +89,7 @@ export async function generateMetadata({ params, searchParams }) {
       title,
       description,
       url: canonicalUrl,
-      card: item != null || firstImage?.url ? "summary_large_image" : "summary",
+      card: "summary_large_image",
       images: ogImage,
     },
     openGraph: {
