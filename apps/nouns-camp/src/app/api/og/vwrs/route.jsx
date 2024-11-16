@@ -27,6 +27,8 @@ import LogoSymbol from "@/components/logo-symbol";
 export const runtime = "edge";
 
 const theme = getTheme("light");
+const voteFontSize = "1.5rem";
+
 const chain = getChain(CHAIN_ID);
 const publicClient = createPublicClient({
   chain,
@@ -279,7 +281,7 @@ export async function GET(request) {
                 flexDirection: "row",
                 whiteSpace: "pre",
                 fontWeight: theme.text.weights.emphasis,
-                fontSize: theme.text.sizes.large,
+                fontSize: voteFontSize,
               }}
             >
               {displayName({ address: voteOrFeedback.voterId, ensName })}{" "}
@@ -315,7 +317,7 @@ export async function GET(request) {
             <div
               style={{
                 color: theme.colors.textDimmed,
-                fontSize: theme.text.sizes.button,
+                fontSize: theme.text.sizes.small,
               }}
             >
               {voteDate}
@@ -327,28 +329,13 @@ export async function GET(request) {
               display: "block",
               whiteSpace: "pre-line",
               lineHeight: 1.5,
-              fontSize: theme.text.sizes.large,
-              lineClamp: '6 "[...]"',
+              fontSize: voteFontSize,
+              lineClamp: '8 "[...]"',
               overflow: "hidden",
             }}
           >
             {body}
           </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "flex-end",
-          }}
-        >
-          <LogoSymbol
-            style={{
-              width: "3rem",
-              height: "3rem",
-            }}
-          />
         </div>
       </div>
     ),
