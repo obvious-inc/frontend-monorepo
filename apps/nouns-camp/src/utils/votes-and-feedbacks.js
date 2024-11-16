@@ -125,18 +125,3 @@ export const formatReply = ({ target, body }) =>
     body,
     markdownUtils.blockquote(target.reason),
   ].join("\n\n");
-
-export const extractRepostsAndReplies = (item, previousItems) => {
-  const extractReplies = createReplyExtractor(previousItems);
-  const extractReposts = createRepostExtractor(previousItems);
-  const [reposts, reasonWithStrippedReposts] = extractReposts(item.reason);
-  const [replies, reasonWithStrippedRepliesAndReposts] = extractReplies(
-    reasonWithStrippedReposts,
-  );
-
-  return {
-    reposts,
-    replies,
-    reasonWithStrippedRepliesAndReposts,
-  };
-};

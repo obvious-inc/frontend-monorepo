@@ -2,7 +2,10 @@
 
 import { array as arrayUtils } from "@shades/common/utils";
 import { resolveIdentifier } from "../contracts.js";
-import { extractRepostsAndReplies } from "../utils/votes-and-feedbacks.js";
+import {
+  createReplyExtractor,
+  createRepostExtractor,
+} from "../utils/votes-and-feedbacks.js";
 import { getSponsorSignatures as getCandidateSponsorSignatures } from "../utils/candidates.js";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster.js";
 
@@ -47,8 +50,12 @@ const buildVoteAndFeedbackPostFeedItems = ({
 
   const items = ascendingVotesAndFeedbackPosts.reduce((acc, p, postIndex) => {
     const previousItems = ascendingVotesAndFeedbackPosts.slice(0, postIndex);
-    const { reposts, replies, reasonWithStrippedRepliesAndReposts } =
-      extractRepostsAndReplies(p, previousItems);
+    const extractReplies = createReplyExtractor(previousItems);
+    const extractReposts = createRepostExtractor(previousItems);
+    const [reposts, reasonWithStrippedReposts] = extractReposts(item.reason);
+    const [replies, reasonWithStrippedRepliesAndReposts] = extractReplies(
+      reasonWithStrippedReposts,
+    );
 
     const item = {
       id: p.id,

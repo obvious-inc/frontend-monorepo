@@ -5,20 +5,14 @@ import { getJsonRpcUrl } from "@/wagmi-config";
 import { createPublicClient, http } from "viem";
 import { displayName, formatDate, getFonts } from "../../og-utils";
 import { ImageResponse } from "next/og";
-import { array as arrayUtils } from "@shades/common/utils";
 import {
   CANDIDATE_FEEDBACK_FIELDS,
-  FULL_PROPOSAL_CANDIDATE_FIELDS,
-  FULL_PROPOSAL_FIELDS,
-  parseCandidate,
   parseFeedbackPost,
-  parseProposal,
   parseProposalVote,
   PROPOSAL_FEEDBACK_FIELDS,
   subgraphFetch,
   VOTE_FIELDS,
 } from "@/nouns-subgraph";
-import { extractRepostsAndReplies } from "@/utils/votes-and-feedbacks";
 
 export const runtime = "edge";
 
@@ -66,54 +60,6 @@ const fetchVoteOrFeedbackPost = async (id) => {
   return null;
 };
 
-const fetchProposal = async (id) => {
-  if (!id) return null;
-
-  const data = await subgraphFetch({
-    query: `
-    ${FULL_PROPOSAL_FIELDS}
-        query {
-          proposal(id: ${id}) {
-            ...FullProposalFields
-          }
-        }`,
-  });
-  if (data?.proposal == null) return null;
-  return parseProposal(data.proposal);
-};
-
-const fetchProposalCandidate = async (id) => {
-  if (!id) return null;
-
-  const data = await subgraphFetch({
-    query: `
-      ${FULL_PROPOSAL_CANDIDATE_FIELDS}
-      query {
-        proposalCandidate(id: ${JSON.stringify(id)}) {
-          ...FullProposalCandidateFields
-          versions {
-            id
-            createdBlock
-            createdTimestamp
-            updateMessage
-            content {
-              title
-              description
-              targets
-              values
-              signatures
-              calldatas
-              proposalIdToUpdate
-            }
-          }
-        }
-      }`,
-  });
-
-  if (data?.proposalCandidate == null) return null;
-  return parseCandidate(data.proposalCandidate);
-};
-
 const Signal = ({ positive, negative, ...props }) => (
   <span
     style={{
@@ -146,62 +92,17 @@ export async function GET(request) {
     );
   }
 
-  const proposal = await fetchProposal(voteOrFeedback.proposalId);
-  const candidate = await fetchProposalCandidate(voteOrFeedback.candidateId);
-
   const ensName = await publicClient.getEnsName({
     address: voteOrFeedback.voterId,
   });
 
-  const filteredVotes =
-    proposal?.votes?.filter(
-      (v) => v.votes > 0 || (v.reason?.trim() ?? "") !== "",
-    ) ?? [];
-
-  const filteredFeedbackPosts =
-    [
-      ...(proposal?.feedbackPosts ?? []),
-      ...(candidate?.feedbackPosts ?? []),
-    ].filter((p) => p.votes > 0 || (p.reason?.trim() ?? "") !== "") ?? [];
-
-  const ascendingVotesAndFeedbackPosts = arrayUtils.sortBy("createdBlock", [
-    ...filteredVotes,
-    ...filteredFeedbackPosts,
-  ]);
-
-  const voteIndex = ascendingVotesAndFeedbackPosts.findIndex(
-    (el) => el.id === voteOrFeedbackId,
-  );
-
-  const previousItems = ascendingVotesAndFeedbackPosts.slice(0, voteIndex);
-  const { reposts, replies, reasonWithStrippedRepliesAndReposts } =
-    extractRepostsAndReplies(voteOrFeedback, previousItems);
-
-  const item = {
-    ...voteOrFeedback,
-    body: reasonWithStrippedRepliesAndReposts,
-    replies,
-    reposts,
-  };
-
   const signalWord = (() => {
-    const isRepost =
-      item.reposts?.length > 0 &&
-      item.reposts.every((post) => post.support === item.support);
-
-    if (isRepost) return item.type === "vote" ? "revoted" : "reposted";
-
-    switch (item.type) {
+    switch (voteOrFeedback.type) {
       case "vote":
         return "voted";
       case "feedback-post": {
-        if (item.support !== 2) return "signaled";
-
-        const isReplyWithoutAdditionalComment =
-          item.replies?.length > 0 &&
-          (item.body == null || item.body.trim() === "");
-
-        return isReplyWithoutAdditionalComment ? "replied" : "commented";
+        if (voteOrFeedback.support !== 2) return "signaled";
+        return "commented";
       }
       default:
         throw new Error();
@@ -222,8 +123,6 @@ export async function GET(request) {
     timeZone: "UTC",
     timeZoneName: "short",
   });
-
-  const body = voteOrFeedback.reason;
 
   return new ImageResponse(
     (
@@ -267,26 +166,32 @@ export async function GET(request) {
             >
               {displayName({ address: voteOrFeedback.voterId, ensName })}{" "}
               {(() => {
-                switch (item.support) {
+                switch (voteOrFeedback.support) {
                   case 0:
                     return (
                       <Signal negative>
                         {signalWord} against
-                        {item.votes != null && <> ({item.votes})</>}
+                        {voteOrFeedback.votes != null && (
+                          <> ({voteOrFeedback.votes})</>
+                        )}
                       </Signal>
                     );
                   case 1:
                     return (
                       <Signal positive>
                         {signalWord} for
-                        {item.votes != null && <> ({item.votes})</>}
+                        {voteOrFeedback.votes != null && (
+                          <> ({voteOrFeedback.votes})</>
+                        )}
                       </Signal>
                     );
                   case 2:
-                    return item.type === "vote" ? (
+                    return voteOrFeedback.type === "vote" ? (
                       <Signal>
                         abstained
-                        {item.votes != null && <> ({item.votes})</>}
+                        {voteOrFeedback.votes != null && (
+                          <> ({voteOrFeedback.votes})</>
+                        )}
                       </Signal>
                     ) : (
                       <>{signalWord} on</>
@@ -315,7 +220,7 @@ export async function GET(request) {
               overflow: "hidden",
             }}
           >
-            {body}
+            {voteOrFeedback.reason}
           </div>
         </div>
       </div>
