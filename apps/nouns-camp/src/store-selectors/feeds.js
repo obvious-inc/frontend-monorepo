@@ -52,7 +52,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
     const previousItems = ascendingVotesAndFeedbackPosts.slice(0, postIndex);
     const extractReplies = createReplyExtractor(previousItems);
     const extractReposts = createRepostExtractor(previousItems);
-    const [reposts, reasonWithStrippedReposts] = extractReposts(item.reason);
+    const [reposts, reasonWithStrippedReposts] = extractReposts(p.reason);
     const [replies, reasonWithStrippedRepliesAndReposts] = extractReplies(
       reasonWithStrippedReposts,
     );
