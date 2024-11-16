@@ -18,11 +18,7 @@ import {
   subgraphFetch,
   VOTE_FIELDS,
 } from "@/nouns-subgraph";
-import {
-  createReplyExtractor,
-  createRepostExtractor,
-} from "@/utils/votes-and-feedbacks";
-import LogoSymbol from "@/components/logo-symbol";
+import { extractRepostsAndReplies } from "@/utils/votes-and-feedbacks";
 
 export const runtime = "edge";
 
@@ -187,14 +183,8 @@ export async function GET(request) {
   );
 
   const previousItems = ascendingVotesAndFeedbackPosts.slice(0, voteIndex);
-  const extractReplies = createReplyExtractor(previousItems);
-  const extractReposts = createRepostExtractor(previousItems);
-  const [reposts, reasonWithStrippedReposts] = extractReposts(
-    voteOrFeedback.reason,
-  );
-  const [replies, reasonWithStrippedRepliesAndReposts] = extractReplies(
-    reasonWithStrippedReposts,
-  );
+  const { reposts, replies, reasonWithStrippedRepliesAndReposts } =
+    extractRepostsAndReplies(voteOrFeedback, previousItems);
 
   const item = {
     ...voteOrFeedback,
