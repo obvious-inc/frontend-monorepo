@@ -98,13 +98,16 @@ export async function generateMetadata({ params, searchParams }) {
       url: canonicalUrl,
       images: ogImage,
     },
-    other: {
-      "fc:frame": "vNext",
-      "fc:frame:image": ogImage,
-      "fc:frame:button:1": frameButtonTitle,
-      "fc:frame:button:1:action": "link",
-      "fc:frame:button:1:target": canonicalUrl,
-    },
+    other:
+      !item && firstImage.url
+        ? {}
+        : {
+            "fc:frame": "vNext",
+            "fc:frame:image": ogImage,
+            "fc:frame:button:1": frameButtonTitle,
+            "fc:frame:button:1:action": "link",
+            "fc:frame:button:1:target": canonicalUrl,
+          },
   };
 }
 
