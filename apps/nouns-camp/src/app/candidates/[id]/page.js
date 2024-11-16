@@ -143,7 +143,7 @@ export async function generateMetadata({ params, searchParams }) {
   };
 }
 
-export default async function Page({ params }) {
+export default async function Page({ params, searchParams }) {
   const candidate = isNaN(Number(params.id))
     ? await fetchCandidate(parseId(params.id))
     : await fetchCandidateByNumber(params.id);
@@ -151,7 +151,8 @@ export default async function Page({ params }) {
   if (candidate == null) nextNotFound();
 
   if (!isNaN(Number(params.id))) {
-    permanentRedirect(`/candidates/${candidate.id}`);
+    const urlSearchParams = new URLSearchParams(searchParams);
+    permanentRedirect(`/candidates/${candidate.id}?${urlSearchParams}`);
   }
 
   return (

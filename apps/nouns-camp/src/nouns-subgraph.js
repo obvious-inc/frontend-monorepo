@@ -39,7 +39,7 @@ export const CANDIDATE_FEEDBACK_FIELDS = `
       id
       nounsRepresented { id }
     }
-    candidate { id }
+    candidate { id, number }
   }`;
 
 export const PROPOSAL_FEEDBACK_FIELDS = `
@@ -194,6 +194,7 @@ export const parseFeedbackPost = (post) => ({
   voterId: post.voter.id,
   proposalId: post.proposal?.id,
   candidateId: post.candidate?.id,
+  candidateNumber: post.candidate?.number,
 });
 
 export const parseProposalVote = (v) => ({
