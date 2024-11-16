@@ -51,8 +51,8 @@ const fetchProposal = async (id) => {
 };
 
 export async function generateMetadata({ params, searchParams }) {
-  const { vwr } = searchParams;
-  // could fetch the vote and show its info in the title/description og tags
+  const { item } = searchParams;
+  const urlSearchParams = new URLSearchParams(searchParams);
 
   const proposal = await fetchProposal(params.id);
   if (proposal == null) nextNotFound();
@@ -70,43 +70,16 @@ export async function generateMetadata({ params, searchParams }) {
 
   const description = stringUtils.truncate(220, firstRegularParagraph);
 
-  const canonicalUrl = `${metaConfig.canonicalAppBasename}/proposals/${params.id}`;
-
+  const canonicalUrl = `${metaConfig.canonicalAppBasename}/proposals/${params.id}?${urlSearchParams}`;
   const firstImage = markdownUtils.getFirstImage(body ?? "");
 
-  const og =
-    vwr != null
-      ? {
-          title,
-          description,
-          url: canonicalUrl,
-          images: `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${vwr}`,
-        }
-      : {
-          title,
-          description,
-          url: canonicalUrl,
-          images: firstImage?.url ?? "/opengraph-image.png",
-        };
+  const ogImage =
+    item != null
+      ? `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${item}`
+      : (firstImage?.url ??
+        `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`);
 
-  const frame =
-    vwr != null
-      ? {
-          "fc:frame": "vNext",
-          "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${vwr}`,
-          "fc:frame:button:1": "View Vote",
-          "fc:frame:button:1:action": "link",
-          "fc:frame:button:1:target": canonicalUrl,
-        }
-      : firstImage?.url
-        ? {}
-        : {
-            "fc:frame": "vNext",
-            "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
-            "fc:frame:button:1": "View proposal",
-            "fc:frame:button:1:action": "link",
-            "fc:frame:button:1:target": canonicalUrl,
-          };
+  const frameButtonTitle = item != null ? "View vote" : "View proposal";
 
   return {
     title,
@@ -116,11 +89,22 @@ export async function generateMetadata({ params, searchParams }) {
       title,
       description,
       url: canonicalUrl,
-      card: firstImage?.url ? "summary_large_image" : "summary",
-      images: firstImage?.url ?? "/opengraph-image.png",
+      card: item != null || firstImage?.url ? "summary_large_image" : "summary",
+      images: ogImage,
     },
-    openGraph: og,
-    other: frame,
+    openGraph: {
+      title,
+      description,
+      url: canonicalUrl,
+      images: ogImage,
+    },
+    other: {
+      "fc:frame": "vNext",
+      "fc:frame:image": ogImage,
+      "fc:frame:button:1": frameButtonTitle,
+      "fc:frame:button:1:action": "link",
+      "fc:frame:button:1:target": canonicalUrl,
+    },
   };
 }
 

@@ -2188,7 +2188,7 @@ const FeedItemActionDropdown = ({ context, item }) => {
                 makeCandidateUrlId(item.candidateId),
               )}`
             : `/proposals/${item.proposalId}`;
-        const url = `${location.origin}${pathname}?tab=activity#${item.id}`;
+        const url = `${location.origin}${pathname}?tab=activity&item=${item.id}`;
         navigator.clipboard.writeText(url);
         break;
       }
