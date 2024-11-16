@@ -1658,6 +1658,7 @@ const ProposalScreen = ({ proposalId }) => {
         navigationStack={[
           { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
+            key: "proposals-select",
             label: "Proposal",
             component: ProposalsSelect,
             props: {
