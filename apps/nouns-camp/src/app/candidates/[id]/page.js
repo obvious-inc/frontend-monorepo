@@ -135,7 +135,7 @@ export async function generateMetadata({ params, searchParams }) {
         ? {
             "fc:frame": "vNext",
             "fc:frame:image": ogImage,
-            "fc:frame:button:1": "View vote",
+            "fc:frame:button:1": "View item",
             "fc:frame:button:1:action": "link",
             "fc:frame:button:1:target": canonicalUrl,
           }

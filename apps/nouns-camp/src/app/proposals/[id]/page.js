@@ -79,7 +79,7 @@ export async function generateMetadata({ params, searchParams }) {
       : (firstImage?.url ??
         `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`);
 
-  const frameButtonTitle = item != null ? "View vote" : "View proposal";
+  const frameButtonTitle = item != null ? "View item" : "View proposal";
 
   return {
     title,
