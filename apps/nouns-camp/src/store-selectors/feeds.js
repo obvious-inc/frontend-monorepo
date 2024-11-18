@@ -77,6 +77,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
     if (targetProposalId != null) item.targetProposalId = targetProposalId;
     if (candidateId != null || p.candidateId != null)
       item.candidateId = candidateId ?? p.candidateId;
+    if (p.candidateNumber != null) item.candidateNumber = p.candidateNumber;
 
     acc.push(item);
 

@@ -80,12 +80,15 @@ const fetchCandidateByNumber = async (number) => {
 const parseId = (id) =>
   isNaN(Number(id)) ? normalizeId(decodeURIComponent(id)) : id;
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata({ params, searchParams }) {
   const candidateId = parseId(params.id);
 
   const candidate = isNaN(Number(params.id))
     ? await fetchCandidate(parseId(params.id))
     : await fetchCandidateByNumber(params.id);
+
+  const { item } = searchParams;
+  const urlSearchParams = new URLSearchParams(searchParams);
 
   // Can’t notFound() here since we might be on a testnet
   if (candidate == null) nextNotFound();
@@ -100,9 +103,14 @@ export async function generateMetadata({ params }) {
 
   const description = stringUtils.truncate(220, firstRegularParagraph);
 
-  const canonicalUrl = `${metaConfig.canonicalAppBasename}/candidates/${candidateId}`;
+  const canonicalUrl = `${metaConfig.canonicalAppBasename}/candidates/${candidateId}?${urlSearchParams}`;
 
   const firstImage = markdownUtils.getFirstImage(body ?? "");
+
+  const ogImage =
+    item != null
+      ? `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${item}`
+      : (firstImage?.url ?? "/opengraph-image.png");
 
   return {
     title,
@@ -112,19 +120,30 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
-      card: firstImage?.url ? "summary_large_image" : "summary",
-      images: firstImage?.url ?? "/opengraph-image.png",
+      card: item != null || firstImage?.url ? "summary_large_image" : "summary",
+      images: ogImage,
     },
     openGraph: {
       title,
       description,
       url: canonicalUrl,
-      images: firstImage?.url ?? "/opengraph-image.png",
+      images: ogImage,
     },
+    // only show frame for votes for now
+    other:
+      item != null
+        ? {
+            "fc:frame": "vNext",
+            "fc:frame:image": ogImage,
+            "fc:frame:button:1": "View item",
+            "fc:frame:button:1:action": "link",
+            "fc:frame:button:1:target": canonicalUrl,
+          }
+        : {},
   };
 }
 
-export default async function Page({ params }) {
+export default async function Page({ params, searchParams }) {
   const candidate = isNaN(Number(params.id))
     ? await fetchCandidate(parseId(params.id))
     : await fetchCandidateByNumber(params.id);
@@ -132,7 +151,8 @@ export default async function Page({ params }) {
   if (candidate == null) nextNotFound();
 
   if (!isNaN(Number(params.id))) {
-    permanentRedirect(`/candidates/${candidate.id}`);
+    const urlSearchParams = new URLSearchParams(searchParams);
+    permanentRedirect(`/candidates/${candidate.id}?${urlSearchParams}`);
   }
 
   return (

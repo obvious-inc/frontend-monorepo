@@ -57,7 +57,6 @@ import {
 } from "../hooks/data-contract.js";
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
-import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useSubmitCandidateCast } from "../hooks/farcaster.js";
 import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
 import ProposalActionForm from "./proposal-action-form.js";
@@ -72,6 +71,7 @@ import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 import DiffBlock from "./diff-block.js";
 import { useProposalCandidateSimulation } from "../hooks/simulation.js";
+import useScrollToElement from "@/hooks/scroll-to-element.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -103,6 +103,8 @@ const ProposalCandidateScreenContent = ({
   const isDesktopLayout = useMatchDesktopLayout();
   const selectedTab =
     searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
+
+  const itemId = searchParams.get("item");
 
   const {
     address: connectedWalletAccountAddress,
@@ -229,7 +231,7 @@ const ProposalCandidateScreenContent = ({
   useProposalCandidateFetch(candidateId);
   useProposalFetch(candidate.latestVersion.targetProposalId);
 
-  useScrollToHash();
+  useScrollToElement({ id: itemId, enabled: itemId != null });
 
   const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
 

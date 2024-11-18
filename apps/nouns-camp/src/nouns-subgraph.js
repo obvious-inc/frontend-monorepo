@@ -39,7 +39,7 @@ export const CANDIDATE_FEEDBACK_FIELDS = `
       id
       nounsRepresented { id }
     }
-    candidate { id }
+    candidate { id, number }
   }`;
 
 export const PROPOSAL_FEEDBACK_FIELDS = `
@@ -181,7 +181,7 @@ const parseMarkdownDescription = (string) => {
   return { title, body };
 };
 
-const parseFeedbackPost = (post) => ({
+export const parseFeedbackPost = (post) => ({
   id: post.id,
   // Useful to differentiate feedbacks from votes
   type: "feedback-post",
@@ -194,9 +194,10 @@ const parseFeedbackPost = (post) => ({
   voterId: post.voter.id,
   proposalId: post.proposal?.id,
   candidateId: post.candidate?.id,
+  candidateNumber: post.candidate?.number,
 });
 
-const parseProposalVote = (v) => ({
+export const parseProposalVote = (v) => ({
   id: v.id,
   // Useful to differentiate votes from feedbacks
   type: "vote",

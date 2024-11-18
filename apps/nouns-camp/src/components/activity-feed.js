@@ -2184,11 +2184,13 @@ const FeedItemActionDropdown = ({ context, item }) => {
 
         const pathname =
           item.candidateId != null
-            ? `/candidates/${encodeURIComponent(
-                makeCandidateUrlId(item.candidateId),
-              )}`
+            ? item.candidateNumber != null
+              ? `/candidates/${Number(item.candidateNumber)}`
+              : `/candidates/${encodeURIComponent(
+                  makeCandidateUrlId(item.candidateId),
+                )}`
             : `/proposals/${item.proposalId}`;
-        const url = `${location.origin}${pathname}?tab=activity#${item.id}`;
+        const url = `${location.origin}${pathname}?tab=activity&item=${item.id}`;
         navigator.clipboard.writeText(url);
         break;
       }

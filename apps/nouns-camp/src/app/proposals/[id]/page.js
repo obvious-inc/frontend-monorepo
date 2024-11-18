@@ -50,9 +50,11 @@ const fetchProposal = async (id) => {
   return parseProposal(data.proposal);
 };
 
-export async function generateMetadata({ params }) {
-  const proposal = await fetchProposal(params.id);
+export async function generateMetadata({ params, searchParams }) {
+  const { item } = searchParams;
+  const urlSearchParams = new URLSearchParams(searchParams);
 
+  const proposal = await fetchProposal(params.id);
   if (proposal == null) nextNotFound();
 
   const { title: parsedTitle, body } = proposal;
@@ -68,9 +70,16 @@ export async function generateMetadata({ params }) {
 
   const description = stringUtils.truncate(220, firstRegularParagraph);
 
-  const canonicalUrl = `${metaConfig.canonicalAppBasename}/proposals/${params.id}`;
-
+  const canonicalUrl = `${metaConfig.canonicalAppBasename}/proposals/${params.id}?${urlSearchParams}`;
   const firstImage = markdownUtils.getFirstImage(body ?? "");
+
+  const ogImage =
+    item != null
+      ? `${metaConfig.canonicalAppBasename}/api/og/vwrs?id=${item}`
+      : (firstImage?.url ??
+        `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`);
+
+  const frameButtonTitle = item != null ? "View item" : "View proposal";
 
   return {
     title,
@@ -80,24 +89,25 @@ export async function generateMetadata({ params }) {
       title,
       description,
       url: canonicalUrl,
-      card: firstImage?.url ? "summary_large_image" : "summary",
-      images: firstImage?.url ?? "/opengraph-image.png",
+      card: "summary_large_image",
+      images: ogImage,
     },
     openGraph: {
       title,
       description,
       url: canonicalUrl,
-      images: firstImage?.url ?? "/opengraph-image.png",
+      images: ogImage,
     },
-    other: firstImage?.url
-      ? {} // start by showing frame only for proposals without images
-      : {
-          "fc:frame": "vNext",
-          "fc:frame:image": `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`,
-          "fc:frame:button:1": "View proposal",
-          "fc:frame:button:1:action": "link",
-          "fc:frame:button:1:target": canonicalUrl,
-        },
+    other:
+      !item && firstImage.url
+        ? {}
+        : {
+            "fc:frame": "vNext",
+            "fc:frame:image": ogImage,
+            "fc:frame:button:1": frameButtonTitle,
+            "fc:frame:button:1:action": "link",
+            "fc:frame:button:1:target": canonicalUrl,
+          },
   };
 }
 

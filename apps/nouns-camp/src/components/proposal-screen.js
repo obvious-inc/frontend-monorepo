@@ -72,7 +72,6 @@ import TransactionList, {
   FormattedEthWithConditionalTooltip,
 } from "./transaction-list.js";
 import ProposalActionForm from "./proposal-action-form.js";
-import useScrollToHash from "../hooks/scroll-to-hash.js";
 import { useProposalSimulation } from "../hooks/simulation.js";
 import useTreasuryData from "../hooks/treasury-data.js";
 import FormattedNumber from "./formatted-number.js";
@@ -84,6 +83,7 @@ import StreamsDialog from "./streams-dialog.js";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import NativeSelect from "./native-select.js";
 import { useDialog } from "@/hooks/global-dialogs.js";
+import useScrollToElement from "@/hooks/scroll-to-element.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -114,6 +114,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTab =
     searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
+  const itemId = searchParams.get("item");
 
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
@@ -322,7 +323,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     proposalActionInputRef.current.focus();
   }, []);
 
-  useScrollToHash();
+  useScrollToElement({ id: itemId, enabled: itemId != null });
 
   if (proposal == null) return null;
 
@@ -1657,6 +1658,7 @@ const ProposalScreen = ({ proposalId }) => {
         navigationStack={[
           { to: "/proposals", label: "Proposals", desktopOnly: true },
           {
+            key: "proposals-select",
             label: "Proposal",
             component: ProposalsSelect,
             props: {
