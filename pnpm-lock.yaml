@@ -248,8 +248,8 @@ importers:
         specifier: ^0.15.2
         version: 0.15.2(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
       '@nouns/assets':
-        specifier: ^0.8.0
-        version: 0.8.0
+        specifier: ^0.9.0
+        version: 0.9.0
       '@nouns/contracts':
         specifier: ^0.3.0
         version: 0.3.0(bufferutil@4.0.8)(utf-8-validate@5.0.10)
@@ -1848,8 +1848,8 @@ packages:
     resolution: {integrity: sha512-nn5ozdjYQpUCZlWGuxcJY/KpxkWQs4DcbMCmKojjyrYDEAGy4Ce19NN4v5MduafTwJlbKc99UA8YhSVqq9yPZA==}
     engines: {node: '>=12.4.0'}
 
-  '@nouns/assets@0.8.0':
-    resolution: {integrity: sha512-L2jXwXdmn6q9KoKe84HfHzyPq1A+ZvKPzipqzxMWZAF2ogT1DKVC1gRauPjMLRtR4Qe66dpi+PH/p0SdC7kuEw==}
+  '@nouns/assets@0.9.0':
+    resolution: {integrity: sha512-BsV5kRPfcF6G42aK1Gu9rqpMHPBf2L00g9AmN1gkxPrBRcJ8sB6sypiqfVDSs+m4YQt1rvP0bq2bKUIngN37WQ==}
 
   '@nouns/contracts@0.3.0':
     resolution: {integrity: sha512-l619EP77QqX0gPGw3gPfh9tgBlz5lFwK8EzB+orLJx3JrfHSUqfjjYCfZih+I++bhJuK78ro2FgFx6U0kZnXEw==}
@@ -10008,7 +10008,7 @@ snapshots:
 
   '@nolyfill/is-core-module@1.0.39': {}
 
-  '@nouns/assets@0.8.0':
+  '@nouns/assets@0.9.0':
     dependencies:
       '@ethersproject/bignumber': 5.7.0
       '@ethersproject/solidity': 5.7.0
