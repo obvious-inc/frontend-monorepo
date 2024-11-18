@@ -79,8 +79,6 @@ export async function generateMetadata({ params, searchParams }) {
       : (firstImage?.url ??
         `${metaConfig.canonicalAppBasename}/api/og?proposal=${params.id}`);
 
-  const frameButtonTitle = item != null ? "View item" : "View proposal";
-
   return {
     title,
     description,
@@ -99,12 +97,12 @@ export async function generateMetadata({ params, searchParams }) {
       images: ogImage,
     },
     other:
-      !item && firstImage.url
+      item && firstImage.url
         ? {}
         : {
             "fc:frame": "vNext",
             "fc:frame:image": ogImage,
-            "fc:frame:button:1": frameButtonTitle,
+            "fc:frame:button:1": "View proposal",
             "fc:frame:button:1:action": "link",
             "fc:frame:button:1:target": canonicalUrl,
           },

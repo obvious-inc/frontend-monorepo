@@ -129,17 +129,6 @@ export async function generateMetadata({ params, searchParams }) {
       url: canonicalUrl,
       images: ogImage,
     },
-    // only show frame for votes for now
-    other:
-      item != null
-        ? {
-            "fc:frame": "vNext",
-            "fc:frame:image": ogImage,
-            "fc:frame:button:1": "View item",
-            "fc:frame:button:1:action": "link",
-            "fc:frame:button:1:target": canonicalUrl,
-          }
-        : {},
   };
 }
 
