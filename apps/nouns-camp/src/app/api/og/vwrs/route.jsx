@@ -17,7 +17,6 @@ import {
 export const runtime = "edge";
 
 const theme = getTheme("light");
-const voteFontSize = "1.5rem";
 
 const chain = getChain(CHAIN_ID);
 const publicClient = createPublicClient({
@@ -131,7 +130,7 @@ export async function GET(request) {
         style={{
           backgroundColor: theme.colors.backgroundPrimary,
           backgroundSize: "150px 150px",
-          padding: "2rem",
+          padding: "3rem 2rem",
           height: "100%",
           width: "100%",
           display: "flex",
@@ -161,7 +160,7 @@ export async function GET(request) {
                 flexDirection: "row",
                 whiteSpace: "pre",
                 fontWeight: theme.text.weights.emphasis,
-                fontSize: voteFontSize,
+                fontSize: theme.text.sizes.large,
               }}
             >
               {displayName({ address: voteOrFeedback.voterId, ensName })}{" "}
@@ -215,8 +214,8 @@ export async function GET(request) {
               display: "block",
               whiteSpace: "pre-line",
               lineHeight: 1.5,
-              fontSize: voteFontSize,
-              lineClamp: '8 "[...]"',
+              fontSize: theme.text.sizes.large,
+              lineClamp: '7 "[...]"',
               overflow: "hidden",
             }}
           >
