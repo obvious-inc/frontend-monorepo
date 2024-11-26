@@ -175,7 +175,25 @@ const mergeNouns = (n1, n2) => {
       [...n2.events, ...n1.events],
     );
   if (n1.auction != null) mergedNoun.auction = { ...n1.auction, ...n2.auction };
+
+  if (n1.streams != null && n2.streams != null)
+    mergedNoun.streams = arrayUtils.unique(
+      (e1, e2) => e1.id === e2.id,
+      [...n2.streams, ...n1.streams],
+    );
+
+  // the newest stream is always the current
+  if (mergedNoun.streams)
+    mergedNoun.stream = arrayUtils
+      .sortBy((s) => s.createdBlock, mergedNoun.streams)
+      .reverse()[0];
+
   return mergedNoun;
+};
+
+const mergeStreams = (s1, s2) => {
+  if (s1 == null) return s2;
+  return { ...s1, ...s2 };
 };
 
 const mergeStoreState = (state1, state2) => {
@@ -186,6 +204,7 @@ const mergeStoreState = (state1, state2) => {
       nounsById: mergeNouns,
       proposalsById: mergeProposals,
       proposalCandidatesById: mergeProposalCandidates,
+      streamsById: mergeStreams,
     }[key];
     if (mergeFn == null) throw new Error(`Missing merge function for "${key}"`);
     return mergeFn;
@@ -479,6 +498,21 @@ const createStore = ({ initialState, publicClient }) =>
           case "proposalCandidateSignatures":
             // Don’t cache
             return stateAcc;
+
+          case "streams": {
+            const streamsByNounId = arrayUtils.groupBy((e) => e.nounId, value);
+            return mergeIntoStore({
+              streamsById: arrayUtils.indexBy((s) => s.id, value),
+
+              nounsById: objectUtils.mapValues(
+                (streams, nounId) => ({
+                  id: nounId,
+                  streams: streams,
+                }),
+                streamsByNounId,
+              ),
+            });
+          }
 
           default:
             throw new Error(`Unknown subgraph entity "${key}"`);

@@ -144,6 +144,7 @@ const metaByIdentifier = {
     name: "Nouns Client Incentives Rewards Proxy",
   },
   "executor-v1": { name: "Nouns DAO Treasury v1" },
+  "stream-escrow": { name: "Stream Escrow" },
 };
 
 export const resolveIdentifier = (identifier, { chainId = CHAIN_ID } = {}) => {

@@ -441,6 +441,20 @@ const parseTransferEvent = (e) => {
   return parsedData;
 };
 
+const parseStream = (data) => {
+  const parsedData = {
+    ...data,
+    blockTimestamp: parseTimestamp(data.createdTimestamp),
+    nounId: data.noun?.id,
+    lastTick: parseInt(data.lastTick),
+    totalAmount: parseInt(data.totalAmount),
+  };
+
+  if (data.noun?.owner?.id != null) parsedData.ownerId = data.noun.owner.id;
+
+  return parsedData;
+};
+
 const parseDelegationEvent = (e) => {
   const parsedData = {
     ...e,
@@ -556,7 +570,8 @@ export const parsedSubgraphFetch = async (options) => {
       case "proposalFeedbacks":
       case "candidateFeedbacks":
       case "delegationEvents":
-      case "transferEvents": {
+      case "transferEvents":
+      case "streams": {
         const parseFn = {
           accounts: parseAccount,
           delegates: parseDelegate,
@@ -571,6 +586,7 @@ export const parsedSubgraphFetch = async (options) => {
           candidateFeedbacks: parseFeedbackPost,
           delegationEvents: parseDelegationEvent,
           transferEvents: parseTransferEvent,
+          streams: parseStream,
         }[key];
         return value.map(parseFn);
       }

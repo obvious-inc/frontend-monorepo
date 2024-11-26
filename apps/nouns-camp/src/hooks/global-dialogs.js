@@ -74,6 +74,12 @@ const dialogs = [
       () => import("../components/streams-dialog.js"),
     ),
   },
+  {
+    key: "stream-cancel",
+    component: ReactLazyWithPreload(
+      () => import("../components/stream-cancel-dialog.js"),
+    ),
+  },
 ];
 
 const dialogsByKey = arrayUtils.indexBy((d) => d.key, dialogs);
