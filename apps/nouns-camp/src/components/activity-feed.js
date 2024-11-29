@@ -1514,6 +1514,47 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
           </>
         );
 
+      case "flow-vote": {
+        return (
+          <>
+            {author}{" "}
+            <span
+              css={(t) =>
+                css({
+                  fontWeight: t.text.weights.emphasis,
+                })
+              }
+            >
+              allocated votes ({item.totalVotes})
+            </span>{" "}
+            to{" "}
+            {item.votes.map((v, index) => {
+              return (
+                <>
+                  {index > 0 ? (
+                    index == item.votes.length - 1 ? (
+                      <> and </>
+                    ) : (
+                      <>, </>
+                    )
+                  ) : (
+                    <></>
+                  )}
+                  <a
+                    key={v.recipientId}
+                    href={`https://flows.wtf/flow/${v.recipientId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {v.title}
+                  </a>
+                </>
+              );
+            })}
+          </>
+        );
+      }
+
       default:
         console.log(item);
         throw new Error(`Unknown event type "${item.type}"`);
@@ -2155,7 +2196,9 @@ const FeedItemActionDropdown = ({ context, item }) => {
 
       case "open-block-explorer":
         window.open(
-          buildEtherscanLink(`/tx/${item.transactionHash}`),
+          buildEtherscanLink(`/tx/${item.transactionHash}`, {
+            chainId: item.chainId,
+          }),
           "_blank",
         );
         break;

@@ -1051,6 +1051,7 @@ const feedFilterCategoryItems = [
   },
   { key: "auction-bids", title: "Auction bids" },
   { key: "propdates", title: "Propdate posts" },
+  { key: "flow-votes", title: "Flows activity" },
 ];
 const defaultSelectedFeedFilterCategories = [
   "proposals",
