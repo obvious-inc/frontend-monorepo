@@ -282,7 +282,7 @@ const NounListItem = ({ noun, contextAccount }) => {
 
   const { open: openStreamCancelDialog } = useDialog("stream-cancel");
 
-  const [isForwardingNoun, setForwardingNoun] = React.useState(false);
+  const [, setForwardingNoun] = React.useState(false);
 
   const n = useNoun(noun.id);
   const stream = n?.stream;
