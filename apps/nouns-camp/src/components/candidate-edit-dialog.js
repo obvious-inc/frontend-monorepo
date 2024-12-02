@@ -53,6 +53,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     [candidate],
   );
 
+  const draftId = `candidate:${candidateId}`;
+
   const { createItem: createDraft, deleteItem: deleteDraft } = useDrafts();
   const [
     draft,
@@ -61,7 +63,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       setBody: setDraftBody,
       setActions: setDraftActions,
     },
-  ] = useDraft(candidateId);
+  ] = useDraft(draftId);
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
@@ -105,19 +107,12 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     const hasBodyChanges = markdownBody !== persistedMarkdownBody;
 
     return hasBodyChanges;
-  }, [
-    candidate,
-    draft?.name,
-    persistedTitle,
-    deferredBody,
-    persistedMarkdownBody,
-    draft?.actions,
-  ]);
+  }, [candidate, draft, persistedTitle, deferredBody, persistedMarkdownBody]);
 
   const dismissDialog = () => {
+    setPendingDismiss(true);
     if (!hasChanges) {
-      setPendingDismiss(true);
-      deleteDraft(candidateId);
+      deleteDraft(draftId);
       closeDialog();
       return;
     }
@@ -126,11 +121,12 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       !confirm(
         "This will discard all your changes. Are you sure you wish to continue?",
       )
-    )
+    ) {
+      setPendingDismiss(false);
       return;
+    }
 
-    setPendingDismiss(true);
-    deleteDraft(candidateId);
+    deleteDraft(draftId);
     closeDialog();
   };
 
@@ -182,22 +178,17 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   React.useEffect(() => {
     // if the store is not initialized or dialog is being dismissed, ignore
     // draft creation
-    if (
-      draft != null ||
-      draft === undefined ||
-      !createDraft ||
-      hasPendingDismiss
-    )
-      return;
+    if (!createDraft || draft != null || hasPendingDismiss) return;
 
     createDraft({
-      id: candidateId,
+      id: draftId,
       name: persistedTitle,
       body: persistedRichTextBody,
       actions: persistedActions,
       type: "edit",
     });
   }, [
+    draftId,
     draft,
     createDraft,
     persistedTitle,
