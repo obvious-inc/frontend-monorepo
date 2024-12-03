@@ -9,7 +9,6 @@ import {
   date as dateUtils,
   array as arrayUtils,
   markdown as markdownUtils,
-  message as messageUtils,
   reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary, useFetch, useMatchMedia } from "@shades/common/react";
@@ -1594,10 +1593,10 @@ const ProposalScreen = ({ proposalId }) => {
   const persistedMarkdownBody = proposal?.body;
 
   const persistedRichTextBody = React.useMemo(() => {
-    if (!proposal) return;
+    if (!persistedMarkdownBody) return;
     const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
     return messageToRichTextBlocks(messageBlocks);
-  }, [proposal, persistedMarkdownBody]);
+  }, [persistedMarkdownBody]);
 
   const persistedActions = React.useMemo(
     () => buildActionsFromTransactions(proposal?.transactions ?? []),
