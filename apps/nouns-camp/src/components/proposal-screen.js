@@ -8,6 +8,8 @@ import { css } from "@emotion/react";
 import {
   date as dateUtils,
   array as arrayUtils,
+  markdown as markdownUtils,
+  message as messageUtils,
   reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary, useFetch, useMatchMedia } from "@shades/common/react";
@@ -23,7 +25,10 @@ import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
-import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
+import {
+  extractAmounts as extractAmountsFromTransactions,
+  buildActions as buildActionsFromTransactions,
+} from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
   isFinalState as isFinalProposalState,
@@ -84,6 +89,8 @@ import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import NativeSelect from "./native-select.js";
 import { useDialog } from "@/hooks/global-dialogs.js";
 import useScrollToElement from "@/hooks/scroll-to-element.js";
+import { useCollection as useDrafts } from "../hooks/drafts.js";
+import { fromMessageBlocks as messageToRichTextBlocks } from "@shades/ui-web/rich-text-editor";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -1551,6 +1558,7 @@ const ProposalScreen = ({ proposalId }) => {
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
   const [hasPendingCancel, setPendingCancel] = React.useState(false);
+  const [hasPendingDuplicate, setPendingDuplicate] = React.useState(false);
 
   const scrollContainerRef = React.useRef();
 
@@ -1582,6 +1590,22 @@ const ProposalScreen = ({ proposalId }) => {
     { replace: true },
   );
 
+  const persistedTitle = proposal?.title;
+  const persistedMarkdownBody = proposal?.body;
+
+  const persistedRichTextBody = React.useMemo(() => {
+    if (!proposal) return;
+    const messageBlocks = markdownUtils.toMessageBlocks(persistedMarkdownBody);
+    return messageToRichTextBlocks(messageBlocks);
+  }, [proposal, persistedMarkdownBody]);
+
+  const persistedActions = React.useMemo(
+    () => buildActionsFromTransactions(proposal?.transactions ?? []),
+    [proposal],
+  );
+
+  const { createItem: createDraft } = useDrafts();
+
   useProposalFetch(proposalId, {
     onError: (e) => {
       if (e.message === "not-found") {
@@ -1611,6 +1635,23 @@ const ProposalScreen = ({ proposalId }) => {
         },
       });
     }
+
+    if (isFinalProposalState(proposal.state))
+      actions.push({
+        onSelect: () => {
+          setPendingDuplicate(true);
+          createDraft({
+            name: persistedTitle,
+            body: persistedRichTextBody,
+            actions: persistedActions,
+          }).then((d) => navigate(`/new/${d.id}`, { replace: true }));
+        },
+        label: "Duplicate",
+        buttonProps: {
+          isLoading: hasPendingDuplicate,
+          disabled: createDraft == null || hasPendingDuplicate,
+        },
+      });
 
     if (proposal.state === "canceled")
       return actions.length === 0 ? undefined : actions;
