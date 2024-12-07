@@ -25,7 +25,7 @@ import {
 } from "../hooks/dao-contract.js";
 import { useActions, useAccountProposalCandidates } from "../store.js";
 import { useNavigate, useSearchParams } from "../hooks/navigation.js";
-import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
+// import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import {
   useCreateProposalCandidate,
   useProposalCandidateCreateCost,
