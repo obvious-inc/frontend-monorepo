@@ -99,7 +99,9 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
     }
   }, BigInt(0));
 
-  const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  // enable this again once the DAO liquidity problem is solved
+  // const payerTopUpValue = useTokenBuyerEthNeeded(usdcSumValue);
+  const payerTopUpValue = 0;
 
   const submit = async () => {
     const buildCandidateSlug = (title) => {
