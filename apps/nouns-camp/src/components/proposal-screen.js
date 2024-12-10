@@ -212,6 +212,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const initialRepostTargetId = searchParams.get("repost-target");
   const initialRepostRef = React.useRef(true);
 
+  // add reply/repost from search params only once
   React.useEffect(() => {
     if (
       initialReplyRef.current &&
