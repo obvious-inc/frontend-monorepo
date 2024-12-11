@@ -185,6 +185,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       ? formActionOverride
       : defaultFormAction;
 
+  const urlReplyTargetId = searchParams.get("reply-target");
+  const urlReplyRef = React.useRef(true);
+
+  const urlRepostTargetId = searchParams.get("repost-target");
+  const urlRepostRef = React.useRef(true);
+
   const [
     {
       comment: pendingComment,
@@ -203,39 +209,36 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       clearPost,
     },
   ] = useCachedPost(`vwr:${proposalId}`, {
-    initialSupport: isFinalOrSucceededState ? 2 : null,
+    comment: "",
+    support: isFinalOrSucceededState ? 2 : null,
+    replies: null,
+    reposts: null,
   });
-
-  const initialReplyTargetId = searchParams.get("reply-target");
-  const initialReplyRef = React.useRef(true);
-
-  const initialRepostTargetId = searchParams.get("repost-target");
-  const initialRepostRef = React.useRef(true);
 
   // add reply/repost from search params only once
   React.useEffect(() => {
     if (
-      initialReplyRef.current &&
-      initialReplyTargetId &&
+      urlReplyRef.current &&
+      urlReplyTargetId &&
       addReply &&
       pendingReplies !== undefined
     ) {
-      addReply(initialReplyTargetId, "");
-      initialReplyRef.current = false;
+      addReply(urlReplyTargetId, "");
+      urlReplyRef.current = false;
     }
 
     if (
-      initialRepostRef.current &&
-      initialRepostTargetId &&
+      urlRepostRef.current &&
+      urlRepostTargetId &&
       addRepost &&
       pendingReposts !== undefined
     ) {
-      addRepost(initialRepostTargetId);
-      initialRepostRef.current = false;
+      addRepost(urlRepostTargetId);
+      urlRepostRef.current = false;
     }
   }, [
-    initialReplyTargetId,
-    initialRepostTargetId,
+    urlReplyTargetId,
+    urlRepostTargetId,
     addReply,
     addRepost,
     pendingReplies,

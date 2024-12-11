@@ -1,12 +1,7 @@
 import { useCachedState } from "@shades/common/app";
 
-const useCachedPost = (cacheId, { initialSupport }) => {
-  const [post, setPost] = useCachedState(cacheId, {
-    comment: "",
-    support: initialSupport,
-    replies: null,
-    reposts: null,
-  });
+const useCachedPost = (cacheId, initialState) => {
+  const [post, setPost] = useCachedState(cacheId, initialState);
 
   const setComment = (comment) => setPost((s) => ({ ...s, comment }));
   const setSupport = (support) => setPost((s) => ({ ...s, support }));
@@ -53,13 +48,10 @@ const useCachedPost = (cacheId, { initialSupport }) => {
 
   const clearPost = () => setPost(null);
 
+  const { comment = "", support, replies, reposts } = post ?? {};
+
   return [
-    {
-      comment: post?.comment ?? "",
-      support: post?.support,
-      replies: post?.replies,
-      reposts: post?.reposts,
-    },
+    { comment, support, replies, reposts },
     {
       setComment,
       setSupport,
