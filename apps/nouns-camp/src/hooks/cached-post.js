@@ -14,20 +14,26 @@ const useCachedPost = (cacheId, { searchParams }) => {
   const setComment = (comment) => setPost((s) => ({ ...s, comment }));
   const setSupport = (support) => setPost((s) => ({ ...s, support }));
 
-  const addReply = (feedItemId) => {
-    if (Object.keys(post?.replies ?? {}).includes(feedItemId)) return;
-    setReply(feedItemId, "");
-  };
+  const setReply = React.useCallback(
+    (feedItemId, reply) => {
+      setPost((s) => ({
+        ...s,
+        replies: {
+          ...(s?.replies ?? {}),
+          [feedItemId]: reply,
+        },
+      }));
+    },
+    [setPost],
+  );
 
-  const setReply = (feedItemId, reply) => {
-    setPost((s) => ({
-      ...s,
-      replies: {
-        ...(s?.replies ?? {}),
-        [feedItemId]: reply,
-      },
-    }));
-  };
+  const addReply = React.useCallback(
+    (feedItemId) => {
+      if (Object.keys(post?.replies ?? {}).includes(feedItemId)) return;
+      setReply(feedItemId, "");
+    },
+    [post, setReply],
+  );
 
   const deleteReply = (feedItemId) => {
     setPost((s) => {
@@ -37,29 +43,20 @@ const useCachedPost = (cacheId, { searchParams }) => {
     });
   };
 
-  const addRepost = (feedItemId) => {
-    setPost((s) => {
-      const currentReposts = s?.reposts ?? [];
-      if (currentReposts.includes(feedItemId)) return s;
-      return {
-        ...s,
-        reposts: [...currentReposts, feedItemId],
-      };
-    });
-  };
-
-  const addRepostWithSupport = (feedItemId, support) => {
-    setPost((s) => {
-      const currentReposts = s?.reposts ?? [];
-      if (currentReposts.includes(feedItemId)) return s;
-
-      return {
-        ...s,
-        reposts: [...(s?.reposts ?? []), feedItemId],
-        support: support ?? s?.support,
-      };
-    });
-  };
+  const addRepost = React.useCallback(
+    (feedItemId, { support }) => {
+      setPost((s) => {
+        const currentReposts = s?.reposts ?? [];
+        if (currentReposts.includes(feedItemId)) return s;
+        return {
+          ...s,
+          reposts: [...currentReposts, feedItemId],
+          support: support ?? s?.support,
+        };
+      });
+    },
+    [setPost],
+  );
 
   const deleteRepost = (feedItemId) => {
     setPost((s) => ({
@@ -82,7 +79,7 @@ const useCachedPost = (cacheId, { searchParams }) => {
     if (repostTarget) addRepost(repostTarget);
 
     urlInitRef.current = false;
-  }, [searchParams, post, setPost]);
+  }, [searchParams, addReply, addRepost, isInitialized]);
 
   const { comment = "", support, replies, reposts } = post ?? {};
 
@@ -95,7 +92,6 @@ const useCachedPost = (cacheId, { searchParams }) => {
       addReply,
       deleteReply,
       addRepost,
-      addRepostWithSupport,
       deleteRepost,
       clearPost,
     },

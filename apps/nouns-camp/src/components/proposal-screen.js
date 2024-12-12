@@ -199,17 +199,20 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       setReply,
       deleteReply,
       addRepost,
-      addRepostWithSupport,
       deleteRepost,
       clearPost,
     },
   ] = useCachedPost(`vwr:p:${proposalId}`, { searchParams });
 
   React.useEffect(() => {
-    if (proposal == null) return;
     if (isFinalOrSucceededState && pendingComment && pendingSupport === null)
       setPendingSupport(2);
-  }, [isFinalOrSucceededState, setPendingSupport]);
+  }, [
+    isFinalOrSucceededState,
+    setPendingSupport,
+    pendingComment,
+    pendingSupport,
+  ]);
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (currentFormAction === "farcaster-comment") return [];
@@ -303,7 +306,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
           ? targetPost.support
           : undefined;
 
-      addRepostWithSupport(postId, targetSupport);
+      addRepost(postId, { support: targetSupport });
 
       const input = proposalActionInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -313,7 +316,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         input.selectionEnd = 0;
       }, 0);
     },
-    [feedItems, pendingSupport, setPendingSupport, addRepost],
+    [feedItems, pendingSupport, addRepost],
   );
 
   const cancelRepost = (id) => {
