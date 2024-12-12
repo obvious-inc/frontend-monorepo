@@ -185,12 +185,6 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       ? formActionOverride
       : defaultFormAction;
 
-  const urlReplyTargetId = searchParams.get("reply-target");
-  const urlReplyRef = React.useRef(true);
-
-  const urlRepostTargetId = searchParams.get("repost-target");
-  const urlRepostRef = React.useRef(true);
-
   const [
     {
       comment: pendingComment,
@@ -208,42 +202,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       deleteRepost,
       clearPost,
     },
-  ] = useCachedPost(`vwr:${proposalId}`, {
-    comment: "",
-    support: isFinalOrSucceededState ? 2 : null,
-    replies: null,
-    reposts: null,
+  ] = useCachedPost(`vwr:p:${proposalId}`, {
+    initialState: {
+      support: isFinalOrSucceededState ? 2 : null,
+    },
+    searchParams,
   });
-
-  // add reply/repost from search params only once
-  React.useEffect(() => {
-    if (
-      urlReplyRef.current &&
-      urlReplyTargetId &&
-      addReply &&
-      pendingReplies !== undefined
-    ) {
-      addReply(urlReplyTargetId, "");
-      urlReplyRef.current = false;
-    }
-
-    if (
-      urlRepostRef.current &&
-      urlRepostTargetId &&
-      addRepost &&
-      pendingReposts !== undefined
-    ) {
-      addRepost(urlRepostTargetId);
-      urlRepostRef.current = false;
-    }
-  }, [
-    urlReplyTargetId,
-    urlRepostTargetId,
-    addReply,
-    addRepost,
-    pendingReplies,
-    pendingReposts,
-  ]);
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (currentFormAction === "farcaster-comment") return [];

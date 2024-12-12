@@ -1,7 +1,15 @@
+import React from "react";
 import { useCachedState } from "@shades/common/app";
 
-const useCachedPost = (cacheId, initialState) => {
-  const [post, setPost] = useCachedState(cacheId, initialState);
+const useCachedPost = (cacheId, { initialState, searchParams }) => {
+  const [post, setPost] = useCachedState(cacheId, {
+    comment: initialState?.comment ?? "",
+    support: initialState?.support ?? null,
+    replies: initialState?.replies ?? {},
+    reposts: initialState?.reposts ?? [],
+  });
+
+  const urlInitRef = React.useRef(true);
 
   const setComment = (comment) => setPost((s) => ({ ...s, comment }));
   const setSupport = (support) => setPost((s) => ({ ...s, support }));
@@ -47,6 +55,34 @@ const useCachedPost = (cacheId, initialState) => {
   };
 
   const clearPost = () => setPost(null);
+
+  // add reply/repost from search params only once
+  React.useEffect(() => {
+    // post not fetched from cache yet
+    if (post === undefined) return;
+
+    if (!urlInitRef.current) return;
+
+    const replyTarget = searchParams.get("reply-target");
+    const repostTarget = searchParams.get("repost-target");
+
+    if (replyTarget)
+      setPost((s) => ({
+        ...s,
+        replies: {
+          ...(s?.replies ?? {}),
+          [replyTarget]: "",
+        },
+      }));
+
+    if (repostTarget)
+      setPost((s) => ({
+        ...s,
+        reposts: [...(s?.reposts ?? []), repostTarget],
+      }));
+
+    urlInitRef.current = false;
+  }, [searchParams, post, setPost]);
 
   const { comment = "", support, replies, reposts } = post ?? {};
 
