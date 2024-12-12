@@ -168,6 +168,7 @@ const ProposalCandidateScreenContent = ({
       setReply,
       deleteReply,
       addRepost,
+      addRepostWithSupport,
       deleteRepost,
       clearPost,
     },
@@ -254,14 +255,13 @@ const ProposalCandidateScreenContent = ({
 
   const onRepost = React.useCallback(
     (postId) => {
-      addRepost(postId);
-
       const targetPost = feedItems.find((i) => i.id === postId);
+      const targetSupport =
+        !pendingSupport && targetPost?.support !== undefined
+          ? targetPost.support
+          : undefined;
 
-      if (targetPost != null) {
-        if (pendingSupport) return;
-        setPendingSupport(targetPost.support);
-      }
+      addRepostWithSupport(postId, targetSupport);
 
       const input = actionFormInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });
