@@ -204,6 +204,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     },
   ] = useCachedPost(`vwr:p:${proposalId}`, { searchParams });
 
+  // for finalized props, default to 'no signal' comments
   React.useEffect(() => {
     if (isFinalOrSucceededState && pendingComment && pendingSupport === null)
       setPendingSupport(2);
