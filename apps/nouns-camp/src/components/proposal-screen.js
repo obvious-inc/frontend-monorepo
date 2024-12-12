@@ -199,6 +199,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       setReply,
       deleteReply,
       addRepost,
+      addRepostWithSupport,
       deleteRepost,
       clearPost,
     },
@@ -275,7 +276,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const onReply = React.useCallback(
     (postId) => {
-      addReply(postId, "");
+      addReply(postId);
 
       const input = proposalActionInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -295,14 +296,13 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const onRepost = React.useCallback(
     (postId) => {
-      addRepost(postId);
-
       const targetPost = feedItems.find((i) => i.id === postId);
+      const targetSupport =
+        !pendingSupport && targetPost?.support !== undefined
+          ? targetPost.support
+          : undefined;
 
-      if (targetPost != null) {
-        if (pendingSupport) return;
-        setPendingSupport(targetPost.support);
-      }
+      addRepostWithSupport(postId, targetSupport);
 
       const input = proposalActionInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });

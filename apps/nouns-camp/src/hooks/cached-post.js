@@ -2,7 +2,7 @@ import React from "react";
 import { useCachedState } from "@shades/common/app";
 
 const useCachedPost = (cacheId, { initialState, searchParams }) => {
-  const [post, setPost] = useCachedState(cacheId, {
+  const [post, setPost, { isInitialized }] = useCachedState(cacheId, {
     comment: initialState?.comment ?? "",
     support: initialState?.support ?? null,
     replies: initialState?.replies ?? {},
@@ -47,6 +47,20 @@ const useCachedPost = (cacheId, { initialState, searchParams }) => {
       };
     });
   };
+
+  const addRepostWithSupport = (feedItemId, support) => {
+    setPost((s) => {
+      const currentReposts = s?.reposts ?? [];
+      if (currentReposts.includes(feedItemId)) return s;
+
+      return {
+        ...s,
+        reposts: [...(s?.reposts ?? []), feedItemId],
+        support: support ?? s?.support,
+      };
+    });
+  };
+
   const deleteRepost = (feedItemId) => {
     setPost((s) => ({
       ...s,
@@ -58,28 +72,14 @@ const useCachedPost = (cacheId, { initialState, searchParams }) => {
 
   // add reply/repost from search params only once
   React.useEffect(() => {
-    // post not fetched from cache yet
-    if (post === undefined) return;
-
+    if (!isInitialized) return;
     if (!urlInitRef.current) return;
 
     const replyTarget = searchParams.get("reply-target");
     const repostTarget = searchParams.get("repost-target");
 
-    if (replyTarget)
-      setPost((s) => ({
-        ...s,
-        replies: {
-          ...(s?.replies ?? {}),
-          [replyTarget]: "",
-        },
-      }));
-
-    if (repostTarget)
-      setPost((s) => ({
-        ...s,
-        reposts: [...(s?.reposts ?? []), repostTarget],
-      }));
+    if (replyTarget) addReply(replyTarget);
+    if (repostTarget) addRepost(repostTarget);
 
     urlInitRef.current = false;
   }, [searchParams, post, setPost]);
@@ -95,6 +95,7 @@ const useCachedPost = (cacheId, { initialState, searchParams }) => {
       addReply,
       deleteReply,
       addRepost,
+      addRepostWithSupport,
       deleteRepost,
       clearPost,
     },
