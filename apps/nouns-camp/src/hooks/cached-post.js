@@ -1,12 +1,12 @@
 import React from "react";
 import { useCachedState } from "@shades/common/app";
 
-const useCachedPost = (cacheId, { initialState, searchParams }) => {
+const useCachedPost = (cacheId, { searchParams }) => {
   const [post, setPost, { isInitialized }] = useCachedState(cacheId, {
-    comment: initialState?.comment ?? "",
-    support: initialState?.support ?? null,
-    replies: initialState?.replies ?? {},
-    reposts: initialState?.reposts ?? [],
+    comment: "",
+    support: null,
+    replies: {},
+    reposts: [],
   });
 
   const urlInitRef = React.useRef(true);

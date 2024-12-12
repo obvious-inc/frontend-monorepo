@@ -203,12 +203,13 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       deleteRepost,
       clearPost,
     },
-  ] = useCachedPost(`vwr:p:${proposalId}`, {
-    initialState: {
-      support: isFinalOrSucceededState ? 2 : null,
-    },
-    searchParams,
-  });
+  ] = useCachedPost(`vwr:p:${proposalId}`, { searchParams });
+
+  React.useEffect(() => {
+    if (proposal == null) return;
+    if (isFinalOrSucceededState && pendingComment && pendingSupport === null)
+      setPendingSupport(2);
+  }, [isFinalOrSucceededState, setPendingSupport]);
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (currentFormAction === "farcaster-comment") return [];
@@ -298,7 +299,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     (postId) => {
       const targetPost = feedItems.find((i) => i.id === postId);
       const targetSupport =
-        !pendingSupport && targetPost?.support !== undefined
+        pendingSupport === null && targetPost?.support !== undefined
           ? targetPost.support
           : undefined;
 
