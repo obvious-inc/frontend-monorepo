@@ -101,7 +101,7 @@ export const isEqual = (ns1, ns2, options = {}) => {
   // Text nodes
   if (n1.text != null)
     return ["text", "bold", "italic", "strikethrough", "underline"].every(
-      (p) => n1[p] === n2[p]
+      (p) => n1[p] === n2[p],
     );
 
   // The rest is for element nodes
