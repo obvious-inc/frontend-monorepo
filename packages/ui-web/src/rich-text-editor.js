@@ -761,9 +761,7 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.italic) children = <em>{children}</em>;
   if (leaf.strikethrough) children = <s>{children}</s>;
   if (leaf.underline) {
-    children = (
-      <span css={css({ textDecoration: "underline" })}>{children}</span>
-    );
+    children = <span className="underline">{children}</span>;
   }
 
   return <span {...attributes}>{children}</span>;

@@ -248,6 +248,10 @@ export const createCss = (t) => ({
   em: { fontStyle: "italic" },
   strong: { fontWeight: t.text.weights.emphasis },
 
+  ".underline": {
+    textDecoration: "underline",
+  },
+
   // Inline mode
   '&[data-inline="true"]': {
     // All block elements
@@ -309,7 +313,7 @@ const renderLeaf = (l, i) => {
   if (l.strikethrough) children = <s key={i}>{children}</s>;
   if (l.underline)
     children = (
-      <span key={i} css={css({ textDecoration: "underline" })}>
+      <span key={i} className="underline">
         {children}
       </span>
     );
