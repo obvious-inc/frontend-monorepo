@@ -62,6 +62,7 @@ const markHotkeys = {
   "mod+b": "bold",
   "mod+i": "italic",
   "mod+shift+x": "strikethrough",
+  "mod+u": "underline",
 };
 
 const Context = React.createContext();
@@ -1143,7 +1144,6 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
       case "toggle-mark-bold":
       case "toggle-mark-italic":
       case "toggle-mark-strikethrough":
-      case "toggle-mark-underline":
         return (
           <button
             key={action.key}
@@ -1253,12 +1253,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
         !isTouchDevice() && selectedNodeIsTransformable
           ? ["block-transform"]
           : null,
-        [
-          "toggle-mark-bold",
-          "toggle-mark-italic",
-          "toggle-mark-strikethrough",
-          "toggle-mark-underline",
-        ],
+        ["toggle-mark-bold", "toggle-mark-italic", "toggle-mark-strikethrough"],
         isTouchDevice()
           ? ["heading-transform", "quote-transform", "code-block-transform"]
           : null,
