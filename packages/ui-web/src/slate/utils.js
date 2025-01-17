@@ -81,6 +81,7 @@ export const toMessageBlocks = (nodes) => {
         italic: n.children[0]?.italic,
         bold: n.children[0]?.bold,
         strikethrough: n.children[0]?.strikethrough,
+        underline: n.children[0]?.underline,
       };
     if (n.type === "emoji")
       return {
