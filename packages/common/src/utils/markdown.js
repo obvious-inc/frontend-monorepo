@@ -262,6 +262,9 @@ const parseToken = (token, context = {}) => {
     case "em":
       return parseChildren(token, parseToken, { ...context, italic: true });
 
+    case "ins":
+      return parseChildren(token, parseToken, { ...context, underline: true });
+
     case "br":
       return { type: "text", text: "\n" };
 
@@ -284,6 +287,7 @@ const parseToken = (token, context = {}) => {
       if (context?.bold) el.bold = true;
       if (context?.italic) el.italic = true;
       if (context?.strikethrough) el.strikethrough = true;
+      if (context?.underline) el.underline = true;
       return el;
     }
 
@@ -302,6 +306,31 @@ const parseToken = (token, context = {}) => {
       throw new Error(`Unknown token "${token.type}"`);
   }
 };
+
+// https://www.markdownguide.org/hacks/#underline
+const insExtension = {
+  name: "ins",
+  level: "inline",
+  start(src) {
+    return src.indexOf("<ins>");
+  },
+  tokenizer(src) {
+    const match = src.match(/^<ins>(.*?)<\/ins>/);
+
+    if (match) {
+      return {
+        type: "ins",
+        raw: match[0],
+        text: match[1],
+        tokens: [{ type: "text", raw: match[1], text: match[1] }],
+      };
+    }
+
+    return;
+  },
+};
+
+marked.use({ extensions: [insExtension] });
 
 export const toMessageBlocks = (text, { displayImages = true } = {}) => {
   const tokens = marked.lexer(text);

@@ -759,6 +759,11 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.bold) children = <strong>{children}</strong>;
   if (leaf.italic) children = <em>{children}</em>;
   if (leaf.strikethrough) children = <s>{children}</s>;
+  if (leaf.underline) {
+    children = (
+      <span css={css({ textDecoration: "underline" })}>{children}</span>
+    );
+  }
 
   return <span {...attributes}>{children}</span>;
 };
@@ -877,6 +882,13 @@ const toolbarActionsByKey = {
     mark: "strikethrough",
     props: {
       style: { textDecoration: "line-through" },
+    },
+  },
+  "toggle-mark-underline": {
+    icon: "U",
+    mark: "underline",
+    props: {
+      style: { textDecoration: "underline" },
     },
   },
   "insert-link": {
@@ -1131,6 +1143,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
       case "toggle-mark-bold":
       case "toggle-mark-italic":
       case "toggle-mark-strikethrough":
+      case "toggle-mark-underline":
         return (
           <button
             key={action.key}
@@ -1240,7 +1253,12 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
         !isTouchDevice() && selectedNodeIsTransformable
           ? ["block-transform"]
           : null,
-        ["toggle-mark-bold", "toggle-mark-italic", "toggle-mark-strikethrough"],
+        [
+          "toggle-mark-bold",
+          "toggle-mark-italic",
+          "toggle-mark-strikethrough",
+          "toggle-mark-underline",
+        ],
         isTouchDevice()
           ? ["heading-transform", "quote-transform", "code-block-transform"]
           : null,

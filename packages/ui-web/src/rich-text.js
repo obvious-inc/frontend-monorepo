@@ -307,6 +307,12 @@ const renderLeaf = (l, i) => {
   if (l.bold) children = <strong key={i}>{children}</strong>;
   if (l.italic) children = <em key={i}>{children}</em>;
   if (l.strikethrough) children = <s key={i}>{children}</s>;
+  if (l.underline)
+    children = (
+      <span key={i} css={css({ textDecoration: "underline" })}>
+        {children}
+      </span>
+    );
   return <React.Fragment key={i}>{children}</React.Fragment>;
 };
 
