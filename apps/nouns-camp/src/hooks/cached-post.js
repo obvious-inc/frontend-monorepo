@@ -3,7 +3,10 @@ import { useCachedState } from "@shades/common/app";
 
 const cacheKeyNamespace = "post-drafts";
 
-const useCachedPost = (cacheId, { searchParams }) => {
+const useCachedPost = (
+  cacheId,
+  { initialRepostPostId, initialReplyTargetPostId } = {},
+) => {
   const [post, setPost] = useCachedState(cacheId, {
     comment: "",
     support: null,
@@ -11,7 +14,7 @@ const useCachedPost = (cacheId, { searchParams }) => {
     reposts: [],
   });
 
-  const urlInitRef = React.useRef(true);
+  const hasSetInitialStateRef = React.useRef(false);
 
   const setComment = (comment) => setPost((s) => ({ ...s, comment }));
   const setSupport = (support) => setPost((s) => ({ ...s, support }));
@@ -71,16 +74,13 @@ const useCachedPost = (cacheId, { searchParams }) => {
 
   // add reply/repost from search params only once
   React.useEffect(() => {
-    if (!urlInitRef.current) return;
+    if (hasSetInitialStateRef.current) return;
 
-    const replyTarget = searchParams.get("reply-target");
-    const repostTarget = searchParams.get("repost-target");
+    if (initialRepostPostId != null) addRepost(initialRepostPostId);
+    if (initialReplyTargetPostId != null) addReply(initialReplyTargetPostId);
 
-    if (replyTarget) addReply(replyTarget);
-    if (repostTarget) addRepost(repostTarget);
-
-    urlInitRef.current = false;
-  }, [searchParams, addReply, addRepost]);
+    hasSetInitialStateRef.current = true;
+  }, [initialRepostPostId, initialReplyTargetPostId, addRepost, addReply]);
 
   const { comment = "", support, replies, reposts } = post ?? {};
 

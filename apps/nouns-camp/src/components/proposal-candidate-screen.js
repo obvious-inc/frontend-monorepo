@@ -171,7 +171,10 @@ const ProposalCandidateScreenContent = ({
       deleteRepost,
       clearPost,
     },
-  ] = useCachedCandidatePost(candidateId, { searchParams });
+  ] = useCachedCandidatePost(candidateId, {
+    initialRepostPostId: searchParams.get("repost-target"),
+    initialReplyTargetPostId: searchParams.get("reply-target"),
+  });
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (formAction === "farcaster-comment") return [];

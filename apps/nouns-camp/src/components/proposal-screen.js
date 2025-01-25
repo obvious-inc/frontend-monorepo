@@ -202,7 +202,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       deleteRepost,
       clearPost,
     },
-  ] = useCachedProposalPost(proposalId, { searchParams });
+  ] = useCachedProposalPost(proposalId, {
+    initialRepostPostId: searchParams.get("repost-target"),
+    initialReplyTargetPostId: searchParams.get("reply-target"),
+  });
 
   // for finalized props, default to 'no signal' comments
   React.useEffect(() => {
