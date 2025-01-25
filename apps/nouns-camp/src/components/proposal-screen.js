@@ -84,7 +84,7 @@ import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import NativeSelect from "./native-select.js";
 import { useDialog } from "@/hooks/global-dialogs.js";
 import useScrollToElement from "@/hooks/scroll-to-element.js";
-import useCachedPost from "@/hooks/cached-post.js";
+import { useCachedProposalPost } from "@/hooks/cached-post.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -202,7 +202,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       deleteRepost,
       clearPost,
     },
-  ] = useCachedPost(`vwr:p:${proposalId}`, { searchParams });
+  ] = useCachedProposalPost(proposalId, { searchParams });
 
   // for finalized props, default to 'no signal' comments
   React.useEffect(() => {

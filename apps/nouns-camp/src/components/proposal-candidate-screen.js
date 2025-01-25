@@ -72,7 +72,7 @@ import TransactionList from "./transaction-list.js";
 import DiffBlock from "./diff-block.js";
 import { useProposalCandidateSimulation } from "../hooks/simulation.js";
 import useScrollToElement from "@/hooks/scroll-to-element.js";
-import useCachedPost from "@/hooks/cached-post.js";
+import { useCachedCandidatePost } from "@/hooks/cached-post.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -171,7 +171,7 @@ const ProposalCandidateScreenContent = ({
       deleteRepost,
       clearPost,
     },
-  ] = useCachedPost(`vwr:c:${candidateId}`, { searchParams });
+  ] = useCachedCandidatePost(candidateId, { searchParams });
 
   const replyTargetFeedItems = React.useMemo(() => {
     if (formAction === "farcaster-comment") return [];

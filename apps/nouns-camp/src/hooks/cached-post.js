@@ -1,6 +1,8 @@
 import React from "react";
 import { useCachedState } from "@shades/common/app";
 
+const cacheKeyNamespace = "post-drafts";
+
 const useCachedPost = (cacheId, { searchParams }) => {
   const [post, setPost] = useCachedState(cacheId, {
     comment: "",
@@ -44,7 +46,7 @@ const useCachedPost = (cacheId, { searchParams }) => {
   };
 
   const addRepost = React.useCallback(
-    (feedItemId, { support }) => {
+    (feedItemId, { support } = {}) => {
       setPost((s) => {
         const currentReposts = s?.reposts ?? [];
         if (currentReposts.includes(feedItemId)) return s;
@@ -97,4 +99,12 @@ const useCachedPost = (cacheId, { searchParams }) => {
   ];
 };
 
-export default useCachedPost;
+export const useCachedProposalPost = (proposalId, opts) => {
+  const cacheKey = [cacheKeyNamespace, "proposals", proposalId].join(":");
+  return useCachedPost(cacheKey, opts);
+};
+
+export const useCachedCandidatePost = (candidateId, opts) => {
+  const cacheKey = [cacheKeyNamespace, "candidates", candidateId].join(":");
+  return useCachedPost(cacheKey, opts);
+};
