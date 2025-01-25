@@ -3,16 +3,18 @@ import { useCachedState } from "@shades/common/app";
 
 const cacheKeyNamespace = "post-drafts";
 
+const emptyPost = {
+  comment: "",
+  support: null,
+  replies: {},
+  reposts: [],
+};
+
 const useCachedPost = (
   cacheId,
   { initialRepostPostId, initialReplyTargetPostId } = {},
 ) => {
-  const [post, setPost] = useCachedState(cacheId, {
-    comment: "",
-    support: null,
-    replies: {},
-    reposts: [],
-  });
+  const [post, setPost] = useCachedState(cacheId, emptyPost);
 
   const hasSetInitialStateRef = React.useRef(false);
 
@@ -23,10 +25,7 @@ const useCachedPost = (
     (feedItemId, reply) => {
       setPost((s) => ({
         ...s,
-        replies: {
-          ...(s?.replies ?? {}),
-          [feedItemId]: reply,
-        },
+        replies: { ...s.replies, [feedItemId]: reply },
       }));
     },
     [setPost],
@@ -34,15 +33,20 @@ const useCachedPost = (
 
   const addReply = React.useCallback(
     (feedItemId) => {
-      if (Object.keys(post?.replies ?? {}).includes(feedItemId)) return;
-      setReply(feedItemId, "");
+      setPost((s) => {
+        if (s.replies[feedItemId] != null) return s;
+        return {
+          ...s,
+          replies: { ...s.replies, [feedItemId]: "" },
+        };
+      });
     },
-    [post, setReply],
+    [setPost],
   );
 
   const deleteReply = (feedItemId) => {
     setPost((s) => {
-      const replies = { ...(s?.replies ?? {}) };
+      const replies = { ...s.replies };
       delete replies[feedItemId];
       return { ...s, replies };
     });
@@ -51,12 +55,11 @@ const useCachedPost = (
   const addRepost = React.useCallback(
     (feedItemId, { support } = {}) => {
       setPost((s) => {
-        const currentReposts = s?.reposts ?? [];
-        if (currentReposts.includes(feedItemId)) return s;
+        if (s.reposts.includes(feedItemId)) return s;
         return {
           ...s,
-          reposts: [...currentReposts, feedItemId],
-          support: support ?? s?.support,
+          reposts: [...s.reposts, feedItemId],
+          support: support ?? s.support,
         };
       });
     },
@@ -66,11 +69,11 @@ const useCachedPost = (
   const deleteRepost = (feedItemId) => {
     setPost((s) => ({
       ...s,
-      reposts: (s?.reposts ?? []).filter((id) => id !== feedItemId),
+      reposts: s.reposts.filter((id) => id !== feedItemId),
     }));
   };
 
-  const clearPost = () => setPost(null);
+  const clearPost = () => setPost(emptyPost);
 
   // add reply/repost from search params only once
   React.useEffect(() => {
@@ -82,7 +85,7 @@ const useCachedPost = (
     hasSetInitialStateRef.current = true;
   }, [initialRepostPostId, initialReplyTargetPostId, addRepost, addReply]);
 
-  const { comment = "", support, replies, reposts } = post ?? {};
+  const { comment = "", support, replies = [], reposts = [] } = post;
 
   return [
     { comment, support, replies, reposts },
