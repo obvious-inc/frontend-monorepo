@@ -70,17 +70,15 @@ const migrateStore = (state) => {
 };
 
 const useStore = (accountAddress) => {
-  const [state, setState_, meta] = useCachedState(
+  const [state, setState_] = useCachedState(
     createCacheKey(accountAddress),
     { schema: SCHEMA_VERSION, entriesById: {} },
-    {
-      middleware: migrateStore,
-    },
+    { middleware: migrateStore },
   );
 
   const setState = React.useCallback(
-    async (state) => {
-      await setState_((currentState) => {
+    (state) => {
+      setState_((currentState) => {
         const newState =
           typeof state === "function" ? state(currentState) : state;
         return { ...currentState, ...newState };
@@ -89,23 +87,21 @@ const useStore = (accountAddress) => {
     [setState_],
   );
 
-  return [state ?? {}, setState, meta];
+  return [state, setState];
 };
 
 export const useCollection = () => {
   const { address: connectedAccountAddress } = useAccount();
 
-  const [state, setState, { isInitialized }] = useStore(
-    connectedAccountAddress,
-  );
+  const [state, setState] = useStore(connectedAccountAddress);
 
   const { entriesById } = state;
 
   const items = entriesById == null ? [] : Object.values(entriesById);
 
-  const createItem = React.useCallback(async () => {
+  const createItem = React.useCallback(() => {
     const item = createEmptyItem();
-    await setState((state) => ({
+    setState((state) => ({
       entriesById: {
         ...state.entriesById,
         [item.id]: item,
@@ -115,15 +111,13 @@ export const useCollection = () => {
   }, [setState]);
 
   const deleteItem = React.useCallback(
-    async (id) => {
-      await setState((state) => ({
+    (id) => {
+      setState((state) => ({
         entriesById: omitKey(id, state.entriesById),
       }));
     },
     [setState],
   );
-
-  if (!isInitialized) return { items };
 
   return { items, createItem, deleteItem };
 };
@@ -131,9 +125,7 @@ export const useCollection = () => {
 export const useSingleItem = (id) => {
   const { address: connectedAccountAddress } = useAccount();
 
-  const [state, setState, { isInitialized }] = useStore(
-    connectedAccountAddress,
-  );
+  const [state, setState] = useStore(connectedAccountAddress);
 
   const { entriesById } = state;
 
@@ -174,9 +166,7 @@ export const useSingleItem = (id) => {
     [id, setState],
   );
 
-  if (!isInitialized) return [undefined, {}];
-
-  const item = entriesById?.[id] ?? null;
+  const item = entriesById[id] ?? null;
 
   return [
     item,

@@ -469,17 +469,13 @@ export default ({
 
       // TODO: Extract recent emoji cache into its own thing
       if (cacheStore != null) {
-        cacheStore.readAsync("recent-emoji").then((cachedEmoji) => {
-          cacheStore.write(
-            "recent-emoji",
-            cachedEmoji == null
-              ? [emoji]
-              : [emoji, ...cachedEmoji.filter((e) => e !== emoji)].slice(
-                  0,
-                  100,
-                ),
-          );
-        });
+        const cachedEmoji = cacheStore.read("recent-emoji");
+        cacheStore.write(
+          "recent-emoji",
+          cachedEmoji == null
+            ? [emoji]
+            : [emoji, ...cachedEmoji.filter((e) => e !== emoji)].slice(0, 100),
+        );
       }
 
       // TODO: Undo the optimistic update if the request fails
