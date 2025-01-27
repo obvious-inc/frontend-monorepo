@@ -2,7 +2,7 @@ import React from "react";
 import { useCachedState } from "@shades/common/app";
 
 const useCachedPost = (cacheId, { searchParams }) => {
-  const [post, setPost, { isInitialized }] = useCachedState(cacheId, {
+  const [post, setPost] = useCachedState(cacheId, {
     comment: "",
     support: null,
     replies: {},
@@ -69,7 +69,6 @@ const useCachedPost = (cacheId, { searchParams }) => {
 
   // add reply/repost from search params only once
   React.useEffect(() => {
-    if (!isInitialized) return;
     if (!urlInitRef.current) return;
 
     const replyTarget = searchParams.get("reply-target");
@@ -79,7 +78,7 @@ const useCachedPost = (cacheId, { searchParams }) => {
     if (repostTarget) addRepost(repostTarget);
 
     urlInitRef.current = false;
-  }, [searchParams, addReply, addRepost, isInitialized]);
+  }, [searchParams, addReply, addRepost]);
 
   const { comment = "", support, replies, reposts } = post ?? {};
 
