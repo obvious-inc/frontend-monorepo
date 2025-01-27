@@ -79,7 +79,9 @@ export const useCachedState = (key, initialState, { middleware } = {}) => {
   const setState = React.useCallback(
     (updater) => {
       const valueToStore =
-        updater instanceof Function ? updater(parse(getSnapshot())) : updater;
+        updater instanceof Function
+          ? updater(parse(getSnapshot()) ?? initialStateRef.current)
+          : updater;
       store.write(key, serialize(valueToStore));
     },
     [store, key, getSnapshot, parse, serialize],
