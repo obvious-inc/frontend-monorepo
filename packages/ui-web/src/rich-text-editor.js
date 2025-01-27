@@ -62,6 +62,7 @@ const markHotkeys = {
   "mod+b": "bold",
   "mod+i": "italic",
   "mod+shift+x": "strikethrough",
+  "mod+u": "underline",
 };
 
 const Context = React.createContext();
@@ -759,6 +760,9 @@ const Leaf = ({ attributes, children, leaf }) => {
   if (leaf.bold) children = <strong>{children}</strong>;
   if (leaf.italic) children = <em>{children}</em>;
   if (leaf.strikethrough) children = <s>{children}</s>;
+  if (leaf.underline) {
+    children = <span className="underline">{children}</span>;
+  }
 
   return <span {...attributes}>{children}</span>;
 };
@@ -877,6 +881,13 @@ const toolbarActionsByKey = {
     mark: "strikethrough",
     props: {
       style: { textDecoration: "line-through" },
+    },
+  },
+  "toggle-mark-underline": {
+    icon: "U",
+    mark: "underline",
+    props: {
+      style: { textDecoration: "underline" },
     },
   },
   "insert-link": {

@@ -371,12 +371,11 @@ const LAST_VISITED_PATHNAME_CACHE_KEY = "last-visited-pathname";
 
 const useLocationRestorer = (callback) => {
   const location = useLocation();
-  const { writeAsync: cacheWrite, readAsync: cacheRead } = useCacheStore();
+  const { write: cacheWrite, read: cacheRead } = useCacheStore();
 
   useEffectOnce(() => {
-    cacheRead(LAST_VISITED_PATHNAME_CACHE_KEY).then((pathname) => {
-      callback(pathname);
-    });
+    const pathname = cacheRead(LAST_VISITED_PATHNAME_CACHE_KEY);
+    callback(pathname);
   });
 
   React.useEffect(() => {

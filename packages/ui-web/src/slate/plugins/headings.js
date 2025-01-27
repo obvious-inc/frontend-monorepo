@@ -63,8 +63,13 @@ const middleware = (editor) => {
       }
 
       // No marks
-      if (childNode.italic || childNode.bold || childNode.strikethrough) {
-        editor.unsetNodes(["italic", "bold", "strikethrough"], {
+      if (
+        childNode.italic ||
+        childNode.bold ||
+        childNode.strikethrough ||
+        childNode.underline
+      ) {
+        editor.unsetNodes(["italic", "bold", "strikethrough", "underline"], {
           at: childPath,
         });
         return;
