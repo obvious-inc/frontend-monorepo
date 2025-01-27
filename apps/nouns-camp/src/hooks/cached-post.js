@@ -53,13 +53,12 @@ const useCachedPost = (
   };
 
   const addRepost = React.useCallback(
-    (feedItemId, { support } = {}) => {
+    (feedItemId) => {
       setPost((s) => {
         if (s.reposts.includes(feedItemId)) return s;
         return {
           ...s,
           reposts: [...s.reposts, feedItemId],
-          support: support ?? s.support,
         };
       });
     },

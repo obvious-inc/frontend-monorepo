@@ -304,13 +304,12 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const onRepost = React.useCallback(
     (postId) => {
-      const targetPost = feedItems.find((i) => i.id === postId);
-      const targetSupport =
-        pendingSupport === null && targetPost?.support !== undefined
-          ? targetPost.support
-          : undefined;
+      addRepost(postId);
 
-      addRepost(postId, { support: targetSupport });
+      if (pendingSupport == null) {
+        const targetPost = feedItems.find((i) => i.id === postId);
+        setPendingSupport(targetPost.support);
+      }
 
       const input = proposalActionInputRef.current;
       input.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -320,7 +319,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         input.selectionEnd = 0;
       }, 0);
     },
-    [feedItems, pendingSupport, addRepost],
+    [feedItems, pendingSupport, addRepost, setPendingSupport],
   );
 
   const cancelRepost = (id) => {
