@@ -84,7 +84,12 @@ const useCachedPost = (
     hasSetInitialStateRef.current = true;
   }, [initialRepostPostId, initialReplyTargetPostId, addRepost, addReply]);
 
-  const { comment = "", support, replies = [], reposts = [] } = post;
+  // if post is empty, remove it from cache
+  React.useEffect(() => {
+    if (JSON.stringify(post) == JSON.stringify(emptyPost)) setPost();
+  }, [post, setPost]);
+
+  const { comment = "", support, replies = [], reposts = [] } = post ?? {};
 
   return [
     { comment, support, replies, reposts },
