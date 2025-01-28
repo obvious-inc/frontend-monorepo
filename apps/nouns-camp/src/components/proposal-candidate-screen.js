@@ -179,9 +179,11 @@ const ProposalCandidateScreenContent = ({
   const replyTargetFeedItems = React.useMemo(() => {
     if (formAction === "farcaster-comment") return [];
     const pendingReplyTargetFeedItemIds = Object.keys(pendingReplies ?? {});
-    return pendingReplyTargetFeedItemIds.map((targetFeedItemId) =>
-      feedItems.find((i) => i.id === targetFeedItemId),
-    );
+    return pendingReplyTargetFeedItemIds
+      .map((targetFeedItemId) =>
+        feedItems.find((i) => i.id === targetFeedItemId),
+      )
+      .filter(Boolean);
   }, [formAction, feedItems, pendingReplies]);
 
   const repostTargetFeedItems = React.useMemo(() => {
