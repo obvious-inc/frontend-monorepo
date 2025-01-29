@@ -35,6 +35,7 @@ export const Provider = ({ children }) => {
     fidsByEthAddress: {},
     castHashesByProposalId: {},
     castHashesByCandidateId: {},
+    castHashesByParentHash: {},
   });
 
   const contextValue = React.useMemo(
@@ -273,6 +274,7 @@ export const useCastConversation = (
       const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
       const parseCast = (cast) => ({
         ...cast,
+        replies: cast.replies.map(parseCast),
         account: accountsByFid[cast.fid],
       });
       return casts.map(parseCast);
@@ -433,6 +435,42 @@ export const useSubmitCandidateCast = (candidateId) => {
       }));
     },
     [setState, candidateId],
+  );
+};
+
+export const useSubmitCastReply = () => {
+  const { setState } = React.useContext(Context);
+
+  return React.useCallback(
+    async ({ text, fid, targetCastId }) => {
+      const response = await fetch("/api/farcaster-replies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, fid, targetCastId }),
+      });
+
+      if (!response.ok) {
+        console.error(await response.text());
+        alert("Ops, looks like something went wrong!");
+        return; // TODO
+      }
+
+      const cast = await response.json();
+
+      setState((s) => ({
+        ...s,
+        accountsByFid: { ...s.accountsByFid, [cast.fid]: cast.account },
+        castsByHash: { ...s.castsByHash, [cast.hash]: cast },
+        castHashesByParentHash: {
+          ...s.castHashesByParentHash,
+          [targetCastId.hash]: [
+            ...(s.castHashesByParentHash[targetCastId.hash] ?? []),
+            cast.hash,
+          ],
+        },
+      }));
+    },
+    [setState],
   );
 };
 

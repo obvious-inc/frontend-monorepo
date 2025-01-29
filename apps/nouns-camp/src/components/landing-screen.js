@@ -1077,10 +1077,7 @@ const Feed = React.memo(() => {
   });
 
   return (
-    <div
-      css={css({ transition: "0.2s ease-out opacity" })}
-      style={{ opacity: feedItems.length > 0 ? 1 : 0 }}
-    >
+    <div css={css({ transition: "0.2s ease-out opacity" })}>
       <React.Suspense fallback={null}>
         <div css={css({ margin: "0 0 2rem" })}>
           <FeedFilterMenu
@@ -1103,10 +1100,7 @@ const FeedTabContent = React.memo(() => {
   });
 
   return (
-    <div
-      css={css({ transition: "0.2s ease-out opacity", padding: "2rem 0" })}
-      style={{ opacity: feedItems.length === 0 ? 0 : 1 }}
-    >
+    <div css={css({ transition: "0.2s ease-out opacity", padding: "2rem 0" })}>
       <React.Suspense fallback={null}>
         <div css={css({ margin: "0 0 2.8rem" })}>
           <FeedFilterMenu

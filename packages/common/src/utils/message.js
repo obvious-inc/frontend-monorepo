@@ -100,7 +100,7 @@ export const isEqual = (ns1, ns2, options = {}) => {
 
   // Text nodes
   if (n1.text != null)
-    return ["text", "bold", "italic", "strikethrough"].every(
+    return ["text", "bold", "italic", "strikethrough", "underline"].every(
       (p) => n1[p] === n2[p],
     );
 
@@ -212,6 +212,7 @@ export const stringifyBlocks = (
     if (l.bold) text = `*${text}*`;
     if (l.italic) text = `_${text}_`;
     if (l.strikethrough) text = `~${text}~`;
+    if (l.underline) text = `<ins>${text}</ins>`;
     return text;
   };
 
@@ -333,6 +334,7 @@ export const toMarkdown = (blockElements) => {
       let isBold = false;
       let isItalic = false;
       let isStrikethrough = false;
+      let isUnderline = false;
 
       for (const [index, node] of el.children.entries()) {
         const isLast = index === el.children.length - 1;
@@ -361,6 +363,11 @@ export const toMarkdown = (blockElements) => {
           children += "**";
           isBold = true;
         }
+        if (!isUnderline && node.underline) {
+          // Start underline
+          children += "<ins>";
+          isUnderline = true;
+        }
 
         children += renderedNode.trim();
 
@@ -378,6 +385,12 @@ export const toMarkdown = (blockElements) => {
           // End strikethrough
           children += "~~";
           isStrikethrough = false;
+        }
+
+        if (isUnderline && (isLast || !nextNode.underline)) {
+          // End underline
+          children += "</ins>";
+          isUnderline = false;
         }
 
         children += "".padStart(trailingSpaces, " ");

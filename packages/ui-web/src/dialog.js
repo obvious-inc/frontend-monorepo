@@ -171,17 +171,18 @@ const ModalDialog = React.forwardRef(
       if (!isOpen) return;
       if (variant !== "snap-tray") return;
 
-      const close = () => {
+      const requestClose = () => {
+        let didClose = false;
+        const close = () => {
+          if (didClose) return;
+          closeRef.current();
+          didClose = true;
+          setClosing(false);
+        };
         el.dataset.closing = "true";
-        el.addEventListener("animationend", () => {
-          closeRef.current();
-          setClosing(false);
-        });
+        el.addEventListener("animationend", close);
         // Fallback
-        setTimeout(() => {
-          closeRef.current();
-          setClosing(false);
-        }, 500);
+        setTimeout(close, 500);
         setClosing(true);
       };
 
@@ -238,7 +239,7 @@ const ModalDialog = React.forwardRef(
             modalRect.top >= window.visualViewport.height / 2;
 
           if (isPastCloseThreshold || (isPastMidStop && velocity > 0.2)) {
-            close();
+            requestClose();
           }
         };
       })();

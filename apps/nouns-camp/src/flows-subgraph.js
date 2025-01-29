@@ -40,7 +40,10 @@ const subgraphFetch = async (query) => {
     body: JSON.stringify({ query }),
   });
   if (response.ok) return response.json();
-  return Promise.reject(new Error(response.statusText));
+
+  // the flows graph is a bit fragile. return nothing instead of
+  // throwing errors, to avoid activity feed not showing up at all.
+  return { data: null };
 };
 
 export const fetchFlowVotes = async (startTimestamp, endTimestamp) => {
@@ -59,7 +62,7 @@ export const fetchFlowVotes = async (startTimestamp, endTimestamp) => {
       }
     }`);
 
-  if (recipientsBody.data?.grants == null) throw new Error("not-found");
+  if (recipientsBody.data?.grants == null) return [];
 
   const recipientIds = recipientsBody.data.grants.items.map((g) => g.id);
 
@@ -82,7 +85,7 @@ export const fetchFlowVotes = async (startTimestamp, endTimestamp) => {
       }
     }`);
 
-  if (body.data?.votes == null) throw new Error("not-found");
+  if (body.data?.votes == null) return [];
 
   return body.data.votes.items.filter((v) => v.recipient.isFlow).map(parseVote);
 };
