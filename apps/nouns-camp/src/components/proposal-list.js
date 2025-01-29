@@ -323,9 +323,9 @@ const ProposalList = ({
               return (
                 <li key={item.id}>
                   {item.type === "draft" ? (
-                    <ProposalDraftListItem draftId={item.id} {...props} />
+                    <DraftListItem draftId={item.id} {...props} />
                   ) : item.slug != null ? (
-                    <CandidateListItem
+                    <CandidateOrTopicListItem
                       candidateId={item.id}
                       showScoreStack={showCandidateScore}
                       {...props}
@@ -546,332 +546,342 @@ const ProposalListItem = React.memo(({ proposalId, sortStrategy }) => {
   );
 });
 
-const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
-  const containerRef = React.useRef();
-  const hasBeenOnScreenRef = React.useRef(false);
+const CandidateOrTopicListItem = React.memo(
+  ({ candidateId, showScoreStack }) => {
+    const containerRef = React.useRef();
+    const hasBeenOnScreenRef = React.useRef(false);
 
-  const candidate = useProposalCandidate(candidateId);
-  const updateTargetProposal = useProposal(
-    candidate.latestVersion.targetProposalId,
-    { watch: false },
-  );
-  const promotedProposal = useProposal(candidate.latestVersion.proposalId, {
-    watch: false,
-  });
-
-  const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
-  const proposalThreshold = useProposalThreshold();
-
-  const isOnScreen = useIsOnScreen(containerRef);
-
-  React.useEffect(() => {
-    if (isOnScreen) hasBeenOnScreenRef.current = true;
-  });
-
-  const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
-
-  const { votes } = getCandidateSignals({ candidate });
-  const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
-    (v) => v.support,
-    votes,
-  );
-  // const commentCount =
-  //   signals.delegates.for +
-  //   signals.delegates.against +
-  //   signals.delegates.abstain;
-
-  const isCanceled = candidate.canceledTimestamp != null;
-  const isPromoted = candidate.latestVersion.proposalId != null;
-  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-  const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
-
-  const hasUpdate =
-    candidate.lastUpdatedTimestamp != null &&
-    candidate.lastUpdatedTimestamp.getTime() !==
-      candidate.createdTimestamp.getTime();
-
-  const feedbackPostsAscending = arrayUtils.sortBy(
-    (p) => p.createdBlock,
-    candidate?.feedbackPosts ?? [],
-  );
-  const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
-
-  const hasFeedback = mostRecentFeedbackPost != null;
-
-  const mostRecentActivity =
-    hasFeedback &&
-    (!hasUpdate ||
-      mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
-      ? "feedback"
-      : hasUpdate
-        ? "update"
-        : "create";
-
-  const feedbackAuthorAccounts = arrayUtils.unique(
-    feedbackPostsAscending.map((p) => p.voterId),
-  );
-
-  const renderProposalUpdateStatusText = () => {
-    if (updateTargetProposal?.signers == null) return "...";
-
-    const validSignatures = getCandidateSponsorSignatures(candidate, {
-      excludeInvalid: true,
-      activeProposerIds: [],
+    const candidate = useProposalCandidate(candidateId);
+    const updateTargetProposal = useProposal(
+      candidate.latestVersion.targetProposalId,
+      { watch: false },
+    );
+    const promotedProposal = useProposal(candidate.latestVersion.proposalId, {
+      watch: false,
     });
 
-    const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+    const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
+    const proposalThreshold = useProposalThreshold();
 
-    const missingSigners = updateTargetProposal.signers.filter((s) => {
-      const signerId = s.id.toLowerCase();
-      return !signerIds.includes(signerId);
+    const isOnScreen = useIsOnScreen(containerRef);
+
+    React.useEffect(() => {
+      if (isOnScreen) hasBeenOnScreenRef.current = true;
     });
 
-    const sponsorCount =
-      updateTargetProposal.signers.length - missingSigners.length;
+    const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
+
+    const { votes } = getCandidateSignals({ candidate });
+    const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
+      (v) => v.support,
+      votes,
+    );
+    // const commentCount =
+    //   signals.delegates.for +
+    //   signals.delegates.against +
+    //   signals.delegates.abstain;
+
+    const isCanceled = candidate.canceledTimestamp != null;
+    const isPromoted = candidate.latestVersion.proposalId != null;
+    const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
+    const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
+    const isTopic = candidate.latestVersion.content.transactions.length === 0;
+
+    const hasUpdate =
+      candidate.lastUpdatedTimestamp != null &&
+      candidate.lastUpdatedTimestamp.getTime() !==
+        candidate.createdTimestamp.getTime();
+
+    const feedbackPostsAscending = arrayUtils.sortBy(
+      (p) => p.createdBlock,
+      candidate?.feedbackPosts ?? [],
+    );
+    const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
+
+    const hasFeedback = mostRecentFeedbackPost != null;
+
+    const mostRecentActivity =
+      hasFeedback &&
+      (!hasUpdate ||
+        mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
+        ? "feedback"
+        : hasUpdate
+          ? "update"
+          : "create";
+
+    const feedbackAuthorAccounts = arrayUtils.unique(
+      feedbackPostsAscending.map((p) => p.voterId),
+    );
+
+    const renderProposalUpdateStatusText = () => {
+      if (updateTargetProposal?.signers == null) return "...";
+
+      const validSignatures = getCandidateSponsorSignatures(candidate, {
+        excludeInvalid: true,
+        activeProposerIds: [],
+      });
+
+      const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+
+      const missingSigners = updateTargetProposal.signers.filter((s) => {
+        const signerId = s.id.toLowerCase();
+        return !signerIds.includes(signerId);
+      });
+
+      const sponsorCount =
+        updateTargetProposal.signers.length - missingSigners.length;
+
+      return (
+        <>
+          {sponsorCount} of {updateTargetProposal.signers.length}{" "}
+          {updateTargetProposal.signers.length === 1 ? "sponsor" : "sponsors"}{" "}
+          signed
+        </>
+      );
+    };
 
     return (
       <>
-        {sponsorCount} of {updateTargetProposal.signers.length}{" "}
-        {updateTargetProposal.signers.length === 1 ? "sponsor" : "sponsors"}{" "}
-        signed
-      </>
-    );
-  };
-
-  return (
-    <>
-      <NextLink
-        className="link"
-        prefetch
-        href={`/candidates/${encodeURIComponent(
-          makeCandidateUrlId(candidateId),
-        )}`}
-      />
-      <div ref={containerRef} className="item-container proposal-candidate">
-        <div className="left-container" data-score={showScoreStack}>
-          {showScoreStack && <div />}
-          <div>
-            <div className="small dimmed nowrap">
-              {isProposalUpdate
-                ? "Proposal update"
-                : `Candidate ${candidate.number}`}{" "}
-              by{" "}
-              <em
-                data-show={hasBeenOnScreen}
-                css={(t) =>
-                  css({
-                    pointerEvents: "all",
-                    fontWeight: t.text.weights.emphasis,
-                    fontStyle: "normal",
-                  })
-                }
-              >
-                {!hasBeenOnScreen ? null : candidate.proposerId == null ? (
-                  "..."
-                ) : (
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={candidate.proposerId}
-                  />
-                )}
-              </em>
-              {!isCanceled && !isPromoted && isProposalThresholdMet && (
-                <span>
-                  <span
-                    role="separator"
-                    aria-orientation="vertical"
-                    css={(t) =>
-                      css({
-                        ":before": {
-                          content: '"–"',
-                          color: t.colors.textMuted,
-                          margin: "0 0.5rem",
-                        },
-                      })
-                    }
-                  />
-                  <i>Sponsor threshold met</i>
-                </span>
-              )}
-            </div>
-            <div
-              className="title"
-              css={css({ margin: "0.1rem 0", position: "relative" })}
-            >
-              {candidate.latestVersion.content.title}
-              {showScoreStack && (
-                <div className="score-container">
-                  <ScoreStack
-                    for={forVotes.length}
-                    against={againstVotes.length}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="status-container">
-              {/* <span data-desktop-only> */}
-              {/*   {commentCount > 0 ? ( */}
-              {/*     <> */}
-              {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
-              {/*         {commentCount} comments */}
-              {/*       </span> */}
-              {/*     </> */}
-              {/*   ) : null} */}
-              {/* </span> */}
-              {(isProposalUpdate || isCanceled) && (
-                <div className="tags-container">
-                  {isProposalUpdate && (
-                    <Tag variant="special" size="large">
-                      Prop {candidate.latestVersion.targetProposalId} update
-                    </Tag>
-                  )}
-                  {isCanceled && (
-                    <Tag variant="error" size="large">
-                      Canceled
-                    </Tag>
-                  )}
-                </div>
-              )}
-              <div className="small dimmed">
-                {isProposalUpdate ? (
-                  renderProposalUpdateStatusText()
-                ) : promotedProposal?.createdTimestamp != null ? (
-                  <>
-                    Promoted to{" "}
-                    <NextLink
-                      className="proposal-link"
-                      href={`/proposals/${candidate.latestVersion.proposalId}`}
-                    >
-                      Prop {candidate.latestVersion.proposalId}
-                    </NextLink>{" "}
-                    <FormattedDateWithTooltip
-                      relativeDayThreshold={5}
-                      capitalize={false}
-                      value={promotedProposal.createdTimestamp}
-                      day="numeric"
-                      month="short"
-                      year={
-                        getDateYear(promotedProposal.createdTimestamp) !==
-                        getDateYear(new Date())
-                          ? "numeric"
-                          : undefined
-                      }
+        <NextLink
+          className="link"
+          prefetch
+          href={
+            isTopic
+              ? `/topics/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
+              : `/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
+          }
+        />
+        <div ref={containerRef} className="item-container proposal-candidate">
+          <div className="left-container" data-score={showScoreStack}>
+            {showScoreStack && <div />}
+            <div>
+              <div className="small dimmed nowrap">
+                {isProposalUpdate
+                  ? "Proposal update"
+                  : isTopic
+                    ? "Topic"
+                    : `Candidate ${candidate.number}`}{" "}
+                by{" "}
+                <em
+                  data-show={hasBeenOnScreen}
+                  css={(t) =>
+                    css({
+                      pointerEvents: "all",
+                      fontWeight: t.text.weights.emphasis,
+                      fontStyle: "normal",
+                    })
+                  }
+                >
+                  {!hasBeenOnScreen ? null : candidate.proposerId == null ? (
+                    "..."
+                  ) : (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={candidate.proposerId}
                     />
-                  </>
-                ) : (
-                  <>
-                    {mostRecentActivity === "update" ? (
-                      <>
-                        Last updated{" "}
-                        <FormattedDateWithTooltip
-                          relativeDayThreshold={5}
-                          capitalize={false}
-                          value={candidate.lastUpdatedTimestamp}
-                          day="numeric"
-                          month="short"
-                          year={
-                            getDateYear(candidate.lastUpdatedTimestamp) !==
-                            getDateYear(new Date())
-                              ? "numeric"
-                              : undefined
-                          }
-                        />
-                      </>
-                    ) : mostRecentActivity === "feedback" ? (
-                      <>
-                        Last comment{" "}
-                        <FormattedDateWithTooltip
-                          relativeDayThreshold={5}
-                          capitalize={false}
-                          value={mostRecentFeedbackPost.createdTimestamp}
-                          day="numeric"
-                          month="short"
-                          year={
-                            getDateYear(
-                              mostRecentFeedbackPost.createdTimestamp,
-                            ) !== getDateYear(new Date())
-                              ? "numeric"
-                              : undefined
-                          }
-                        />
-                      </>
-                    ) : (
-                      <>
-                        Created{" "}
-                        <FormattedDateWithTooltip
-                          relativeDayThreshold={5}
-                          capitalize={false}
-                          value={candidate.createdTimestamp}
-                          day="numeric"
-                          month="short"
-                          year={
-                            getDateYear(candidate.createdTimestamp) !==
-                            getDateYear(new Date())
-                              ? "numeric"
-                              : undefined
-                          }
-                        />
-                      </>
-                    )}
-                  </>
-                )}
+                  )}
+                </em>
+                {!isTopic &&
+                  !isCanceled &&
+                  !isPromoted &&
+                  isProposalThresholdMet && (
+                    <span>
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        css={(t) =>
+                          css({
+                            ":before": {
+                              content: '"–"',
+                              color: t.colors.textMuted,
+                              margin: "0 0.5rem",
+                            },
+                          })
+                        }
+                      />
+                      <i>Sponsor threshold met</i>
+                    </span>
+                  )}
               </div>
               <div
-                data-show={isOnScreen}
-                className="avatar-container narrow-only"
+                className="title"
+                css={css({ margin: "0.1rem 0", position: "relative" })}
               >
-                {feedbackAuthorAccounts
-                  .slice(0, 10)
-                  .map((a) =>
-                    isOnScreen ? (
-                      <AccountAvatar
-                        key={a}
-                        address={a}
-                        size="1.4rem"
-                        borderRadius="0.2rem"
-                        signature="?"
+                {candidate.latestVersion.content.title}
+                {showScoreStack && (
+                  <div className="score-container">
+                    <ScoreStack
+                      for={forVotes.length}
+                      against={againstVotes.length}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="status-container">
+                {/* <span data-desktop-only> */}
+                {/*   {commentCount > 0 ? ( */}
+                {/*     <> */}
+                {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
+                {/*         {commentCount} comments */}
+                {/*       </span> */}
+                {/*     </> */}
+                {/*   ) : null} */}
+                {/* </span> */}
+                {(isProposalUpdate || isCanceled) && (
+                  <div className="tags-container">
+                    {isProposalUpdate && (
+                      <Tag variant="special" size="large">
+                        Prop {candidate.latestVersion.targetProposalId} update
+                      </Tag>
+                    )}
+                    {isCanceled && (
+                      <Tag variant="error" size="large">
+                        {isTopic ? "Closed" : "Canceled"}
+                      </Tag>
+                    )}
+                  </div>
+                )}
+                <div className="small dimmed">
+                  {isProposalUpdate ? (
+                    renderProposalUpdateStatusText()
+                  ) : promotedProposal?.createdTimestamp != null ? (
+                    <>
+                      Promoted to{" "}
+                      <NextLink
+                        className="proposal-link"
+                        href={`/proposals/${candidate.latestVersion.proposalId}`}
+                      >
+                        Prop {candidate.latestVersion.proposalId}
+                      </NextLink>{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={promotedProposal.createdTimestamp}
+                        day="numeric"
+                        month="short"
+                        year={
+                          getDateYear(promotedProposal.createdTimestamp) !==
+                          getDateYear(new Date())
+                            ? "numeric"
+                            : undefined
+                        }
                       />
-                    ) : (
-                      <div
-                        key={a}
-                        data-size="small"
-                        className="avatar-placeholder"
-                      />
-                    ),
+                    </>
+                  ) : (
+                    <>
+                      {mostRecentActivity === "update" ? (
+                        <>
+                          Last updated{" "}
+                          <FormattedDateWithTooltip
+                            relativeDayThreshold={5}
+                            capitalize={false}
+                            value={candidate.lastUpdatedTimestamp}
+                            day="numeric"
+                            month="short"
+                            year={
+                              getDateYear(candidate.lastUpdatedTimestamp) !==
+                              getDateYear(new Date())
+                                ? "numeric"
+                                : undefined
+                            }
+                          />
+                        </>
+                      ) : mostRecentActivity === "feedback" ? (
+                        <>
+                          Last comment{" "}
+                          <FormattedDateWithTooltip
+                            relativeDayThreshold={5}
+                            capitalize={false}
+                            value={mostRecentFeedbackPost.createdTimestamp}
+                            day="numeric"
+                            month="short"
+                            year={
+                              getDateYear(
+                                mostRecentFeedbackPost.createdTimestamp,
+                              ) !== getDateYear(new Date())
+                                ? "numeric"
+                                : undefined
+                            }
+                          />
+                        </>
+                      ) : (
+                        <>
+                          Created{" "}
+                          <FormattedDateWithTooltip
+                            relativeDayThreshold={5}
+                            capitalize={false}
+                            value={candidate.createdTimestamp}
+                            day="numeric"
+                            month="short"
+                            year={
+                              getDateYear(candidate.createdTimestamp) !==
+                              getDateYear(new Date())
+                                ? "numeric"
+                                : undefined
+                            }
+                          />
+                        </>
+                      )}
+                    </>
                   )}
-                {feedbackAuthorAccounts.length > 10 && <>...</>}
+                </div>
+                <div
+                  data-show={isOnScreen}
+                  className="avatar-container narrow-only"
+                >
+                  {feedbackAuthorAccounts
+                    .slice(0, 10)
+                    .map((a) =>
+                      isOnScreen ? (
+                        <AccountAvatar
+                          key={a}
+                          address={a}
+                          size="1.4rem"
+                          borderRadius="0.2rem"
+                          signature="?"
+                        />
+                      ) : (
+                        <div
+                          key={a}
+                          data-size="small"
+                          className="avatar-placeholder"
+                        />
+                      ),
+                    )}
+                  {feedbackAuthorAccounts.length > 10 && <>...</>}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* votingPower > proposalThreshold ? ( */}
-          {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
-          {/* ) : ( */}
-          {/*   <Tag> */}
-          {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
-          {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
-          {/*   </Tag> */}
-          {/* )} */}
+            {/* votingPower > proposalThreshold ? ( */}
+            {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
+            {/* ) : ( */}
+            {/*   <Tag> */}
+            {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
+            {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
+            {/*   </Tag> */}
+            {/* )} */}
+          </div>
+          <div data-show={isOnScreen} className="avatar-container wide-only">
+            {feedbackAuthorAccounts.slice(0, 10).map((a) =>
+              isOnScreen ? (
+                <AccountAvatar
+                  key={a}
+                  address={a}
+                  size="2rem"
+                  // borderRadius="0.2rem"
+                  // signature="?"
+                />
+              ) : (
+                <div key={a} data-size="large" className="avatar-placeholder" />
+              ),
+            )}
+            {feedbackAuthorAccounts.length > 10 && <>...</>}
+          </div>
         </div>
-        <div data-show={isOnScreen} className="avatar-container wide-only">
-          {feedbackAuthorAccounts.slice(0, 10).map((a) =>
-            isOnScreen ? (
-              <AccountAvatar
-                key={a}
-                address={a}
-                size="2rem"
-                // borderRadius="0.2rem"
-                // signature="?"
-              />
-            ) : (
-              <div key={a} data-size="large" className="avatar-placeholder" />
-            ),
-          )}
-          {feedbackAuthorAccounts.length > 10 && <>...</>}
-        </div>
-      </div>
-    </>
-  );
-});
+      </>
+    );
+  },
+);
 
 const AccountListItem = React.memo(
   ({ address: accountAddress, votes: votes_, revoteCount }) => {
@@ -1135,7 +1145,7 @@ const AccountListItem = React.memo(
   },
 );
 
-const ProposalDraftListItem = ({ draftId }) => {
+const DraftListItem = ({ draftId }) => {
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
@@ -1189,11 +1199,7 @@ const ProposalDraftListItem = ({ draftId }) => {
               onAction={(key) => {
                 switch (key) {
                   case "delete": {
-                    if (
-                      !confirm(
-                        "Are you sure you want to delete this proposal draft?",
-                      )
-                    )
+                    if (!confirm("Are you sure you want to delete this draft?"))
                       return;
                     deleteDraft(draftId);
                     break;

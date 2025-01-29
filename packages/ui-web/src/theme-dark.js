@@ -28,7 +28,7 @@ const backgroundLight = "hsl(0 0% 15%)";
 const backgroundLighter = "hsl(0 0% 17%)";
 const backgroundLightest = "hsl(0 0% 23%)";
 
-const backgroundModifierLight = "hsl(0 0% 100% / 1.5%)";
+const backgroundModifierLight = "hsl(0 0% 100% / 2%)";
 const backgroundModifierNormal = "hsl(0, 0%, 100%, 0.055)";
 const backgroundModifierStrong = "hsl(0, 0%, 100%, 0.08)";
 const backgroundModifierContrast = "hsl(0 0% 100% / 26%)";

@@ -87,15 +87,37 @@ const buildVoteAndFeedbackPostFeedItems = ({
 
   const repostingItemsByTargetFeedItemId = items.reduce((acc, item) => {
     if (item.reposts == null || item.reposts.length === 0) return acc;
-    for (const voteOrFeedback of item.reposts) {
-      acc[voteOrFeedback.id] = [...(acc[voteOrFeedback.id] ?? []), item];
+    for (const targetPost of item.reposts) {
+      acc[targetPost.id] = [...(acc[targetPost.id] ?? []), item];
     }
     return acc;
   }, {});
 
+  const replyingItemsByTargetFeedItemId = items.reduce((acc, item) => {
+    if (item.replies == null || item.replies.length === 0) return acc;
+    for (const { target: targetPost, body: replyBody } of item.replies) {
+      acc[targetPost.id] = [
+        ...(acc[targetPost.id] ?? []),
+        { ...item, replyBody },
+      ];
+    }
+    return acc;
+  }, {});
+
+  const getAllReplies = (itemId) => {
+    const directReplies = replyingItemsByTargetFeedItemId[itemId];
+    if (directReplies == null) return [];
+    const indirectReplies = directReplies.flatMap((item) =>
+      getAllReplies(item.id),
+    );
+    return [...directReplies, ...indirectReplies];
+  };
+
   for (const feedItem of items) {
     const repostingItems = repostingItemsByTargetFeedItemId[feedItem.id];
     if (repostingItems?.length > 0) feedItem.repostingItems = repostingItems;
+    const replyingItems = getAllReplies(feedItem.id);
+    if (replyingItems.length > 0) feedItem.replyingItems = replyingItems;
   }
 
   return items;

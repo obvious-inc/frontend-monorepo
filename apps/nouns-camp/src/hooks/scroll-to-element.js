@@ -5,14 +5,16 @@ const useScrollToElement = ({
   enabled = true,
   ...scrollIntoViewOptions
 } = {}) => {
-  const didScrollRef = React.useRef(false);
+  const scrolledToElementRef = React.useRef(null);
 
   React.useEffect(() => {
-    if (!enabled || didScrollRef.current || elementId == null) return;
+    if (!enabled || elementId == null) return;
+    if (scrolledToElementRef.current === elementId) return;
+
     const el = document.getElementById(elementId);
     if (el == null) return;
 
-    didScrollRef.current = true;
+    scrolledToElementRef.current = elementId;
 
     let timeoutHandle;
 
@@ -36,7 +38,7 @@ const useScrollToElement = ({
     return () => {
       document.removeEventListener("scroll", run, true);
       if (timeoutHandle != null) {
-        didScrollRef.current = false;
+        scrolledToElementRef.current = null;
         clearTimeout(timeoutHandle);
       }
     };

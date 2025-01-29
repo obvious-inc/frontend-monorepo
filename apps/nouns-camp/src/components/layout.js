@@ -115,14 +115,37 @@ const Layout = ({
 );
 
 const defaultActions = [
+  // {
+  //   label: "Propose",
+  //   buttonProps: {
+  //     component: NextLink,
+  //     href: "/new",
+  //     prefetch: true,
+  //   },
+  //   desktopOnly: true,
+  // },
   {
-    label: "Propose",
+    type: "dropdown",
+    label: "New",
+    placement: "bottom start",
+    items: [
+      {
+        id: "-",
+        children: [
+          {
+            id: "new-proposal",
+            label: "Proposal",
+          },
+          {
+            id: "new-discussion-topic",
+            label: "Discussion topic",
+          },
+        ],
+      },
+    ],
     buttonProps: {
-      component: NextLink,
-      href: "/new",
-      prefetch: true,
+      iconRight: <CaretDownIcon style={{ width: "0.9rem", height: "auto" }} />,
     },
-    desktopOnly: true,
   },
 ];
 
@@ -141,7 +164,7 @@ const NavBar = ({
     useDialog("auction");
   const { open: openTreasuryDialog } = useDialog("treasury");
   const { open: openAccountDialog } = useDialog("account");
-  const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
+  const { open: openProposalDraftsDialog } = useDialog("drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
   const { open: openStreamsDialog } = useDialog("streams");
   const { open: openSettingsDialog } = useDialog("settings");
@@ -291,10 +314,16 @@ const NavBar = ({
 
   const handleDropDownAction = async (key) => {
     switch (key) {
+      case "new-proposal":
+        navigate("/new");
+        break;
+      case "new-discussion-topic":
+        navigate("/new?topic=1");
+        break;
       case "open-account-dialog":
         openAccountDialog();
         break;
-      case "open-proposal-drafts-dialog":
+      case "open-drafts-dialog":
         openProposalDraftsDialog();
         break;
       case "open-delegation-dialog":
@@ -329,6 +358,9 @@ const NavBar = ({
         break;
       case "navigate-to-candidate-listing":
         navigate("/candidates");
+        break;
+      case "navigate-to-topic-listing":
+        navigate("/topics");
         break;
       case "navigate-to-account-listing":
         navigate("/voters");
@@ -654,6 +686,10 @@ const NavBar = ({
                       label: "Candidates",
                     },
                     {
+                      id: "navigate-to-topic-listing",
+                      label: "Discussion topics",
+                    },
+                    {
                       id: "navigate-to-account-listing",
                       label: "Voters",
                     },
@@ -762,8 +798,8 @@ const NavBar = ({
                           label: "Streams",
                         },
                         {
-                          id: "open-proposal-drafts-dialog",
-                          label: "Proposal drafts",
+                          id: "open-drafts-dialog",
+                          label: "Proposal & topic drafts",
                         },
                         !hasVerifiedFarcasterAccount
                           ? null
@@ -837,7 +873,7 @@ const NavBar = ({
                   <li key={i} role="separator" aria-orientation="vertical" />
                 ) : a.type === "dropdown" ? (
                   <li key={a.key ?? i} data-desktop-only={a.desktopOnly}>
-                    <DropdownMenu.Root placement="bottom">
+                    <DropdownMenu.Root placement={a.placement ?? "bottom"}>
                       <DropdownMenu.Trigger asChild>
                         <Button
                           variant={a.buttonVariant ?? "transparent"}
@@ -899,10 +935,13 @@ export const MainContentContainer = ({
   narrow = false,
   containerHeight,
   sidebarWidth,
+  sidebarGap,
+  pad = true,
   children,
   ...props
 }) => (
   <div
+    data-pad={pad && undefined}
     css={css({
       "@media (min-width: 600px)": {
         margin: "0 auto",
@@ -913,6 +952,7 @@ export const MainContentContainer = ({
       "@media (min-width: 1152px)": {
         padding: "0 8rem",
       },
+      '&[data-pad="false"]': { padding: 0 },
     })}
     style={{
       "--width": narrow ? "92rem" : "134rem",
@@ -928,7 +968,7 @@ export const MainContentContainer = ({
             "@media (min-width: 1152px)": {
               display: "grid",
               gridTemplateColumns: `minmax(0, 1fr) var(--sidebar-width, ${t.sidebarWidth})`,
-              gridGap: "10rem",
+              gridGap: "var(--sidebar-gap, 10rem)",
               "[data-sidebar-content]": {
                 position: "sticky",
                 top: 0,
@@ -944,6 +984,7 @@ export const MainContentContainer = ({
         style={{
           "--container-height": containerHeight,
           "--sidebar-width": sidebarWidth,
+          "--sidebar-gap": sidebarGap,
         }}
       >
         <div>{children}</div>

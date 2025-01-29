@@ -6,6 +6,7 @@ import {
 } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import {
+  isNodeEmpty as isRichTextEditorNodeEmpty,
   toMessageBlocks as richTextToMessageBlocks,
   fromMessageBlocks as messageToRichTextBlocks,
 } from "@shades/ui-web/rich-text-editor";
@@ -20,6 +21,7 @@ import { diffParagraphs } from "../utils/diff.js";
 import { useProposalCandidate } from "../store.js";
 import { useUpdateProposalCandidate } from "../hooks/data-contract.js";
 import ProposalEditor from "./proposal-editor.js";
+import TopicEditor from "./topic-editor.js";
 import {
   PreviewUpdateDialog,
   SubmitUpdateDialog,
@@ -54,12 +56,24 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
 
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(persistedActions);
+  const [actions, setActions] = React.useState(
+    persistedActions.length === 0 ? null : persistedActions,
+  );
+
+  const submitTargetType = actions == null ? "topic" : "proposal";
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
   // const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
+
+  const isTitleEmpty = title.trim() === "";
+  const isBodyEmpty = deferredBody.every(isRichTextEditorNodeEmpty);
+
+  const hasRequiredInput =
+    submitTargetType === "topic"
+      ? !isTitleEmpty && !isBodyEmpty
+      : !isTitleEmpty && !isBodyEmpty && actions.length > 0;
 
   const hasChanges = React.useMemo(() => {
     const hasTitleChanges = title.trim() !== persistedTitle;
@@ -67,7 +81,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     if (hasTitleChanges) return true;
 
     const transactions = unparseTransactions(
-      actions.flatMap((a) => resolveActionTransactions(a)),
+      actions?.flatMap((a) => resolveActionTransactions(a)) ?? [],
     );
 
     const persistedTransactions = {
@@ -139,7 +153,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       setPendingSubmit(true);
 
       const description = createMarkdownDescription({ title, body });
-      const transactions = actions.flatMap((a) => resolveActionTransactions(a));
+      const transactions =
+        actions?.flatMap((a) => resolveActionTransactions(a)) ?? [];
 
       await updateProposalCandidate({
         description,
@@ -159,38 +174,68 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   return (
     <Dialog
       isOpen={isOpen}
-      tray
       onRequestClose={dismissDialog}
-      width="135.6rem"
+      tray={submitTargetType !== "topic"}
+      width={submitTargetType === "topic" ? "90.4rem" : "135.6rem"}
     >
       <div
         ref={scrollContainerRef}
+        data-editor={submitTargetType}
         css={css({
           overflow: "auto",
           padding: "3.2rem 0 0",
           "@media (min-width: 600px)": {
             padding: "0",
           },
+          '&[data-editor="topic"]': {
+            padding: "1.6rem",
+            "@media (min-width: 600px)": {
+              padding: "3.2rem",
+            },
+          },
         })}
       >
-        <ProposalEditor
-          title={title}
-          body={body}
-          actions={actions}
-          setTitle={setTitle}
-          setBody={setBody}
-          setActions={setActions}
-          proposerId={candidate.proposerId}
-          onSubmit={() => {
-            setShowPreviewDialog(true);
-          }}
-          submitLabel="Preview update"
-          submitDisabled={!hasChanges}
-          hasPendingSubmit={hasPendingSubmit}
-          containerHeight="calc(100vh - 6rem)"
-          scrollContainerRef={scrollContainerRef}
-          background={theme.colors.dialogBackground}
-        />
+        {submitTargetType === "topic" ? (
+          <TopicEditor
+            mode="edit"
+            pad={false}
+            title={title}
+            body={body}
+            setTitle={setTitle}
+            setBody={setBody}
+            setActions={setActions}
+            proposerId={candidate.proposerId}
+            hasPendingSubmit={hasPendingSubmit}
+            submitLabel="Submit update"
+            submitDisabled={
+              hasPendingSubmit || !hasRequiredInput || !hasChanges
+            }
+            onSubmit={submit}
+            onDelete={dismissDialog}
+          />
+        ) : (
+          <ProposalEditor
+            title={title}
+            body={body}
+            actions={actions}
+            setTitle={setTitle}
+            setBody={setBody}
+            setActions={setActions}
+            turnIntoTopic={() => {
+              setActions(null);
+            }}
+            proposerId={candidate.proposerId}
+            onSubmit={() => {
+              setShowPreviewDialog(true);
+            }}
+            submitLabel="Preview update"
+            submitDisabled={!hasChanges}
+            hasPendingSubmit={hasPendingSubmit}
+            containerHeight="calc(100vh - 6rem)"
+            scrollContainerRef={scrollContainerRef}
+            background={theme.colors.dialogBackground}
+          />
+        )}
       </div>
 
       {showPreviewDialog && (

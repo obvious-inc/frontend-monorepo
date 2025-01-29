@@ -78,11 +78,6 @@ const groupConfigByKey = {
     description: "Candidates created within the last 3 days",
   },
   "candidates:active": { title: "Recently active" },
-  "candidates:feedback-given": { title: "Feedback given" },
-  "candidates:feedback-missing": {
-    title: "Missing feedback",
-    description: "Candidates that hasn’t received feedback from you",
-  },
   "candidates:popular": {
     title: "Trending",
     description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
@@ -91,6 +86,20 @@ const groupConfigByKey = {
     title: "Missing your signature",
   },
   "candidates:inactive": {
+    title: "Stale",
+    description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
+  "topics:authored": { title: "Authored" },
+  "topics:new": {
+    title: "New",
+    description: "Topics created within the last 3 days",
+  },
+  "topics:active": { title: "Recently active" },
+  "topics:popular": {
+    title: "Trending",
+    description: `The most popular topics active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
+  "topics:inactive": {
     title: "Stale",
     description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
@@ -130,13 +139,17 @@ const BrowseScreen = () => {
     "proposal-sorting-startegy",
     "activity",
   );
+  const [candidateSortStrategy, setCandidateSortStrategy] = useCachedState(
+    "candidate-sorting-strategy",
+    "activity",
+  );
+  const [topicSortStrategy, setTopicSortStrategy] = useCachedState(
+    "topic-sorting-strategy",
+    "activity",
+  );
   const [voterSortStrategy, setVoterSortStrategy] = useCachedState(
     "voter-sorting-strategy",
     "recent-revotes",
-  );
-  const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
-    "candidate-sorting-strategy",
-    "activity",
   );
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
@@ -147,17 +160,6 @@ const BrowseScreen = () => {
 
   const eagerMatchingEnsAddress = useEnsAddress(deferredQuery);
   const matchingEnsAddress = React.useDeferredValue(eagerMatchingEnsAddress);
-
-  const candidateSortStrategies =
-    connectedAccountAddress == null
-      ? ["activity", "popularity"]
-      : ["activity", "popularity", "connected-account-feedback"];
-
-  const candidateSortStrategy = candidateSortStrategies.includes(
-    candidateSortStrategy_,
-  )
-    ? candidateSortStrategy_
-    : "popularity";
 
   const filteredProposals = React.useMemo(
     () => proposals.filter((p) => p.startBlock != null),
@@ -330,28 +332,15 @@ const BrowseScreen = () => {
       c,
     );
 
-    if (!isActive) return "candidates:inactive";
+    const candidateCategory =
+      c.latestVersion?.type === "topic" ? "topics" : "candidates";
 
-    if (candidateSortStrategy === "popularity") return "candidates:popular";
+    if (!isActive) return `${candidateCategory}:inactive`;
 
-    if (candidateSortStrategy === "connected-account-feedback") {
-      const hasFeedback =
-        c.feedbackPosts != null &&
-        c.feedbackPosts.some(
-          (p) => p.voterId.toLowerCase() === connectedAccountAddress,
-        );
+    if (candidateSortStrategy === "popularity")
+      return `${candidateCategory}:popular`;
 
-      if (
-        // Include authored candidates here for now
-        c.proposerId.toLowerCase() === connectedAccountAddress ||
-        hasFeedback
-      )
-        return "candidates:feedback-given";
-
-      return "candidates:feedback-missing";
-    }
-
-    return ["candidates", forYouGroup].join(":");
+    return `${candidateCategory}:${forYouGroup}`;
   };
 
   const sectionsByName = objectUtils.mapValues(
@@ -425,12 +414,15 @@ const BrowseScreen = () => {
         case "candidates:sponsored":
         case "candidates:new":
         case "candidates:active":
-        case "candidates:feedback-given":
-        case "candidates:feedback-missing":
         case "candidates:popular":
         case "candidates:authored-proposal-update":
         case "candidates:inactive":
-        case "proposals:sponsored-proposal-update-awaiting-signature": {
+        case "proposals:sponsored-proposal-update-awaiting-signature":
+        case "topics:authored":
+        case "topics:new":
+        case "topics:active":
+        case "topics:popular":
+        case "topics:inactive": {
           const sortedItems = arrayUtils.sortBy(
             candidateSortStrategy === "popularity"
               ? {
@@ -519,7 +511,7 @@ const BrowseScreen = () => {
       <div ref={tabAnchorRef} />
       <Tabs.Root
         ref={tabContainerRef}
-        aria-label="Proposals and candidates"
+        aria-label="Listings tabs"
         selectedKey={
           searchParams.get("tab") ??
           (isDesktopLayout ? "proposals" : "activity")
@@ -669,24 +661,9 @@ const BrowseScreen = () => {
               inlineLabel="Sort by"
               value={candidateSortStrategy}
               options={[
-                {
-                  value: "popularity",
-                  label: "Popularity",
-                },
-                {
-                  value: "activity",
-                  label: "Recent activity",
-                },
-                {
-                  value: "connected-account-feedback",
-                  label: "Your feedback activity",
-                },
-              ].filter(
-                (o) =>
-                  // A connected wallet is required for feedback filter to work
-                  connectedAccountAddress != null ||
-                  o.value !== "connected-account-feedback",
-              )}
+                { value: "popularity", label: "Popularity" },
+                { value: "activity", label: "Recent activity" },
+              ]}
               onChange={(value) => {
                 setCandidateSortStrategy(value);
               }}
@@ -717,8 +694,6 @@ const BrowseScreen = () => {
             items={[
               "candidates:authored",
               "candidates:sponsored",
-              "candidates:feedback-missing",
-              "candidates:feedback-given",
               "candidates:new",
               "candidates:active",
               "candidates:popular",
@@ -732,6 +707,74 @@ const BrowseScreen = () => {
           {page != null &&
             sectionsByName["candidates:inactive"] != null &&
             sectionsByName["candidates:inactive"].count >
+              BROWSE_LIST_PAGE_ITEM_COUNT * page && (
+              <Pagination
+                showNext={() => setPage((p) => p + 1)}
+                showAll={() => setPage(null)}
+              />
+            )}
+        </Tabs.Item>
+        <Tabs.Item key="topics" title="Topics">
+          <div
+            css={css({
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.8rem",
+              padding: "2rem 0",
+            })}
+          >
+            <Select
+              size="small"
+              aria-label="Topic sorting"
+              inlineLabel="Sort by"
+              value={topicSortStrategy}
+              options={[
+                { value: "popularity", label: "Popularity" },
+                { value: "activity", label: "Recent activity" },
+              ]}
+              onChange={(value) => {
+                setTopicSortStrategy(value);
+              }}
+              fullWidth={false}
+              width="max-content"
+            />
+            <Button
+              component={NextLink}
+              href="/topics"
+              prefetch
+              size="small"
+              variant="transparent"
+              icon={
+                <FullscreenIcon
+                  style={{
+                    width: "1.4rem",
+                    height: "auto",
+                    transform: "scaleX(-1)",
+                  }}
+                />
+              }
+            />
+          </div>
+
+          <ProposalList
+            forcePlaceholder={!hasFetchedOnce}
+            showCandidateScore
+            items={[
+              "topics:authored",
+              "topics:new",
+              "topics:active",
+              "topics:popular",
+              "topics:inactive",
+            ]
+              .map((sectionKey) => sectionsByName[sectionKey] ?? {})
+              .filter(
+                ({ children }) => children != null && children.length !== 0,
+              )}
+          />
+          {page != null &&
+            sectionsByName["topics:inactive"] != null &&
+            sectionsByName["topics:inactive"].count >
               BROWSE_LIST_PAGE_ITEM_COUNT * page && (
               <Pagination
                 showNext={() => setPage((p) => p + 1)}
@@ -804,12 +847,37 @@ const BrowseScreen = () => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
+          // {
+          //   label: "Propose",
+          //   buttonProps: {
+          //     component: NextLink,
+          //     href: "/new",
+          //     prefetch: true,
+          //   },
+          // },
           {
-            label: "Propose",
+            type: "dropdown",
+            label: "New",
+            placement: "bottom start",
+            items: [
+              {
+                id: "-",
+                children: [
+                  {
+                    id: "new-proposal",
+                    label: "Proposal",
+                  },
+                  {
+                    id: "new-discussion-topic",
+                    label: "Discussion topic",
+                  },
+                ],
+              },
+            ],
             buttonProps: {
-              component: NextLink,
-              href: "/new",
-              prefetch: true,
+              iconRight: (
+                <CaretDownIcon style={{ width: "0.9rem", height: "auto" }} />
+              ),
             },
           },
           treasuryData != null && {

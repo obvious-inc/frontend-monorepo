@@ -5,17 +5,19 @@ import addDaysToDate from "date-fns/addDays";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import React from "react";
 import NextLink from "next/link";
-import { notFound as nextNotFound } from "next/navigation";
+import { notFound as nextNotFound, usePathname } from "next/navigation";
 import { css } from "@emotion/react";
 import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
-import { ErrorBoundary } from "@shades/common/react";
+import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Input from "@shades/ui-web/input";
 import Spinner from "@shades/ui-web/spinner";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
+  CaretDown as CaretDownIcon,
   Checkmark as CheckmarkIcon,
   Share as ShareIcon,
 } from "@shades/ui-web/icons";
@@ -30,7 +32,6 @@ import {
 import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
 import {
   useProposalCandidate,
-  useProposalCandidateVotingPower,
   useDelegate,
   useProposal,
   useProposals,
@@ -73,6 +74,7 @@ import DiffBlock from "./diff-block.js";
 import { useProposalCandidateSimulation } from "../hooks/simulation.js";
 import useScrollToElement from "@/hooks/scroll-to-element.js";
 import { useCachedCandidatePost } from "@/hooks/cached-post.js";
+import TopicScreen from "./topic-screen.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
@@ -83,6 +85,9 @@ const PromoteCandidateDialog = React.lazy(
   () => import("./promote-candidate-dialog.js"),
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
+
+const ScreenContext = React.createContext();
+const useScreenContext = () => React.useContext(ScreenContext);
 
 const useActiveProposerIds = () => {
   const activeProposals = useProposals({ filter: "active" });
@@ -105,7 +110,7 @@ const ProposalCandidateScreenContent = ({
   const selectedTab =
     searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
 
-  const itemId = searchParams.get("item");
+  const focusedFeedItemId = searchParams.get("item");
 
   const {
     address: connectedWalletAccountAddress,
@@ -116,14 +121,25 @@ const ProposalCandidateScreenContent = ({
   const mobileTabContainerRef = React.useRef();
   const actionFormInputRef = React.useRef();
 
-  const proposalThreshold = useProposalThreshold();
-
   const candidate = useProposalCandidate(candidateId);
   const updateTargetProposal = useProposal(
     candidate.latestVersion.targetProposalId,
   );
 
   const feedItems = useCandidateFeedItems(candidateId);
+
+  const {
+    isProposer,
+    isCanceled,
+    isProposalUpdate,
+    hasBeenPromoted,
+    proposalThreshold,
+    proposerVotingPower,
+    sponsorsVotingPower,
+    isProposalThresholdMet,
+  } = useScreenContext();
+
+  const showAdminActions = isProposer && !isCanceled;
 
   const [formAction, setFormAction] = React.useState("onchain-comment");
   const availableFormActions = ["onchain-comment", "farcaster-comment"];
@@ -139,7 +155,7 @@ const ProposalCandidateScreenContent = ({
   );
 
   const proposerDelegate = useDelegate(candidate.proposerId);
-  const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
+  const candidateVotingPower = proposerVotingPower + sponsorsVotingPower;
   const activeProposerIds = useActiveProposerIds();
 
   const {
@@ -179,9 +195,11 @@ const ProposalCandidateScreenContent = ({
   const replyTargetFeedItems = React.useMemo(() => {
     if (formAction === "farcaster-comment") return [];
     const pendingReplyTargetFeedItemIds = Object.keys(pendingReplies ?? {});
-    return pendingReplyTargetFeedItemIds.map((targetFeedItemId) =>
-      feedItems.find((i) => i.id === targetFeedItemId),
-    );
+    return pendingReplyTargetFeedItemIds
+      .map((targetFeedItemId) =>
+        feedItems.find((i) => i.id === targetFeedItemId),
+      )
+      .filter(Boolean);
   }, [formAction, feedItems, pendingReplies]);
 
   const repostTargetFeedItems = React.useMemo(() => {
@@ -231,9 +249,10 @@ const ProposalCandidateScreenContent = ({
   useProposalCandidateFetch(candidateId);
   useProposalFetch(candidate.latestVersion.targetProposalId);
 
-  useScrollToElement({ id: itemId, enabled: itemId != null });
-
-  const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
+  useScrollToElement({
+    id: focusedFeedItemId,
+    enabled: focusedFeedItemId != null,
+  });
 
   const onReply = React.useCallback(
     (postId) => {
@@ -285,22 +304,12 @@ const ProposalCandidateScreenContent = ({
 
   if (candidate?.latestVersion.content.description == null) return null;
 
-  const isProposer =
-    connectedWalletAccountAddress != null &&
-    candidate.proposerId.toLowerCase() === connectedWalletAccountAddress;
-  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-  const hasBeenPromoted = candidate.latestVersion.proposalId != null;
-
-  const proposerDelegateNounIds =
-    proposerDelegate?.nounsRepresented.map((n) => n.id) ?? [];
-  const proposerVotingPower = proposerDelegateNounIds.length;
-
   const validSignatures = getSponsorSignatures(candidate, {
     excludeInvalid: true,
     activeProposerIds,
   });
 
-  // Signers will naturally have an active proposal here (the update target prop)
+  // Signers of proposal updates will naturally have an active proposal here (the update target prop)
   const validSignaturesIncludingActiveProposers = getSponsorSignatures(
     candidate,
     {
@@ -309,7 +318,6 @@ const ProposalCandidateScreenContent = ({
     },
   );
 
-  const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
   const missingSponsorVotingPower = isProposalThresholdMet
     ? 0
     : proposalThreshold + 1 - candidateVotingPower;
@@ -422,6 +430,19 @@ const ProposalCandidateScreenContent = ({
                 },
               })}
             >
+              {showAdminActions && (
+                <div
+                  css={css({
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: "0.8rem",
+                    margin: "0 0 3.2rem",
+                  })}
+                >
+                  <AdminDropdown candidateId={candidateId} />
+                </div>
+              )}
+
               {isProposalUpdate ? (
                 <div
                   style={{
@@ -582,150 +603,190 @@ const ProposalCandidateScreenContent = ({
             },
           })}
         >
-          {simulationError && (
-            <Callout
-              compact
-              variant="info"
-              css={() =>
-                css({
-                  marginBottom: "2.4rem",
-                  "@media (min-width: 600px)": {
-                    marginBottom: "4.8rem",
+          {(() => {
+            const showAdminDropdown = !isDesktopLayout && showAdminActions;
+
+            if (
+              simulationError == null &&
+              !hasBeenPromoted &&
+              !isProposalUpdate &&
+              !showAdminDropdown
+            )
+              return null;
+
+            return (
+              <div
+                css={css({
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1.6rem",
+                  margin: "0 0 1.6rem",
+                  "@media(min-width: 600px)": {
+                    margin: "0 0 4rem",
                   },
-                })
-              }
-            >
-              <p
-                css={(t) =>
-                  css({
-                    color: t.colors.textHighlight,
-                  })
-                }
+                })}
               >
-                This proposal candidate will fail to execute if promoted.
-              </p>
-
-              <p>
-                One or more transactions didn&apos;t pass the simulation. Check
-                the Transactions tab to see which ones failed.
-              </p>
-            </Callout>
-          )}
-          {hasBeenPromoted ? (
-            <Callout
-              compact
-              variant="info"
-              css={css({ marginBottom: "4.8rem" })}
-            >
-              <p>
-                {isProposalUpdate ? (
-                  <>This update has been submitted.</>
-                ) : (
-                  <>This candidate has been promoted to a proposal.</>
-                )}
-              </p>
-              <p>
-                <Link
-                  underline
-                  component={NextLink}
-                  href={`/proposals/${candidate.latestVersion.proposalId}`}
-                >
-                  View the proposal here
-                </Link>
-              </p>
-            </Callout>
-          ) : isProposalUpdate ? (
-            <Callout
-              compact
-              variant="info"
-              css={(t) =>
-                css({
-                  marginBottom: "4.8rem",
-                  "[data-highlight]": { color: t.colors.textHighlight },
-                })
-              }
-            >
-              <p>
-                This candidate is an update draft for{" "}
-                <Link
-                  underline
-                  component={NextLink}
-                  href={`/proposals/${candidate.latestVersion.targetProposalId}`}
-                >
-                  Proposal {candidate.latestVersion.targetProposalId}
-                </Link>
-                .
-              </p>
-
-              <p>
-                <i>Proposal update candidates</i> are a required middle step to
-                edit sponsored proposals, as all updates need to be re-signed by
-                sponsors.
-              </p>
-              {updateTargetProposal != null && (
-                <>
-                  {updateTargetProposal.state !== "updatable" ? (
-                    <p data-highlight>
-                      Because Prop {candidate.latestVersion.targetProposalId}{" "}
-                      has passed its editable phase, this update can no longer
-                      be submitted.
-                    </p>
-                  ) : isMissingProposalUpdateSignatures ? (
-                    <p data-highlight>
-                      All sponsors need to sign before the update can be
-                      submitted.
-                    </p>
-                  ) : null}
-                  <p style={{ display: "flex", gap: "1em", marginTop: "1em" }}>
-                    {isProposer && (
-                      <Button
-                        variant="primary"
-                        disabled={
-                          updateTargetProposal.state !== "updatable" ||
-                          submitProposalUpdate == null ||
-                          isMissingProposalUpdateSignatures ||
-                          hasPendingProposalUpdate
-                        }
-                        size="default"
-                        isLoading={hasPendingProposalUpdate}
-                        onClick={async () => {
-                          setPendingProposalUpdate(true);
-                          try {
-                            await submitProposalUpdate({
-                              description:
-                                candidate.latestVersion.content.description,
-                              transactions:
-                                candidate.latestVersion.content.transactions,
-                              proposerSignatures:
-                                validSignaturesIncludingActiveProposers.map(
-                                  (signature) => ({
-                                    sig: signature.sig,
-                                    signer: signature.signer.id,
-                                    expirationTimestamp:
-                                      signature.expirationTimestamp.getTime() /
-                                      1000,
-                                  }),
-                                ),
-                            });
-                          } finally {
-                            setPendingProposalUpdate(false);
-                          }
-                        }}
-                      >
-                        Submit update
-                      </Button>
-                    )}
-                    <Button
-                      size="default"
-                      onClick={toggleProposalUpdateDiffDialog}
+                {simulationError != null && (
+                  <Callout compact variant="info">
+                    <p
+                      css={(t) =>
+                        css({
+                          color: t.colors.textHighlight,
+                        })
+                      }
                     >
-                      View changes
-                    </Button>
-                  </p>
-                </>
-              )}
-            </Callout>
-          ) : null}
+                      This proposal candidate will fail to execute if promoted.
+                    </p>
+
+                    <p>
+                      One or more transactions didn&apos;t pass the simulation.
+                      Check the Transactions tab to see which ones failed.
+                    </p>
+                  </Callout>
+                )}
+                {hasBeenPromoted ? (
+                  <Callout compact variant="info">
+                    <p>
+                      {isProposalUpdate ? (
+                        <>This update has been submitted.</>
+                      ) : (
+                        <>This candidate has been promoted to a proposal.</>
+                      )}
+                    </p>
+                    <p>
+                      <Link
+                        underline
+                        component={NextLink}
+                        href={`/proposals/${candidate.latestVersion.proposalId}`}
+                      >
+                        View the proposal here
+                      </Link>
+                    </p>
+                  </Callout>
+                ) : isProposalUpdate ? (
+                  <Callout
+                    compact
+                    variant="info"
+                    css={(t) =>
+                      css({
+                        "[data-highlight]": { color: t.colors.textHighlight },
+                      })
+                    }
+                  >
+                    <p>
+                      This candidate is an update draft for{" "}
+                      <Link
+                        underline
+                        component={NextLink}
+                        href={`/proposals/${candidate.latestVersion.targetProposalId}`}
+                      >
+                        Proposal {candidate.latestVersion.targetProposalId}
+                      </Link>
+                      .
+                    </p>
+
+                    <p>
+                      <i>Proposal update candidates</i> are a required middle
+                      step to edit sponsored proposals, as all updates need to
+                      be re-signed by sponsors.
+                    </p>
+                    {updateTargetProposal != null && (
+                      <>
+                        {updateTargetProposal.state !== "updatable" ? (
+                          <p data-highlight>
+                            Because Prop{" "}
+                            {candidate.latestVersion.targetProposalId} has
+                            passed its editable phase, this update can no longer
+                            be submitted.
+                          </p>
+                        ) : isMissingProposalUpdateSignatures ? (
+                          <p data-highlight>
+                            All sponsors need to sign before the update can be
+                            submitted.
+                          </p>
+                        ) : null}
+                        <p
+                          style={{
+                            display: "flex",
+                            gap: "1em",
+                            marginTop: "1em",
+                          }}
+                        >
+                          {isProposer && (
+                            <Button
+                              variant="primary"
+                              disabled={
+                                updateTargetProposal.state !== "updatable" ||
+                                submitProposalUpdate == null ||
+                                isMissingProposalUpdateSignatures ||
+                                hasPendingProposalUpdate
+                              }
+                              size="default"
+                              isLoading={hasPendingProposalUpdate}
+                              onClick={async () => {
+                                setPendingProposalUpdate(true);
+                                try {
+                                  await submitProposalUpdate({
+                                    description:
+                                      candidate.latestVersion.content
+                                        .description,
+                                    transactions:
+                                      candidate.latestVersion.content
+                                        .transactions,
+                                    proposerSignatures:
+                                      validSignaturesIncludingActiveProposers.map(
+                                        (signature) => ({
+                                          sig: signature.sig,
+                                          signer: signature.signer.id,
+                                          expirationTimestamp:
+                                            signature.expirationTimestamp.getTime() /
+                                            1000,
+                                        }),
+                                      ),
+                                  });
+                                } finally {
+                                  setPendingProposalUpdate(false);
+                                }
+                              }}
+                            >
+                              Submit update
+                            </Button>
+                          )}
+                          <Button
+                            size="default"
+                            onClick={toggleProposalUpdateDiffDialog}
+                          >
+                            View changes
+                          </Button>
+                        </p>
+                      </>
+                    )}
+                  </Callout>
+                ) : null}
+
+                {showAdminDropdown && (
+                  <div
+                    css={css({
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      button: {
+                        textAlign: "left",
+                        width: "100%",
+                      },
+                      "@media(min-width: 600px)": {
+                        button: {
+                          width: "auto",
+                        },
+                      },
+                    })}
+                  >
+                    <AdminDropdown candidateId={candidateId} />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
           <ProposalHeader
             title={candidate.latestVersion.content.title}
             proposerId={candidate.proposerId}
@@ -792,7 +853,7 @@ const ProposalCandidateScreenContent = ({
                               requestWalletAccess();
                             }}
                           >
-                            Connect wallet to give feedback
+                            Connect wallet to comment
                           </Button>
                         </div>
                       ) : (
@@ -916,10 +977,8 @@ const SponsorsTabMainContent = ({
   toggleProposeDialog,
 }) => {
   const candidate = useProposalCandidate(candidateId);
-  const proposerDelegate = useDelegate(candidate.proposerId);
 
   const activeProposerIds = useActiveProposerIds();
-  const proposalThreshold = useProposalThreshold();
 
   const signatures = getSponsorSignatures(candidate, {
     excludeInvalid: false,
@@ -928,40 +987,18 @@ const SponsorsTabMainContent = ({
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
-  const isProposer =
-    connectedWalletAccountAddress != null &&
-    candidate.proposerId.toLowerCase() === connectedWalletAccountAddress;
-
   const connectedDelegate = useDelegate(connectedWalletAccountAddress);
   const connectedDelegateHasVotes =
     connectedDelegate != null && connectedDelegate.nounsRepresented.length > 0;
 
+  const { isProposer, isCanceled, isProposalUpdate, isPromotable } =
+    useScreenContext();
+
   const showSponsorButton =
     connectedDelegateHasVotes &&
-    candidate.latestVersion.proposalId == null &&
-    candidate.canceledTimestamp == null &&
-    !isProposer;
-
-  const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
-
-  const proposerVotingPower =
-    proposerDelegate == null ? 0 : proposerDelegate.nounsRepresented.length;
-
-  const isProposalThresholdMet =
-    proposerVotingPower + sponsorsVotingPower > proposalThreshold;
-
-  const isCanceled = candidate.canceledTimestamp != null;
-
-  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-
-  const hasBeenPromoted = candidate.latestVersion.proposalId != null;
-
-  const isPromotable =
-    isProposer &&
-    isProposalThresholdMet &&
-    !hasBeenPromoted &&
+    !isProposalUpdate &&
     !isCanceled &&
-    !isProposalUpdate;
+    !isProposer;
 
   if (signatures.length === 0)
     return (
@@ -1386,30 +1423,24 @@ const useSponsorsVotingPower = (candidateId) => {
   });
 
   const sponsoringNouns = arrayUtils.unique(
-    validSignatures.flatMap((s) => {
-      // don't count votes from signers who have active or pending proposals
-      // if (!activePendingProposers.includes(signature.signer.id)) {
-      return s.signer.nounsRepresented.map((n) => n.id);
-    }),
+    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id)),
   );
 
   return sponsoringNouns.length;
 };
 
-const ProposalCandidateScreen = ({ candidateId: rawId }) => {
+const CandidateScreen = ({ candidateId: rawId }) => {
   const candidateId = normalizeId(decodeURIComponent(rawId));
 
   const proposerId = candidateId.split("-")[0];
-  const slug = extractSlugFromCandidateId(candidateId);
 
   const scrollContainerRef = React.useRef();
 
-  const navigate = useNavigate();
-  const isDesktopLayout = useMatchDesktopLayout();
+  const pathname = usePathname();
+  const isTouchScreen = useMatchMedia("(pointer: coarse)");
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const { address: connectedWalletAccountAddress } = useWallet();
 
@@ -1449,10 +1480,6 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
     { replace: true },
   );
 
-  const cancelCandidate = useCancelProposalCandidate(slug, {
-    enabled: isProposer,
-  });
-
   const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
 
   const proposerVotingPower =
@@ -1461,18 +1488,50 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
   const isProposalThresholdMet =
     proposerVotingPower + sponsorsVotingPower > proposalThreshold;
 
-  const getActions = () => {
+  const isCanceled = candidate?.canceledTimestamp != null;
+
+  const hasBeenPromoted = candidate?.latestVersion.proposalId != null;
+  const isProposalUpdate = candidate?.latestVersion.targetProposalId != null;
+
+  const screenContextValue = React.useMemo(
+    () => ({
+      isProposer,
+      isCanceled,
+      isProposalUpdate,
+      hasBeenPromoted,
+      proposalThreshold,
+      proposerVotingPower,
+      sponsorsVotingPower,
+      isProposalThresholdMet,
+      toggleEditDialog,
+      toggleProposeDialog,
+    }),
+    [
+      isProposer,
+      isCanceled,
+      isProposalUpdate,
+      hasBeenPromoted,
+      proposerVotingPower,
+      sponsorsVotingPower,
+      proposalThreshold,
+      isProposalThresholdMet,
+      toggleEditDialog,
+      toggleProposeDialog,
+    ],
+  );
+
+  const getPageActions = () => {
     if (candidate == null) return [];
 
-    const isCanceled = candidate.canceledTimestamp != null;
+    const actions = [];
 
-    const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-
-    const proposerActions = [];
-
-    if (!isDesktopLayout && navigator?.share) {
-      proposerActions.push({
-        label: <ShareIcon css={css({ width: "1.7rem" })} />,
+    if (isTouchScreen && navigator?.share != null) {
+      actions.push({
+        buttonProps: {
+          // Margin to compensate for less padding on icon buttons
+          style: { display: "flex", marginInline: "0.3rem" },
+          icon: <ShareIcon css={css({ width: "1.6rem" })} />,
+        },
         onSelect: () => {
           navigator
             .share({
@@ -1483,58 +1542,19 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
       });
     }
 
-    if (!isProposer || isCanceled)
-      return proposerActions.length === 0 ? undefined : proposerActions;
-
-    const hasBeenPromoted = candidate.latestVersion.proposalId != null;
-
-    if (!hasBeenPromoted)
-      proposerActions.push({
-        onSelect: toggleEditDialog,
-        label: "Edit",
-      });
-
-    const isPromotable =
-      isProposalThresholdMet && !hasBeenPromoted && !isProposalUpdate;
-
-    if (isPromotable)
-      proposerActions.push({
-        onSelect: toggleProposeDialog,
-        label: "Promote",
-      });
-
-    if (!hasBeenPromoted)
-      proposerActions.push({
-        onSelect: () => {
-          if (!confirm("Are you sure you wish to cancel this candidate?"))
-            return;
-
-          setPendingCancel(true);
-
-          cancelCandidate().then(
-            () => {
-              navigate("/", { replace: true });
-            },
-            (e) => {
-              setPendingCancel(false);
-              return Promise.reject(e);
-            },
-          );
-        },
-        label: "Cancel",
-        buttonProps: {
-          isLoading: hasPendingCancel,
-          disabled: cancelCandidate == null || hasPendingCancel,
-        },
-      });
-
-    return proposerActions.length === 0 ? undefined : proposerActions;
+    return actions.length === 0 ? undefined : actions;
   };
 
   if (notFound) nextNotFound();
 
+  if (
+    pathname.startsWith("/topics/") ||
+    candidate?.latestVersion.content.transactions?.length === 0
+  )
+    return <TopicScreen candidateId={rawId} />;
+
   return (
-    <>
+    <ScreenContext.Provider value={screenContextValue}>
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1560,7 +1580,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
             ),
           },
         ]}
-        actions={getActions()}
+        actions={getPageActions()}
       >
         {candidate == null ? (
           <div
@@ -1589,7 +1609,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
         )}
       </Layout>
 
-      {isEditDialogOpen && isProposer && candidate != null && (
+      {isEditDialogOpen && candidate != null && (
         <ErrorBoundary
           onError={() => {
             reloadPageOnce();
@@ -1640,7 +1660,7 @@ const ProposalCandidateScreen = ({ candidateId: rawId }) => {
           </React.Suspense>
         </ErrorBoundary>
       )}
-    </>
+    </ScreenContext.Provider>
   );
 };
 
@@ -1894,26 +1914,90 @@ const ProposalUpdateDiffDialogContent = ({
   );
 };
 
-// const MetaTags = ({ candidateId }) => {
-//   const candidate = useProposalCandidate(candidateId);
+const AdminDropdown = React.memo(({ candidateId }) => {
+  const navigate = useNavigate();
 
-//   if (candidate?.latestVersion == null) return null;
+  const slug = extractSlugFromCandidateId(candidateId);
 
-//   const { body } = candidate.latestVersion.content;
+  const {
+    isCanceled,
+    isProposalUpdate,
+    hasBeenPromoted,
+    isProposalThresholdMet,
+    toggleEditDialog,
+    toggleProposeDialog,
+  } = useScreenContext();
 
-//   return (
-//     <MetaTags_
-//       title={candidate.latestVersion.content.title}
-//       description={
-//         body == null
-//           ? null
-//           : body.length > 600
-//           ? `${body.slice(0, 600)}...`
-//           : body
-//       }
-//       canonicalPathname={`/candidates/${candidateId}`}
-//     />
-//   );
-// };
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
-export default ProposalCandidateScreen;
+  const cancelCandidate = useCancelProposalCandidate(slug, {
+    enabled: !isCanceled,
+  });
+
+  const isPromotable =
+    isProposalThresholdMet && !hasBeenPromoted && !isProposalUpdate;
+
+  return (
+    <DropdownMenu.Root placement="bottom end">
+      <DropdownMenu.Trigger asChild>
+        <Button
+          size="default"
+          iconRight={
+            <CaretDownIcon style={{ width: "1.1rem", height: "auto" }} />
+          }
+          isLoading={hasPendingCancel}
+        >
+          Manage candidate
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content
+        widthFollowTrigger
+        disabledKeys={[
+          !isPromotable && "propose",
+          hasBeenPromoted && "edit",
+          (cancelCandidate == null || hasPendingCancel || hasBeenPromoted) &&
+            "cancel",
+        ].filter(Boolean)}
+        onAction={(key) => {
+          switch (key) {
+            case "propose":
+              toggleProposeDialog();
+              break;
+
+            case "edit":
+              toggleEditDialog();
+              break;
+
+            case "cancel":
+              if (!confirm("Are you sure you wish to cancel this candidate?"))
+                return;
+
+              setPendingCancel(true);
+
+              cancelCandidate().then(
+                () => {
+                  navigate("/", { replace: true });
+                },
+                (e) => {
+                  setPendingCancel(false);
+                  return Promise.reject(e);
+                },
+              );
+              break;
+
+            default:
+              throw new Error();
+          }
+        }}
+      >
+        <DropdownMenu.Item key="propose">Promote candidate</DropdownMenu.Item>
+        <DropdownMenu.Item key="edit">Edit candidate</DropdownMenu.Item>
+        <DropdownMenu.Item danger key="cancel">
+          Cancel candidate
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
+  );
+});
+
+export default CandidateScreen;
