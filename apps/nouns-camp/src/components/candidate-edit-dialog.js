@@ -65,25 +65,29 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     },
   ] = useDraft(draftId);
 
+  const {
+    name: title = persistedTitle,
+    body = persistedRichTextBody,
+    actions = persistedActions,
+  } = draft ?? {};
+
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
   const [hasPendingDismiss, setPendingDismiss] = React.useState(false);
 
-  const deferredBody = React.useDeferredValue(
-    draft?.body ?? persistedRichTextBody,
-  );
+  const deferredBody = React.useDeferredValue(body ?? persistedRichTextBody);
 
   const hasChanges = React.useMemo(() => {
     if (!draft) return;
 
-    const hasTitleChanges = draft.name.trim() !== persistedTitle;
+    const hasTitleChanges = title.trim() !== persistedTitle;
 
     if (hasTitleChanges) return true;
 
     const transactions = unparseTransactions(
-      draft.actions.flatMap((a) => resolveActionTransactions(a)),
+      actions.flatMap((a) => resolveActionTransactions(a)),
     );
 
     const persistedTransactions = {
@@ -107,7 +111,15 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     const hasBodyChanges = markdownBody !== persistedMarkdownBody;
 
     return hasBodyChanges;
-  }, [candidate, draft, persistedTitle, deferredBody, persistedMarkdownBody]);
+  }, [
+    candidate,
+    title,
+    persistedTitle,
+    deferredBody,
+    persistedMarkdownBody,
+    actions,
+    draft,
+  ]);
 
   const dismissDialog = () => {
     setPendingDismiss(true);
@@ -135,14 +147,14 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const createDescriptionDiff = () =>
     diffParagraphs(
       persistedDescription,
-      createMarkdownDescription({ title: draft.name, body: deferredBody }),
+      createMarkdownDescription({ title: title, body: deferredBody }),
     );
   const createTransactionsDiff = () =>
     diffParagraphs(
       candidate.latestVersion.content.transactions
         .map((t) => stringifyTransaction(t))
         .join("\n\n"),
-      draft.actions
+      actions
         .flatMap((a) => resolveActionTransactions(a))
         .map((t) => stringifyTransaction(t))
         .join("\n\n"),
@@ -152,13 +164,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     try {
       setPendingSubmit(true);
 
-      const description = createMarkdownDescription({
-        title: draft.name,
-        body: draft.body,
-      });
-      const transactions = draft.actions.flatMap((a) =>
-        resolveActionTransactions(a),
-      );
+      const description = createMarkdownDescription({ title, body });
+      const transactions = actions.flatMap((a) => resolveActionTransactions(a));
 
       await updateProposalCandidate({
         description,
@@ -167,6 +174,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
         updateMessage,
       });
       closeDialog();
+
+      deleteDraft(draftId);
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -176,9 +185,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   };
 
   React.useEffect(() => {
-    // if the store is not initialized or dialog is being dismissed, ignore
-    // draft creation
-    if (!createDraft || draft != null || hasPendingDismiss) return;
+    // if draft exists or dialog is being dismissed, ignore draft creation
+    if (draft != null || hasPendingDismiss) return;
 
     createDraft({
       id: draftId,
@@ -218,9 +226,9 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
         })}
       >
         <ProposalEditor
-          title={draft.name}
-          body={draft.body}
-          actions={draft.actions}
+          title={title}
+          body={body}
+          actions={actions}
           setTitle={setDraftTitle}
           setBody={setDraftBody}
           setActions={setDraftActions}

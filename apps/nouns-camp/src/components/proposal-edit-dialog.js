@@ -83,20 +83,24 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     },
   ] = useDraft(draftId);
 
+  const {
+    name: title = persistedTitle,
+    body = persistedRichTextBody,
+    actions = persistedActions,
+  } = draft ?? {};
+
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
   const [hasPendingDismiss, setPendingDismiss] = React.useState(false);
 
-  const deferredBody = React.useDeferredValue(
-    draft?.body ?? persistedRichTextBody,
-  );
+  const deferredBody = React.useDeferredValue(body ?? persistedRichTextBody);
 
   const hasTitleChanges = React.useMemo(() => {
     if (!draft) return;
-    return draft?.name.trim() !== persistedTitle;
-  }, [draft, persistedTitle]);
+    return title.trim() !== persistedTitle;
+  }, [draft, title, persistedTitle]);
 
   const hasBodyChanges = React.useMemo(() => {
     if (!draft) return;
@@ -110,8 +114,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     if (!draft) return;
 
     return (
-      draft.actions.length !== persistedActions.length ||
-      draft.actions.some((a, i) => {
+      actions.length !== persistedActions.length ||
+      actions.some((a, i) => {
         const persistedAction = persistedActions[i];
 
         const transactions = unparseTransactions(resolveActionTransactions(a));
@@ -122,21 +126,21 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
         return !areTransactionsEqual(transactions, persistedTransactions);
       })
     );
-  }, [draft, persistedActions]);
+  }, [draft, actions, persistedActions]);
 
   const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
 
   const createDescriptionDiff = () =>
     diffParagraphs(
       proposal.description,
-      createMarkdownDescription({ title: draft.name, body: deferredBody }),
+      createMarkdownDescription({ title, body: deferredBody }),
     );
   const createTransactionsDiff = () =>
     diffParagraphs(
       (proposal.transactions ?? [])
         .map((t) => stringifyTransaction(t))
         .join("\n\n"),
-      draft.actions
+      actions
         .flatMap((a) => resolveActionTransactions(a))
         .map((t) => stringifyTransaction(t))
         .join("\n\n"),
@@ -196,7 +200,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const submit = async ({ updateMessage } = {}) => {
     const buildUpdateCandidateSlug = () => {
       const slugifiedTitle =
-        draft.name.toLowerCase().replace(/\s+/g, "-") + "-update";
+        title.toLowerCase().replace(/\s+/g, "-") + "-update";
       let index = 0;
       while (slugifiedTitle) {
         const slug = [slugifiedTitle, index].filter(Boolean).join("-");
@@ -208,12 +212,12 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
     const getDescriptionIfChanged = () => {
       if (!hasTitleChanges && !hasBodyChanges) return null;
-      return createMarkdownDescription({ title: draft.name, body: draft.body });
+      return createMarkdownDescription({ title, body });
     };
 
     const getTransactionsIfChanged = () => {
       if (!hasActionChanges) return null;
-      return draft.actions.flatMap((a) => resolveActionTransactions(a));
+      return actions.flatMap((a) => resolveActionTransactions(a));
     };
 
     try {
@@ -223,13 +227,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
         const { slug: createdCandidateSlug } = await createCandidate({
           targetProposalId: proposalId,
           slug: buildUpdateCandidateSlug(),
-          description: createMarkdownDescription({
-            title: draft.name,
-            body: draft.body,
-          }),
-          transactions: draft.actions.flatMap((a) =>
-            resolveActionTransactions(a),
-          ),
+          description: createMarkdownDescription({ title, body }),
+          transactions: actions.flatMap((a) => resolveActionTransactions(a)),
         });
         const candidateId = [
           connectedAccountAddress,
@@ -249,6 +248,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           updateMessage,
         });
         closeDialog();
+
+        deleteDraft(draftId);
       }
     } catch (e) {
       console.error(e);
@@ -259,9 +260,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   };
 
   React.useEffect(() => {
-    // if the store is not initialized or dialog is being dismissed, ignore
-    // draft creation
-    if (!createDraft || draft != null || hasPendingDismiss) return;
+    // if draft exists or dialog is being dismissed, ignore draft creation
+    if (draft != null || hasPendingDismiss) return;
 
     createDraft({
       id: draftId,
@@ -301,9 +301,9 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
         })}
       >
         <ProposalEditor
-          title={draft.name}
-          body={draft.body}
-          actions={draft.actions}
+          title={title}
+          body={body}
+          actions={actions}
           setTitle={setDraftTitle}
           setBody={setDraftBody}
           setActions={setDraftActions}
