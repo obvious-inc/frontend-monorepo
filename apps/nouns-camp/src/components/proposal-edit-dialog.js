@@ -95,38 +95,29 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
   const [hasPendingDismiss, setPendingDismiss] = React.useState(false);
 
-  const deferredBody = React.useDeferredValue(body ?? persistedRichTextBody);
+  const deferredBody = React.useDeferredValue(body);
 
-  const hasTitleChanges = React.useMemo(() => {
-    if (!draft) return;
-    return title.trim() !== persistedTitle;
-  }, [draft, title, persistedTitle]);
+  const hasTitleChanges = title.trim() !== persistedTitle;
 
   const hasBodyChanges = React.useMemo(() => {
-    if (!draft) return;
     const markdownBody = messageUtils.toMarkdown(
       richTextToMessageBlocks(deferredBody),
     );
     return markdownBody !== persistedMarkdownBody;
-  }, [draft, deferredBody, persistedMarkdownBody]);
+  }, [deferredBody, persistedMarkdownBody]);
 
-  const hasActionChanges = React.useMemo(() => {
-    if (!draft) return;
+  const hasActionChanges =
+    actions.length !== persistedActions.length ||
+    actions.some((a, i) => {
+      const persistedAction = persistedActions[i];
 
-    return (
-      actions.length !== persistedActions.length ||
-      actions.some((a, i) => {
-        const persistedAction = persistedActions[i];
+      const transactions = unparseTransactions(resolveActionTransactions(a));
+      const persistedTransactions = unparseTransactions(
+        resolveActionTransactions(persistedAction),
+      );
 
-        const transactions = unparseTransactions(resolveActionTransactions(a));
-        const persistedTransactions = unparseTransactions(
-          resolveActionTransactions(persistedAction),
-        );
-
-        return !areTransactionsEqual(transactions, persistedTransactions);
-      })
-    );
-  }, [draft, actions, persistedActions]);
+      return !areTransactionsEqual(transactions, persistedTransactions);
+    });
 
   const hasChanges = hasTitleChanges || hasBodyChanges || hasActionChanges;
 
