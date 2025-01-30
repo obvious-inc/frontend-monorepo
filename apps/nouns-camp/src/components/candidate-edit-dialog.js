@@ -147,7 +147,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const createDescriptionDiff = () =>
     diffParagraphs(
       persistedDescription,
-      createMarkdownDescription({ title: title, body: deferredBody }),
+      createMarkdownDescription({ title, body: deferredBody }),
     );
   const createTransactionsDiff = () =>
     diffParagraphs(
