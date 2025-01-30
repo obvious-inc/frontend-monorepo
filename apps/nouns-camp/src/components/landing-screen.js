@@ -69,9 +69,9 @@ const groupConfigByKey = {
   "proposals:new": { title: "Upcoming" },
   "proposals:ongoing": { title: "Ongoing" },
   "proposals:awaiting-vote": { title: "Not yet voted" },
-  "proposals:authored": { title: "Authored" },
+  // "proposals:authored": { title: "Authored" },
   "proposals:past": { title: "Past" },
-  "candidates:authored": { title: "Authored" },
+  // "candidates:authored": { title: "Authored" },
   "candidates:sponsored": { title: "Sponsored" },
   "candidates:new": {
     title: "New",
@@ -89,12 +89,14 @@ const groupConfigByKey = {
     title: "Stale",
     description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
-  "topics:authored": { title: "Authored" },
+  // "topics:authored": { title: "Authored" },
   "topics:new": {
     title: "New",
     description: "Topics created within the last 3 days",
   },
-  "topics:active": { title: "Recently active" },
+  "topics:active": {
+    title: "Recently active",
+  },
   "topics:popular": {
     title: "Trending",
     description: `The most popular topics active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
@@ -506,16 +508,15 @@ const BrowseScreen = () => {
     );
   });
 
+  const defaultTabKey = isDesktopLayout ? "digest" : "activity";
+
   const listings = (
     <>
       <div ref={tabAnchorRef} />
       <Tabs.Root
         ref={tabContainerRef}
         aria-label="Listings tabs"
-        selectedKey={
-          searchParams.get("tab") ??
-          (isDesktopLayout ? "proposals" : "activity")
-        }
+        selectedKey={searchParams.get("tab") ?? defaultTabKey}
         onSelectionChange={(key) => {
           const tabAnchorRect = tabAnchorRef.current?.getBoundingClientRect();
           const tabContainerRect =
@@ -529,6 +530,10 @@ const BrowseScreen = () => {
           setSearchParams(
             (p) => {
               const newParams = new URLSearchParams(p);
+              if (key === defaultTabKey) {
+                newParams.delete("tab");
+                return newParams;
+              }
               newParams.set("tab", key);
               return newParams;
             },
@@ -552,6 +557,72 @@ const BrowseScreen = () => {
             <FeedTabContent />
           </Tabs.Item>
         )}
+        <Tabs.Item key="digest" title="Digest">
+          <div css={css({ padding: "2rem 0" })}>
+            <ProposalList
+              forcePlaceholder={!hasFetchedOnce}
+              items={[
+                // "proposals:chronological",
+                // "proposals:authored",
+                "proposals:sponsored-proposal-update-awaiting-signature",
+                "proposals:awaiting-vote",
+                "proposals:ongoing",
+                "topics:new",
+                "topics:active",
+                "proposals:new",
+                "candidates:new",
+                "candidates:active",
+                "proposals:past",
+              ]
+                .map((sectionKey) => {
+                  const section = sectionsByName[sectionKey] ?? {};
+                  const overrides = {
+                    "proposals:new": {
+                      title: "Upcoming proposals",
+                      truncationThreshold: 2,
+                    },
+                    "proposals:ongoing": {
+                      title: "Ongoing proposals",
+                    },
+                    "proposals:awaiting-vote": { title: "Not yet voted" },
+                    "proposals:past": {
+                      title: "Past proposals",
+                      truncationThreshold: 4,
+                    },
+                    "candidates:new": {
+                      title: "New candidates",
+                      description: "Created within the last 3 days",
+                      truncationThreshold: 2,
+                    },
+                    "candidates:active": {
+                      title: "Recently active candidates",
+                      truncationThreshold: 2,
+                    },
+                    "proposals:sponsored-proposal-update-awaiting-signature": {
+                      title: "Missing your signature",
+                    },
+                    "topics:new": {
+                      title: "New topics",
+                      description: "Created within the last 3 days",
+                      truncationThreshold: 2,
+                    },
+                    "topics:active": {
+                      title: "Recently active topics",
+                      truncationThreshold: 2,
+                    },
+                  }[sectionKey];
+                  return {
+                    ...section,
+                    collapsible: true,
+                    ...overrides,
+                  };
+                })
+                .filter(
+                  ({ children }) => children != null && children.length !== 0,
+                )}
+            />
+          </div>
+        </Tabs.Item>
         <Tabs.Item key="proposals" title="Proposals">
           <div
             css={css({
@@ -612,7 +683,7 @@ const BrowseScreen = () => {
             forcePlaceholder={!hasFetchedOnce}
             items={[
               "proposals:chronological",
-              "proposals:authored",
+              // "proposals:authored",
               "proposals:sponsored-proposal-update-awaiting-signature",
               "proposals:awaiting-vote",
               "proposals:ongoing",
@@ -692,7 +763,7 @@ const BrowseScreen = () => {
             forcePlaceholder={!hasFetchedOnce}
             showCandidateScore
             items={[
-              "candidates:authored",
+              // "candidates:authored",
               "candidates:sponsored",
               "candidates:new",
               "candidates:active",
@@ -761,7 +832,7 @@ const BrowseScreen = () => {
             forcePlaceholder={!hasFetchedOnce}
             showCandidateScore
             items={[
-              "topics:authored",
+              // "topics:authored",
               "topics:new",
               "topics:active",
               "topics:popular",
@@ -1346,12 +1417,7 @@ const Pagination = ({ showNext, showAll }) => (
       Show more
     </Button>
     <div style={{ marginTop: "1.2rem" }}>
-      <Link
-        size="small"
-        component="button"
-        color={(t) => t.colors.textDimmed}
-        onClick={showAll}
-      >
+      <Link size="small" component="button" variant="dimmed" onClick={showAll}>
         Show all
       </Link>
     </div>

@@ -11,9 +11,11 @@ import { useIsOnScreen } from "@shades/common/react";
 import {
   ArrowDownSmall as ArrowDownSmallIcon,
   DotsHorizontal as DotsHorizontalIcon,
+  CaretDown as CaretDownIcon,
 } from "@shades/ui-web/icons";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import {
   useDelegate,
   useAccount,
@@ -60,6 +62,8 @@ const ProposalList = ({
 }) => {
   const showPlaceholders =
     forcePlaceholder || (isLoading && items.length === 0);
+  const [expandedSectionKeys, setExpandedSectionKeys] = React.useState([]);
+  const [collapsedSectionKeys, setCollapsedSectionKeys] = React.useState([]);
 
   return (
     <>
@@ -94,11 +98,44 @@ const ProposalList = ({
                 fontWeight: t.text.weights.emphasis,
               },
             },
+            "& > li[data-section] button.section-title": {
+              cursor: "pointer",
+              position: "relative",
+              "@media(hover: hover)": {
+                ":hover": { color: t.colors.textDimmedModifierHover },
+              },
+              ".caret-container": {
+                position: "absolute",
+                right: "calc(100% + 0.2rem)",
+                width: "1rem",
+                height: "1.4rem",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                svg: {
+                  width: "0.8rem",
+                  height: "auto",
+                  transition: "0.1s transform",
+                },
+                "&[data-collapsed]": {
+                  svg: {
+                    transform: "rotate(-90deg)",
+                  },
+                },
+                "@media(min-width: 600px)": {
+                  width: "1.4rem",
+                  svg: { width: "0.9rem" },
+                },
+              },
+            },
             "& > li[data-section] .section-desciption": {
               // textTransform: "none",
               // fontSize: t.text.sizes.small,
               // fontWeight: t.text.weights.normal,
               // color: t.colors.textDimmed,
+            },
+            "& > li[data-section] .truncation-button-container": {
+              margin: "0.4rem 0 2.4rem",
             },
             "& > li:not([data-section]), & > li[data-section] > ul > li": {
               position: "relative",
@@ -269,7 +306,7 @@ const ProposalList = ({
             // Placeholder
             ".item-placeholder, .section-title-placeholder": {
               background: hoverColor,
-              borderRadius: "0.3rem",
+              borderRadius: "0.4rem",
             },
             ".item-placeholder": {
               height: "6.2rem",
@@ -345,23 +382,107 @@ const ProposalList = ({
               );
             };
 
-            if (item.type === "section")
+            if (item.type === "section") {
+              const isCollapsed =
+                item.collapsible && collapsedSectionKeys.includes(item.key);
+              const enableTruncation =
+                item.truncationThreshold != null &&
+                item.children.length > item.truncationThreshold;
+              const isTruncated =
+                enableTruncation && !expandedSectionKeys.includes(item.key);
+              const visibleChildren = isTruncated
+                ? item.children.slice(0, item.truncationThreshold)
+                : item.children;
               return (
                 <li key={`section-${item.key}`} data-section={item.key}>
-                  {item.title != null && (
-                    <div className="section-title">
-                      <h3>{item.title}</h3>
-                      {item.description != null && (
-                        <span className="section-description">
-                          {" "}
-                          — {item.description}
-                        </span>
+                  {item.title != null &&
+                    (item.collapsible ? (
+                      <button
+                        className="section-title"
+                        onClick={() => {
+                          setCollapsedSectionKeys((keys) =>
+                            keys.includes(item.key)
+                              ? keys.filter((k) => k !== item.key)
+                              : [...keys, item.key],
+                          );
+                          setExpandedSectionKeys((keys) =>
+                            keys.filter((k) => k !== item.key),
+                          );
+                        }}
+                      >
+                        <div
+                          data-collapsed={isCollapsed || undefined}
+                          className="caret-container"
+                        >
+                          <CaretDownIcon />
+                        </div>
+                        <h3>
+                          {item.title}
+                          {isCollapsed && <> ({item.children.length})</>}
+                        </h3>
+                        {item.description != null && (
+                          <span className="section-description">
+                            {" "}
+                            — {item.description}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="section-title">
+                        <h3>{item.title}</h3>
+                        {item.description != null && (
+                          <span className="section-description">
+                            {" "}
+                            — {item.description}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  {!isCollapsed && (
+                    <>
+                      <ul>{visibleChildren.map(renderItem)}</ul>
+                      {enableTruncation && (
+                        <div className="truncation-button-container">
+                          <Link
+                            component="button"
+                            onClick={() => {
+                              setExpandedSectionKeys((keys) =>
+                                keys.includes(item.key)
+                                  ? keys.filter((k) => k !== item.key)
+                                  : [...keys, item.key],
+                              );
+                            }}
+                            size="small"
+                            variant="dimmed"
+                          >
+                            {isTruncated ? (
+                              <>
+                                Show{" "}
+                                {item.children.length -
+                                  item.truncationThreshold}{" "}
+                                more...
+                              </>
+                            ) : (
+                              <>
+                                Show less{" "}
+                                <CaretDownIcon
+                                  style={{
+                                    width: "0.75em",
+                                    height: "auto",
+                                    display: "inline-flex",
+                                    transform: "scaleY(-1)",
+                                  }}
+                                />
+                              </>
+                            )}
+                          </Link>
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
-                  <ul>{item.children.map(renderItem)}</ul>
                 </li>
               );
+            }
 
             return renderItem(item);
           })

@@ -225,8 +225,7 @@ const TopicEditor = ({
                       setActions([]);
                     }}
                     underline
-                    color="currentColor"
-                    hoverColor="currentColor"
+                    variant="dimmed"
                   >
                     Turn into proposal candidate
                   </Link>
@@ -242,8 +241,7 @@ const TopicEditor = ({
                   setShowMarkdownPreview((s) => !s);
                 }}
                 underline
-                color="currentColor"
-                hoverColor="currentColor"
+                variant="dimmed"
               >
                 View raw markdown
               </Link>

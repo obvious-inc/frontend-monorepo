@@ -1139,7 +1139,7 @@ const ItemBody = React.memo(
               component="button"
               onClick={() => setTruncated((s) => !s)}
               size="small"
-              color={(t) => t.colors.textDimmed}
+              variant="dimmed"
             >
               {isTruncated ? "Expand..." : "Collapse"}
             </Link>

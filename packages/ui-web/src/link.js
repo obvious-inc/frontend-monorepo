@@ -1,47 +1,41 @@
-import { css, useTheme } from "@emotion/react";
+import { css } from "@emotion/react";
 
 const Link = ({
   underline = false,
-  variant,
-  color,
-  hoverColor,
+  variant = "regular",
   component: Component = "button",
   size,
-  style,
   ...props
 }) => {
-  const theme = useTheme();
-  const customColor = typeof color === "function" ? color(theme) : color;
   return (
     <Component
       data-size={size}
       data-variant={variant}
+      data-underline={underline || undefined}
       css={(t) =>
         css({
-          color: `var(--color, ${t.colors.link})`,
-          textDecoration: "var(--text-decoration, none)",
+          color: "inherit",
           outline: "none",
+          textDecoration: "none",
           '&[data-size="small"]': { fontSize: t.text.sizes.small },
+          "&[data-underline]": { textDecoration: "underline" },
+          '&[data-variant="regular"]': { color: t.colors.link },
           '&[data-variant="dimmed"]': { color: t.colors.textDimmed },
-          ":focus-visible": {
-            textDecoration: "underline",
-            color: `var(--color, ${t.colors.linkModifierHover})`,
-          },
+          ":focus-visible": { textDecoration: "underline" },
           "@media(hover: hover)": {
             cursor: "pointer",
             ":hover": {
               textDecoration: "underline",
-              color: `var(--hover-color, ${t.colors.linkModifierHover})`,
+              '&[data-variant="regular"]': {
+                color: t.colors.linkModifierHover,
+              },
+              '&[data-variant="dimmed"]': {
+                color: t.colors.textDimmedModifierHover,
+              },
             },
           },
         })
       }
-      style={{
-        "--text-decoration": underline ? "underline" : undefined,
-        "--color": customColor,
-        "--hover-color": hoverColor ?? customColor,
-        ...style,
-      }}
       {...props}
     />
   );

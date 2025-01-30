@@ -644,7 +644,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
                 component="button"
                 type="button"
                 underline
-                color={(t) => t.colors.textDimmed}
+                variant="dimmed"
                 onClick={() => {
                   setState({ forceCustomAbi: false });
                 }}
@@ -714,7 +714,7 @@ const CustomTransactionActionForm = ({ state, setState }) => {
                 component="button"
                 type="button"
                 underline
-                color={(t) => t.colors.textDimmed}
+                variant="dimmed"
                 onClick={() => {
                   setState({ forceCustomAbi: true });
                 }}

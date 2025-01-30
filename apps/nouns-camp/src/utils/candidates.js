@@ -156,7 +156,7 @@ export const getForYouGroup = (
   { connectedAccountAddress, activeThreshold, newThreshold },
   c,
 ) => {
-  const { content } = c.latestVersion;
+  // const { content } = c.latestVersion;
   const connectedAccount = connectedAccountAddress;
 
   // Proposal updates
@@ -186,16 +186,16 @@ export const getForYouGroup = (
 
   const isActive = hadRecentActivity({ threshold: activeThreshold }, c);
 
-  if (c.proposerId.toLowerCase() === connectedAccount) return "authored";
+  // if (c.proposerId.toLowerCase() === connectedAccount) return "authored";
 
   if (!isActive) return "inactive";
 
-  if (
-    content.contentSignatures.some(
-      (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
-    )
-  )
-    return "sponsored";
+  // if (
+  //   content.contentSignatures.some(
+  //     (s) => !s.canceled && s.signer.id.toLowerCase() === connectedAccount,
+  //   )
+  // )
+  //   return "sponsored";
 
   if (c.createdTimestamp >= newThreshold) return "new";
 

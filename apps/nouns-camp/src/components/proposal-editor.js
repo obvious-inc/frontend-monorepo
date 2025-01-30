@@ -214,8 +214,7 @@ const ProposalEditor = ({
                             setShowMarkdownPreview((s) => !s);
                           }}
                           underline
-                          color="currentColor"
-                          hoverColor="currentColor"
+                          variant="dimmed"
                         >
                           View raw markdown
                         </Link>
@@ -236,8 +235,7 @@ const ProposalEditor = ({
                               turnIntoTopic();
                             }}
                             underline
-                            color="currentColor"
-                            hoverColor="currentColor"
+                            variant="dimmed"
                           >
                             Turn into discussion topic
                           </Link>
@@ -1505,7 +1503,7 @@ const SidebarContent = ({
               <Link
                 type="button"
                 component="button"
-                color={(t) => t.colors.textNormal}
+                variant="inherit"
                 size="small"
                 onClick={() => {
                   if (!confirm("Are you sure you wish to clear all actions?"))
