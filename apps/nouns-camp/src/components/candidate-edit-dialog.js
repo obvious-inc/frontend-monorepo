@@ -77,7 +77,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
   const [hasPendingDismiss, setPendingDismiss] = React.useState(false);
 
-  const deferredBody = React.useDeferredValue(body ?? persistedRichTextBody);
+  const deferredBody = React.useDeferredValue(body);
 
   const hasChanges = React.useMemo(() => {
     const hasTitleChanges = title.trim() !== persistedTitle;
