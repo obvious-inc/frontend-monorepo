@@ -251,8 +251,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
   };
 
   React.useEffect(() => {
-    // if draft exists or dialog is being dismissed, ignore draft creation
-    if (draft != null || hasPendingDismiss) return;
+    // ignore creating drafts when present, dismissing changes or submitting prop
+    if (draft != null || hasPendingDismiss || hasPendingSubmit) return;
 
     createDraft({
       id: draftId,
@@ -269,6 +269,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     persistedRichTextBody,
     persistedActions,
     hasPendingDismiss,
+    hasPendingSubmit,
   ]);
 
   // always have a draft before trying to edit
