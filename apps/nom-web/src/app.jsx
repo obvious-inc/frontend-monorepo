@@ -104,7 +104,10 @@ const App = () => {
   );
 };
 
-const cacheStore = createCacheStore({ storage: window.localStorage });
+const cacheStore = createCacheStore({
+  namespace: "nom",
+  storage: window.localStorage,
+});
 
 const api = apis.nomLegacy({
   apiOrigin: "/api",
