@@ -25,6 +25,10 @@ import {
   SubmitUpdateDialog,
   createMarkdownDescription,
 } from "./proposal-edit-dialog.js";
+import {
+  useCollection as useDrafts,
+  useSingleItem as useDraft,
+} from "../hooks/drafts.js";
 
 const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
@@ -49,15 +53,29 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     [candidate],
   );
 
+  const draftId = `candidate:${candidateId}`;
+
+  const { createItem: createDraft, deleteItem: deleteDraft } = useDrafts();
+  const [
+    draft,
+    {
+      setName: setDraftTitle,
+      setBody: setDraftBody,
+      setActions: setDraftActions,
+    },
+  ] = useDraft(draftId);
+
+  const {
+    name: title = persistedTitle,
+    body = persistedRichTextBody,
+    actions = persistedActions,
+  } = draft ?? {};
+
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
-  const [title, setTitle] = React.useState(persistedTitle);
-  const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(persistedActions);
-
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
-  // const [hasPendingCancel, setPendingCancel] = React.useState(false);
+  const [hasPendingDismiss, setPendingDismiss] = React.useState(false);
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -101,7 +119,9 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   ]);
 
   const dismissDialog = () => {
+    setPendingDismiss(true);
     if (!hasChanges) {
+      deleteDraft(draftId);
       closeDialog();
       return;
     }
@@ -110,9 +130,12 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       !confirm(
         "This will discard all your changes. Are you sure you wish to continue?",
       )
-    )
+    ) {
+      setPendingDismiss(false);
       return;
+    }
 
+    deleteDraft(draftId);
     closeDialog();
   };
 
@@ -148,6 +171,8 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
         updateMessage,
       });
       closeDialog();
+
+      deleteDraft(draftId);
     } catch (e) {
       console.log(e);
       alert("Something went wrong");
@@ -155,6 +180,31 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
       setPendingSubmit(false);
     }
   };
+
+  React.useEffect(() => {
+    // ignore creating drafts when present, dismissing changes or submitting candie
+    if (draft != null || hasPendingDismiss || hasPendingSubmit) return;
+
+    createDraft({
+      id: draftId,
+      name: persistedTitle,
+      body: persistedRichTextBody,
+      actions: persistedActions,
+      type: "edit",
+    });
+  }, [
+    draftId,
+    draft,
+    createDraft,
+    persistedTitle,
+    persistedRichTextBody,
+    persistedActions,
+    hasPendingDismiss,
+    hasPendingSubmit,
+  ]);
+
+  // always have a draft before trying to edit
+  if (!draft) return null;
 
   return (
     <Dialog
@@ -177,9 +227,9 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
           title={title}
           body={body}
           actions={actions}
-          setTitle={setTitle}
-          setBody={setBody}
-          setActions={setActions}
+          setTitle={setDraftTitle}
+          setBody={setDraftBody}
+          setActions={setDraftActions}
           proposerId={candidate.proposerId}
           onSubmit={() => {
             setShowPreviewDialog(true);
@@ -190,6 +240,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
           containerHeight="calc(100vh - 6rem)"
           scrollContainerRef={scrollContainerRef}
           background={theme.colors.dialogBackground}
+          note="All edits saved to browser storage"
         />
       </div>
 

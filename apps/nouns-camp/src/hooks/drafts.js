@@ -14,11 +14,12 @@ const { createEmptyParagraphElement } = messageUtils;
 const createCacheKey = (address) =>
   [address?.toLowerCase(), "proposal-drafts"].filter(Boolean).join("-");
 
-const createEmptyItem = () => ({
-  id: String(Date.now()),
-  name: "",
-  body: [createEmptyParagraphElement()],
-  actions: [],
+const createBaseItem = ({ id, name, body, actions, type } = {}) => ({
+  id: id ?? String(Date.now()),
+  name: name ?? "",
+  body: body ?? [createEmptyParagraphElement()],
+  actions: actions ?? [],
+  type: type ?? "draft",
 });
 
 const SCHEMA_VERSION = 1;
@@ -99,16 +100,19 @@ export const useCollection = () => {
 
   const items = entriesById == null ? [] : Object.values(entriesById);
 
-  const createItem = React.useCallback(() => {
-    const item = createEmptyItem();
-    setState((state) => ({
-      entriesById: {
-        ...state.entriesById,
-        [item.id]: item,
-      },
-    }));
-    return item;
-  }, [setState]);
+  const createItem = React.useCallback(
+    (values) => {
+      const item = createBaseItem(values);
+      setState((state) => ({
+        entriesById: {
+          ...state.entriesById,
+          [item.id]: item,
+        },
+      }));
+      return item;
+    },
+    [setState],
+  );
 
   const deleteItem = React.useCallback(
     (id) => {
