@@ -2,19 +2,24 @@ import React from "react";
 
 const Context = React.createContext();
 
+const serialize = (value) => JSON.stringify(value);
+const parse = (value) => JSON.parse(value);
+
 export const createStore = ({ namespace = "ns", storage }) => {
   const buildKey = (key) => `${namespace}:${key}`;
 
   return {
-    read: (key_) => {
+    read: (key_, { raw = false } = {}) => {
       const key = buildKey(key_);
-      return storage.getItem(key);
+      const rawValue = storage.getItem(key);
+      return raw ? rawValue : parse(rawValue);
     },
-    write: (key_, value) => {
+    write: (key_, rawValue, { raw = false } = {}) => {
       const key = buildKey(key_);
-      if (value == null) {
+      if (rawValue == null) {
         storage.removeItem(key);
       } else {
+        const value = raw ? rawValue : serialize(rawValue);
         storage.setItem(key, value);
       }
       // Trigger storage event for other tabs
@@ -55,11 +60,14 @@ export const useCachedState = (key, initialState, { middleware } = {}) => {
     middlewareRef.current = middleware;
   });
 
-  const getSnapshot = React.useCallback(() => store.read(key), [store, key]);
+  const getSnapshot = React.useCallback(
+    () => store.read(key, { raw: true }),
+    [store, key],
+  );
 
-  const parse = React.useCallback((value) => {
+  const tryParseAndMigrate = React.useCallback((value) => {
     try {
-      const parsedValue = JSON.parse(value);
+      const parsedValue = parse(value);
       if (middlewareRef.current == null) return parsedValue;
       return middlewareRef.current(parsedValue);
     } catch (e) {
@@ -67,24 +75,25 @@ export const useCachedState = (key, initialState, { middleware } = {}) => {
       return null;
     }
   }, []);
-  const serialize = React.useCallback((value) => JSON.stringify(value), []);
 
   const cachedValue = React.useSyncExternalStore(store.subscribe, getSnapshot);
 
   const state = React.useMemo(() => {
     if (cachedValue == null) return initialStateRef.current;
-    return parse(cachedValue);
-  }, [cachedValue, parse]);
+    return tryParseAndMigrate(cachedValue);
+  }, [cachedValue, tryParseAndMigrate]);
 
   const setState = React.useCallback(
     (updater) => {
       const valueToStore =
         updater instanceof Function
-          ? updater(parse(getSnapshot()) ?? initialStateRef.current)
+          ? updater(
+              tryParseAndMigrate(getSnapshot()) ?? initialStateRef.current,
+            )
           : updater;
-      store.write(key, serialize(valueToStore));
+      store.write(key, serialize(valueToStore), { raw: true });
     },
-    [store, key, getSnapshot, parse, serialize],
+    [store, key, getSnapshot, tryParseAndMigrate],
   );
 
   return [state, setState];
