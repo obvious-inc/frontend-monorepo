@@ -190,15 +190,16 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
       setPendingSubmit(true);
 
       if (isSponsoredUpdate) {
-        const { slug: createdCandidateSlug } = await createCandidate({
+        const slug = buildUpdateCandidateSlug();
+        await createCandidate({
           targetProposalId: proposalId,
-          slug: buildUpdateCandidateSlug(),
+          slug,
           description: createMarkdownDescription({ title, body }),
           transactions: actions.flatMap((a) => resolveActionTransactions(a)),
         });
         const candidateId = [
           connectedAccountAddress,
-          encodeURIComponent(createdCandidateSlug),
+          encodeURIComponent(slug),
         ].join("-");
 
         await functionUtils.retryAsync(

@@ -143,17 +143,14 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
       setPendingRequest(true);
 
       return Promise.resolve()
-        .then(() => {
+        .then(async () => {
           switch (submitTargetType) {
             case "proposal":
               return createProposal({ description, transactions });
             case "candidate": {
               const slug = buildCandidateSlug(draft.name.trim());
-              return createCandidate({
-                slug,
-                description,
-                transactions,
-              });
+              await createCandidate({ slug, description, transactions });
+              return { slug };
             }
           }
         })
