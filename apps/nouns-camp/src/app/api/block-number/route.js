@@ -19,7 +19,8 @@ export async function GET() {
     { number: String(blockNumber) },
     {
       headers: {
-        "Cache-Control": `public, immutable, no-transform, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
+        "Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
+        "CDN-Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
       },
     },
   );
