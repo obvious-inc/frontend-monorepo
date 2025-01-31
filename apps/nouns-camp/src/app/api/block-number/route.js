@@ -11,7 +11,11 @@ const MAX_AGE = 5; // 5 seconds
 
 const publicClient = createPublicClient({
   chain,
-  transport: http(getJsonRpcUrl(chain.id)),
+  transport: http(getJsonRpcUrl(chain.id), {
+    fetchOptions: {
+      cache: "no-cache",
+    },
+  }),
 });
 
 export async function GET() {
