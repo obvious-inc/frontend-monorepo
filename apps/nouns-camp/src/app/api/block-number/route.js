@@ -22,7 +22,6 @@ export async function GET() {
     {
       headers: {
         "Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
-        "CDN-Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
       },
     },
   );
