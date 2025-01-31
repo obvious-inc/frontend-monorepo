@@ -25,7 +25,7 @@ export async function GET() {
     { number: String(blockNumber) },
     {
       headers: {
-        "Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
+        "Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}, stale-while-revalidate=${MAX_AGE * 2}`,
       },
     },
   );
