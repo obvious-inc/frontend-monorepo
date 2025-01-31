@@ -115,7 +115,7 @@ export async function GET(req) {
       { data: contractInfo },
       {
         headers: {
-          "Cache-Control": `max-age=${ONE_MONTH_IN_SECONDS}, s-max-age=${ONE_MONTH_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`,
+          "Cache-Control": `max-age=${ONE_MONTH_IN_SECONDS}, s-maxage=${ONE_MONTH_IN_SECONDS}, stale-while-revalidate=${ONE_DAY_IN_SECONDS}`,
         },
       },
     );

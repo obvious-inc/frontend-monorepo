@@ -1,11 +1,17 @@
-import { useBlockNumber as useBlockNumberWagmi } from "wagmi";
-import { CHAIN_ID } from "../constants/env.js";
+import { useQuery } from "@tanstack/react-query";
 
-const useBlockNumber = (options) => {
-  const { data: blockNumber } = useBlockNumberWagmi({
-    chainId: CHAIN_ID,
-    ...options,
+const useBlockNumber = ({ watch = false, cacheTime } = {}) => {
+  const { data: blockNumber } = useQuery({
+    queryKey: ["block-number"],
+    queryFn: async () => {
+      const response = await fetch("/api/block-number");
+      const { number } = await response.json();
+      return BigInt(number);
+    },
+    staleTime: cacheTime,
+    refetchInterval: watch ? 5000 : undefined,
   });
+
   return blockNumber;
 };
 

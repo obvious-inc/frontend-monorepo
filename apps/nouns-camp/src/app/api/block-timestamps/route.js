@@ -28,7 +28,7 @@ export async function GET(request) {
     { timestamp: Number(block.timestamp) },
     {
       headers: {
-        "Cache-Control": `immutable, max-age=${ONE_YEAR_IN_SECONDS}, s-max-age=${CACHE_ONE_YEAR}`,
+        "Cache-Control": `immutable, max-age=${ONE_YEAR_IN_SECONDS}, s-maxage=${CACHE_ONE_YEAR}`,
       },
     },
   );
