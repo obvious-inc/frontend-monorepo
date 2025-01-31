@@ -25,7 +25,12 @@ import {
   Fullscreen as FullscreenIcon,
 } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
-import { getForYouGroup as getProposalForYouGroup } from "../utils/proposals.js";
+import {
+  getForYouGroup as getProposalForYouGroup,
+  isFinalState as isFinalProposalState,
+  isSucceededState as isSucceededProposalState,
+  isVotableState as isVotableProposalState,
+} from "../utils/proposals.js";
 import { search as searchEns } from "../utils/ens.js";
 import {
   getSponsorSignatures as getCandidateSponsorSignatures,
@@ -63,33 +68,65 @@ const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
+const sortProposalsByStartsSoon = (ps) =>
+  arrayUtils.sortBy((p) => Number(p.startBlock), ps);
+
+const sortProposalsByEndsSoon = (ps) =>
+  arrayUtils.sortBy((p) => Number(p.objectionPeriodEndBlock ?? p.endBlock), ps);
+
+const sortProposalsReverseChrononological = (ps) =>
+  arrayUtils.sortBy({ value: (p) => Number(p.startBlock), order: "desc" }, ps);
+
+const sortCandidatesChronological = (cs) =>
+  arrayUtils.sortBy((c) => c.createdTimestamp, cs);
+
+const sortCandidatesReverseChronological = (cs) =>
+  arrayUtils.sortBy({ value: (c) => c.createdTimestamp, order: "desc" }, cs);
+
+// Note: Farcaster comments not taken into account
+const sortCandidatesByLastActivity = (cs) =>
+  arrayUtils.sortBy(
+    {
+      value: (c) =>
+        Math.max(
+          c.lastUpdatedTimestamp,
+          ...(c.feedbackPosts?.map((p) => p.createdTimestamp) ?? []),
+        ),
+      order: "desc",
+    },
+    cs,
+  );
+
 const groupConfigByKey = {
   drafts: {},
-  "proposals:chronological": {},
-  "proposals:new": { title: "Upcoming" },
-  "proposals:ongoing": { title: "Ongoing" },
-  "proposals:awaiting-vote": { title: "Not yet voted" },
-  // "proposals:authored": { title: "Authored" },
-  "proposals:past": { title: "Past" },
-  // "candidates:authored": { title: "Authored" },
+  "candidates:authored-proposal-update": {
+    title: "Missing your signature",
+  },
+  "candidates:sponsored-proposal-update-awaiting-signature": {
+    title: "Missing your signature",
+  },
+  "proposals:new": { title: "Upcoming", sort: sortProposalsByStartsSoon },
+  "proposals:ongoing": { title: "Ongoing", sort: sortProposalsByEndsSoon },
+  "proposals:awaiting-vote": {
+    title: "Not yet voted",
+    sort: sortProposalsByEndsSoon,
+  },
+  "proposals:authored": { title: "Authored" },
+  "proposals:past": {
+    title: "Past",
+    sort: sortProposalsReverseChrononological,
+  },
+  "candidates:authored": { title: "Authored" },
   "candidates:sponsored": { title: "Sponsored" },
   "candidates:new": {
     title: "New",
     description: "Candidates created within the last 3 days",
+    sort: sortCandidatesReverseChronological,
   },
-  "candidates:active": { title: "Recently active" },
-  "candidates:popular": {
-    title: "Trending",
-    description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  "candidates:active": {
+    title: "Recently active",
+    sort: sortCandidatesByLastActivity,
   },
-  "proposals:sponsored-proposal-update-awaiting-signature": {
-    title: "Missing your signature",
-  },
-  "candidates:inactive": {
-    title: "Stale",
-    description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
-  },
-  // "topics:authored": { title: "Authored" },
   "topics:new": {
     title: "New",
     description: "Topics created within the last 3 days",
@@ -97,6 +134,15 @@ const groupConfigByKey = {
   "topics:active": {
     title: "Recently active",
   },
+  "candidates:popular": {
+    title: "Trending",
+    description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
+  "candidates:inactive": {
+    title: "Stale",
+    description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
+  },
+  "topics:authored": { title: "Authored" },
   "topics:popular": {
     title: "Trending",
     description: `The most popular topics active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
@@ -105,6 +151,158 @@ const groupConfigByKey = {
     title: "Stale",
     description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
   },
+};
+
+const filterProposalUpdateCandidates = (
+  proposalUpdateCandidates,
+  { connectedAccountAddress },
+) => {
+  const hasSigned = (c) => {
+    const signatures = getCandidateSponsorSignatures(c, {
+      excludeInvalid: true,
+      activeProposerIds: [],
+    });
+    return signatures.some(
+      (s) => s.signer.id.toLowerCase() === connectedAccountAddress,
+    );
+  };
+
+  // Include authored updates, as well as sponsored updates not yet signed
+  return proposalUpdateCandidates.filter((c) => {
+    if (c.latestVersion == null) return false;
+
+    if (c.proposerId.toLowerCase() === connectedAccountAddress) return true;
+
+    const isSponsor =
+      c.targetProposal?.signers != null &&
+      c.targetProposal.signers.some(
+        (s) => s.id.toLowerCase() === connectedAccountAddress,
+      );
+
+    return isSponsor && !hasSigned(c);
+  });
+};
+
+const createDigestSections = ({
+  proposals,
+  candidates,
+  proposalUpdateCandidates,
+  connectedAccountAddress,
+}) => {
+  const proposalsBySection = arrayUtils.groupBy((p) => {
+    if (["pending", "updatable"].includes(p.state)) return "proposals:new";
+    if (isFinalProposalState(p.state) || isSucceededProposalState(p.state))
+      return "proposals:past";
+    if (
+      isVotableProposalState(p.state) &&
+      connectedAccountAddress != null &&
+      p.votes != null &&
+      !p.votes.some((v) => v.voterId === connectedAccountAddress)
+    )
+      return "proposals:awaiting-vote";
+    return "proposals:ongoing";
+  }, proposals);
+
+  const candidateActiveThreshold = dateStartOfDay(
+    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS),
+  );
+  const candidateNewThreshold = dateStartOfDay(
+    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS),
+  );
+  const candidatesBySection = arrayUtils.groupBy(
+    (c) => {
+      const forYouGroup = getCandidateForYouGroup(
+        {
+          connectedAccountAddress,
+          activeThreshold: candidateActiveThreshold,
+          newThreshold: candidateNewThreshold,
+        },
+        c,
+      );
+
+      const candidateCategory =
+        c.latestVersion?.type === "topic" ? "topics" : "candidates";
+
+      return `${candidateCategory}:${forYouGroup}`;
+    },
+    [...candidates, ...proposalUpdateCandidates],
+  );
+
+  const itemsBySectionKey = { ...proposalsBySection, ...candidatesBySection };
+
+  return [
+    {
+      key: "candidates:authored-proposal-update",
+      title: "Your proposal updates",
+      sort: sortCandidatesChronological,
+    },
+    {
+      key: "candidates:sponsored-proposal-update-awaiting-signature",
+      title: "Missing your signature",
+      description:
+        "Pending updates of sponsored proposals that you need to sign",
+      sort: sortCandidatesChronological,
+    },
+    {
+      key: "proposals:awaiting-vote",
+      title: "Not yet voted",
+      sort: sortProposalsByEndsSoon,
+    },
+    {
+      key: "proposals:ongoing",
+      title: "Ongoing proposals",
+      description: "Currently voting",
+      sort: sortProposalsByEndsSoon,
+      truncationThreshold: 2,
+    },
+    {
+      key: "proposals:new",
+      title: "Upcoming proposals",
+      sort: sortProposalsByStartsSoon,
+      truncationThreshold: 2,
+    },
+    {
+      key: "topics:new",
+      title: "New topics",
+      description: "Created within the last 3 days",
+      sort: sortCandidatesReverseChronological,
+      truncationThreshold: 2,
+    },
+    {
+      key: "topics:active",
+      title: "Recently active topics",
+      sort: sortCandidatesByLastActivity,
+      truncationThreshold: 2,
+    },
+    {
+      key: "candidates:new",
+      title: "New candidates",
+      description: "Created within the last 3 days",
+      sort: sortCandidatesReverseChronological,
+      truncationThreshold: 2,
+    },
+    {
+      key: "candidates:active",
+      title: "Recently active candidates",
+      sort: sortCandidatesByLastActivity,
+      truncationThreshold: 2,
+    },
+    {
+      key: "proposals:past",
+      title: "Past proposals",
+      sort: sortProposalsReverseChrononological,
+      truncationThreshold: 4,
+    },
+  ].map(({ key, sort, ...sectionProps }) => {
+    const items = itemsBySectionKey[key] ?? [];
+    return {
+      type: "section",
+      key,
+      children: sort(items),
+      collapsible: true,
+      ...sectionProps,
+    };
+  });
 };
 
 let hasFetchedBrowseDataOnce = false;
@@ -124,17 +322,17 @@ const BrowseScreen = () => {
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
-  const proposals = useProposals({ state: true });
-  const candidates = useProposalCandidates({
+  const proposals_ = useProposals({ state: true });
+  const candidates_ = useProposalCandidates({
     includeCanceled: false,
     includePromoted: false,
     includeProposalUpdates: false,
   });
-  const proposalUpdateCandidates = useProposalUpdateCandidates({
+  const proposalUpdateCandidates_ = useProposalUpdateCandidates({
     includeTargetProposal: true,
   });
 
-  const { items: proposalDrafts } = useDrafts();
+  const { items: allProposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
   const [proposalSortStrategy, setProposalSortStrategy] = useCachedState(
@@ -163,64 +361,38 @@ const BrowseScreen = () => {
   const eagerMatchingEnsAddress = useEnsAddress(deferredQuery);
   const matchingEnsAddress = React.useDeferredValue(eagerMatchingEnsAddress);
 
-  const filteredProposals = React.useMemo(
-    () => proposals.filter((p) => p.startBlock != null),
-    [proposals],
+  const proposals = React.useMemo(
+    () => proposals_.filter((p) => p.startBlock != null),
+    [proposals_],
   );
-  const filteredCandidates = React.useMemo(
-    () => candidates.filter((c) => c.latestVersion != null),
-    [candidates],
+  const candidates = React.useMemo(
+    () => candidates_.filter((c) => c.latestVersion != null),
+    [candidates_],
   );
-  const filteredProposalUpdateCandidates = React.useMemo(() => {
-    const hasSigned = (c) => {
-      const signatures = getCandidateSponsorSignatures(c, {
-        excludeInvalid: true,
-        activeProposerIds: [],
-      });
-      return signatures.some(
-        (s) => s.signer.id.toLowerCase() === connectedAccountAddress,
-      );
-    };
-
-    // Include authored updates, as well as sponsored updates not yet signed
-    return proposalUpdateCandidates.filter((c) => {
-      if (c.latestVersion == null) return false;
-
-      if (c.proposerId.toLowerCase() === connectedAccountAddress) return true;
-
-      const isSponsor =
-        c.targetProposal?.signers != null &&
-        c.targetProposal.signers.some(
-          (s) => s.id.toLowerCase() === connectedAccountAddress,
-        );
-
-      return isSponsor && !hasSigned(c);
+  const relevantProposalUpdateCandidates = React.useMemo(() => {
+    return filterProposalUpdateCandidates(proposalUpdateCandidates_, {
+      connectedAccountAddress,
     });
-  }, [proposalUpdateCandidates, connectedAccountAddress]);
+  }, [proposalUpdateCandidates_, connectedAccountAddress]);
 
-  const filteredProposalDrafts = React.useMemo(() => {
-    if (proposalDrafts == null) return [];
-    return proposalDrafts
+  const proposalDrafts = React.useMemo(() => {
+    if (allProposalDrafts == null) return [];
+    return allProposalDrafts
       .filter((d) => {
         if (d.name.trim() !== "") return true;
         return d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
       })
       .map((d) => ({ ...d, type: "draft" }));
-  }, [proposalDrafts]);
+  }, [allProposalDrafts]);
 
   const allItems = React.useMemo(
     () => [
-      ...filteredProposalDrafts,
-      ...filteredCandidates,
-      ...filteredProposals,
-      ...filteredProposalUpdateCandidates,
+      ...proposalDrafts,
+      ...candidates,
+      ...proposals,
+      ...relevantProposalUpdateCandidates,
     ],
-    [
-      filteredProposalDrafts,
-      filteredCandidates,
-      filteredProposals,
-      filteredProposalUpdateCandidates,
-    ],
+    [proposalDrafts, candidates, proposals, relevantProposalUpdateCandidates],
   );
 
   const searchResultItems = React.useMemo(() => {
@@ -233,7 +405,7 @@ const BrowseScreen = () => {
 
     const matchingRecords = searchRecords(
       [
-        ...filteredProposalDrafts.map((d) => ({
+        ...proposalDrafts.map((d) => ({
           type: "draft",
           data: d,
           tokens: [
@@ -243,7 +415,7 @@ const BrowseScreen = () => {
           ],
           fallbackSortProperty: Infinity,
         })),
-        ...filteredProposals.map((p) => ({
+        ...proposals.map((p) => ({
           type: "proposal",
           data: p,
           tokens: [
@@ -254,21 +426,20 @@ const BrowseScreen = () => {
           ],
           fallbackSortProperty: p.createdBlock,
         })),
-        ...[...filteredCandidates, ...filteredProposalUpdateCandidates].map(
-          (c) => ({
-            type: "candidate",
-            data: c,
-            tokens: [
-              { value: c.id, exact: true },
-              { value: c.proposerId, exact: true },
-              { value: c.latestVersion?.content.title },
-              ...(c.latestVersion?.content.contentSignatures ?? []).map(
-                (s) => ({ value: s.signer.id, exact: true }),
-              ),
-            ],
-            fallbackSortProperty: c.createdBlock,
-          }),
-        ),
+        ...[...candidates, ...relevantProposalUpdateCandidates].map((c) => ({
+          type: "candidate",
+          data: c,
+          tokens: [
+            { value: c.id, exact: true },
+            { value: c.proposerId, exact: true },
+            { value: c.latestVersion?.content.title },
+            ...(c.latestVersion?.content.contentSignatures ?? []).map((s) => ({
+              value: s.signer.id,
+              exact: true,
+            })),
+          ],
+          fallbackSortProperty: c.createdBlock,
+        })),
       ],
       [deferredQuery, ...matchingAddresses],
     );
@@ -291,10 +462,10 @@ const BrowseScreen = () => {
   }, [
     deferredQuery,
     matchingEnsAddress,
-    filteredProposals,
-    filteredCandidates,
-    filteredProposalUpdateCandidates,
-    filteredProposalDrafts,
+    proposals,
+    candidates,
+    relevantProposalUpdateCandidates,
+    proposalDrafts,
     primaryEnsNameByAddress,
   ]);
 
@@ -561,65 +732,17 @@ const BrowseScreen = () => {
           <div css={css({ padding: "2rem 0" })}>
             <ProposalList
               forcePlaceholder={!hasFetchedOnce}
-              items={[
-                // "proposals:chronological",
-                // "proposals:authored",
-                "proposals:sponsored-proposal-update-awaiting-signature",
-                "proposals:awaiting-vote",
-                "proposals:ongoing",
-                "topics:new",
-                "topics:active",
-                "proposals:new",
-                "candidates:new",
-                "candidates:active",
-                "proposals:past",
-              ]
-                .map((sectionKey) => {
-                  const section = sectionsByName[sectionKey] ?? {};
-                  const overrides = {
-                    "proposals:new": {
-                      title: "Upcoming proposals",
-                      truncationThreshold: 2,
-                    },
-                    "proposals:ongoing": {
-                      title: "Ongoing proposals",
-                    },
-                    "proposals:awaiting-vote": { title: "Not yet voted" },
-                    "proposals:past": {
-                      title: "Past proposals",
-                      truncationThreshold: 4,
-                    },
-                    "candidates:new": {
-                      title: "New candidates",
-                      description: "Created within the last 3 days",
-                      truncationThreshold: 2,
-                    },
-                    "candidates:active": {
-                      title: "Recently active candidates",
-                      truncationThreshold: 2,
-                    },
-                    "proposals:sponsored-proposal-update-awaiting-signature": {
-                      title: "Missing your signature",
-                    },
-                    "topics:new": {
-                      title: "New topics",
-                      description: "Created within the last 3 days",
-                      truncationThreshold: 2,
-                    },
-                    "topics:active": {
-                      title: "Recently active topics",
-                      truncationThreshold: 2,
-                    },
-                  }[sectionKey];
-                  return {
-                    ...section,
-                    collapsible: true,
-                    ...overrides,
-                  };
-                })
-                .filter(
+              items={(() => {
+                const sections = createDigestSections({
+                  connectedAccountAddress,
+                  proposals,
+                  candidates,
+                  proposalUpdateCandidates: relevantProposalUpdateCandidates,
+                });
+                return sections.filter(
                   ({ children }) => children != null && children.length !== 0,
-                )}
+                );
+              })()}
             />
           </div>
         </Tabs.Item>
