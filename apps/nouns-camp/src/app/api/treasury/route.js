@@ -188,7 +188,7 @@ export async function GET() {
     },
     {
       headers: {
-        "Cache-Control": `max-age=${cacheTime}, s-max-age=${cacheTime}, stale-while-revalidate=${cacheTime * 2}`,
+        "Cache-Control": `max-age=${cacheTime}, s-maxage=${cacheTime}, stale-while-revalidate=${cacheTime * 2}`,
       },
     },
   );

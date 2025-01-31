@@ -31,7 +31,7 @@ export async function GET(request) {
     {
       status: 200,
       headers: {
-        "Cache-Control": "max-age=10, s-max-age=10, stale-while-revalidate=20",
+        "Cache-Control": "max-age=10, s-maxage=10, stale-while-revalidate=20",
       },
     },
   );

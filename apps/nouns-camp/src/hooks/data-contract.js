@@ -3,7 +3,6 @@ import {
   keccak256,
   encodePacked,
   encodeAbiParameters,
-  decodeEventLog,
 } from "viem";
 import { useReadContract, useSimulateContract, useSignTypedData } from "wagmi";
 import { CHAIN_ID } from "../constants/env.js";
@@ -206,30 +205,7 @@ export const useCreateProposalCandidate = ({ enabled = true } = {}) => {
       slug,
       account: accountAddress,
     });
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    const eventLog = receipt.logs.find((l) => l.address === contractAddress);
-    const decodedEvent = decodeEventLog({
-      abi: [
-        {
-          inputs: [
-            { indexed: true, name: "msgSender", type: "address" },
-            { name: "targets", type: "address[]" },
-            { name: "values", type: "uint256[]" },
-            { name: "signatures", type: "string[]" },
-            { name: "calldatas", type: "bytes[]" },
-            { name: "description", type: "string" },
-            { name: "slug", type: "string" },
-            { name: "proposalIdToUpdate", type: "uint256" },
-            { name: "encodedProposalHash", type: "bytes32" },
-          ],
-          name: "ProposalCandidateCreated",
-          type: "event",
-        },
-      ],
-      data: eventLog.data,
-      topics: eventLog.topics,
-    });
-    return decodedEvent.args;
+    await publicClient.waitForTransactionReceipt({ hash });
   };
 };
 

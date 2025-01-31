@@ -154,7 +154,7 @@ const Content = ({ draftId, startNavigationTransition }) => {
       setPendingRequest(true);
 
       return Promise.resolve()
-        .then(() => {
+        .then(async () => {
           switch (submitTargetType) {
             case "proposal":
               return createProposal({ description, transactions });
@@ -167,11 +167,8 @@ const Content = ({ draftId, startNavigationTransition }) => {
                   "Topics should not have transactions",
                 );
               const slug = buildCandidateSlug(draft.name.trim());
-              return createCandidate({
-                slug,
-                description,
-                transactions,
-              });
+              await createCandidate({ slug, description, transactions });
+              return { slug };
             }
 
             default:
