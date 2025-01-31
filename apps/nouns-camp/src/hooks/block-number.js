@@ -8,7 +8,7 @@ const useBlockNumber = ({ watch = false, cacheTime } = {}) => {
       const { number } = await response.json();
       return BigInt(number);
     },
-    gcTime: cacheTime,
+    staleTime: cacheTime,
     refetchInterval: watch ? 5000 : undefined,
   });
 
