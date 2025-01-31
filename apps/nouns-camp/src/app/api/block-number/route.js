@@ -3,6 +3,8 @@ import { CHAIN_ID } from "../../../constants/env.js";
 import { getChain } from "../../../utils/chains.js";
 import { getJsonRpcUrl } from "../../../wagmi-config.js";
 
+export const runtime = "edge";
+
 const chain = getChain(CHAIN_ID);
 
 const MAX_AGE = 5; // 5 seconds
