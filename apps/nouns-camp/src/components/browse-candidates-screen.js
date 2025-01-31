@@ -4,7 +4,6 @@ import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
 import { css } from "@emotion/react";
-import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
 import { array as arrayUtils, searchRecords } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
@@ -13,7 +12,6 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import * as Menu from "@shades/ui-web/dropdown-menu";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
-// import Switch from "@shades/ui-web/switch";
 import {
   useSubgraphFetch,
   useEnsCache,
@@ -29,7 +27,7 @@ import { useWallet } from "../hooks/wallet.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import DateRangePicker from "./date-range-picker.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 import { FULL_PROPOSAL_CANDIDATE_FIELDS } from "@/nouns-subgraph.js";
 
 const NEW_THRESHOLD_IN_DAYS = 3;
@@ -466,16 +464,6 @@ const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
           candidateType === "topic"
             ? { to: "/topics", label: "Topics" }
             : { to: "/candidates", label: "Candidates" },
-        ]}
-        actions={[
-          {
-            label: "Propose",
-            buttonProps: {
-              component: NextLink,
-              href: "/new",
-              prefetch: true,
-            },
-          },
         ]}
       >
         <div css={css({ padding: "0 1.6rem" })}>

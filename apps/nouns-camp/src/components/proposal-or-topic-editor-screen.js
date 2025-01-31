@@ -133,9 +133,8 @@ const Content = ({ draftId, startNavigationTransition }) => {
 
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
-      const transactions = draft.actions.flatMap((a) =>
-        resolveActionTransactions(a),
-      );
+      const transactions =
+        draft.actions?.flatMap((a) => resolveActionTransactions(a)) ?? [];
 
       if (
         submitTargetType !== "topic" &&

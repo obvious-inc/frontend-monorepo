@@ -2,7 +2,6 @@
 
 import React from "react";
 import { css } from "@emotion/react";
-import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
 import {
   array as arrayUtils,
@@ -27,7 +26,7 @@ import { useWallet } from "../hooks/wallet.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import DateRangePicker from "./date-range-picker.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 
 const capitalize = (string) =>
   (string[0].toUpperCase() + string.slice(1)).replaceAll("-", " ");
@@ -482,19 +481,7 @@ const BrowseProposalsScreen = () => {
 
   return (
     <>
-      <Layout
-        navigationStack={[{ to: "/proposals", label: "Proposals" }]}
-        actions={[
-          {
-            label: "Propose",
-            buttonProps: {
-              component: NextLink,
-              href: "/new",
-              prefetch: true,
-            },
-          },
-        ]}
-      >
+      <Layout navigationStack={[{ to: "/proposals", label: "Proposals" }]}>
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer
             sidebarWidth="30rem"

@@ -289,7 +289,8 @@ const TopicScreenContent = ({ candidateId }) => {
   const activityFeedProps = {
     context: "candidate",
     pendingRepliesByTargetItemId,
-    items: feedItems.toReversed(),
+    items:
+      sortStrategy === "chronological" ? feedItems.toReversed() : feedItems,
     onRepost: formAction === "farcaster-comment" ? null : onRepost,
     submitInlineReply: async (targetItemId, data) => {
       const targetItem = feedItems.find((i) => i.id === targetItemId);

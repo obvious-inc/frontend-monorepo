@@ -8,6 +8,7 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { useIsOnScreen } from "@shades/common/react";
+import { useCachedState } from "@shades/common/app";
 import {
   ArrowDownSmall as ArrowDownSmallIcon,
   DotsHorizontal as DotsHorizontalIcon,
@@ -52,7 +53,20 @@ const isDebugSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("debug") != null;
 
-const ProposalList = ({
+const CACHE_NAMESPACE = "sectioned-list";
+
+const useCachedOrEphemeralState = (initialState, { cacheKey } = {}) => {
+  const [state, setState] = React.useState(initialState);
+  const [cachedState, setCachedState] = useCachedState(
+    `${CACHE_NAMESPACE}:${cacheKey ?? "-"}`,
+    initialState,
+  );
+  if (cacheKey == null) return [state, setState];
+  return [cachedState, setCachedState];
+};
+
+const SectionedList = ({
+  cacheKey,
   items,
   sortStrategy,
   showCandidateScore = false,
@@ -62,8 +76,11 @@ const ProposalList = ({
 }) => {
   const showPlaceholders =
     forcePlaceholder || (isLoading && items.length === 0);
+  const [collapsedSectionKeys, setCollapsedSectionKeys] =
+    useCachedOrEphemeralState([], {
+      cacheKey: cacheKey == null ? null : `${cacheKey}:collapsed-sections`,
+    });
   const [expandedSectionKeys, setExpandedSectionKeys] = React.useState([]);
-  const [collapsedSectionKeys, setCollapsedSectionKeys] = React.useState([]);
 
   return (
     <>
@@ -99,32 +116,37 @@ const ProposalList = ({
               },
             },
             "& > li[data-section] button.section-title": {
-              cursor: "pointer",
               position: "relative",
+              cursor: "pointer",
               "@media(hover: hover)": {
                 ":hover": { color: t.colors.textDimmedModifierHover },
               },
               ".caret-container": {
-                position: "absolute",
-                right: "calc(100% + 0.2rem)",
-                width: "1rem",
+                // width: "1.6rem",
+                float: "right",
                 height: "1.4rem",
-                display: "flex",
+                marginLeft: "0.3em",
+                display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
                 svg: {
-                  width: "0.8rem",
+                  width: "0.9rem",
                   height: "auto",
                   transition: "0.1s transform",
                 },
                 "&[data-collapsed]": {
+                  float: "left",
+                  margin: "0 0.3em 0 0",
                   svg: {
                     transform: "rotate(-90deg)",
                   },
                 },
                 "@media(min-width: 600px)": {
+                  position: "absolute",
+                  right: "calc(100% + 0.2rem)",
+                  display: "flex",
+                  margin: 0,
                   width: "1.4rem",
-                  svg: { width: "0.9rem" },
                 },
               },
             },
@@ -410,17 +432,17 @@ const ProposalList = ({
                           );
                         }}
                       >
-                        <div
+                        <span
                           data-collapsed={isCollapsed || undefined}
                           className="caret-container"
                         >
                           <CaretDownIcon />
-                        </div>
+                        </span>
                         <h3>
                           {item.title}
                           {isCollapsed && <> ({item.children.length})</>}
                         </h3>
-                        {item.description != null && (
+                        {!isCollapsed && item.description != null && (
                           <span className="section-description">
                             {" "}
                             — {item.description}
@@ -1691,4 +1713,4 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   }
 };
 
-export default ProposalList;
+export default SectionedList;

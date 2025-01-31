@@ -321,7 +321,7 @@ const ProposalActionForm = ({
                       farcasterAccounts == null ||
                       farcasterAccounts.length === 0
                     )
-                      return null;
+                      return <>Comment as ...</>;
 
                     if (farcasterAccounts.length === 1) {
                       const selectedAccount = farcasterAccounts.find(

@@ -7,7 +7,7 @@ import DialogHeader from "@shades/ui-web/dialog-header";
 import Button from "@shades/ui-web/button";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import { useCollection as useDrafts } from "../hooks/drafts.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 
 const ProposalOrTopicDraftsDialog = ({ isOpen, close }) => {
   return (

@@ -146,7 +146,7 @@ export const getSignals = ({ candidate, proposerDelegate }) => {
   };
 };
 
-export const hadRecentActivity = ({ threshold }, c) =>
+const hadRecentActivity = ({ threshold }, c) =>
   c.createdTimestamp > threshold ||
   c.lastUpdatedTimestamp > threshold ||
   (c.feedbackPosts != null &&
