@@ -3,6 +3,8 @@ import { CHAIN_ID } from "../../../constants/env.js";
 import { getChain } from "../../../utils/chains.js";
 import { getJsonRpcUrl } from "../../../wagmi-config.js";
 
+export const runtime = "edge";
+
 const chain = getChain(CHAIN_ID);
 
 const MAX_AGE = 5; // 5 seconds
@@ -19,7 +21,7 @@ export async function GET() {
     { number: String(blockNumber) },
     {
       headers: {
-        "Cache-Control": `immutable, max-age=${MAX_AGE}, s-max-age=${MAX_AGE}`,
+        "Cache-Control": `immutable, s-maxage=${MAX_AGE}, max-age=${MAX_AGE}`,
       },
     },
   );
