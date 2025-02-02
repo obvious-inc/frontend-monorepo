@@ -7,7 +7,7 @@
   },
   "packageManager": "pnpm@9.15.3",
   "devDependencies": {
-    "prettier": "^3.3.3",
-    "turbo": "^2.1.1"
+    "prettier": "^3.4.2",
+    "turbo": "^2.4.0"
   }
 }
