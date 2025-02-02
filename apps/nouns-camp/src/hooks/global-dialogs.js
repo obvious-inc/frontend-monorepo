@@ -45,9 +45,9 @@ const dialogs = [
     ),
   },
   {
-    key: "proposal-drafts",
+    key: "drafts",
     component: ReactLazyWithPreload(
-      () => import("../components/proposal-drafts-dialog.js"),
+      () => import("../components/proposal-or-topic-drafts-dialog.js"),
     ),
   },
   {

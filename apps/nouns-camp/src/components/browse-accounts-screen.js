@@ -4,7 +4,6 @@ import startOfDay from "date-fns/startOfDay";
 import endOfDay from "date-fns/endOfDay";
 import React from "react";
 import { css } from "@emotion/react";
-import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
 import {
   array as arrayUtils,
@@ -21,7 +20,7 @@ import { useSearchParams } from "../hooks/navigation.js";
 import useContract from "../hooks/contract.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import DateRangePicker, { toLocalDate } from "./date-range-picker.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 
 const ONE_DAY_MILLIS = 24 * 60 * 60 * 1000;
 
@@ -434,19 +433,7 @@ const BrowseAccountsScreen = () => {
 
   return (
     <>
-      <Layout
-        navigationStack={[{ to: "/voters", label: "Voters" }]}
-        actions={[
-          {
-            label: "Propose",
-            buttonProps: {
-              component: NextLink,
-              href: "/new",
-              prefetch: true,
-            },
-          },
-        ]}
-      >
+      <Layout navigationStack={[{ to: "/voters", label: "Voters" }]}>
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer narrow>
             <div

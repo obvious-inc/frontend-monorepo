@@ -12,6 +12,7 @@ export default function NotFound() {
   const candidateId = normalizeId(params.id);
   const slug = extractSlugFromId(candidateId);
   const proposerId = candidateId.split("-")[0];
+  const isTopic = location.pathname.startsWith("/topics/");
 
   return (
     <ClientAppProvider>
@@ -20,7 +21,7 @@ export default function NotFound() {
         description={
           isAddress(proposerId) ? (
             <>
-              {`Found no candidate "${slug}" for account`}{" "}
+              {`Found no ${isTopic ? "topic" : "candidate"} "${slug}" for account`}{" "}
               <AccountPreviewPopoverTrigger
                 showAvatar
                 accountAddress={proposerId}
@@ -28,16 +29,22 @@ export default function NotFound() {
               .
             </>
           ) : !isNaN(Number(params.id)) ? (
-            `No candidate with number "${params.id}" found.`
+            `No ${
+              isTopic ? "topic" : "candidates"
+            } with number "${params.id}" found.`
           ) : (
             `"${proposerId}" is not a valid account address.`
           )
         }
         imageSrc="https://media1.tenor.com/m/3hjyPqYx4pEAAAAC/nouns-nounsdao.gif"
-        linkHref="/?tab=candidates"
-        linkLabel="Browse candidates"
+        linkHref={isTopic ? "/topics" : "/candidates"}
+        linkLabel={isTopic ? "Browse topics" : "Browse candidates"}
         navigationStack={[
-          { to: "/?tab=candidates", label: "Candidates", desktopOnly: true },
+          {
+            to: isTopic ? "/topics" : "/candidates",
+            label: isTopic ? "Topic" : "Candidates",
+            desktopOnly: true,
+          },
         ]}
       />
     </ClientAppProvider>

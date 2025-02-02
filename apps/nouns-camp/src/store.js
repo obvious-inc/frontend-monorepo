@@ -2053,6 +2053,7 @@ export const useProposal = (id, { watch = true } = {}) => {
 };
 
 export const useProposalCandidates = ({
+  type, // proposal | topic
   includeCanceled = false,
   includePromoted = false,
   includeProposalUpdates = false,
@@ -2066,8 +2067,15 @@ export const useProposalCandidates = ({
     const candidates = Object.values(candidatesById);
 
     const filteredCandidates = candidates.filter((c) => {
-      // Filter canceled candidates
-      if (c.canceledTimestamp != null) return includeCanceled;
+      const isProposal = c.latestVersion?.content.transactions?.length > 0;
+      const isTopic = c.latestVersion?.content.transactions?.length === 0;
+
+      if (type === "topic" && isProposal) return false;
+      if (type === "proposal" && isTopic) return false;
+
+      if (c.canceledTimestamp != null)
+        // Canceled candidates disregard other filters
+        return includeCanceled;
 
       // Filter candidates with a matching proposal
       if (c.latestVersion?.proposalId != null) return includePromoted;
@@ -2097,6 +2105,7 @@ export const useProposalCandidates = ({
     includeCanceled,
     includePromoted,
     includeProposalUpdates,
+    type,
   ]);
 };
 

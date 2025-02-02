@@ -8,12 +8,15 @@ import {
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { useIsOnScreen } from "@shades/common/react";
+import { useCachedState } from "@shades/common/app";
 import {
   ArrowDownSmall as ArrowDownSmallIcon,
   DotsHorizontal as DotsHorizontalIcon,
+  CaretDown as CaretDownIcon,
 } from "@shades/ui-web/icons";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import Button from "@shades/ui-web/button";
+import Link from "@shades/ui-web/link";
 import {
   useDelegate,
   useAccount,
@@ -50,7 +53,20 @@ const isDebugSession =
   typeof location !== "undefined" &&
   new URLSearchParams(location.search).get("debug") != null;
 
-const ProposalList = ({
+const CACHE_NAMESPACE = "sectioned-list";
+
+const useCachedOrEphemeralState = (initialState, { cacheKey } = {}) => {
+  const [state, setState] = React.useState(initialState);
+  const [cachedState, setCachedState] = useCachedState(
+    `${CACHE_NAMESPACE}:${cacheKey ?? "-"}`,
+    initialState,
+  );
+  if (cacheKey == null) return [state, setState];
+  return [cachedState, setCachedState];
+};
+
+const SectionedList = ({
+  cacheKey,
   items,
   sortStrategy,
   showCandidateScore = false,
@@ -60,6 +76,11 @@ const ProposalList = ({
 }) => {
   const showPlaceholders =
     forcePlaceholder || (isLoading && items.length === 0);
+  const [collapsedSectionKeys, setCollapsedSectionKeys] =
+    useCachedOrEphemeralState([], {
+      cacheKey: cacheKey == null ? null : `${cacheKey}:collapsed-sections`,
+    });
+  const [expandedSectionKeys, setExpandedSectionKeys] = React.useState([]);
 
   return (
     <>
@@ -94,11 +115,49 @@ const ProposalList = ({
                 fontWeight: t.text.weights.emphasis,
               },
             },
+            "& > li[data-section] button.section-title": {
+              position: "relative",
+              cursor: "pointer",
+              "@media(hover: hover)": {
+                ":hover": { color: t.colors.textDimmedModifierHover },
+              },
+              ".caret-container": {
+                // width: "1.6rem",
+                float: "right",
+                height: "1.4rem",
+                marginLeft: "0.3em",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                svg: {
+                  width: "0.9rem",
+                  height: "auto",
+                  transition: "0.1s transform",
+                },
+                "&[data-collapsed]": {
+                  float: "left",
+                  margin: "0 0.3em 0 0",
+                  svg: {
+                    transform: "rotate(-90deg)",
+                  },
+                },
+                "@media(min-width: 600px)": {
+                  position: "absolute",
+                  right: "calc(100% + 0.2rem)",
+                  display: "flex",
+                  margin: 0,
+                  width: "1.4rem",
+                },
+              },
+            },
             "& > li[data-section] .section-desciption": {
               // textTransform: "none",
               // fontSize: t.text.sizes.small,
               // fontWeight: t.text.weights.normal,
               // color: t.colors.textDimmed,
+            },
+            "& > li[data-section] .truncation-button-container": {
+              margin: "0.4rem 0 2.4rem",
             },
             "& > li:not([data-section]), & > li[data-section] > ul > li": {
               position: "relative",
@@ -269,7 +328,7 @@ const ProposalList = ({
             // Placeholder
             ".item-placeholder, .section-title-placeholder": {
               background: hoverColor,
-              borderRadius: "0.3rem",
+              borderRadius: "0.4rem",
             },
             ".item-placeholder": {
               height: "6.2rem",
@@ -323,9 +382,9 @@ const ProposalList = ({
               return (
                 <li key={item.id}>
                   {item.type === "draft" ? (
-                    <ProposalDraftListItem draftId={item.id} {...props} />
+                    <DraftListItem draftId={item.id} {...props} />
                   ) : item.slug != null ? (
-                    <CandidateListItem
+                    <CandidateOrTopicListItem
                       candidateId={item.id}
                       showScoreStack={showCandidateScore}
                       {...props}
@@ -345,23 +404,107 @@ const ProposalList = ({
               );
             };
 
-            if (item.type === "section")
+            if (item.type === "section") {
+              const isCollapsed =
+                item.collapsible && collapsedSectionKeys.includes(item.key);
+              const enableTruncation =
+                item.truncationThreshold != null &&
+                item.children.length > item.truncationThreshold;
+              const isTruncated =
+                enableTruncation && !expandedSectionKeys.includes(item.key);
+              const visibleChildren = isTruncated
+                ? item.children.slice(0, item.truncationThreshold)
+                : item.children;
               return (
                 <li key={`section-${item.key}`} data-section={item.key}>
-                  {item.title != null && (
-                    <div className="section-title">
-                      <h3>{item.title}</h3>
-                      {item.description != null && (
-                        <span className="section-description">
-                          {" "}
-                          — {item.description}
+                  {item.title != null &&
+                    (item.collapsible ? (
+                      <button
+                        className="section-title"
+                        onClick={() => {
+                          setCollapsedSectionKeys((keys) =>
+                            keys.includes(item.key)
+                              ? keys.filter((k) => k !== item.key)
+                              : [...keys, item.key],
+                          );
+                          setExpandedSectionKeys((keys) =>
+                            keys.filter((k) => k !== item.key),
+                          );
+                        }}
+                      >
+                        <span
+                          data-collapsed={isCollapsed || undefined}
+                          className="caret-container"
+                        >
+                          <CaretDownIcon />
                         </span>
+                        <h3>
+                          {item.title}
+                          {isCollapsed && <> ({item.children.length})</>}
+                        </h3>
+                        {!isCollapsed && item.description != null && (
+                          <span className="section-description">
+                            {" "}
+                            — {item.description}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <div className="section-title">
+                        <h3>{item.title}</h3>
+                        {item.description != null && (
+                          <span className="section-description">
+                            {" "}
+                            — {item.description}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  {!isCollapsed && (
+                    <>
+                      <ul>{visibleChildren.map(renderItem)}</ul>
+                      {enableTruncation && (
+                        <div className="truncation-button-container">
+                          <Link
+                            component="button"
+                            onClick={() => {
+                              setExpandedSectionKeys((keys) =>
+                                keys.includes(item.key)
+                                  ? keys.filter((k) => k !== item.key)
+                                  : [...keys, item.key],
+                              );
+                            }}
+                            size="small"
+                            variant="dimmed"
+                          >
+                            {isTruncated ? (
+                              <>
+                                Show{" "}
+                                {item.children.length -
+                                  item.truncationThreshold}{" "}
+                                more...
+                              </>
+                            ) : (
+                              <>
+                                Show less{" "}
+                                <CaretDownIcon
+                                  style={{
+                                    width: "0.75em",
+                                    height: "auto",
+                                    display: "inline-flex",
+                                    transform: "scaleY(-1)",
+                                  }}
+                                />
+                              </>
+                            )}
+                          </Link>
+                        </div>
                       )}
-                    </div>
+                    </>
                   )}
-                  <ul>{item.children.map(renderItem)}</ul>
                 </li>
               );
+            }
 
             return renderItem(item);
           })
@@ -546,332 +689,342 @@ const ProposalListItem = React.memo(({ proposalId, sortStrategy }) => {
   );
 });
 
-const CandidateListItem = React.memo(({ candidateId, showScoreStack }) => {
-  const containerRef = React.useRef();
-  const hasBeenOnScreenRef = React.useRef(false);
+const CandidateOrTopicListItem = React.memo(
+  ({ candidateId, showScoreStack }) => {
+    const containerRef = React.useRef();
+    const hasBeenOnScreenRef = React.useRef(false);
 
-  const candidate = useProposalCandidate(candidateId);
-  const updateTargetProposal = useProposal(
-    candidate.latestVersion.targetProposalId,
-    { watch: false },
-  );
-  const promotedProposal = useProposal(candidate.latestVersion.proposalId, {
-    watch: false,
-  });
-
-  const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
-  const proposalThreshold = useProposalThreshold();
-
-  const isOnScreen = useIsOnScreen(containerRef);
-
-  React.useEffect(() => {
-    if (isOnScreen) hasBeenOnScreenRef.current = true;
-  });
-
-  const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
-
-  const { votes } = getCandidateSignals({ candidate });
-  const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
-    (v) => v.support,
-    votes,
-  );
-  // const commentCount =
-  //   signals.delegates.for +
-  //   signals.delegates.against +
-  //   signals.delegates.abstain;
-
-  const isCanceled = candidate.canceledTimestamp != null;
-  const isPromoted = candidate.latestVersion.proposalId != null;
-  const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-  const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
-
-  const hasUpdate =
-    candidate.lastUpdatedTimestamp != null &&
-    candidate.lastUpdatedTimestamp.getTime() !==
-      candidate.createdTimestamp.getTime();
-
-  const feedbackPostsAscending = arrayUtils.sortBy(
-    (p) => p.createdBlock,
-    candidate?.feedbackPosts ?? [],
-  );
-  const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
-
-  const hasFeedback = mostRecentFeedbackPost != null;
-
-  const mostRecentActivity =
-    hasFeedback &&
-    (!hasUpdate ||
-      mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
-      ? "feedback"
-      : hasUpdate
-        ? "update"
-        : "create";
-
-  const feedbackAuthorAccounts = arrayUtils.unique(
-    feedbackPostsAscending.map((p) => p.voterId),
-  );
-
-  const renderProposalUpdateStatusText = () => {
-    if (updateTargetProposal?.signers == null) return "...";
-
-    const validSignatures = getCandidateSponsorSignatures(candidate, {
-      excludeInvalid: true,
-      activeProposerIds: [],
+    const candidate = useProposalCandidate(candidateId);
+    const updateTargetProposal = useProposal(
+      candidate.latestVersion.targetProposalId,
+      { watch: false },
+    );
+    const promotedProposal = useProposal(candidate.latestVersion.proposalId, {
+      watch: false,
     });
 
-    const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+    const candidateVotingPower = useProposalCandidateVotingPower(candidateId);
+    const proposalThreshold = useProposalThreshold();
 
-    const missingSigners = updateTargetProposal.signers.filter((s) => {
-      const signerId = s.id.toLowerCase();
-      return !signerIds.includes(signerId);
+    const isOnScreen = useIsOnScreen(containerRef);
+
+    React.useEffect(() => {
+      if (isOnScreen) hasBeenOnScreenRef.current = true;
     });
 
-    const sponsorCount =
-      updateTargetProposal.signers.length - missingSigners.length;
+    const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
+
+    const { votes } = getCandidateSignals({ candidate });
+    const { 0: againstVotes = [], 1: forVotes = [] } = arrayUtils.groupBy(
+      (v) => v.support,
+      votes,
+    );
+    // const commentCount =
+    //   signals.delegates.for +
+    //   signals.delegates.against +
+    //   signals.delegates.abstain;
+
+    const isCanceled = candidate.canceledTimestamp != null;
+    const isPromoted = candidate.latestVersion.proposalId != null;
+    const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
+    const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
+    const isTopic = candidate.latestVersion.content.transactions.length === 0;
+
+    const hasUpdate =
+      candidate.lastUpdatedTimestamp != null &&
+      candidate.lastUpdatedTimestamp.getTime() !==
+        candidate.createdTimestamp.getTime();
+
+    const feedbackPostsAscending = arrayUtils.sortBy(
+      (p) => p.createdBlock,
+      candidate?.feedbackPosts ?? [],
+    );
+    const mostRecentFeedbackPost = feedbackPostsAscending.slice(-1)[0];
+
+    const hasFeedback = mostRecentFeedbackPost != null;
+
+    const mostRecentActivity =
+      hasFeedback &&
+      (!hasUpdate ||
+        mostRecentFeedbackPost.createdBlock > candidate.lastUpdatedBlock)
+        ? "feedback"
+        : hasUpdate
+          ? "update"
+          : "create";
+
+    const feedbackAuthorAccounts = arrayUtils.unique(
+      feedbackPostsAscending.map((p) => p.voterId),
+    );
+
+    const renderProposalUpdateStatusText = () => {
+      if (updateTargetProposal?.signers == null) return "...";
+
+      const validSignatures = getCandidateSponsorSignatures(candidate, {
+        excludeInvalid: true,
+        activeProposerIds: [],
+      });
+
+      const signerIds = validSignatures.map((s) => s.signer.id.toLowerCase());
+
+      const missingSigners = updateTargetProposal.signers.filter((s) => {
+        const signerId = s.id.toLowerCase();
+        return !signerIds.includes(signerId);
+      });
+
+      const sponsorCount =
+        updateTargetProposal.signers.length - missingSigners.length;
+
+      return (
+        <>
+          {sponsorCount} of {updateTargetProposal.signers.length}{" "}
+          {updateTargetProposal.signers.length === 1 ? "sponsor" : "sponsors"}{" "}
+          signed
+        </>
+      );
+    };
 
     return (
       <>
-        {sponsorCount} of {updateTargetProposal.signers.length}{" "}
-        {updateTargetProposal.signers.length === 1 ? "sponsor" : "sponsors"}{" "}
-        signed
-      </>
-    );
-  };
-
-  return (
-    <>
-      <NextLink
-        className="link"
-        prefetch
-        href={`/candidates/${encodeURIComponent(
-          makeCandidateUrlId(candidateId),
-        )}`}
-      />
-      <div ref={containerRef} className="item-container proposal-candidate">
-        <div className="left-container" data-score={showScoreStack}>
-          {showScoreStack && <div />}
-          <div>
-            <div className="small dimmed nowrap">
-              {isProposalUpdate
-                ? "Proposal update"
-                : `Candidate ${candidate.number}`}{" "}
-              by{" "}
-              <em
-                data-show={hasBeenOnScreen}
-                css={(t) =>
-                  css({
-                    pointerEvents: "all",
-                    fontWeight: t.text.weights.emphasis,
-                    fontStyle: "normal",
-                  })
-                }
-              >
-                {!hasBeenOnScreen ? null : candidate.proposerId == null ? (
-                  "..."
-                ) : (
-                  <AccountPreviewPopoverTrigger
-                    accountAddress={candidate.proposerId}
-                  />
-                )}
-              </em>
-              {!isCanceled && !isPromoted && isProposalThresholdMet && (
-                <span>
-                  <span
-                    role="separator"
-                    aria-orientation="vertical"
-                    css={(t) =>
-                      css({
-                        ":before": {
-                          content: '"–"',
-                          color: t.colors.textMuted,
-                          margin: "0 0.5rem",
-                        },
-                      })
-                    }
-                  />
-                  <i>Sponsor threshold met</i>
-                </span>
-              )}
-            </div>
-            <div
-              className="title"
-              css={css({ margin: "0.1rem 0", position: "relative" })}
-            >
-              {candidate.latestVersion.content.title}
-              {showScoreStack && (
-                <div className="score-container">
-                  <ScoreStack
-                    for={forVotes.length}
-                    against={againstVotes.length}
-                  />
-                </div>
-              )}
-            </div>
-            <div className="status-container">
-              {/* <span data-desktop-only> */}
-              {/*   {commentCount > 0 ? ( */}
-              {/*     <> */}
-              {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
-              {/*         {commentCount} comments */}
-              {/*       </span> */}
-              {/*     </> */}
-              {/*   ) : null} */}
-              {/* </span> */}
-              {(isProposalUpdate || isCanceled) && (
-                <div className="tags-container">
-                  {isProposalUpdate && (
-                    <Tag variant="special" size="large">
-                      Prop {candidate.latestVersion.targetProposalId} update
-                    </Tag>
-                  )}
-                  {isCanceled && (
-                    <Tag variant="error" size="large">
-                      Canceled
-                    </Tag>
-                  )}
-                </div>
-              )}
-              <div className="small dimmed">
-                {isProposalUpdate ? (
-                  renderProposalUpdateStatusText()
-                ) : promotedProposal?.createdTimestamp != null ? (
-                  <>
-                    Promoted to{" "}
-                    <NextLink
-                      className="proposal-link"
-                      href={`/proposals/${candidate.latestVersion.proposalId}`}
-                    >
-                      Prop {candidate.latestVersion.proposalId}
-                    </NextLink>{" "}
-                    <FormattedDateWithTooltip
-                      relativeDayThreshold={5}
-                      capitalize={false}
-                      value={promotedProposal.createdTimestamp}
-                      day="numeric"
-                      month="short"
-                      year={
-                        getDateYear(promotedProposal.createdTimestamp) !==
-                        getDateYear(new Date())
-                          ? "numeric"
-                          : undefined
-                      }
+        <NextLink
+          className="link"
+          prefetch
+          href={
+            isTopic
+              ? `/topics/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
+              : `/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
+          }
+        />
+        <div ref={containerRef} className="item-container proposal-candidate">
+          <div className="left-container" data-score={showScoreStack}>
+            {showScoreStack && <div />}
+            <div>
+              <div className="small dimmed nowrap">
+                {isProposalUpdate
+                  ? "Proposal update"
+                  : isTopic
+                    ? "Topic"
+                    : `Candidate ${candidate.number}`}{" "}
+                by{" "}
+                <em
+                  data-show={hasBeenOnScreen}
+                  css={(t) =>
+                    css({
+                      pointerEvents: "all",
+                      fontWeight: t.text.weights.emphasis,
+                      fontStyle: "normal",
+                    })
+                  }
+                >
+                  {!hasBeenOnScreen ? null : candidate.proposerId == null ? (
+                    "..."
+                  ) : (
+                    <AccountPreviewPopoverTrigger
+                      accountAddress={candidate.proposerId}
                     />
-                  </>
-                ) : (
-                  <>
-                    {mostRecentActivity === "update" ? (
-                      <>
-                        Last updated{" "}
-                        <FormattedDateWithTooltip
-                          relativeDayThreshold={5}
-                          capitalize={false}
-                          value={candidate.lastUpdatedTimestamp}
-                          day="numeric"
-                          month="short"
-                          year={
-                            getDateYear(candidate.lastUpdatedTimestamp) !==
-                            getDateYear(new Date())
-                              ? "numeric"
-                              : undefined
-                          }
-                        />
-                      </>
-                    ) : mostRecentActivity === "feedback" ? (
-                      <>
-                        Last comment{" "}
-                        <FormattedDateWithTooltip
-                          relativeDayThreshold={5}
-                          capitalize={false}
-                          value={mostRecentFeedbackPost.createdTimestamp}
-                          day="numeric"
-                          month="short"
-                          year={
-                            getDateYear(
-                              mostRecentFeedbackPost.createdTimestamp,
-                            ) !== getDateYear(new Date())
-                              ? "numeric"
-                              : undefined
-                          }
-                        />
-                      </>
-                    ) : (
-                      <>
-                        Created{" "}
-                        <FormattedDateWithTooltip
-                          relativeDayThreshold={5}
-                          capitalize={false}
-                          value={candidate.createdTimestamp}
-                          day="numeric"
-                          month="short"
-                          year={
-                            getDateYear(candidate.createdTimestamp) !==
-                            getDateYear(new Date())
-                              ? "numeric"
-                              : undefined
-                          }
-                        />
-                      </>
-                    )}
-                  </>
-                )}
+                  )}
+                </em>
+                {!isTopic &&
+                  !isCanceled &&
+                  !isPromoted &&
+                  isProposalThresholdMet && (
+                    <span>
+                      <span
+                        role="separator"
+                        aria-orientation="vertical"
+                        css={(t) =>
+                          css({
+                            ":before": {
+                              content: '"–"',
+                              color: t.colors.textMuted,
+                              margin: "0 0.5rem",
+                            },
+                          })
+                        }
+                      />
+                      <i>Sponsor threshold met</i>
+                    </span>
+                  )}
               </div>
               <div
-                data-show={isOnScreen}
-                className="avatar-container narrow-only"
+                className="title"
+                css={css({ margin: "0.1rem 0", position: "relative" })}
               >
-                {feedbackAuthorAccounts
-                  .slice(0, 10)
-                  .map((a) =>
-                    isOnScreen ? (
-                      <AccountAvatar
-                        key={a}
-                        address={a}
-                        size="1.4rem"
-                        borderRadius="0.2rem"
-                        signature="?"
+                {candidate.latestVersion.content.title}
+                {showScoreStack && (
+                  <div className="score-container">
+                    <ScoreStack
+                      for={forVotes.length}
+                      against={againstVotes.length}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="status-container">
+                {/* <span data-desktop-only> */}
+                {/*   {commentCount > 0 ? ( */}
+                {/*     <> */}
+                {/*       <span data-small style={{ marginRight: "1.6rem" }}> */}
+                {/*         {commentCount} comments */}
+                {/*       </span> */}
+                {/*     </> */}
+                {/*   ) : null} */}
+                {/* </span> */}
+                {(isProposalUpdate || isCanceled) && (
+                  <div className="tags-container">
+                    {isProposalUpdate && (
+                      <Tag variant="special" size="large">
+                        Prop {candidate.latestVersion.targetProposalId} update
+                      </Tag>
+                    )}
+                    {isCanceled && (
+                      <Tag variant="error" size="large">
+                        {isTopic ? "Closed" : "Canceled"}
+                      </Tag>
+                    )}
+                  </div>
+                )}
+                <div className="small dimmed">
+                  {isProposalUpdate ? (
+                    renderProposalUpdateStatusText()
+                  ) : promotedProposal?.createdTimestamp != null ? (
+                    <>
+                      Promoted to{" "}
+                      <NextLink
+                        className="proposal-link"
+                        href={`/proposals/${candidate.latestVersion.proposalId}`}
+                      >
+                        Prop {candidate.latestVersion.proposalId}
+                      </NextLink>{" "}
+                      <FormattedDateWithTooltip
+                        relativeDayThreshold={5}
+                        capitalize={false}
+                        value={promotedProposal.createdTimestamp}
+                        day="numeric"
+                        month="short"
+                        year={
+                          getDateYear(promotedProposal.createdTimestamp) !==
+                          getDateYear(new Date())
+                            ? "numeric"
+                            : undefined
+                        }
                       />
-                    ) : (
-                      <div
-                        key={a}
-                        data-size="small"
-                        className="avatar-placeholder"
-                      />
-                    ),
+                    </>
+                  ) : (
+                    <>
+                      {mostRecentActivity === "update" ? (
+                        <>
+                          Last updated{" "}
+                          <FormattedDateWithTooltip
+                            relativeDayThreshold={5}
+                            capitalize={false}
+                            value={candidate.lastUpdatedTimestamp}
+                            day="numeric"
+                            month="short"
+                            year={
+                              getDateYear(candidate.lastUpdatedTimestamp) !==
+                              getDateYear(new Date())
+                                ? "numeric"
+                                : undefined
+                            }
+                          />
+                        </>
+                      ) : mostRecentActivity === "feedback" ? (
+                        <>
+                          Last comment{" "}
+                          <FormattedDateWithTooltip
+                            relativeDayThreshold={5}
+                            capitalize={false}
+                            value={mostRecentFeedbackPost.createdTimestamp}
+                            day="numeric"
+                            month="short"
+                            year={
+                              getDateYear(
+                                mostRecentFeedbackPost.createdTimestamp,
+                              ) !== getDateYear(new Date())
+                                ? "numeric"
+                                : undefined
+                            }
+                          />
+                        </>
+                      ) : (
+                        <>
+                          Created{" "}
+                          <FormattedDateWithTooltip
+                            relativeDayThreshold={5}
+                            capitalize={false}
+                            value={candidate.createdTimestamp}
+                            day="numeric"
+                            month="short"
+                            year={
+                              getDateYear(candidate.createdTimestamp) !==
+                              getDateYear(new Date())
+                                ? "numeric"
+                                : undefined
+                            }
+                          />
+                        </>
+                      )}
+                    </>
                   )}
-                {feedbackAuthorAccounts.length > 10 && <>...</>}
+                </div>
+                <div
+                  data-show={isOnScreen}
+                  className="avatar-container narrow-only"
+                >
+                  {feedbackAuthorAccounts
+                    .slice(0, 10)
+                    .map((a) =>
+                      isOnScreen ? (
+                        <AccountAvatar
+                          key={a}
+                          address={a}
+                          size="1.4rem"
+                          borderRadius="0.2rem"
+                          signature="?"
+                        />
+                      ) : (
+                        <div
+                          key={a}
+                          data-size="small"
+                          className="avatar-placeholder"
+                        />
+                      ),
+                    )}
+                  {feedbackAuthorAccounts.length > 10 && <>...</>}
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* votingPower > proposalThreshold ? ( */}
-          {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
-          {/* ) : ( */}
-          {/*   <Tag> */}
-          {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
-          {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
-          {/*   </Tag> */}
-          {/* )} */}
+            {/* votingPower > proposalThreshold ? ( */}
+            {/*   <Tag variant="success">Sponsor threshold met</Tag> */}
+            {/* ) : ( */}
+            {/*   <Tag> */}
+            {/*     {votingPower} / {proposalThreshold + 1}{" "} */}
+            {/*     {votingPower === 1 ? "sponsor" : "sponsors"} */}
+            {/*   </Tag> */}
+            {/* )} */}
+          </div>
+          <div data-show={isOnScreen} className="avatar-container wide-only">
+            {feedbackAuthorAccounts.slice(0, 10).map((a) =>
+              isOnScreen ? (
+                <AccountAvatar
+                  key={a}
+                  address={a}
+                  size="2rem"
+                  // borderRadius="0.2rem"
+                  // signature="?"
+                />
+              ) : (
+                <div key={a} data-size="large" className="avatar-placeholder" />
+              ),
+            )}
+            {feedbackAuthorAccounts.length > 10 && <>...</>}
+          </div>
         </div>
-        <div data-show={isOnScreen} className="avatar-container wide-only">
-          {feedbackAuthorAccounts.slice(0, 10).map((a) =>
-            isOnScreen ? (
-              <AccountAvatar
-                key={a}
-                address={a}
-                size="2rem"
-                // borderRadius="0.2rem"
-                // signature="?"
-              />
-            ) : (
-              <div key={a} data-size="large" className="avatar-placeholder" />
-            ),
-          )}
-          {feedbackAuthorAccounts.length > 10 && <>...</>}
-        </div>
-      </div>
-    </>
-  );
-});
+      </>
+    );
+  },
+);
 
 const AccountListItem = React.memo(
   ({ address: accountAddress, votes: votes_, revoteCount }) => {
@@ -1135,7 +1288,7 @@ const AccountListItem = React.memo(
   },
 );
 
-const ProposalDraftListItem = ({ draftId }) => {
+const DraftListItem = ({ draftId }) => {
   const { deleteItem: deleteDraft } = useDrafts();
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
@@ -1189,11 +1342,7 @@ const ProposalDraftListItem = ({ draftId }) => {
               onAction={(key) => {
                 switch (key) {
                   case "delete": {
-                    if (
-                      !confirm(
-                        "Are you sure you want to delete this proposal draft?",
-                      )
-                    )
+                    if (!confirm("Are you sure you want to delete this draft?"))
                       return;
                     deleteDraft(draftId);
                     break;
@@ -1564,4 +1713,4 @@ const renderPropStatusText = ({ proposal, calculateBlockTimestamp }) => {
   }
 };
 
-export default ProposalList;
+export default SectionedList;

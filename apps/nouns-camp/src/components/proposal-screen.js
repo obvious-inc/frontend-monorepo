@@ -22,6 +22,7 @@ import {
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
+import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
 import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
 import {
@@ -92,6 +93,9 @@ const ProposalEditDialog = React.lazy(
 );
 const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 
+const ScreenContext = React.createContext();
+const useScreenContext = () => React.useContext(ScreenContext);
+
 const nameBySupport = { 0: "against", 1: "for", 2: "abstain" };
 
 const supportToString = (n) => {
@@ -115,10 +119,17 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedTab =
     searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
-  const itemId = searchParams.get("item");
+  const focusedFeedItemId = searchParams.get("item");
 
   const proposal = useProposal(proposalId);
   const feedItems = useProposalFeedItems(proposalId);
+
+  const { isProposer, isSponsor } = useScreenContext();
+
+  const showAdminActions =
+    proposal.state !== "canceled" &&
+    !isFinalProposalState(proposal.state) &&
+    (isProposer || isSponsor);
 
   const { open: openVoteOverviewDialog } = useDialog("vote-overview");
 
@@ -327,7 +338,10 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
     proposalActionInputRef.current.focus();
   };
 
-  useScrollToElement({ id: itemId, enabled: itemId != null });
+  useScrollToElement({
+    id: focusedFeedItemId,
+    enabled: focusedFeedItemId != null,
+  });
 
   if (proposal == null) return null;
 
@@ -588,6 +602,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const activityFeedProps = {
     context: "proposal",
+    // variant: "boxed",
     items: feedItems,
     onReply: currentFormAction === "farcaster-comment" ? null : onReply,
     onRepost: currentFormAction === "farcaster-comment" ? null : onRepost,
@@ -609,6 +624,19 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                 })}
                 style={{ opacity: latestBlockNumber == null ? 0 : 1 }}
               >
+                {showAdminActions && (
+                  <div
+                    css={css({
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: "0.8rem",
+                      margin: "0 0 3.2rem",
+                    })}
+                  >
+                    <AdminDropdown proposalId={proposalId} />
+                  </div>
+                )}
+
                 {isVotingOngoing && hasCastVote && (
                   <Callout
                     css={(t) =>
@@ -746,52 +774,87 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               },
             })}
           >
-            {simulationError && (
-              <Callout
-                compact
-                variant="info"
-                css={() =>
-                  css({
-                    marginBottom: "2.4rem",
-                    "@media (min-width: 600px)": {
-                      marginBottom: "4.8rem",
-                    },
-                  })
-                }
-              >
-                <p>
-                  <b>This proposal will fail to execute.</b>
-                </p>
+            {(() => {
+              const showSimulationError = simulationError != null;
 
-                <p>
-                  One or more transactions didn&apos;t pass the simulation.
-                  Check the Transactions tab to see which ones failed.
-                </p>
-              </Callout>
-            )}
+              // Display state callout for "important" states on mobile
+              const showProposalState =
+                !isDesktopLayout &&
+                [
+                  "active",
+                  "updatable",
+                  "pending",
+                  "objection-period",
+                  "succeeded",
+                  "queued",
+                ].includes(proposal.state);
 
-            {/* Display state callout for "important" states on mobile */}
-            {!isDesktopLayout &&
-              [
-                "active",
-                "updatable",
-                "pending",
-                "objection-period",
-                "succeeded",
-                "queued",
-              ].includes(proposal.state) && (
-                <Callout
-                  icon={renderProposalStateIcon()}
-                  css={(t) =>
-                    css({
-                      fontSize: t.text.sizes.base,
+              const showAdminDropdown = showAdminActions && !isDesktopLayout;
+
+              if (
+                !showSimulationError &&
+                !showProposalState &&
+                !showAdminDropdown
+              )
+                return null;
+
+              return (
+                <div
+                  css={css({
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "1.6rem",
+                    margin: "0 0 1.6rem",
+                    "@media(min-width: 600px)": {
                       margin: "0 0 4rem",
-                    })
-                  }
+                    },
+                  })}
                 >
-                  {renderProposalStateText()}
-                </Callout>
-              )}
+                  {showSimulationError && (
+                    <Callout compact variant="info">
+                      <p>
+                        <b>This proposal will fail to execute.</b>
+                      </p>
+
+                      <p>
+                        One or more transactions didn&apos;t pass the
+                        simulation. Check the Transactions tab to see which ones
+                        failed.
+                      </p>
+                    </Callout>
+                  )}
+
+                  {showProposalState && (
+                    <Callout
+                      icon={renderProposalStateIcon()}
+                      css={(t) => css({ fontSize: t.text.sizes.base })}
+                    >
+                      {renderProposalStateText()}
+                    </Callout>
+                  )}
+                  {showAdminDropdown && (
+                    <div
+                      css={css({
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        button: {
+                          textAlign: "left",
+                          width: "100%",
+                        },
+                        "@media(min-width: 600px)": {
+                          button: {
+                            width: "auto",
+                          },
+                        },
+                      })}
+                    >
+                      <AdminDropdown proposalId={proposalId} />
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             <ProposalHeader
               title={proposal.title === null ? "Untitled" : proposal.title}
               proposerId={proposal.proposerId}
@@ -874,7 +937,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                               Connect wallet to{" "}
                               {!hasCastVote && isVotingOngoing
                                 ? "vote"
-                                : "give feedback"}
+                                : "comment"}
                             </Button>
                           </div>
                         ) : (
@@ -927,6 +990,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 };
 
 export const ProposalHeader = ({
+  type,
   title,
   createdAt,
   updatedAt,
@@ -935,6 +999,7 @@ export const ProposalHeader = ({
   transactions = [],
   hasPassed,
   hasSucceeded,
+  ...props
 }) => {
   const [searchParams] = useSearchParams();
 
@@ -1019,7 +1084,22 @@ export const ProposalHeader = ({
   const enableStreamStatus = hasSucceeded && streamTransactions.length > 0;
 
   return (
-    <div css={css({ userSelect: "text" })}>
+    <div
+      data-has-ask={requestedAmounts.length > 0 || undefined}
+      css={css({
+        userSelect: "text",
+        marginBottom: "2.4rem",
+        "&[data-has-ask]": {
+          marginBottom: "3.2rem",
+        },
+        "@media(min-width: 600px)": {
+          "&[data-has-ask]": {
+            marginBottom: "4.8rem",
+          },
+        },
+      })}
+      {...props}
+    >
       <h1
         css={(t) =>
           css({
@@ -1036,24 +1116,14 @@ export const ProposalHeader = ({
         {title}
       </h1>
       <div
-        data-has-ask={requestedAmounts.length > 0}
         css={(t) =>
           css({
             color: t.colors.textDimmed,
             fontSize: t.text.sizes.base,
-            marginBottom: "2.4rem",
-            '&[data-has-ask="true"]': {
-              marginBottom: "3.2rem",
-            },
-            "@media(min-width: 600px)": {
-              '&[data-has-ask="true"]': {
-                marginBottom: "4.8rem",
-              },
-            },
           })
         }
       >
-        Proposed{" "}
+        {type === "topic" ? "Posted" : "Proposed"}{" "}
         {createdAt != null && (
           <>
             <FormattedDateWithTooltip
@@ -1257,7 +1327,7 @@ export const ProposalHeader = ({
   );
 };
 
-export const ProposalBody = React.memo(({ markdownText }) => {
+export const ProposalBody = React.memo(({ markdownText, ...props }) => {
   const [searchParams] = useSearchParams();
 
   const isDebugSession = searchParams.get("debug") != null;
@@ -1271,6 +1341,7 @@ export const ProposalBody = React.memo(({ markdownText }) => {
             "@media(min-width: 600px)": { fontSize: t.text.sizes.large },
           })
         }
+        {...props}
       >
         {markdownText != null && (
           <React.Suspense fallback={null}>
@@ -1366,7 +1437,6 @@ const RequestedAmounts = ({ amounts }) => (
 );
 
 const StreamStatus = ({ transaction }) => {
-  const [, setSearchParams] = useSearchParams();
   const { address: connectedWalletAccountAddress } = useWallet();
   const { streamContractAddress, tokenAmount, receiverAddress } = transaction;
   const {
@@ -1377,6 +1447,7 @@ const StreamStatus = ({ transaction }) => {
     remainingBalance,
     recipientBalance,
   } = useStreamData({ streamContractAddress });
+  const { toggleStreamsDialog } = useScreenContext();
 
   const usdcTokenContract = resolveIdentifier("usdc-token")?.address;
   const wethTokenContract = resolveIdentifier("weth-token")?.address;
@@ -1524,16 +1595,9 @@ const StreamStatus = ({ transaction }) => {
         <Button
           size="tiny"
           css={{ marginLeft: "1rem" }}
-          onClick={() =>
-            setSearchParams(
-              (p) => {
-                const newParams = new URLSearchParams(p);
-                newParams.set("streams", 1);
-                return newParams;
-              },
-              { replace: true },
-            )
-          }
+          onClick={() => {
+            toggleStreamsDialog();
+          }}
         >
           Withdraw
         </Button>
@@ -1550,7 +1614,6 @@ const ProposalScreen = ({ proposalId }) => {
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
-  const [hasPendingCancel, setPendingCancel] = React.useState(false);
 
   const scrollContainerRef = React.useRef();
 
@@ -1568,10 +1631,6 @@ const ProposalScreen = ({ proposalId }) => {
       (s) => s.id.toLowerCase() === connectedWalletAccountAddress.toLowerCase(),
     );
 
-  const cancelProposal = useCancelProposal(proposalId, {
-    enabled: isProposer || isSponsor,
-  });
-
   const [isEditDialogOpen, toggleEditDialog] = useSearchParamToggleState(
     "edit",
     { replace: true },
@@ -1580,6 +1639,16 @@ const ProposalScreen = ({ proposalId }) => {
   const [isStreamsDialogOpen, toggleStreamsDialog] = useSearchParamToggleState(
     "streams",
     { replace: true },
+  );
+
+  const screenContextValue = React.useMemo(
+    () => ({
+      isProposer,
+      isSponsor,
+      toggleEditDialog,
+      toggleStreamsDialog,
+    }),
+    [isProposer, isSponsor, toggleEditDialog, toggleStreamsDialog],
   );
 
   useProposalFetch(proposalId, {
@@ -1594,9 +1663,11 @@ const ProposalScreen = ({ proposalId }) => {
     },
   });
 
-  const getActions = () => {
+  const getPageActions = () => {
     if (proposal == null) return [];
+
     const actions = [];
+
     if (isTouchScreen && navigator?.share) {
       actions.push({
         buttonProps: {
@@ -1612,47 +1683,13 @@ const ProposalScreen = ({ proposalId }) => {
       });
     }
 
-    if (proposal.state === "canceled")
-      return actions.length === 0 ? undefined : actions;
-
-    if (isProposer && proposal.state === "updatable")
-      actions.push({
-        onSelect: toggleEditDialog,
-        label: "Edit",
-      });
-
-    if (!isFinalProposalState(proposal.state) && (isProposer || isSponsor))
-      actions.push({
-        onSelect: () => {
-          if (!confirm("Are you sure you wish to cancel this proposal?"))
-            return;
-
-          setPendingCancel(true);
-
-          cancelProposal().then(
-            () => {
-              navigate("/", { replace: true });
-            },
-            (e) => {
-              setPendingCancel(false);
-              return Promise.reject(e);
-            },
-          );
-        },
-        label: "Cancel",
-        buttonProps: {
-          isLoading: hasPendingCancel,
-          disabled: cancelProposal == null || hasPendingCancel,
-        },
-      });
-
     return actions.length === 0 ? undefined : actions;
   };
 
   if (notFound) nextNotFound();
 
   return (
-    <>
+    <ScreenContext.Provider value={screenContextValue}>
       <Layout
         scrollContainerRef={scrollContainerRef}
         navigationStack={[
@@ -1692,7 +1729,7 @@ const ProposalScreen = ({ proposalId }) => {
             },
           },
         ]}
-        actions={getActions()}
+        actions={getPageActions()}
       >
         {proposal == null ? (
           <div
@@ -1745,7 +1782,7 @@ const ProposalScreen = ({ proposalId }) => {
           </React.Suspense>
         </ErrorBoundary>
       )}
-    </>
+    </ScreenContext.Provider>
   );
 };
 
@@ -2202,6 +2239,75 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
       groupedOptions={groupedOptions}
       {...props}
     />
+  );
+});
+
+const AdminDropdown = React.memo(({ proposalId }) => {
+  const navigate = useNavigate();
+
+  const { isProposer, isSponsor, toggleEditDialog } = useScreenContext();
+
+  const proposal = useProposal(proposalId);
+
+  const [hasPendingCancel, setPendingCancel] = React.useState(false);
+
+  const cancelProposal = useCancelProposal(proposalId, {
+    enabled: isProposer || isSponsor,
+  });
+
+  return (
+    <DropdownMenu.Root placement="bottom end">
+      <DropdownMenu.Trigger asChild>
+        <Button
+          size="default"
+          iconRight={
+            <CaretDownIcon style={{ width: "1.1rem", height: "auto" }} />
+          }
+          isLoading={hasPendingCancel}
+        >
+          Manage proposal
+        </Button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content
+        widthFollowTrigger
+        disabledKeys={[
+          (!isProposer || proposal.state !== "updatable") && "edit",
+          (cancelProposal == null || hasPendingCancel) && "cancel",
+        ].filter(Boolean)}
+        onAction={(key) => {
+          switch (key) {
+            case "edit":
+              toggleEditDialog();
+              break;
+
+            case "cancel":
+              if (!confirm("Are you sure you wish to cancel this proposal?"))
+                return;
+
+              setPendingCancel(true);
+
+              cancelProposal().then(
+                () => {
+                  navigate("/", { replace: true });
+                },
+                (e) => {
+                  setPendingCancel(false);
+                  return Promise.reject(e);
+                },
+              );
+              break;
+
+            default:
+              throw new Error();
+          }
+        }}
+      >
+        <DropdownMenu.Item key="edit">Edit proposal</DropdownMenu.Item>
+        <DropdownMenu.Item danger key="cancel">
+          Cancel proposal
+        </DropdownMenu.Item>
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   );
 });
 

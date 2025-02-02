@@ -3,6 +3,7 @@ import { parseAbiItem, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { useCachedState } from "@shades/common/app";
 import {
+  invariant,
   message as messageUtils,
   object as objectUtils,
   function as functionUtils,
@@ -14,11 +15,16 @@ const { createEmptyParagraphElement } = messageUtils;
 const createCacheKey = (address) =>
   [address?.toLowerCase(), "proposal-drafts"].filter(Boolean).join("-");
 
-const createEmptyItem = () => ({
+const createEmptyProposalItem = () => ({
   id: String(Date.now()),
   name: "",
   body: [createEmptyParagraphElement()],
   actions: [],
+});
+
+const createEmptyTopicItem = () => ({
+  ...createEmptyProposalItem(),
+  actions: null,
 });
 
 const SCHEMA_VERSION = 1;
@@ -48,7 +54,7 @@ const migrations = [
       entriesById: objectUtils.mapValues(
         (entry) => ({
           ...entry,
-          actions: entry.actions.map(migrateAction),
+          actions: entry.actions?.map(migrateAction) ?? null,
         }),
         state,
       ),
@@ -99,16 +105,21 @@ export const useCollection = () => {
 
   const items = entriesById == null ? [] : Object.values(entriesById);
 
-  const createItem = React.useCallback(() => {
-    const item = createEmptyItem();
-    setState((state) => ({
-      entriesById: {
-        ...state.entriesById,
-        [item.id]: item,
-      },
-    }));
-    return item;
-  }, [setState]);
+  const createItem = React.useCallback(
+    async ({ type }) => {
+      invariant(type != null, '"type" is required');
+      const item =
+        type === "topic" ? createEmptyTopicItem() : createEmptyProposalItem();
+      setState((state) => ({
+        entriesById: {
+          ...state.entriesById,
+          [item.id]: item,
+        },
+      }));
+      return item;
+    },
+    [setState],
+  );
 
   const deleteItem = React.useCallback(
     (id) => {
@@ -150,6 +161,7 @@ export const useSingleItem = (id) => {
       }),
     [id, setState],
   );
+
   const setActions = React.useCallback(
     (actions) =>
       setState((state) => {

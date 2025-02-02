@@ -9,7 +9,7 @@ import { subgraphFetch, parseCandidate } from "../../../nouns-subgraph.js";
 import { normalizeId } from "../../../utils/candidates.js";
 import { Hydrater as StoreHydrater } from "../../../store.js";
 import ClientAppProvider from "../../client-app-provider.js";
-import CandidateScreen from "../../../components/proposal-candidate-screen.js";
+import CandidateScreen from "../../../components/candidate-screen.js";
 
 // export const runtime = "edge";
 

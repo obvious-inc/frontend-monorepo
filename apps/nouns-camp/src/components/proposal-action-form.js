@@ -13,6 +13,7 @@ import {
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
 } from "../utils/proposals.js";
+import { REPOST_REGEX } from "@/utils/votes-and-feedbacks";
 import { useProposal, useDelegate } from "../store.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
 import { usePriorVotes } from "../hooks/token-contract.js";
@@ -29,6 +30,7 @@ const MarkdownRichText = React.lazy(() => import("./markdown-rich-text.js"));
 const ProposalActionForm = ({
   proposalId,
   size = "default",
+  variant,
   mode,
   setMode,
   availableModes,
@@ -38,6 +40,7 @@ const ProposalActionForm = ({
   setSupport,
   setReply,
   onSubmit,
+  onCancel,
   repliesByTargetFeedItemId,
   replyTargetFeedItems,
   repostTargetFeedItems,
@@ -115,6 +118,7 @@ const ProposalActionForm = ({
           );
           return !hasMissingReply && support != null;
         }
+        if (setSupport == null) return reason.trim().length > 0;
         return support != null;
       }
     }
@@ -125,7 +129,7 @@ const ProposalActionForm = ({
   const renderHelpText = () => {
     if (!isConnectedToTargetChainId)
       return `Switch to ${CHAIN_ID === 1 ? "Ethereum Mainnet" : chain.name} to ${
-        mode === "vote" ? "vote" : "give feedback"
+        mode === "vote" ? "vote" : "comment"
       }.`;
 
     if (mode === "farcaster-comment") {
@@ -172,7 +176,7 @@ const ProposalActionForm = ({
 
       if (isFinalOrSucceededState) return null;
 
-      return "Signal your voting intentions to influence and guide proposers.";
+      return null; // "Signal your voting intentions to influence and guide proposers.";
     }
 
     if (currentVoteCount > 0 && proposalVoteCount === 0)
@@ -207,8 +211,86 @@ const ProposalActionForm = ({
     !isConnectedToTargetChainId;
 
   return (
-    <>
-      <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+    <div
+      data-size={size ?? undefined}
+      data-variant={variant ?? undefined}
+      css={(t) =>
+        css({
+          containerType: "inline-size",
+          ".box-container": {
+            display: "flex",
+            flexDirection: "column",
+            gap: "1.2rem",
+          },
+          form: {
+            borderRadius: "0.5rem",
+            background: t.colors.backgroundModifierNormal,
+            padding: "1rem",
+            "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
+            ".text-input": {
+              background: "transparent",
+              fontSize: t.text.sizes.base,
+              display: "block",
+              color: t.colors.textNormal,
+              fontWeight: "400",
+              width: "100%",
+              maxWidth: "100%",
+              outline: "none",
+              border: 0,
+              padding: "0.3rem 0.2rem",
+              "::placeholder": { color: t.colors.inputPlaceholder },
+              "&:disabled": {
+                color: t.colors.textMuted,
+                cursor: "not-allowed",
+              },
+              // Prevents iOS zooming in on input fields
+              "@supports (-webkit-touch-callout: none)": {
+                fontSize: "1.6rem",
+              },
+            },
+          },
+          ".hint-container": {
+            marginTop: "1.2rem",
+            fontSize: t.text.sizes.tiny,
+            color: t.colors.textDimmed,
+            "p + p": { marginTop: "1em" },
+            em: {
+              fontStyle: "normal",
+              fontWeight: t.text.weights.emphasis,
+            },
+          },
+
+          '&[data-size="small"]': {
+            form: {
+              padding: "0.8rem",
+            },
+          },
+
+          '&[data-variant="bare"], &[data-variant="boxed"]': {
+            form: {
+              padding: 0,
+              background: "none",
+              "&:has(textarea:focus-visible)": { boxShadow: "none" },
+              ".text-input": {
+                background: t.colors.backgroundModifierNormal,
+                padding: "0.3rem 0.7rem",
+                borderRadius: "0.5rem",
+                "&:focus-visible": { boxShadow: t.shadows.focus },
+              },
+            },
+          },
+          '&[data-variant="boxed"]': {
+            ".box-container": {
+              border: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+              borderRadius: "0.6rem",
+              padding: "1.6rem",
+            },
+          },
+        })
+      }
+    >
+      <div className="box-container">
         <div
           style={{
             display: "flex",
@@ -227,7 +309,7 @@ const ProposalActionForm = ({
                   fontStyle: "normal",
                   fontWeight: t.text.weights.emphasis,
                 },
-                "& + *": { marginTop: "0.8rem" },
+                // "& + *": { marginTop: "0.8rem" },
               })
             }
           >
@@ -239,7 +321,7 @@ const ProposalActionForm = ({
                       farcasterAccounts == null ||
                       farcasterAccounts.length === 0
                     )
-                      return null;
+                      return <>Comment as ...</>;
 
                     if (farcasterAccounts.length === 1) {
                       const selectedAccount = farcasterAccounts.find(
@@ -403,37 +485,7 @@ const ProposalActionForm = ({
               setPending(false);
             }
           }}
-          css={(t) =>
-            css({
-              borderRadius: "0.5rem",
-              background: t.colors.backgroundModifierNormal,
-              padding: "var(--padding, 1rem)",
-              "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
-              ".text-input": {
-                background: "transparent",
-                fontSize: t.text.sizes.base,
-                display: "block",
-                color: t.colors.textNormal,
-                fontWeight: "400",
-                width: "100%",
-                maxWidth: "100%",
-                outline: "none",
-                border: 0,
-                padding: "0.3rem 0.2rem",
-                "::placeholder": { color: t.colors.inputPlaceholder },
-                "&:disabled": {
-                  color: t.colors.textMuted,
-                  cursor: "not-allowed",
-                },
-                // Prevents iOS zooming in on input fields
-                "@supports (-webkit-touch-callout: none)": {
-                  fontSize: "1.6rem",
-                },
-              },
-              ".reply-list + *": { marginTop: "1.2rem" },
-            })
-          }
-          style={{ "--padding": size === "small" ? "0.8rem" : undefined }}
+          css={css({ ".reply-list + *": { marginTop: "1.2rem" } })}
         >
           {hasReplyTarget && (
             <ul
@@ -571,185 +623,186 @@ const ProposalActionForm = ({
             </div>
           )} */}
           <div
-            style={{
-              display: "grid",
-              gridAutoFlow: "column",
+            css={css({
+              display: "flex",
               justifyContent: "flex-end",
-              gridGap: "1rem",
               marginTop: "1.2rem",
-            }}
+            })}
           >
-            {(() => {
-              switch (mode) {
-                case "vote":
-                case "onchain-comment":
-                  if (connectedWalletAccountAddress == null)
-                    return (
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          requestWalletAccess();
-                        }}
-                        size={size}
-                      >
-                        Connect wallet to{" "}
-                        {mode === "vote" ? "vote" : "give feedback"}
-                      </Button>
-                    );
+            <div
+              css={css({
+                display: "grid",
+                gridAutoFlow: "column",
+                gridGap: "1rem",
+              })}
+            >
+              {onCancel != null && (
+                <Button type="button" onClick={onCancel} size={size}>
+                  Cancel
+                </Button>
+              )}
 
-                  return (
-                    <>
-                      <SupportSelect
-                        mode={mode}
-                        size={size}
-                        value={support}
-                        onChange={(value) => {
-                          setSupport(value);
-                        }}
-                        disabled={disableForm}
-                      />
-
-                      {!isConnectedToTargetChainId ? (
+              {(() => {
+                switch (mode) {
+                  case "vote":
+                  case "onchain-comment":
+                    if (connectedWalletAccountAddress == null)
+                      return (
                         <Button
                           type="button"
-                          variant="primary"
-                          disabled={hasPendingWalletAction}
-                          isLoading={hasPendingWalletAction}
-                          size={size}
                           onClick={() => {
-                            requestWalletNetworkSwitchToTargetChain();
+                            requestWalletAccess();
                           }}
-                        >
-                          Switch to {CHAIN_ID === 1 ? "Mainnet" : chain.name}
-                        </Button>
-                      ) : (
-                        <Button
-                          type="submit"
-                          variant="primary"
-                          disabled={isPending || !hasRequiredInputs}
-                          isLoading={isPending}
                           size={size}
                         >
-                          {(() => {
-                            switch (mode) {
-                              case "vote":
-                                return hasRepostTarget
-                                  ? "Cast revote"
-                                  : proposalVoteCount === 1
-                                    ? "Cast vote"
-                                    : `Cast ${proposalVoteCount ?? "..."} votes`;
-                              case "onchain-comment": {
-                                if (hasRepostTarget) return "Submit repost";
-                                const isReplyWithoutComment =
-                                  hasReplyTarget && reason.trim() === "";
-                                if (isReplyWithoutComment)
-                                  return replyTargetFeedItems.length === 1
-                                    ? "Submit reply"
-                                    : "Submit replies";
-                                return "Submit comment";
-                              }
-                              default:
-                                throw new Error();
-                            }
-                          })()}
+                          Connect wallet to{" "}
+                          {mode === "vote" ? "vote" : "comment"}
                         </Button>
-                      )}
-                    </>
-                  );
+                      );
 
-                case "farcaster-comment": {
-                  if (connectedWalletAccountAddress == null)
                     return (
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          requestWalletAccess();
-                        }}
-                        size={size}
-                      >
-                        Connect wallet to cast
-                      </Button>
+                      <>
+                        {setSupport != null && (
+                          <SupportSelect
+                            mode={mode}
+                            size={size}
+                            value={support}
+                            onChange={(value) => {
+                              setSupport(value);
+                            }}
+                            disabled={disableForm}
+                          />
+                        )}
+
+                        {!isConnectedToTargetChainId ? (
+                          <Button
+                            type="button"
+                            variant="primary"
+                            disabled={hasPendingWalletAction}
+                            isLoading={hasPendingWalletAction}
+                            size={size}
+                            onClick={() => {
+                              requestWalletNetworkSwitchToTargetChain();
+                            }}
+                          >
+                            Switch to {CHAIN_ID === 1 ? "Mainnet" : chain.name}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="submit"
+                            variant="primary"
+                            disabled={isPending || !hasRequiredInputs}
+                            isLoading={isPending}
+                            size={size}
+                          >
+                            {(() => {
+                              switch (mode) {
+                                case "vote":
+                                  return hasRepostTarget
+                                    ? "Cast revote"
+                                    : proposalVoteCount === 1
+                                      ? "Cast vote"
+                                      : `Cast ${proposalVoteCount ?? "..."} votes`;
+                                case "onchain-comment": {
+                                  if (hasRepostTarget) return "Submit repost";
+                                  const isReplyWithoutComment =
+                                    hasReplyTarget && reason?.trim() === "";
+                                  if (isReplyWithoutComment)
+                                    return replyTargetFeedItems.length === 1
+                                      ? "Submit reply"
+                                      : "Submit replies";
+                                  return "Submit comment";
+                                }
+                                default:
+                                  throw new Error();
+                              }
+                            })()}
+                          </Button>
+                        )}
+                      </>
                     );
 
-                  if (farcasterAccounts == null)
+                  case "farcaster-comment": {
+                    if (connectedWalletAccountAddress == null)
+                      return (
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            requestWalletAccess();
+                          }}
+                          size={size}
+                        >
+                          Connect wallet to cast
+                        </Button>
+                      );
+
+                    if (farcasterAccounts == null)
+                      return (
+                        <Button type="button" size={size} isLoading disabled>
+                          Cast comment
+                        </Button>
+                      );
+
+                    const selectedAccount = farcasterAccounts.find(
+                      (a) =>
+                        String(a.fid) === String(selectedFarcasterAccountFid),
+                    );
+
+                    if (
+                      selectedAccount == null ||
+                      !selectedAccount.hasAccountKey
+                    )
+                      return (
+                        <Button
+                          type="button"
+                          size={size}
+                          onClick={() => {
+                            openFarcasterSetupDialog();
+                          }}
+                        >
+                          {selectedAccount == null
+                            ? "Setup account to cast"
+                            : "Setup account key to cast"}
+                        </Button>
+                      );
+
+                    if (!isAuthenticated)
+                      return (
+                        <Button
+                          type="button"
+                          size={size}
+                          onClick={() => {
+                            openAuthenticationDialog({ intent: "cast" });
+                          }}
+                        >
+                          Log in to cast
+                        </Button>
+                      );
+
                     return (
-                      <Button type="button" size={size} isLoading disabled>
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        disabled={isPending || !hasRequiredInputs}
+                        isLoading={isPending}
+                        size={size}
+                      >
                         Cast comment
                       </Button>
                     );
+                  }
 
-                  const selectedAccount = farcasterAccounts.find(
-                    (a) =>
-                      String(a.fid) === String(selectedFarcasterAccountFid),
-                  );
-
-                  if (selectedAccount == null || !selectedAccount.hasAccountKey)
-                    return (
-                      <Button
-                        type="button"
-                        size={size}
-                        onClick={() => {
-                          openFarcasterSetupDialog();
-                        }}
-                      >
-                        {selectedAccount == null
-                          ? "Setup account to cast"
-                          : "Setup account key to cast"}
-                      </Button>
-                    );
-
-                  if (!isAuthenticated)
-                    return (
-                      <Button
-                        type="button"
-                        size={size}
-                        onClick={() => {
-                          openAuthenticationDialog({ intent: "cast" });
-                        }}
-                      >
-                        Log in to cast
-                      </Button>
-                    );
-
-                  return (
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      disabled={isPending || !hasRequiredInputs}
-                      isLoading={isPending}
-                      size={size}
-                    >
-                      Cast comment
-                    </Button>
-                  );
+                  default:
+                    throw new Error();
                 }
-
-                default:
-                  throw new Error();
-              }
-            })()}
+              })()}
+            </div>
           </div>
         </form>
-
-        {helpText != null && (
-          <div
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.tiny,
-                color: t.colors.textDimmed,
-                "p + p": { marginTop: "1em" },
-                em: {
-                  fontStyle: "normal",
-                  fontWeight: t.text.weights.emphasis,
-                },
-              })
-            }
-          >
-            {helpText}
-          </div>
-        )}
       </div>
-    </>
+
+      {helpText != null && <div className="hint-container">{helpText}</div>}
+    </div>
   );
 };
 
@@ -815,72 +868,76 @@ const SupportSelect = ({ mode, value, ...props }) => (
   />
 );
 
-const QuotedFeedItem = ({ component: Component = "div", item, onCancel }) => (
-  <Component
-    css={(t) =>
-      css({
-        fontSize: "0.875em",
-        position: "relative",
-        border: "0.1rem solid",
-        borderRadius: "0.5rem",
-        borderColor: t.colors.borderLighter,
-        padding: "0.4rem 0.4rem 0.4rem 0.6rem",
-        whiteSpace: "nowrap",
-        display: "flex",
-        alignItems: "center",
-        "[data-cancel]": {
-          padding: "0.3rem",
+const QuotedFeedItem = ({ component: Component = "div", item, onCancel }) => {
+  // Strip reposts (some risk of stripping unintened content here (it’s fine))
+  const quotedText = item.reason.replaceAll(REPOST_REGEX, "");
+  return (
+    <Component
+      css={(t) =>
+        css({
+          fontSize: "0.875em",
           position: "relative",
-          "@media(hover: hover)": {
-            cursor: "pointer",
-            ":hover": { color: t.colors.textAccent },
-          },
-        },
-      })
-    }
-  >
-    <React.Suspense fallback={<div>...</div>}>
-      <NextLink
-        href={`#${item.id}`}
-        style={{
-          display: "block",
-          position: "absolute",
-          inset: 0,
-        }}
-      />
-      <div
-        style={{
-          flex: 1,
-          minWidth: 0,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-        }}
-      >
-        <AccountPreviewPopoverTrigger
-          showAvatar
-          accountAddress={item.authorAccount}
-        />
-        :{" "}
-        <MarkdownRichText
-          text={item.body}
-          displayImages={false}
-          inline
-          css={css({
-            // Make all headings small
-            "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
-            "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": {
-              marginTop: "1.5em",
+          border: "0.1rem solid",
+          borderRadius: "0.5rem",
+          borderColor: t.colors.borderLighter,
+          padding: "0.4rem 0.4rem 0.4rem 0.6rem",
+          whiteSpace: "nowrap",
+          display: "flex",
+          alignItems: "center",
+          "[data-cancel]": {
+            padding: "0.3rem",
+            position: "relative",
+            "@media(hover: hover)": {
+              cursor: "pointer",
+              ":hover": { color: t.colors.textAccent },
             },
-            "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
-              { marginBottom: "0.625em" },
-          })}
+          },
+        })
+      }
+    >
+      <React.Suspense fallback={<div>...</div>}>
+        <NextLink
+          href={`#${item.id}`}
+          style={{
+            display: "block",
+            position: "absolute",
+            inset: 0,
+          }}
         />
-      </div>
-      <button data-cancel onClick={onCancel}>
-        <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
-      </button>
-    </React.Suspense>
-  </Component>
-);
+        <div
+          style={{
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          <AccountPreviewPopoverTrigger
+            showAvatar
+            accountAddress={item.authorAccount}
+          />
+          :{" "}
+          <MarkdownRichText
+            text={quotedText}
+            displayImages={false}
+            inline
+            css={css({
+              // Make all headings small
+              "h1,h2,h3,h4,h5,h6": { fontSize: "1em" },
+              "*+h1,*+h2,*+h3,*+h4,*+h5,*+h6": {
+                marginTop: "1.5em",
+              },
+              "h1:has(+*),h2:has(+*),h3:has(+*),h4:has(+*),h5:has(+*),h6:has(+*)":
+                { marginBottom: "0.625em" },
+            })}
+          />
+        </div>
+        <button data-cancel onClick={onCancel}>
+          <CrossIcon style={{ width: "1.2rem", height: "auto" }} />
+        </button>
+      </React.Suspense>
+    </Component>
+  );
+};
 
 export default ProposalActionForm;

@@ -4,7 +4,6 @@ import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
 import { css } from "@emotion/react";
-import NextLink from "next/link";
 import { useDebouncedCallback } from "use-debounce";
 import { array as arrayUtils, searchRecords } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
@@ -13,7 +12,6 @@ import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
 import * as Menu from "@shades/ui-web/dropdown-menu";
 import { CaretDown as CaretDownIcon } from "@shades/ui-web/icons";
-// import Switch from "@shades/ui-web/switch";
 import {
   useSubgraphFetch,
   useEnsCache,
@@ -29,7 +27,7 @@ import { useWallet } from "../hooks/wallet.js";
 import { useSearchParams } from "../hooks/navigation.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import DateRangePicker from "./date-range-picker.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 import { FULL_PROPOSAL_CANDIDATE_FIELDS } from "@/nouns-subgraph.js";
 
 const NEW_THRESHOLD_IN_DAYS = 3;
@@ -43,7 +41,7 @@ const sectionConfigByKey = {
   },
   new: {
     title: "New",
-    description: `Candidates created within the last ${NEW_THRESHOLD_IN_DAYS} days`,
+    description: `Created within the last ${NEW_THRESHOLD_IN_DAYS} days`,
   },
   active: { title: "Recently active" },
   inactive: {
@@ -58,7 +56,7 @@ const sortOptions = [
   { value: "popularity", label: "Popularity" },
 ];
 
-const filterOptions = [
+const candidateFilterOptions = [
   {
     key: "non-canceled",
     label: "Show non-canceled",
@@ -81,7 +79,20 @@ const filterOptions = [
   },
 ];
 
-const BrowseCandidatesScreen = () => {
+const topicFilterOptions = [
+  {
+    key: "non-canceled",
+    label: "Show open",
+    inlineLabel: "open",
+  },
+  {
+    key: "canceled",
+    label: "Show closed",
+    inlineLabel: "closed",
+  },
+];
+
+const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
   const { address: connectedAccountAddress } = useWallet();
@@ -90,11 +101,14 @@ const BrowseCandidatesScreen = () => {
     includeCanceled: true,
     includePromoted: true,
     includeProposalUpdates: true,
+    type: candidateType,
   });
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
   const [showRegular, setShowRegular] = React.useState(true);
-  const [showCanceled, setShowCanceled] = React.useState(false);
+  const [showCanceled, setShowCanceled] = React.useState(
+    candidateType === "topic",
+  );
   const [showProposalUpdates, setShowProposalUpdates] = React.useState(false);
   const [showPromoted, setShowPromoted] = React.useState(false);
 
@@ -446,16 +460,10 @@ const BrowseCandidatesScreen = () => {
   return (
     <>
       <Layout
-        navigationStack={[{ to: "/candidates", label: "Candidates" }]}
-        actions={[
-          {
-            label: "Propose",
-            buttonProps: {
-              component: NextLink,
-              href: "/new",
-              prefetch: true,
-            },
-          },
+        navigationStack={[
+          candidateType === "topic"
+            ? { to: "/topics", label: "Topics" }
+            : { to: "/candidates", label: "Candidates" },
         ]}
       >
         <div css={css({ padding: "0 1.6rem" })}>
@@ -481,6 +489,11 @@ const BrowseCandidatesScreen = () => {
                         size="default"
                         fullWidth
                         widthFollowTrigger
+                        filterOptions={
+                          candidateType === "topic"
+                            ? topicFilterOptions
+                            : candidateFilterOptions
+                        }
                         selectedFilters={selectedFilters}
                         setSelectedFilters={setSelectedFilters}
                       />
@@ -653,6 +666,11 @@ const BrowseCandidatesScreen = () => {
                       size="small"
                       fullWidth
                       widthFollowTrigger
+                      filterOptions={
+                        candidateType === "topic"
+                          ? topicFilterOptions
+                          : candidateFilterOptions
+                      }
                       selectedFilters={selectedFilters}
                       setSelectedFilters={setSelectedFilters}
                     />
@@ -693,6 +711,7 @@ const FilterMenu = ({
   fullWidth,
   widthFollowTrigger,
   inlineLabel,
+  filterOptions,
   selectedFilters,
   setSelectedFilters,
 }) => (

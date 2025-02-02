@@ -4,6 +4,7 @@ import { formatEther, parseUnits } from "viem";
 import { css, useTheme } from "@emotion/react";
 import { useFetch, useLatestCallback } from "@shades/common/react";
 import {
+  invariant,
   message as messageUtils,
   function as functionUtils,
 } from "@shades/common/utils";
@@ -12,6 +13,7 @@ import Select from "@shades/ui-web/select";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import DialogFooter from "@shades/ui-web/dialog-footer";
+
 import { resolveAction as resolveActionTransactions } from "../utils/transactions.js";
 import { useWallet } from "../hooks/wallet.js";
 import {
@@ -25,7 +27,6 @@ import {
 } from "../hooks/dao-contract.js";
 import { useActions, useAccountProposalCandidates } from "../store.js";
 import { useNavigate, useSearchParams } from "../hooks/navigation.js";
-// import { useTokenBuyerEthNeeded } from "../hooks/misc-contracts.js";
 import {
   useCreateProposalCandidate,
   useProposalCandidateCreateCost,
@@ -39,8 +40,9 @@ import {
 import Layout from "./layout.js";
 import Callout from "./callout.js";
 import ProposalEditor from "./proposal-editor.js";
+import TopicEditor from "./topic-editor.js";
 
-const ProposeScreen = ({ draftId, startNavigationTransition }) => {
+const Content = ({ draftId, startNavigationTransition }) => {
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -53,7 +55,9 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
   const [draft, { setName, setBody, setActions }] = useDraft(draftId);
 
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
-  const [submitTargetType, setSubmitTargetType] = React.useState("proposal");
+  const [submitTargetType, setSubmitTargetType] = React.useState(() =>
+    draft.actions == null ? "topic" : "proposal",
+  );
   const [hasPendingRequest, setPendingRequest] = React.useState(false);
 
   const {
@@ -71,7 +75,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
     connectedAccountAddress,
   );
 
-  const { open: openProposalDraftsDialog } = useDialog("proposal-drafts");
+  const { open: openDraftsDialog } = useDialog("drafts");
 
   const isTitleEmpty = draft.name.trim() === "";
   const isBodyEmpty =
@@ -80,15 +84,21 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
       : draft.body.every(isRichTextEditorNodeEmpty);
 
   const hasRequiredInput =
-    !isTitleEmpty && !isBodyEmpty && draft.actions.length > 0;
+    submitTargetType === "topic"
+      ? !isTitleEmpty && !isBodyEmpty
+      : !isTitleEmpty && !isBodyEmpty && draft.actions.length > 0;
 
   const createCandidate = useCreateProposalCandidate({
-    enabled: hasRequiredInput && submitTargetType === "candidate",
+    enabled:
+      hasRequiredInput && ["candidate", "topic"].includes(submitTargetType),
   });
 
   const createProposal = useCreateProposal();
 
-  const usdcSumValue = draft.actions.reduce((sum, a) => {
+  const votingPower = useCurrentVotes(connectedAccountAddress);
+  const createCostWei = useProposalCandidateCreateCost();
+
+  const usdcSumValue = (draft.actions ?? []).reduce((sum, a) => {
     switch (a.type) {
       case "one-time-payment":
       case "streaming-payment":
@@ -123,15 +133,15 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
 
       const description = `# ${draft.name.trim()}\n\n${bodyMarkdown}`;
 
-      const transactions = draft.actions.flatMap((a) =>
-        resolveActionTransactions(a),
-      );
+      const transactions =
+        draft.actions?.flatMap((a) => resolveActionTransactions(a)) ?? [];
 
-      if (usdcSumValue > 0 && payerTopUpValue > 0)
-        transactions.push({
-          type: "payer-top-up",
-          value: payerTopUpValue,
-        });
+      if (
+        submitTargetType !== "topic" &&
+        usdcSumValue > 0 &&
+        payerTopUpValue > 0
+      )
+        transactions.push({ type: "payer-top-up", value: payerTopUpValue });
 
       if (transactions.length > 10) {
         alert(
@@ -147,11 +157,23 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
           switch (submitTargetType) {
             case "proposal":
               return createProposal({ description, transactions });
-            case "candidate": {
+
+            case "candidate":
+            case "topic": {
+              if (submitTargetType === "topic")
+                invariant(
+                  transactions.length === 0,
+                  "Topics should not have transactions",
+                );
               const slug = buildCandidateSlug(draft.name.trim());
               await createCandidate({ slug, description, transactions });
               return { slug };
             }
+
+            default:
+              throw new Error(
+                `Unrecognized target type: "${submitTargetType}"`,
+              );
           }
         })
         .then(
@@ -170,7 +192,8 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
                   break;
                 }
 
-                case "candidate": {
+                case "candidate":
+                case "topic": {
                   const candidateId = [
                     connectedAccountAddress.toLowerCase(),
                     res.slug,
@@ -182,9 +205,14 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
                   );
 
                   startNavigationTransition(() => {
-                    navigate(`/candidates/${encodeURIComponent(candidateId)}`, {
-                      replace: true,
-                    });
+                    navigate(
+                      submitTargetType === "topic"
+                        ? `/topics/${encodeURIComponent(candidateId)}`
+                        : `/candidates/${encodeURIComponent(candidateId)}`,
+                      {
+                        replace: true,
+                      },
+                    );
                   });
                   break;
                 }
@@ -198,9 +226,7 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
               return Promise.reject(e);
 
             console.error(e);
-            alert(
-              "Ops, looks like something went wrong submitting your proposal!",
-            );
+            alert("Ops, looks like something went wrong submitting!");
             return Promise.reject(e);
           },
         )
@@ -216,6 +242,14 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
     }
   };
 
+  const discard = () => {
+    if (!confirm("Are you sure you wish to discard this draft?")) return;
+
+    deleteDraft(draftId).then(() => {
+      navigate("/", { replace: true });
+    });
+  };
+
   return (
     <>
       <Layout
@@ -227,46 +261,88 @@ const ProposeScreen = ({ draftId, startNavigationTransition }) => {
             desktopOnly: true,
             props: {
               onClick: () => {
-                openProposalDraftsDialog();
+                openDraftsDialog();
               },
             },
           },
           { to: `/new/${draftId}`, label: draft?.name || "Untitled draft" },
         ]}
-        actions={[]}
+        // actions={[]}
       >
-        <ProposalEditor
-          title={draft.name}
-          body={draft.body}
-          actions={draft.actions}
-          setTitle={setName}
-          setBody={setBody}
-          setActions={setActions}
-          proposerId={connectedAccountAddress}
-          payerTopUpValue={usdcSumValue > 0 ? payerTopUpValue : 0}
-          containerHeight={`calc(100vh - ${theme.navBarHeight})`}
-          onSubmit={() => {
-            setShowSubmitDialog(true);
-          }}
-          onDelete={() => {
-            if (!confirm("Are you sure you wish to discard this proposal?"))
-              return;
-
-            deleteDraft(draftId).then(() => {
-              navigate("/", { replace: true });
-            });
-          }}
-          hasPendingSubmit={hasPendingRequest}
-          disabled={hasPendingRequest}
-          submitLabel="Continue to submission"
-          note={
-            hasPendingRequest
-              ? `Submitting ${submitTargetType}...`
-              : "Draft saved to browser storage"
-          }
-          scrollContainerRef={scrollContainerRef}
-          background={theme.colors.backgroundPrimary}
-        />
+        {submitTargetType === "topic" ? (
+          <div
+            css={css({
+              padding: "0.8rem 1.6rem 3.2rem",
+              "@media (min-width: 600px)": {
+                padding: "6rem 1.6rem 12rem",
+              },
+            })}
+          >
+            <TopicEditor
+              title={draft.name}
+              body={draft.body}
+              setTitle={setName}
+              setBody={setBody}
+              proposerId={connectedAccountAddress}
+              note={
+                hasPendingRequest
+                  ? `Submitting topic...`
+                  : "Draft saved to browser storage"
+              }
+              onSubmit={submit}
+              onDelete={discard}
+              hasPendingSubmit={hasPendingRequest}
+              submitLabel="Start discussion topic"
+              submitDisabled={hasPendingRequest || !hasRequiredInput}
+              sidebarContent={
+                <>
+                  <p>
+                    Submission fee:{" "}
+                    <em>
+                      {votingPower > 0 ? (
+                        "None"
+                      ) : createCostWei != null ? (
+                        <>{formatEther(createCostWei)} ETH</>
+                      ) : (
+                        "..."
+                      )}
+                    </em>
+                  </p>
+                  <p>
+                    Accounts with voting power create topics for free. Other
+                    accounts can submit for a small fee.
+                  </p>
+                </>
+              }
+            />
+          </div>
+        ) : (
+          <ProposalEditor
+            title={draft.name}
+            body={draft.body}
+            actions={draft.actions}
+            setTitle={setName}
+            setBody={setBody}
+            setActions={setActions}
+            proposerId={connectedAccountAddress}
+            payerTopUpValue={usdcSumValue > 0 ? payerTopUpValue : 0}
+            containerHeight={`calc(100vh - ${theme.navBarHeight})`}
+            onSubmit={() => {
+              setShowSubmitDialog(true);
+            }}
+            onDelete={discard}
+            hasPendingSubmit={hasPendingRequest}
+            disabled={hasPendingRequest}
+            submitLabel="Continue to submission"
+            note={
+              hasPendingRequest
+                ? `Submitting ${submitTargetType}...`
+                : "Draft saved to browser storage"
+            }
+            scrollContainerRef={scrollContainerRef}
+            background={theme.colors.backgroundPrimary}
+          />
+        )}
       </Layout>
 
       {showSubmitDialog && (
@@ -477,7 +553,7 @@ const SubmitDialog = ({
   );
 };
 
-export default ({ draftId }) => {
+export default function ProposalOfTopicEditorScreen({ draftId }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -496,40 +572,64 @@ export default ({ draftId }) => {
     }
   }, [draftId, draft, navigate, hasPendingNavigationTransition]);
 
+  const targetType = searchParams.get("topic") != null ? "topic" : "proposal";
+
   const getFirstEmptyDraft = useLatestCallback(() =>
     drafts.find((draft) => {
-      const isEmpty =
-        draft.name.trim() === "" &&
-        draft.actions.length === 0 &&
-        (draft.body === "" ||
-          (draft.body.length === 1 &&
-            isRichTextEditorNodeEmpty(draft.body[0])));
+      const hasEmptyName = draft.name.trim() === "";
+      const hasEmptyBody =
+        draft.body === "" ||
+        (draft.body.length === 1 && isRichTextEditorNodeEmpty(draft.body[0]));
 
-      return isEmpty;
+      if (targetType === "topic") {
+        const isTopicDraft = draft.actions == null;
+        return isTopicDraft && hasEmptyName && hasEmptyBody;
+      }
+
+      const isProposalDraft = draft.actions != null;
+
+      return (
+        isProposalDraft &&
+        hasEmptyName &&
+        hasEmptyBody &&
+        draft.actions.length === 0
+      );
     }),
   );
 
   React.useEffect(() => {
     if (draftId != null || createDraft == null) return;
 
-    const emptyDraft = getFirstEmptyDraft();
+    const preExistingEmptyDraft = getFirstEmptyDraft();
 
-    if (emptyDraft) {
-      navigate(`/new/${emptyDraft.id}?${searchParams}`, { replace: true });
+    const newSearchParams = new URLSearchParams(searchParams);
+    newSearchParams.delete("topic");
+
+    if (preExistingEmptyDraft != null) {
+      navigate(`/new/${preExistingEmptyDraft.id}?${newSearchParams}`, {
+        replace: true,
+      });
       return;
     }
 
-    createDraft().then((d) => {
-      navigate(`/new/${d.id}?${searchParams}`, { replace: true });
+    createDraft({ type: targetType }).then((d) => {
+      navigate(`/new/${d.id}?${newSearchParams}`, { replace: true });
     });
-  }, [draftId, createDraft, getFirstEmptyDraft, navigate, searchParams]);
+  }, [
+    draftId,
+    targetType,
+    createDraft,
+    getFirstEmptyDraft,
+    navigate,
+    searchParams,
+  ]);
 
   if (draft == null) return null; // Spinner
 
   return (
-    <ProposeScreen
+    <Content
       draftId={draftId}
       startNavigationTransition={startNavigationTransition}
     />
   );
-};
+}

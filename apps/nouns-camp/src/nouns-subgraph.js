@@ -373,6 +373,9 @@ export const parseCandidate = (data) => {
   if (data.versions != null)
     parsedData.versions = data.versions.map(parseCandidateVersion);
 
+  if (data.latestVersion?.content?.transactions?.length === 0)
+    parsedData.latestVersion.type = "topic";
+
   return parsedData;
 };
 

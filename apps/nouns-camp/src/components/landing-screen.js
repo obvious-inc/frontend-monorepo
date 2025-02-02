@@ -9,11 +9,7 @@ import { css } from "@emotion/react";
 import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
 import { useCachedState } from "@shades/common/app";
-import {
-  array as arrayUtils,
-  object as objectUtils,
-  searchRecords,
-} from "@shades/common/utils";
+import { array as arrayUtils, searchRecords } from "@shades/common/utils";
 import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
@@ -25,13 +21,16 @@ import {
   Fullscreen as FullscreenIcon,
 } from "@shades/ui-web/icons";
 import { APPROXIMATE_BLOCKS_PER_DAY } from "../constants/ethereum.js";
-import { getForYouGroup as getProposalForYouGroup } from "../utils/proposals.js";
+import {
+  isFinalState as isFinalProposalState,
+  isSucceededState as isSucceededProposalState,
+  isVotableState as isVotableProposalState,
+} from "../utils/proposals.js";
 import { search as searchEns } from "../utils/ens.js";
 import {
   getSponsorSignatures as getCandidateSponsorSignatures,
-  getScore as getCandidateScore,
+  // getScore as getCandidateScore,
   getForYouGroup as getCandidateForYouGroup,
-  hadRecentActivity as candidateHadRecentActivity,
   makeUrlId as makeCandidateUrlId,
 } from "../utils/candidates.js";
 import useBlockNumber from "../hooks/block-number.js";
@@ -52,48 +51,202 @@ import { useCollection as useDrafts } from "../hooks/drafts.js";
 import useTreasuryData from "../hooks/treasury-data.js";
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
-import ProposalList from "./proposal-list.js";
+import SectionedList from "./sectioned-list.js";
 import { useVotes, useRevoteCount } from "./browse-accounts-screen.js";
 import useEnsAddress from "@/hooks/ens-address.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
-const CANDIDATE_NEW_THRESHOLD_IN_DAYS = 3;
-const CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS = 5;
+const DIGEST_NEW_THRESHOLD_IN_DAYS = 3;
+const DIGEST_ACTIVE_THRESHOLD_IN_DAYS = 5;
 
 const BROWSE_LIST_PAGE_ITEM_COUNT = 20;
 
-const groupConfigByKey = {
-  drafts: {},
-  "proposals:chronological": {},
-  "proposals:new": { title: "Upcoming" },
-  "proposals:ongoing": { title: "Ongoing" },
-  "proposals:awaiting-vote": { title: "Not yet voted" },
-  "proposals:authored": { title: "Authored" },
-  "proposals:past": { title: "Past" },
-  "candidates:authored": { title: "Authored" },
-  "candidates:sponsored": { title: "Sponsored" },
-  "candidates:new": {
-    title: "New",
-    description: "Candidates created within the last 3 days",
-  },
-  "candidates:active": { title: "Recently active" },
-  "candidates:feedback-given": { title: "Feedback given" },
-  "candidates:feedback-missing": {
-    title: "Missing feedback",
-    description: "Candidates that hasn’t received feedback from you",
-  },
-  "candidates:popular": {
-    title: "Trending",
-    description: `The most popular candidates active within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
-  },
-  "proposals:sponsored-proposal-update-awaiting-signature": {
-    title: "Missing your signature",
-  },
-  "candidates:inactive": {
-    title: "Stale",
-    description: `No activity within the last ${CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS} days`,
-  },
+const sortProposalsByStartsSoon = (ps) =>
+  arrayUtils.sortBy((p) => Number(p.startBlock), ps);
+
+const sortProposalsByEndsSoon = (ps) =>
+  arrayUtils.sortBy((p) => Number(p.objectionPeriodEndBlock ?? p.endBlock), ps);
+
+const sortProposalsChrononological = (ps) =>
+  arrayUtils.sortBy({ value: (p) => Number(p.startBlock), order: "asc" }, ps);
+
+const sortProposalsReverseChrononological = (ps) =>
+  arrayUtils.sortBy({ value: (p) => Number(p.startBlock), order: "desc" }, ps);
+
+const sortCandidatesChronological = (cs) =>
+  arrayUtils.sortBy((c) => c.createdTimestamp, cs);
+
+const sortCandidatesReverseChronological = (cs) =>
+  arrayUtils.sortBy({ value: (c) => c.createdTimestamp, order: "desc" }, cs);
+
+// Note: Farcaster comments not taken into account
+const sortCandidatesByLastActivity = (cs) =>
+  arrayUtils.sortBy(
+    {
+      value: (c) =>
+        Math.max(
+          c.lastUpdatedTimestamp,
+          ...(c.feedbackPosts?.map((p) => p.createdTimestamp) ?? []),
+        ),
+      order: "desc",
+    },
+    cs,
+  );
+
+const filterProposalUpdateCandidates = (
+  proposalUpdateCandidates,
+  { connectedAccountAddress },
+) => {
+  const hasSigned = (c) => {
+    const signatures = getCandidateSponsorSignatures(c, {
+      excludeInvalid: true,
+      activeProposerIds: [],
+    });
+    return signatures.some(
+      (s) => s.signer.id.toLowerCase() === connectedAccountAddress,
+    );
+  };
+
+  // Include authored updates, as well as sponsored updates not yet signed
+  return proposalUpdateCandidates.filter((c) => {
+    if (c.latestVersion == null) return false;
+
+    if (c.proposerId.toLowerCase() === connectedAccountAddress) return true;
+
+    const isSponsor =
+      c.targetProposal?.signers != null &&
+      c.targetProposal.signers.some(
+        (s) => s.id.toLowerCase() === connectedAccountAddress,
+      );
+
+    return isSponsor && !hasSigned(c);
+  });
+};
+
+const createDigestSections = ({
+  proposals,
+  candidates,
+  topics,
+  proposalUpdateCandidates,
+  connectedAccountAddress,
+}) => {
+  const activeThreshold = dateStartOfDay(
+    dateSubtractDays(new Date(), DIGEST_ACTIVE_THRESHOLD_IN_DAYS),
+  );
+  const newThreshold = dateStartOfDay(
+    dateSubtractDays(new Date(), DIGEST_NEW_THRESHOLD_IN_DAYS),
+  );
+
+  const proposalsBySection = arrayUtils.groupBy((p) => {
+    if (["pending", "updatable"].includes(p.state)) return "proposals:new";
+    if (isFinalProposalState(p.state) || isSucceededProposalState(p.state)) {
+      const recentlyConcluded =
+        p.endTimestamp != null && p.endTimestamp >= newThreshold;
+      const recentlyCanceled =
+        p.canceledTimestamp != null && p.canceledTimestamp >= newThreshold;
+      if (recentlyConcluded || recentlyCanceled)
+        return "proposals:recently-concluded";
+      return "proposals:past";
+    }
+    if (
+      isVotableProposalState(p.state) &&
+      connectedAccountAddress != null &&
+      p.votes != null &&
+      !p.votes.some((v) => v.voterId === connectedAccountAddress)
+    )
+      return "proposals:awaiting-vote";
+    return "proposals:ongoing";
+  }, proposals);
+
+  const candidatesBySection = arrayUtils.groupBy(
+    (c) => {
+      const forYouGroup = getCandidateForYouGroup(
+        { connectedAccountAddress, activeThreshold, newThreshold },
+        c,
+      );
+      const isTopic = c.latestVersion?.type === "topic";
+      return `${isTopic ? "topics" : "candidates"}:${forYouGroup}`;
+    },
+    [...topics, ...candidates, ...proposalUpdateCandidates],
+  );
+
+  const itemsBySectionKey = { ...proposalsBySection, ...candidatesBySection };
+
+  return [
+    {
+      key: "candidates:authored-proposal-update",
+      title: "Your proposal updates",
+      sort: sortCandidatesChronological,
+    },
+    {
+      key: "candidates:sponsored-proposal-update-awaiting-signature",
+      title: "Missing your signature",
+      description:
+        "Pending updates of sponsored proposals that you need to sign",
+      sort: sortCandidatesChronological,
+    },
+    {
+      key: "proposals:awaiting-vote",
+      title: "Not yet voted",
+      sort: sortProposalsByEndsSoon,
+    },
+    {
+      key: "proposals:ongoing",
+      title: "Ongoing proposals",
+      description: "Currently voting",
+      sort: sortProposalsByEndsSoon,
+      truncationThreshold: 2,
+    },
+    {
+      key: "proposals:new",
+      title: "Upcoming proposals",
+      // description: "Not yet open for voting",
+      sort: sortProposalsByStartsSoon,
+      truncationThreshold: 2,
+    },
+    {
+      key: "topics:new",
+      title: "New topics",
+      description: "Created within the last 3 days",
+      sort: sortCandidatesReverseChronological,
+      truncationThreshold: 2,
+    },
+    {
+      key: "topics:active",
+      title: "Recently active topics",
+      sort: sortCandidatesByLastActivity,
+      truncationThreshold: 2,
+    },
+    {
+      key: "candidates:new",
+      title: "New candidates",
+      description: "Created within the last 3 days",
+      sort: sortCandidatesReverseChronological,
+      truncationThreshold: 2,
+    },
+    {
+      key: "candidates:active",
+      title: "Recently active candidates",
+      sort: sortCandidatesByLastActivity,
+      truncationThreshold: 2,
+    },
+    {
+      key: "proposals:recently-concluded",
+      title: "Recently concluded proposals",
+      sort: sortProposalsReverseChrononological,
+      truncationThreshold: 8,
+    },
+  ].map(({ key, sort, ...sectionProps }) => {
+    const items = itemsBySectionKey[key] ?? [];
+    return {
+      type: "section",
+      key,
+      children: sort(items),
+      collapsible: true,
+      ...sectionProps,
+    };
+  });
 };
 
 let hasFetchedBrowseDataOnce = false;
@@ -113,31 +266,27 @@ const BrowseScreen = () => {
 
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
-  const proposals = useProposals({ state: true });
-  const candidates = useProposalCandidates({
+  const proposals_ = useProposals({ state: true });
+  const candidates_ = useProposalCandidates({
     includeCanceled: false,
     includePromoted: false,
     includeProposalUpdates: false,
   });
-  const proposalUpdateCandidates = useProposalUpdateCandidates({
+  const proposalUpdateCandidates_ = useProposalUpdateCandidates({
     includeTargetProposal: true,
   });
 
-  const { items: proposalDrafts } = useDrafts();
+  const { items: allProposalDrafts } = useDrafts();
 
   const [page, setPage] = React.useState(1);
-  const [proposalSortStrategy, setProposalSortStrategy] = useCachedState(
-    "proposal-sorting-startegy",
-    "activity",
+  const [proposalSortStrategy, setProposalSortStrategy] = React.useState(
+    "reverse-chronological",
   );
-  const [voterSortStrategy, setVoterSortStrategy] = useCachedState(
-    "voter-sorting-strategy",
-    "recent-revotes",
-  );
-  const [candidateSortStrategy_, setCandidateSortStrategy] = useCachedState(
-    "candidate-sorting-strategy",
-    "activity",
-  );
+  const [candidateSortStrategy, setCandidateSortStrategy] =
+    React.useState("activity");
+  const [topicSortStrategy, setTopicSortStrategy] = React.useState("activity");
+  const [voterSortStrategy, setVoterSortStrategy] =
+    React.useState("recent-revotes");
 
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
     hasFetchedBrowseDataOnce,
@@ -148,76 +297,38 @@ const BrowseScreen = () => {
   const eagerMatchingEnsAddress = useEnsAddress(deferredQuery);
   const matchingEnsAddress = React.useDeferredValue(eagerMatchingEnsAddress);
 
-  const candidateSortStrategies =
-    connectedAccountAddress == null
-      ? ["activity", "popularity"]
-      : ["activity", "popularity", "connected-account-feedback"];
-
-  const candidateSortStrategy = candidateSortStrategies.includes(
-    candidateSortStrategy_,
-  )
-    ? candidateSortStrategy_
-    : "popularity";
-
-  const filteredProposals = React.useMemo(
-    () => proposals.filter((p) => p.startBlock != null),
-    [proposals],
+  const proposals = React.useMemo(
+    () => proposals_.filter((p) => p.startBlock != null),
+    [proposals_],
   );
-  const filteredCandidates = React.useMemo(
-    () => candidates.filter((c) => c.latestVersion != null),
-    [candidates],
+  const { candidates = [], topics = [] } = React.useMemo(
+    () =>
+      candidates_.reduce(
+        (acc, c) => {
+          if (c.latestVersion == null) return acc;
+          return c.latestVersion?.type === "topic"
+            ? { ...acc, topics: [...acc.topics, c] }
+            : { ...acc, candidates: [...acc.candidates, c] };
+        },
+        { candidates: [], topics: [] },
+      ),
+    [candidates_],
   );
-  const filteredProposalUpdateCandidates = React.useMemo(() => {
-    const hasSigned = (c) => {
-      const signatures = getCandidateSponsorSignatures(c, {
-        excludeInvalid: true,
-        activeProposerIds: [],
-      });
-      return signatures.some(
-        (s) => s.signer.id.toLowerCase() === connectedAccountAddress,
-      );
-    };
-
-    // Include authored updates, as well as sponsored updates not yet signed
-    return proposalUpdateCandidates.filter((c) => {
-      if (c.latestVersion == null) return false;
-
-      if (c.proposerId.toLowerCase() === connectedAccountAddress) return true;
-
-      const isSponsor =
-        c.targetProposal?.signers != null &&
-        c.targetProposal.signers.some(
-          (s) => s.id.toLowerCase() === connectedAccountAddress,
-        );
-
-      return isSponsor && !hasSigned(c);
+  const relevantProposalUpdateCandidates = React.useMemo(() => {
+    return filterProposalUpdateCandidates(proposalUpdateCandidates_, {
+      connectedAccountAddress,
     });
-  }, [proposalUpdateCandidates, connectedAccountAddress]);
+  }, [proposalUpdateCandidates_, connectedAccountAddress]);
 
-  const filteredProposalDrafts = React.useMemo(() => {
-    if (proposalDrafts == null) return [];
-    return proposalDrafts
+  const proposalDrafts = React.useMemo(() => {
+    if (allProposalDrafts == null) return [];
+    return allProposalDrafts
       .filter((d) => {
         if (d.name.trim() !== "") return true;
         return d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
       })
       .map((d) => ({ ...d, type: "draft" }));
-  }, [proposalDrafts]);
-
-  const allItems = React.useMemo(
-    () => [
-      ...filteredProposalDrafts,
-      ...filteredCandidates,
-      ...filteredProposals,
-      ...filteredProposalUpdateCandidates,
-    ],
-    [
-      filteredProposalDrafts,
-      filteredCandidates,
-      filteredProposals,
-      filteredProposalUpdateCandidates,
-    ],
-  );
+  }, [allProposalDrafts]);
 
   const searchResultItems = React.useMemo(() => {
     if (deferredQuery === "") return [];
@@ -229,7 +340,7 @@ const BrowseScreen = () => {
 
     const matchingRecords = searchRecords(
       [
-        ...filteredProposalDrafts.map((d) => ({
+        ...proposalDrafts.map((d) => ({
           type: "draft",
           data: d,
           tokens: [
@@ -239,7 +350,7 @@ const BrowseScreen = () => {
           ],
           fallbackSortProperty: Infinity,
         })),
-        ...filteredProposals.map((p) => ({
+        ...proposals.map((p) => ({
           type: "proposal",
           data: p,
           tokens: [
@@ -250,21 +361,20 @@ const BrowseScreen = () => {
           ],
           fallbackSortProperty: p.createdBlock,
         })),
-        ...[...filteredCandidates, ...filteredProposalUpdateCandidates].map(
-          (c) => ({
-            type: "candidate",
-            data: c,
-            tokens: [
-              { value: c.id, exact: true },
-              { value: c.proposerId, exact: true },
-              { value: c.latestVersion?.content.title },
-              ...(c.latestVersion?.content.contentSignatures ?? []).map(
-                (s) => ({ value: s.signer.id, exact: true }),
-              ),
-            ],
-            fallbackSortProperty: c.createdBlock,
-          }),
-        ),
+        ...[...candidates, ...relevantProposalUpdateCandidates].map((c) => ({
+          type: "candidate",
+          data: c,
+          tokens: [
+            { value: c.id, exact: true },
+            { value: c.proposerId, exact: true },
+            { value: c.latestVersion?.content.title },
+            ...(c.latestVersion?.content.contentSignatures ?? []).map((s) => ({
+              value: s.signer.id,
+              exact: true,
+            })),
+          ],
+          fallbackSortProperty: c.createdBlock,
+        })),
       ],
       [deferredQuery, ...matchingAddresses],
     );
@@ -287,196 +397,17 @@ const BrowseScreen = () => {
   }, [
     deferredQuery,
     matchingEnsAddress,
-    filteredProposals,
-    filteredCandidates,
-    filteredProposalUpdateCandidates,
-    filteredProposalDrafts,
+    proposals,
+    candidates,
+    relevantProposalUpdateCandidates,
+    proposalDrafts,
     primaryEnsNameByAddress,
   ]);
 
-  const groupProposal = (p) => {
-    if (proposalSortStrategy === "chronological")
-      return "proposals:chronological";
-
-    return [
-      "proposals",
-      getProposalForYouGroup({ connectedAccountAddress }, p),
-    ].join(":");
+  const paginate = (items) => {
+    if (page == null) return items;
+    return items.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page);
   };
-
-  const candidateActiveThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_ACTIVE_THRESHOLD_IN_DAYS),
-  );
-  const candidateNewThreshold = dateStartOfDay(
-    dateSubtractDays(new Date(), CANDIDATE_NEW_THRESHOLD_IN_DAYS),
-  );
-
-  const groupCandidate = (c) => {
-    const forYouGroup = getCandidateForYouGroup(
-      {
-        connectedAccountAddress,
-        activeThreshold: candidateActiveThreshold,
-        newThreshold: candidateNewThreshold,
-      },
-      c,
-    );
-
-    if (forYouGroup === "authored-proposal-update") return "proposals:authored";
-    if (forYouGroup === "sponsored-proposal-update-awaiting-signature")
-      return ["proposals", forYouGroup].join(":");
-
-    const isActive = candidateHadRecentActivity(
-      { threshold: candidateActiveThreshold },
-      c,
-    );
-
-    if (!isActive) return "candidates:inactive";
-
-    if (candidateSortStrategy === "popularity") return "candidates:popular";
-
-    if (candidateSortStrategy === "connected-account-feedback") {
-      const hasFeedback =
-        c.feedbackPosts != null &&
-        c.feedbackPosts.some(
-          (p) => p.voterId.toLowerCase() === connectedAccountAddress,
-        );
-
-      if (
-        // Include authored candidates here for now
-        c.proposerId.toLowerCase() === connectedAccountAddress ||
-        hasFeedback
-      )
-        return "candidates:feedback-given";
-
-      return "candidates:feedback-missing";
-    }
-
-    return ["candidates", forYouGroup].join(":");
-  };
-
-  const sectionsByName = objectUtils.mapValues(
-    // Sort and slice sections
-    (items, groupKey) => {
-      const { title, description } = groupConfigByKey[groupKey];
-
-      switch (groupKey) {
-        case "drafts":
-          return {
-            type: "section",
-            key: groupKey,
-            title,
-            children: arrayUtils.sortBy(
-              { value: (i) => Number(i.id), order: "desc" },
-              items,
-            ),
-          };
-
-        case "proposals:chronological": {
-          const sortedItems = arrayUtils.sortBy(
-            { value: (i) => Number(i.createdBlock), order: "desc" },
-            items,
-          );
-          const paginate = page != null;
-          return {
-            type: "section",
-            key: groupKey,
-            count: sortedItems.length,
-            children: paginate
-              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
-              : sortedItems,
-          };
-        }
-
-        case "proposals:awaiting-vote":
-          return {
-            type: "section",
-            key: groupKey,
-            title,
-            children: arrayUtils.sortBy(
-              (i) => Number(i.objectionPeriodEndBlock ?? i.endBlock),
-              items,
-            ),
-          };
-
-        case "proposals:authored":
-        case "proposals:ongoing":
-        case "proposals:new":
-        case "proposals:past": {
-          const sortedItems = arrayUtils.sortBy(
-            {
-              value: (i) => Number(i.startBlock),
-              order: "desc",
-            },
-            items,
-          );
-          const paginate = page != null && groupKey === "proposals:past";
-          return {
-            type: "section",
-            key: groupKey,
-            title,
-            count: sortedItems.length,
-            children: paginate
-              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
-              : sortedItems,
-          };
-        }
-
-        case "candidates:authored":
-        case "candidates:sponsored":
-        case "candidates:new":
-        case "candidates:active":
-        case "candidates:feedback-given":
-        case "candidates:feedback-missing":
-        case "candidates:popular":
-        case "candidates:authored-proposal-update":
-        case "candidates:inactive":
-        case "proposals:sponsored-proposal-update-awaiting-signature": {
-          const sortedItems = arrayUtils.sortBy(
-            candidateSortStrategy === "popularity"
-              ? {
-                  value: (i) => getCandidateScore(i) ?? 0,
-                  order: "desc",
-                }
-              : {
-                  value: (i) =>
-                    Math.max(
-                      i.lastUpdatedTimestamp,
-                      ...(i.feedbackPosts?.map((p) => p.createdTimestamp) ??
-                        []),
-                    ),
-                  order: "desc",
-                },
-            items,
-          );
-
-          const paginate = page != null && groupKey === "candidates:inactive";
-
-          return {
-            type: "section",
-            key: groupKey,
-            title,
-            description,
-            count: sortedItems.length,
-            children: paginate
-              ? sortedItems.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page)
-              : sortedItems,
-          };
-        }
-
-        case "hidden":
-          return null;
-
-        default:
-          throw new Error(`Unknown group "${groupKey}"`);
-      }
-    },
-    // Group items
-    arrayUtils.groupBy((i) => {
-      if (i.type === "draft") return "drafts";
-      if (i.slug != null) return groupCandidate(i);
-      return groupProposal(i);
-    }, allItems),
-  );
 
   const { fetchBrowseScreenData } = useActions();
 
@@ -514,16 +445,15 @@ const BrowseScreen = () => {
     );
   });
 
+  const defaultTabKey = isDesktopLayout ? "digest" : "activity";
+
   const listings = (
     <>
       <div ref={tabAnchorRef} />
       <Tabs.Root
         ref={tabContainerRef}
-        aria-label="Proposals and candidates"
-        selectedKey={
-          searchParams.get("tab") ??
-          (isDesktopLayout ? "proposals" : "activity")
-        }
+        aria-label="Listings tabs"
+        selectedKey={searchParams.get("tab") ?? defaultTabKey}
         onSelectionChange={(key) => {
           const tabAnchorRect = tabAnchorRef.current?.getBoundingClientRect();
           const tabContainerRect =
@@ -537,6 +467,10 @@ const BrowseScreen = () => {
           setSearchParams(
             (p) => {
               const newParams = new URLSearchParams(p);
+              if (key === defaultTabKey) {
+                newParams.delete("tab");
+                return newParams;
+              }
               newParams.set("tab", key);
               return newParams;
             },
@@ -560,6 +494,56 @@ const BrowseScreen = () => {
             <FeedTabContent />
           </Tabs.Item>
         )}
+        <Tabs.Item key="digest" title="Digest">
+          <div css={css({ padding: "2rem 0" })}>
+            <SectionedList
+              cacheKey="landing-digest"
+              forcePlaceholder={!hasFetchedOnce}
+              items={(() => {
+                const sections = createDigestSections({
+                  connectedAccountAddress,
+                  proposals,
+                  candidates,
+                  topics,
+                  proposalUpdateCandidates: relevantProposalUpdateCandidates,
+                });
+                return sections
+                  .filter(
+                    ({ children }) => children != null && children.length !== 0,
+                  )
+                  .map((section, _, sections) => {
+                    // Tweaking the title if necessary to make it more coherant
+                    switch (section.key) {
+                      case "topics:active": {
+                        const hasNew = sections.some(
+                          (s) => s.key === "topics:new",
+                        );
+                        return {
+                          ...section,
+                          title: hasNew ? "Other active topics" : section.title,
+                        };
+                      }
+
+                      case "candidates:active": {
+                        const hasNew = sections.some(
+                          (s) => s.key === "candidates:new",
+                        );
+                        return {
+                          ...section,
+                          title: hasNew
+                            ? "Other active candidates"
+                            : section.title,
+                        };
+                      }
+
+                      default:
+                        return section;
+                    }
+                  });
+              })()}
+            />
+          </div>
+        </Tabs.Item>
         <Tabs.Item key="proposals" title="Proposals">
           <div
             css={css({
@@ -575,8 +559,8 @@ const BrowseScreen = () => {
               aria-label="Proposal sorting"
               value={proposalSortStrategy}
               options={[
-                { value: "activity", label: "By voting state" },
-                { value: "chronological", label: "Chronological" },
+                { value: "reverse-chronological", label: "Descending" },
+                { value: "chronological", label: "Ascending" },
               ]}
               onChange={(value) => {
                 setProposalSortStrategy(value);
@@ -616,43 +600,114 @@ const BrowseScreen = () => {
               }
             />
           </div>
-          <ProposalList
-            forcePlaceholder={!hasFetchedOnce}
-            items={[
-              "proposals:chronological",
-              "proposals:authored",
-              "proposals:sponsored-proposal-update-awaiting-signature",
-              "proposals:awaiting-vote",
-              "proposals:ongoing",
-              "proposals:new",
-              "proposals:past",
-            ]
-              .map((sectionKey) => sectionsByName[sectionKey] ?? {})
-              .filter(
-                ({ children }) => children != null && children.length !== 0,
-              )}
-          />
           {(() => {
-            if (page == null) return null;
-
-            const truncatableItemCount =
+            const items =
               proposalSortStrategy === "chronological"
-                ? sectionsByName["proposals:chronological"]?.count
-                : sectionsByName["proposals:past"]?.count;
+                ? sortProposalsChrononological(proposals)
+                : sortProposalsReverseChrononological(proposals);
 
             const hasMoreItems =
-              truncatableItemCount > BROWSE_LIST_PAGE_ITEM_COUNT * page;
-
-            if (!hasMoreItems) return null;
+              page != null && items.length > BROWSE_LIST_PAGE_ITEM_COUNT * page;
 
             return (
-              <Pagination
-                showNext={() => setPage((p) => p + 1)}
-                showAll={() => setPage(null)}
-              />
+              <>
+                <SectionedList
+                  forcePlaceholder={!hasFetchedOnce}
+                  items={[
+                    {
+                      key: "proposals",
+                      type: "section",
+                      children: paginate(items),
+                    },
+                  ]}
+                />
+                {hasMoreItems && (
+                  <Pagination
+                    showNext={() => setPage((p) => p + 1)}
+                    showAll={() => setPage(null)}
+                  />
+                )}
+              </>
             );
           })()}
         </Tabs.Item>
+        {topics.length > 0 && (
+          <Tabs.Item key="topics" title="Topics">
+            <div
+              css={css({
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "0.8rem",
+                padding: "2rem 0",
+              })}
+            >
+              <Select
+                size="small"
+                aria-label="Topic sorting"
+                inlineLabel="Order"
+                value={topicSortStrategy}
+                options={[
+                  { value: "activity", label: "By recent activity" },
+                  { value: "reverse-chronological", label: "Chronological" },
+                ]}
+                onChange={(value) => {
+                  setTopicSortStrategy(value);
+                }}
+                fullWidth={false}
+                width="max-content"
+              />
+              <Button
+                component={NextLink}
+                href="/topics"
+                prefetch
+                size="small"
+                variant="transparent"
+                icon={
+                  <FullscreenIcon
+                    style={{
+                      width: "1.4rem",
+                      height: "auto",
+                      transform: "scaleX(-1)",
+                    }}
+                  />
+                }
+              />
+            </div>
+
+            {(() => {
+              const items =
+                topicSortStrategy === "reverse-chronological"
+                  ? sortCandidatesReverseChronological(topics)
+                  : sortCandidatesByLastActivity(topics);
+              const hasMoreItems =
+                page != null &&
+                items.length > BROWSE_LIST_PAGE_ITEM_COUNT * page;
+              return (
+                <>
+                  <SectionedList
+                    forcePlaceholder={!hasFetchedOnce}
+                    showCandidateScore
+                    items={[
+                      {
+                        key: "topics",
+                        type: "section",
+                        children: paginate(items),
+                      },
+                    ]}
+                  />
+
+                  {hasMoreItems && (
+                    <Pagination
+                      showNext={() => setPage((p) => p + 1)}
+                      showAll={() => setPage(null)}
+                    />
+                  )}
+                </>
+              );
+            })()}
+          </Tabs.Item>
+        )}
         <Tabs.Item key="candidates" title="Candidates">
           <div
             css={css({
@@ -666,27 +721,15 @@ const BrowseScreen = () => {
             <Select
               size="small"
               aria-label="Candidate sorting"
-              inlineLabel="Sort by"
+              inlineLabel="Order"
               value={candidateSortStrategy}
               options={[
+                { value: "activity", label: "By recent activity" },
                 {
-                  value: "popularity",
-                  label: "Popularity",
+                  value: "reverse-chronological",
+                  label: "Chronological",
                 },
-                {
-                  value: "activity",
-                  label: "Recent activity",
-                },
-                {
-                  value: "connected-account-feedback",
-                  label: "Your feedback activity",
-                },
-              ].filter(
-                (o) =>
-                  // A connected wallet is required for feedback filter to work
-                  connectedAccountAddress != null ||
-                  o.value !== "connected-account-feedback",
-              )}
+              ]}
               onChange={(value) => {
                 setCandidateSortStrategy(value);
               }}
@@ -711,33 +754,36 @@ const BrowseScreen = () => {
             />
           </div>
 
-          <ProposalList
-            forcePlaceholder={!hasFetchedOnce}
-            showCandidateScore
-            items={[
-              "candidates:authored",
-              "candidates:sponsored",
-              "candidates:feedback-missing",
-              "candidates:feedback-given",
-              "candidates:new",
-              "candidates:active",
-              "candidates:popular",
-              "candidates:inactive",
-            ]
-              .map((sectionKey) => sectionsByName[sectionKey] ?? {})
-              .filter(
-                ({ children }) => children != null && children.length !== 0,
-              )}
-          />
-          {page != null &&
-            sectionsByName["candidates:inactive"] != null &&
-            sectionsByName["candidates:inactive"].count >
-              BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-              <Pagination
-                showNext={() => setPage((p) => p + 1)}
-                showAll={() => setPage(null)}
-              />
-            )}
+          {(() => {
+            const items =
+              candidateSortStrategy === "reverse-chronological"
+                ? sortCandidatesReverseChronological(candidates)
+                : sortCandidatesByLastActivity(candidates);
+            const hasMoreItems =
+              page != null && items.length > BROWSE_LIST_PAGE_ITEM_COUNT * page;
+            return (
+              <>
+                <SectionedList
+                  forcePlaceholder={!hasFetchedOnce}
+                  showCandidateScore
+                  items={[
+                    {
+                      key: "candidates",
+                      type: "section",
+                      children: paginate(items),
+                    },
+                  ]}
+                />
+
+                {hasMoreItems && (
+                  <Pagination
+                    showNext={() => setPage((p) => p + 1)}
+                    showAll={() => setPage(null)}
+                  />
+                )}
+              </>
+            );
+          })()}
         </Tabs.Item>
         <Tabs.Item key="voters" title="Voters">
           <div
@@ -804,12 +850,37 @@ const BrowseScreen = () => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
+          // {
+          //   label: "Propose",
+          //   buttonProps: {
+          //     component: NextLink,
+          //     href: "/new",
+          //     prefetch: true,
+          //   },
+          // },
           {
-            label: "Propose",
+            type: "dropdown",
+            label: "New",
+            placement: "bottom start",
+            items: [
+              {
+                id: "-",
+                children: [
+                  {
+                    id: "new-proposal",
+                    label: "Proposal",
+                  },
+                  {
+                    id: "new-discussion-topic",
+                    label: "Discussion topic",
+                  },
+                ],
+              },
+            ],
             buttonProps: {
-              component: NextLink,
-              href: "/new",
-              prefetch: true,
+              iconRight: (
+                <CaretDownIcon style={{ width: "0.9rem", height: "auto" }} />
+              ),
             },
           },
           treasuryData != null && {
@@ -892,7 +963,7 @@ const BrowseScreen = () => {
               {deferredQuery !== "" ? (
                 // Search results
                 <div css={css({ marginTop: "2rem" })}>
-                  <ProposalList
+                  <SectionedList
                     items={
                       page == null
                         ? searchResultItems
@@ -1238,7 +1309,7 @@ const VoterList = ({ sortStrategy }) => {
 
   return (
     <>
-      <ProposalList
+      <SectionedList
         forcePlaceholder={revoteCountByAccountAddress == null}
         items={
           page != null
@@ -1278,12 +1349,7 @@ const Pagination = ({ showNext, showAll }) => (
       Show more
     </Button>
     <div style={{ marginTop: "1.2rem" }}>
-      <Link
-        size="small"
-        component="button"
-        color={(t) => t.colors.textDimmed}
-        onClick={showAll}
-      >
+      <Link size="small" component="button" variant="dimmed" onClick={showAll}>
         Show all
       </Link>
     </div>

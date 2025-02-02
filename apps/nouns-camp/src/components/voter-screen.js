@@ -41,7 +41,7 @@ import AccountAvatar from "./account-avatar.js";
 import { useCurrentDynamicQuorum } from "../hooks/dao-contract.js";
 import VotingBar from "./voting-bar.js";
 import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
 import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "../hooks/farcaster.js";
 import Avatar from "@shades/ui-web/avatar";
@@ -1028,17 +1028,6 @@ const VoterScreen = ({ voterId: rawAddressOrEnsName }) => {
       navigationStack={[
         { to: "/voters", label: "Voters", desktopOnly: true },
         { to: `/voters/${rawAddressOrEnsName}`, label: displayName },
-      ]}
-      actions={[
-        {
-          label: "Propose",
-          buttonProps: {
-            component: NextLink,
-            href: "/new",
-            prefetch: true,
-          },
-          desktopOnly: true,
-        },
       ]}
     >
       {voterAddress != null ? (

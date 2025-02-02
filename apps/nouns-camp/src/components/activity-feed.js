@@ -1,5 +1,6 @@
 import getDateYear from "date-fns/getYear";
 import React from "react";
+import ReactDOM from "react-dom";
 import NextLink from "next/link";
 import { css, keyframes } from "@emotion/react";
 import {
@@ -25,6 +26,7 @@ import {
   extractSlugFromId as extractSlugFromCandidateId,
   makeUrlId as makeCandidateUrlId,
 } from "@/utils/candidates";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster";
 import { useNavigate } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useState as useSessionState } from "@/session-provider";
@@ -51,9 +53,11 @@ import {
   useTransactionLikes as useFarcasterTransactionLikes,
   useCastLikes as useFarcasterCastLikes,
   useCastConversation as useFarcasterCastConversation,
+  // useConnectedFarcasterAccounts,
 } from "../hooks/farcaster.js";
 import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
 import { buildEtherscanLink } from "../utils/etherscan.js";
+import ProposalActionForm from "./proposal-action-form.js";
 
 const BODY_TRUNCATION_HEIGHT_THRESHOLD = 135;
 
@@ -75,8 +79,12 @@ const ActivityFeed = ({
   spacing = "2rem",
   onReply,
   onRepost,
+  onInlineReplyChange,
+  submitInlineReply,
   createReplyHref,
   createRepostHref,
+  variant,
+  pendingRepliesByTargetItemId,
 }) => {
   const { address: connectedAccountAddress } = useWallet();
   const { address: loggedInAccountAddress } = useSessionState();
@@ -174,6 +182,7 @@ const ActivityFeed = ({
 
   return (
     <ul
+      data-variant={variant}
       css={(t) =>
         css({
           lineHeight: "calc(20/14)", // 20px line height given font size if 14px
@@ -185,17 +194,123 @@ const ActivityFeed = ({
             marginTop: "var(--vertical-spacing)",
           },
           '[data-pending="true"]': { opacity: 0.6 },
-          ".nowrap": { whiteSpace: "nowrap" },
+          ".item-content-container": {
+            paddingLeft: "2.6rem",
+            userSelect: "text",
+          },
+          ".body-container": {
+            margin: "0.5rem 0",
+          },
+          ".signature-meta": {
+            fontSize: t.text.sizes.small,
+            color: t.colors.textDimmed,
+          },
+          ".action-bar-container": {
+            display: "flex",
+            gap: "0.8rem",
+            margin: "0.6rem -0.4rem 0",
+            "& > button, & > a": {
+              padding: "0.4rem",
+              color: t.colors.textDimmed,
+              ":disabled": {
+                color: t.colors.textMuted,
+              },
+              "@media(hover: hover)": {
+                ":not(:disabled)": {
+                  cursor: "pointer",
+                  ":hover": {
+                    color: t.colors.textAccent,
+                  },
+                },
+              },
+            },
+          },
+          ".meta-bar-container": {
+            marginTop: "0.6rem",
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.small,
+            a: {
+              color: "inherit",
+              textDecoration: "none",
+              "@media(hover: hover)": {
+                "&:hover": { textDecoration: "underline" },
+              },
+            },
+          },
+          '&[data-variant="boxed"]': {
+            '[role="listitem"]': {
+              padding: 0,
+              ".item-container": {
+                paddingLeft: "1.7rem", // 0.1rem border offset
+                paddingRight: "1.6rem",
+              },
+              ".item-content-container": {
+                padding: "0 0 0 2.6rem",
+              },
+              ".body-container": {
+                margin: "0.8rem 0 0",
+              },
+              ".signature-meta": {
+                marginTop: "0.8rem",
+              },
+              ".action-bar-container": { marginTop: "0.625em" },
+              "&[data-reply-form-active]:not([data-has-replies])": {
+                ".item-container": {
+                  background: t.colors.backgroundModifierLight,
+                },
+              },
+              "&[data-has-content]": {
+                border: "0.1rem solid",
+                borderColor: t.colors.borderLight,
+                borderRadius: "0.6rem",
+                ".item-container": {
+                  padding: "1.6rem",
+                },
+                ".item-content-container": {
+                  padding: "0",
+                },
+                ".replies-container": {
+                  margin: "0",
+                  background: t.colors.backgroundModifierLight,
+                  borderTop: "0.1rem solid",
+                  borderColor: t.colors.borderLight,
+                  ".body-container": { paddingLeft: "2.6rem" },
+                  "& > li": {
+                    listStyle: "none",
+                    padding: "1.6rem",
+                  },
+                  "& > li + li": {
+                    borderTop: "0.1rem solid",
+                    borderColor: t.colors.borderLight,
+                  },
+                  ".action-bar-container, .meta-bar-container": {
+                    paddingLeft: "2.6rem",
+                  },
+                },
+              },
+            },
+          },
+          "[data-nowrap]": { whiteSpace: "nowrap" },
           ".item-header": {
             display: "grid",
             gridTemplateColumns: "2rem minmax(0,1fr)",
             gridGap: "0.6rem",
             alignItems: "flex-start",
-            a: {
+            color: t.colors.textDimmed,
+            ".item-title-container": {
+              display: "grid",
+              gridTemplateColumns: "minmax(0,1fr) auto",
+              // display: "flex",
+              alignItems: "flex-start",
+              gap: "0.6rem",
+              cursor: "default",
+            },
+            "a, .interactive": {
               color: t.colors.textDimmed,
               fontWeight: t.text.weights.emphasis,
               textDecoration: "none",
               "@media(hover: hover)": {
+                cursor: "pointer",
                 ":hover": { textDecoration: "underline" },
               },
             },
@@ -241,16 +356,27 @@ const ActivityFeed = ({
       }
       style={{ "--vertical-spacing": spacing }}
     >
-      {items.map((item) => (
+      {(variant === "boxed"
+        ? items.filter((i) => {
+            const isReply = i.replies?.length > 0;
+            const hasBody = i.body != null && i.body.trim().length > 0;
+            return !isReply || hasBody;
+          })
+        : items
+      ).map((item) => (
         <FeedItem
           key={item.id}
           {...item}
+          variant={variant}
           context={context}
           onReply={onReply}
           onRepost={onRepost}
           onLike={onLike}
           createReplyHref={createReplyHref}
           createRepostHref={createRepostHref}
+          onInlineReplyChange={onInlineReplyChange}
+          submitInlineReply={submitInlineReply}
+          pendingReply={pendingRepliesByTargetItemId?.[item.id]}
         />
       ))}
     </ul>
@@ -260,42 +386,42 @@ const ActivityFeed = ({
 const FeedItem = React.memo(
   ({
     context,
+    variant,
+    pendingReply,
     onReply,
     onRepost,
     onLike,
     createReplyHref,
     createRepostHref,
+    onInlineReplyChange,
+    submitInlineReply,
     ...item
   }) => {
+    const inlineReplyInputRef = React.useRef();
+
     const [
       expandedReplyTargetAndRepostIds,
       setExpandedReplyTargetAndRepostIds,
     ] = React.useState([]);
+    const [isReplyFormExpanded, setReplyFormExpanded] = React.useState(false);
 
-    const { address: connectedAccount_ } = useWallet();
-    const { address: loggedInAccount } = useSessionState();
-    const userAccountAddress = connectedAccount_ ?? loggedInAccount;
+    const isBoxedVariant = variant === "boxed";
+
+    const userAccountAddress = useUserEthereumAccountAddress();
     const userFarcasterAccount =
       useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
 
     const containerRef = React.useRef();
-    const isOnScreen = useHasBeenOnScreen(containerRef, {
+    const hasBeenOnScreen = useHasBeenOnScreen(containerRef, {
       rootMargin: "0px 0px 200%",
     });
 
-    const transactionLikes = useFarcasterTransactionLikes(
-      item.transactionHash,
-      { enabled: isOnScreen },
-    );
-    const castLikes = useFarcasterCastLikes(item.castHash, {
-      enabled: isOnScreen,
-    });
     const replyCasts = useFarcasterCastConversation(item.castHash, {
-      enabled: isOnScreen,
+      enabled: hasBeenOnScreen,
     });
 
     const nounTransferMeta = useNounTransferMeta(item.transactionHash, {
-      enabled: item.type === "noun-transfer" && isOnScreen,
+      enabled: item.type === "noun-transfer" && hasBeenOnScreen,
     });
 
     const authorReplyCasts = (() => {
@@ -305,34 +431,79 @@ const FeedItem = React.memo(
       return flatten(replyCasts).filter((c) => c.fid === item.authorFid);
     })();
 
-    const likes = transactionLikes ?? castLikes;
+    const likes = useItemLikes(item, { enabled: hasBeenOnScreen });
 
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
     const itemBody = nounTransferMeta?.reason ?? item.body;
-    const hasBody = itemBody != null && itemBody.trim() !== "";
-    const hasReason = item.reason != null && item.reason.trim() !== "";
 
     const hasReposts = item.reposts?.length > 0;
     const hasLikes = likes?.length > 0;
     const hasBeenReposted = item.repostingItems?.length > 0;
+    const isReply = item.replies?.length > 0;
 
-    const hasLiked = likes?.some(
-      (l) =>
-        l.nounerAddress === userAccountAddress ||
-        l.fid === userFarcasterAccount?.fid,
+    const parseCastReplies = (casts) => {
+      return casts.reduce((acc, cast) => {
+        let displayName = pickFarcasterAccountDisplayName(cast.account);
+        if (displayName !== cast.account.username)
+          displayName += ` (@${cast.account.username})`;
+
+        acc.push({
+          type: "farcaster-cast",
+          id: cast.hash,
+          castHash: cast.hash,
+          authorAccount: cast.account.nounerAddress,
+          authorFid: cast.account.fid,
+          authorAvatarUrl: cast.account.pfpUrl,
+          authorDisplayName: displayName,
+          authorUsername: cast.account.username,
+          castType: "reply",
+          replyBody: cast.text,
+          timestamp: new Date(cast.timestamp),
+        });
+
+        if (cast.replies.length > 0) {
+          const replyItems = parseCastReplies(cast.replies);
+          acc.push(...replyItems);
+        }
+
+        return acc;
+      }, []);
+    };
+
+    const unsortedReplyingItems = [
+      ...(item.replyingItems ?? []),
+      ...parseCastReplies(replyCasts ?? []),
+    ];
+    const replyingItems = arrayUtils.sortBy(
+      { value: (i) => i.timestamp, order: "asc" },
+      unsortedReplyingItems,
     );
+    const hasReplies = replyingItems.length > 0;
+
+    const hasBody = itemBody != null && itemBody.trim() !== "";
+    // const hasReason = item.reason != null && item.reason.trim() !== "";
+
+    const showReplyForm = isReplyFormExpanded || hasReplies;
 
     const showReplyAction = (() => {
       // Casts simply link to Warpcast for now
       if (item.type === "farcaster-cast") return true;
-      if (onReply == null && createReplyHref == null) return false;
-      return ["vote", "feedback-post"].includes(item.type) && hasReason;
+      if (
+        onReply == null &&
+        createReplyHref == null &&
+        submitInlineReply == null
+      )
+        return false;
+      return (
+        // Don’t show for bare reposts
+        ["vote", "feedback-post"].includes(item.type) && (hasBody || isReply)
+      );
     })();
 
     const showRepostAction =
       (onRepost != null || createRepostHref != null) &&
       ["vote", "feedback-post"].includes(item.type) &&
-      hasReason;
+      (hasBody || isReply); // Don’t show for bare reposts
 
     const showLikeAction = (() => {
       if (onLike == null) return false;
@@ -345,7 +516,13 @@ const FeedItem = React.memo(
         ["auction-bid", "noun-transfer", "noun-delegation"].includes(
           item.type,
         ) ||
-        ["proposal-queued"].includes(item.eventType)
+        [
+          "proposal-created",
+          "candidate-created",
+          "proposal-queued",
+          "candidate-canceled",
+          "proposal-canceled",
+        ].includes(item.eventType)
       )
         return false;
 
@@ -356,20 +533,99 @@ const FeedItem = React.memo(
       )
         return hasBody;
 
-      // Items likeable if reason present (revotes have reason but no body)
-      if (["vote", "feedback-post"].includes(item.type)) return hasReason;
+      // Items likeable if body present (replies always has a body)
+      if (["vote", "feedback-post"].includes(item.type))
+        return isReply || hasBody;
 
       // The rest can be liked if they have a tx hash
       return item.transactionHash != null;
     })();
 
-    const enableReplyAction = !item.isPending;
-    const enableRepostAction = !item.isPending;
-    const enableLikeAction = !item.isPending;
-
     const showActionBar = showReplyAction || showRepostAction || showLikeAction;
-    const showMeta =
-      hasLikes || hasBeenReposted || item.type === "farcaster-cast";
+    const showMeta = hasLikes || hasBeenReposted || hasReplies;
+
+    const renderReplyAction = (item) => {
+      const [Component, props] = (() => {
+        if (createReplyHref != null)
+          return [NextLink, { href: createReplyHref(item) }];
+
+        if (onReply != null)
+          return ["button", { onClick: () => onReply(item.id) }];
+
+        if (submitInlineReply != null)
+          return [
+            "button",
+            {
+              onClick: () => {
+                ReactDOM.flushSync(() => {
+                  setReplyFormExpanded(true);
+                });
+                inlineReplyInputRef.current.focus();
+              },
+            },
+          ];
+
+        if (item.type === "farcaster-cast")
+          return [
+            "a",
+            {
+              href: `https://warpcast.com/${item.authorUsername}/${item.castHash}`,
+              target: "_blank",
+              rel: "noreferrer",
+            },
+          ];
+
+        throw new Error();
+      })();
+
+      const enableReplyAction = !item.isPending;
+
+      return (
+        <Component {...props} disabled={!enableReplyAction}>
+          <svg
+            aria-label="Reply"
+            role="img"
+            viewBox="0 0 18 18"
+            stroke="currentColor"
+            fill="transparent"
+            style={{ width: "1.4rem", height: "auto" }}
+          >
+            <path
+              d="M15.376 13.2177L16.2861 16.7955L12.7106 15.8848C12.6781 15.8848 12.6131 15.8848 12.5806 15.8848C11.3779 16.5678 9.94767 16.8931 8.41995 16.7955C4.94194 16.5353 2.08152 13.7381 1.72397 10.2578C1.2689 5.63919 5.13697 1.76863 9.75264 2.22399C13.2307 2.58177 16.0261 5.41151 16.2861 8.92429C16.4161 10.453 16.0586 11.8841 15.376 13.0876C15.376 13.1526 15.376 13.1852 15.376 13.2177Z"
+              strokeLinejoin="round"
+              strokeWidth="1.25"
+            />
+          </svg>
+        </Component>
+      );
+    };
+
+    const renderRepostAction = (item) => {
+      const [component, props] =
+        createRepostHref != null
+          ? [NextLink, { href: createRepostHref(item) }]
+          : ["button", { onClick: () => onRepost(item.id) }];
+
+      return <RepostAction item={item} component={component} {...props} />;
+    };
+
+    const renderLikeAction = (item) => {
+      const hasLiked = likes?.some(
+        (l) =>
+          l.nounerAddress === userAccountAddress ||
+          l.fid === userFarcasterAccount?.fid,
+      );
+
+      return (
+        <LikeAction
+          item={item}
+          hasLiked={hasLiked}
+          onClick={() => {
+            onLike(item.id, hasLiked ? "remove" : "add");
+          }}
+        />
+      );
+    };
 
     return (
       <div
@@ -377,559 +633,431 @@ const FeedItem = React.memo(
         id={item.id}
         role="listitem"
         data-type={item.type}
-        data-pending={item.isPending}
+        data-has-replies={hasReplies || undefined}
+        data-reply-form-active={showReplyForm || undefined}
+        data-has-content={hasBody || isReply || undefined}
+        data-pending={item.isPending || undefined}
       >
-        <div className="item-header">
-          <div className="avatar-container">
-            {(() => {
-              switch (item.type) {
-                case "farcaster-cast":
-                  return (
-                    <div style={{ position: "relative" }}>
-                      {item.authorAccount == null ? (
-                        <Avatar url={item.authorAvatarUrl} size="2rem" />
-                      ) : (
+        <div className="item-container">
+          <div className="item-header">
+            <div className="avatar-container">
+              {(() => {
+                switch (item.type) {
+                  case "farcaster-cast":
+                    return (
+                      <div style={{ position: "relative" }}>
+                        {item.authorAccount == null ? (
+                          <Avatar url={item.authorAvatarUrl} size="2rem" />
+                        ) : (
+                          <AccountPreviewPopoverTrigger
+                            accountAddress={item.authorAccount}
+                          >
+                            <button className="avatar-button">
+                              <AccountAvatar
+                                address={item.authorAccount}
+                                fallbackImageUrl={item.authorAvatarUrl}
+                                size="2rem"
+                              />
+                            </button>
+                          </AccountPreviewPopoverTrigger>
+                        )}
+                        <span
+                          css={(t) =>
+                            css({
+                              position: "absolute",
+                              top: 0,
+                              right: 0,
+                              display: "flex",
+                              width: "1rem",
+                              height: "1rem",
+                              borderRadius: "50%",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "#855DCD", // Farcaster purple
+                              transform: "translateY(-35%) translateX(35%)",
+                              boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+                              svg: {
+                                width: "0.6rem",
+                                height: "auto",
+                                color: "white",
+                              },
+                            })
+                          }
+                        >
+                          <FarcasterGateIcon />
+                        </span>
+                      </div>
+                    );
+
+                  case "noun-transfer": {
+                    if (nounTransferMeta == null) return null;
+
+                    const authorAccount = {
+                      "fork-join": item.fromAccount,
+                      "fork-escrow": item.fromAccount,
+                      "fork-escrow-withdrawal": item.toAccount,
+                      swap: nounTransferMeta.authorAccount,
+                      sale: nounTransferMeta.authorAccount,
+                      transfer: nounTransferMeta.authorAccount,
+                    }[nounTransferMeta.transferType];
+
+                    if (authorAccount == null)
+                      return <div className="timeline-symbol" />;
+
+                    return (
+                      <AccountPreviewPopoverTrigger
+                        accountAddress={authorAccount}
+                      >
+                        <button className="avatar-button">
+                          <AccountAvatar address={authorAccount} size="2rem" />
+                        </button>
+                      </AccountPreviewPopoverTrigger>
+                    );
+                  }
+
+                  case "event":
+                    if (item.eventType === "auction-settled")
+                      return (
+                        <AccountPreviewPopoverTrigger
+                          accountAddress={item.bidderAccount}
+                        >
+                          <button className="avatar-button">
+                            <AccountAvatar
+                              address={item.bidderAccount}
+                              size="2rem"
+                            />
+                          </button>
+                        </AccountPreviewPopoverTrigger>
+                      );
+
+                    if (item.body != null && item.body.length > 0)
+                      return (
                         <AccountPreviewPopoverTrigger
                           accountAddress={item.authorAccount}
                         >
                           <button className="avatar-button">
                             <AccountAvatar
                               address={item.authorAccount}
-                              fallbackImageUrl={item.authorAvatarUrl}
                               size="2rem"
                             />
                           </button>
                         </AccountPreviewPopoverTrigger>
-                      )}
-                      <span
-                        css={(t) =>
-                          css({
-                            position: "absolute",
-                            top: 0,
-                            right: 0,
-                            display: "flex",
-                            width: "1rem",
-                            height: "1rem",
-                            borderRadius: "50%",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            background: "#855DCD", // Farcaster purple
-                            transform: "translateY(-35%) translateX(35%)",
-                            boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
-                            svg: {
-                              width: "0.6rem",
-                              height: "auto",
-                              color: "white",
-                            },
-                          })
-                        }
-                      >
-                        <FarcasterGateIcon />
-                      </span>
-                    </div>
-                  );
+                      );
 
-                case "noun-transfer": {
-                  if (nounTransferMeta == null) return null;
-
-                  const authorAccount = {
-                    "fork-join": item.fromAccount,
-                    "fork-escrow": item.fromAccount,
-                    "fork-escrow-withdrawal": item.toAccount,
-                    swap: nounTransferMeta.authorAccount,
-                    sale: nounTransferMeta.authorAccount,
-                    transfer: nounTransferMeta.authorAccount,
-                  }[nounTransferMeta.transferType];
-
-                  if (authorAccount == null)
                     return <div className="timeline-symbol" />;
 
-                  return (
-                    <AccountPreviewPopoverTrigger
-                      accountAddress={authorAccount}
-                    >
-                      <button className="avatar-button">
-                        <AccountAvatar address={authorAccount} size="2rem" />
-                      </button>
-                    </AccountPreviewPopoverTrigger>
-                  );
-                }
-
-                case "event":
-                  if (item.eventType === "auction-settled")
-                    return (
+                  default:
+                    return item.authorAccount == null ? (
+                      <div className="timeline-symbol" />
+                    ) : (
                       <AccountPreviewPopoverTrigger
-                        accountAddress={item.bidderAccount}
+                        accountAddress={item.authorAccount}
                       >
                         <button className="avatar-button">
                           <AccountAvatar
-                            address={item.bidderAccount}
+                            address={item.authorAccount}
                             size="2rem"
                           />
                         </button>
                       </AccountPreviewPopoverTrigger>
                     );
-
-                  return <div className="timeline-symbol" />;
-
-                default:
-                  return item.authorAccount == null ? (
-                    <div className="timeline-symbol" />
+                }
+              })()}
+            </div>
+            <div>
+              <div className="item-title-container">
+                <div>
+                  <ItemTitle
+                    item={item}
+                    context={context}
+                    hasBeenOnScreen={hasBeenOnScreen}
+                  />
+                </div>
+                <div>
+                  {item.isPending ? (
+                    <div style={{ padding: "0.5rem 0" }}>
+                      <Spinner size="1rem" />
+                    </div>
+                  ) : !hasBeenOnScreen ? (
+                    <div style={{ width: "2rem" }} />
                   ) : (
-                    <AccountPreviewPopoverTrigger
-                      accountAddress={item.authorAccount}
-                    >
-                      <button className="avatar-button">
-                        <AccountAvatar
-                          address={item.authorAccount}
-                          size="2rem"
-                        />
-                      </button>
-                    </AccountPreviewPopoverTrigger>
-                  );
-              }
-            })()}
+                    <FeedItemActionDropdown context={context} item={item} />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <div
-              css={css({
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "0.6rem",
-                cursor: "default",
-              })}
-            >
-              <div
+          <div className="item-content-container">
+            {!isBoxedVariant && item.replies?.length > 0 && (
+              <ul
                 css={(t) =>
                   css({
-                    flex: 1,
-                    minWidth: 0,
-                    color: t.colors.textDimmed,
-                    ".interactive": {
-                      color: t.colors.textDimmed,
-                      fontWeight: t.text.weights.emphasis,
-                      "@media(hover: hover)": {
-                        cursor: "pointer",
-                        ":hover": { textDecoration: "underline" },
+                    margin: "0",
+                    "& > li": {
+                      listStyle: "none",
+                      ".text-input": {
+                        margin: "0.4rem 0 0",
+                        padding: "0.3rem 0",
                       },
+                    },
+                    "li + li": { marginTop: "1.6rem" },
+                    ".body-container": {
+                      padding: "0.4em 0 0 0.2em",
+                      margin: 0,
+                    },
+                    ".reply-area": {
+                      display: "grid",
+                      gridTemplateColumns: "auto minmax(0,1fr)",
+                      gap: "0.3rem",
+                    },
+                    ".reply-line-container": {
+                      width: "2.2rem",
+                      position: "relative",
+                    },
+                    ".reply-line": {
+                      position: "absolute",
+                      top: 0,
+                      right: "0.2rem",
+                      width: "0.6rem",
+                      height: "1.9rem",
+                      borderLeft: "0.1rem solid",
+                      borderBottom: "0.1rem solid",
+                      borderColor: t.colors.borderLight,
+                      borderBottomLeftRadius: "0.3rem",
                     },
                   })
                 }
+                style={{
+                  marginTop: "0.8rem",
+                  marginBottom: hasReposts || hasBody ? "1.6rem" : 0,
+                }}
               >
-                <ItemTitle
-                  item={item}
-                  context={context}
-                  isOnScreen={isOnScreen}
-                />
-              </div>
-              <div>
-                {item.isPending ? (
-                  <div style={{ padding: "0.5rem 0" }}>
-                    <Spinner size="1rem" />
-                  </div>
-                ) : !isOnScreen ? (
-                  <div style={{ width: "2rem" }} />
+                {item.replies.map(({ body, target, ...replyTargetPost }) => {
+                  return (
+                    <li key={target.id}>
+                      <div css={css({ fontSize: "0.875em" })}>
+                        <QuotedVoteOrFeedbackPost
+                          item={target}
+                          href={(() => {
+                            if (isIsolatedContext) return `?item=${target.id}`;
+                            if (target.proposalId != null)
+                              return `/proposals/${target.proposalId}?tab=activity&item=${target.id}`;
+                            if (target.candidateId != null)
+                              return `/candidates/${encodeURIComponent(
+                                makeCandidateUrlId(target.candidateId),
+                              )}?tab=activity&item=${target.id}`;
+                            console.error("Invalid reply target", target);
+                            return null;
+                          })()}
+                          isExpanded={expandedReplyTargetAndRepostIds.includes(
+                            replyTargetPost.id,
+                          )}
+                          onToggleExpanded={() => {
+                            setExpandedReplyTargetAndRepostIds((ids) =>
+                              ids.includes(replyTargetPost.id)
+                                ? ids.filter((id) => id !== replyTargetPost.id)
+                                : [...ids, replyTargetPost.id],
+                            );
+                          }}
+                        />
+                      </div>
+                      <div className="reply-area">
+                        <div className="reply-line-container">
+                          <div className="reply-line" />
+                        </div>
+                        <div className="body-container">
+                          <CompactMarkdownRichText text={body} />
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {item.reposts?.length > 0 && (
+              <ul
+                css={css({
+                  listStyle: "none",
+                  fontSize: "0.875em",
+                  margin: "0.8rem -0.1rem",
+                  "li + li": { marginTop: "0.6rem" },
+                })}
+                // style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
+              >
+                {item.reposts.map((voteOrFeedbackPost) => (
+                  <li key={voteOrFeedbackPost.id}>
+                    <QuotedVoteOrFeedbackPost
+                      item={voteOrFeedbackPost}
+                      href={(() => {
+                        if (isIsolatedContext)
+                          return `?item=${voteOrFeedbackPost.id}`;
+                        if (voteOrFeedbackPost.proposalId != null)
+                          return `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity&item=${voteOrFeedbackPost.id}`;
+                        if (voteOrFeedbackPost.candidateId != null)
+                          return `/candidates/${encodeURIComponent(
+                            makeCandidateUrlId(voteOrFeedbackPost.candidateId),
+                          )}?tab=activity&item=${voteOrFeedbackPost.id}`;
+                        console.error(
+                          "Invalid repost target",
+                          voteOrFeedbackPost,
+                        );
+                        return null;
+                      })()}
+                      isExpanded={expandedReplyTargetAndRepostIds.includes(
+                        voteOrFeedbackPost.id,
+                      )}
+                      onToggleExpanded={() => {
+                        setExpandedReplyTargetAndRepostIds((ids) =>
+                          ids.includes(voteOrFeedbackPost.id)
+                            ? ids.filter((id) => id !== voteOrFeedbackPost.id)
+                            : [...ids, voteOrFeedbackPost.id],
+                        );
+                      }}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+            {hasBody && (
+              <ItemBody
+                text={itemBody}
+                displayImages={item.type === "event"}
+                truncateLines
+              />
+            )}
+            {!isBoxedVariant &&
+              authorReplyCasts?.map((cast) => (
+                // This renders all author replies together with the origin post
+                // as one big concatinated item body
+                <ItemBody key={cast.hash} text={cast.text} />
+              ))}
+            {item.type === "candidate-signature" && (
+              <div className="signature-meta">
+                {item.isCanceled ? (
+                  "Signature canceled"
                 ) : (
-                  <FeedItemActionDropdown context={context} item={item} />
+                  <>
+                    {item.expiresAt < new Date()
+                      ? "Signature expired"
+                      : "Signature expires"}{" "}
+                    <FormattedDateWithTooltip
+                      capitalize={false}
+                      value={item.expiresAt}
+                      month="short"
+                      day="numeric"
+                    />
+                  </>
                 )}
               </div>
-            </div>
+            )}
+            {showActionBar && (
+              <div className="action-bar-container">
+                {showReplyAction && renderReplyAction(item)}
+                {showRepostAction && renderRepostAction(item)}
+                {showLikeAction && renderLikeAction(item)}
+              </div>
+            )}
+            {showMeta && (
+              <MetaBar
+                hide={!hasBeenOnScreen}
+                repostingItems={item.repostingItems}
+                replyingItems={replyingItems}
+                likes={likes}
+              />
+            )}
           </div>
         </div>
-        <div css={css({ paddingLeft: "2.6rem", userSelect: "text" })}>
-          {item.replies?.length > 0 && (
-            <ul
-              className="reply-list"
-              css={(t) =>
-                css({
-                  margin: "0",
-                  "& > li": {
-                    listStyle: "none",
-                    ".text-input": {
-                      margin: "0.4rem 0 0",
-                      padding: "0.3rem 0",
-                    },
-                  },
-                  "li + li": { marginTop: "1.6rem" },
-                  ".body-container": {
-                    padding: "0.4em 0 0 0.2em",
-                  },
-                  ".reply-area": {
-                    display: "grid",
-                    gridTemplateColumns: "auto minmax(0,1fr)",
-                    gap: "0.3rem",
-                  },
-                  ".reply-line-container": {
-                    width: "2.2rem",
-                    position: "relative",
-                  },
-                  ".reply-line": {
-                    position: "absolute",
-                    top: 0,
-                    right: "0.2rem",
-                    width: "0.6rem",
-                    height: "1.9rem",
-                    borderLeft: "0.1rem solid",
-                    borderBottom: "0.1rem solid",
-                    borderColor: t.colors.borderLight,
-                    borderBottomLeftRadius: "0.3rem",
-                  },
-                })
-              }
-              style={{
-                marginTop: "0.8rem",
-                marginBottom: hasReposts || hasBody ? "1.6rem" : 0,
-              }}
-            >
-              {item.replies.map(({ body, target, ...replyTargetPost }) => {
-                return (
-                  <li key={target.id}>
-                    <div css={css({ fontSize: "0.875em" })}>
-                      <QuotedVoteOrFeedbackPost
-                        item={target}
-                        href={(() => {
-                          if (isIsolatedContext) return `#${target.id}`;
-                          if (target.proposalId != null)
-                            return `/proposals/${target.proposalId}?tab=activity#${target.id}`;
-                          if (target.candidateId != null)
-                            return `/candidates/${encodeURIComponent(
-                              makeCandidateUrlId(target.candidateId),
-                            )}?tab=activity${target.id}`;
-                          console.error("Invalid reply target", target);
-                          return null;
-                        })()}
-                        isExpanded={expandedReplyTargetAndRepostIds.includes(
-                          replyTargetPost.id,
-                        )}
-                        onToggleExpanded={() => {
-                          setExpandedReplyTargetAndRepostIds((ids) =>
-                            ids.includes(replyTargetPost.id)
-                              ? ids.filter((id) => id !== replyTargetPost.id)
-                              : [...ids, replyTargetPost.id],
-                          );
-                        }}
+        {isBoxedVariant && (
+          <>
+            {hasReplies && (
+              <ul className="replies-container">
+                {replyingItems.map((replyingItem) => {
+                  return (
+                    <li key={replyingItem.id} id={replyingItem.id}>
+                      <NestedReplyItem
+                        item={replyingItem}
+                        context={context}
+                        hasBeenOnScreen={hasBeenOnScreen}
+                        createReplyHref={createRepostHref}
+                        onRepost={onRepost}
+                        onLike={onLike}
                       />
-                    </div>
-                    <div className="reply-area">
-                      <div className="reply-line-container">
-                        <div className="reply-line" />
-                      </div>
-                      <div className="body-container">
-                        <CompactMarkdownRichText text={body} />
-                      </div>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          {item.reposts?.length > 0 && (
-            <ul
-              css={css({
-                listStyle: "none",
-                fontSize: "0.875em",
-                marginBottom: "0.8rem",
-                "li + li": { marginTop: "0.6rem" },
-              })}
-              // style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
-              style={{ marginTop: "0.8rem" }}
-            >
-              {item.reposts.map((voteOrFeedbackPost) => (
-                <li key={voteOrFeedbackPost.id}>
-                  <QuotedVoteOrFeedbackPost
-                    item={voteOrFeedbackPost}
-                    href={(() => {
-                      if (isIsolatedContext) return `#${voteOrFeedbackPost.id}`;
-                      if (voteOrFeedbackPost.proposalId != null)
-                        return `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity#${voteOrFeedbackPost.id}`;
-                      if (voteOrFeedbackPost.candidateId != null)
-                        return `/candidates/${encodeURIComponent(
-                          makeCandidateUrlId(voteOrFeedbackPost.candidateId),
-                        )}?tab=activity${voteOrFeedbackPost.id}`;
-                      console.error(
-                        "Invalid repost target",
-                        voteOrFeedbackPost,
-                      );
-                      return null;
-                    })()}
-                    isExpanded={expandedReplyTargetAndRepostIds.includes(
-                      voteOrFeedbackPost.id,
-                    )}
-                    onToggleExpanded={() => {
-                      setExpandedReplyTargetAndRepostIds((ids) =>
-                        ids.includes(voteOrFeedbackPost.id)
-                          ? ids.filter((id) => id !== voteOrFeedbackPost.id)
-                          : [...ids, voteOrFeedbackPost.id],
-                      );
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+
+            {/* {hasBody && showReplyForm && (
+              <ReplyForm
+                inputRef={inlineReplyInputRef}
+                onChange={(replyText) => {
+                  onInlineReplyChange(item.id, replyText);
+                }}
+                data-has-replies={hasReplies || undefined}
+              />
+            )} */}
+            {hasBody && showReplyForm && (
+              <div
+                css={(t) =>
+                  css({
+                    padding: "1.6rem",
+                    borderTop: "0.1rem solid",
+                    borderColor: t.colors.borderLight,
+                  })
+                }
+              >
+                {isReplyFormExpanded ? (
+                  <ProposalActionForm
+                    variant="bare"
+                    size="small"
+                    mode={
+                      item.type === "farcaster-cast"
+                        ? "farcaster-comment"
+                        : "onchain-comment"
+                    }
+                    inputRef={inlineReplyInputRef}
+                    reason={pendingReply ?? ""}
+                    setReason={(replyText) => {
+                      onInlineReplyChange(item.id, replyText);
+                    }}
+                    onSubmit={(data) => {
+                      submitInlineReply(item.id, data);
+                    }}
+                    onCancel={() => {
+                      setReplyFormExpanded(false);
                     }}
                   />
-                </li>
-              ))}
-            </ul>
-          )}
-          {hasBody && (
-            <ItemBody
-              text={itemBody}
-              displayImages={item.type === "event"}
-              truncateLines
-            />
-          )}
-          {authorReplyCasts?.map((cast) => (
-            <ItemBody key={cast.hash} text={cast.text} />
-          ))}
-          {item.type === "candidate-signature" && (
-            <div
-              css={(t) =>
-                css({
-                  fontSize: t.text.sizes.small,
-                  color: t.colors.textDimmed,
-                })
-              }
-            >
-              {item.isCanceled ? (
-                "Signature canceled"
-              ) : (
-                <>
-                  {item.expiresAt < new Date()
-                    ? "Signature expired"
-                    : "Signature expires"}{" "}
-                  <FormattedDateWithTooltip
-                    capitalize={false}
-                    value={item.expiresAt}
-                    month="short"
-                    day="numeric"
-                  />
-                </>
-              )}
-            </div>
-          )}
-          {showActionBar && (
-            <div
-              css={(t) =>
-                css({
-                  display: "flex",
-                  gap: "0.8rem",
-                  margin: "0.6rem -0.4rem 0",
-                  "& > button, & > a": {
-                    padding: "0.4rem",
-                    color: t.colors.textDimmed,
-                    ":disabled": {
-                      color: t.colors.textMuted,
-                    },
-                    "@media(hover: hover)": {
-                      ":not(:disabled)": {
-                        cursor: "pointer",
-                        ":hover": {
-                          color: t.colors.textAccent,
-                        },
-                      },
-                    },
-                  },
-                })
-              }
-            >
-              {showReplyAction &&
-                (() => {
-                  const [Component, props] =
-                    item.type === "farcaster-cast"
-                      ? [
-                          "a",
-                          {
-                            href: `https://warpcast.com/${item.authorUsername}/${item.castHash}`,
-                            target: "_blank",
-                            rel: "noreferrer",
-                          },
-                        ]
-                      : createReplyHref != null
-                        ? [NextLink, { href: createReplyHref(item) }]
-                        : ["button", { onClick: () => onReply(item.id) }];
-
-                  return (
-                    <Component {...props} disabled={!enableReplyAction}>
-                      <svg
-                        aria-label="Reply"
-                        role="img"
-                        viewBox="0 0 18 18"
-                        stroke="currentColor"
-                        fill="transparent"
-                        style={{ width: "1.4rem", height: "auto" }}
-                      >
-                        <path
-                          d="M15.376 13.2177L16.2861 16.7955L12.7106 15.8848C12.6781 15.8848 12.6131 15.8848 12.5806 15.8848C11.3779 16.5678 9.94767 16.8931 8.41995 16.7955C4.94194 16.5353 2.08152 13.7381 1.72397 10.2578C1.2689 5.63919 5.13697 1.76863 9.75264 2.22399C13.2307 2.58177 16.0261 5.41151 16.2861 8.92429C16.4161 10.453 16.0586 11.8841 15.376 13.0876C15.376 13.1526 15.376 13.1852 15.376 13.2177Z"
-                          strokeLinejoin="round"
-                          strokeWidth="1.25"
-                        />
-                      </svg>
-                    </Component>
-                  );
-                })()}
-              {showRepostAction &&
-                (() => {
-                  const [Component, props] =
-                    createRepostHref != null
-                      ? [NextLink, { href: createRepostHref(item) }]
-                      : ["button", { onClick: () => onRepost(item.id) }];
-
-                  return (
-                    <Component {...props} disabled={!enableRepostAction}>
-                      <svg
-                        aria-label="Repost"
-                        viewBox="0 0 18 18"
-                        fill="currentColor"
-                        style={{ width: "1.4rem", height: "auto" }}
-                      >
-                        <path d="M6.41256 1.23531C6.6349 0.971277 7.02918 0.937481 7.29321 1.15982L9.96509 3.40982C10.1022 3.52528 10.1831 3.69404 10.1873 3.87324C10.1915 4.05243 10.1186 4.2248 9.98706 4.34656L7.31518 6.81971C7.06186 7.05419 6.66643 7.03892 6.43196 6.7856C6.19748 6.53228 6.21275 6.13685 6.46607 5.90237L7.9672 4.51289H5.20312C3.68434 4.51289 2.45312 5.74411 2.45312 7.26289V9.51289V11.7629C2.45312 13.2817 3.68434 14.5129 5.20312 14.5129C5.5483 14.5129 5.82812 14.7927 5.82812 15.1379C5.82812 15.4831 5.5483 15.7629 5.20312 15.7629C2.99399 15.7629 1.20312 13.972 1.20312 11.7629V9.51289V7.26289C1.20312 5.05375 2.99399 3.26289 5.20312 3.26289H7.85002L6.48804 2.11596C6.22401 1.89362 6.19021 1.49934 6.41256 1.23531Z" />
-                        <path d="M11.5874 17.7904C11.3651 18.0545 10.9708 18.0883 10.7068 17.8659L8.03491 15.6159C7.89781 15.5005 7.81687 15.3317 7.81267 15.1525C7.80847 14.9733 7.8814 14.801 8.01294 14.6792L10.6848 12.206C10.9381 11.9716 11.3336 11.9868 11.568 12.2402C11.8025 12.4935 11.7872 12.8889 11.5339 13.1234L10.0328 14.5129H12.7969C14.3157 14.5129 15.5469 13.2816 15.5469 11.7629V9.51286V7.26286C15.5469 5.74408 14.3157 4.51286 12.7969 4.51286C12.4517 4.51286 12.1719 4.23304 12.1719 3.88786C12.1719 3.54269 12.4517 3.26286 12.7969 3.26286C15.006 3.26286 16.7969 5.05373 16.7969 7.26286V9.51286V11.7629C16.7969 13.972 15.006 15.7629 12.7969 15.7629H10.15L11.512 16.9098C11.776 17.1321 11.8098 17.5264 11.5874 17.7904Z" />
-                      </svg>
-                    </Component>
-                  );
-                })()}
-              {showLikeAction && (
-                <button
-                  data-liked={hasLiked}
-                  onClick={(e) => {
-                    onLike(item.id, hasLiked ? "remove" : "add");
-                    e.currentTarget.dataset.clicked = "true";
-                  }}
-                  disabled={!enableLikeAction}
-                  css={(t) =>
-                    css({
-                      '&[data-liked="true"]': {
-                        color: t.colors.red,
-                        "@media(hover: hover)": {
-                          ":not(:disabled):hover": {
-                            color: t.colors.red,
-                          },
-                        },
-                        '&[data-clicked="true"]': {
-                          animationName: heartBounceAnimation,
-                          animationDuration: "0.45s",
-                          animationTimingFunction: "ease-in-out",
-                        },
-                      },
-                    })
-                  }
-                >
-                  <svg
-                    aria-label="Like"
-                    role="img"
-                    viewBox="0 0 18 18"
-                    fill={hasLiked ? "currentColor" : "transparent"}
-                    stroke="currentColor"
-                    style={{ width: "1.4rem", height: "auto" }}
+                ) : (
+                  <button
+                    onClick={() => {
+                      ReactDOM.flushSync(() => {
+                        setReplyFormExpanded(true);
+                      });
+                      inlineReplyInputRef.current.focus();
+                    }}
+                    css={(t) =>
+                      css({
+                        color: t.colors.textMuted,
+                        fontSize: "inherit",
+                        display: "block",
+                        width: "100%",
+                        border: "none",
+                        background: t.colors.backgroundModifierNormal,
+                        borderRadius: "0.4rem",
+                        padding: "0.3rem 0.7rem",
+                        outline: "none",
+                        cursor: "text",
+                      })
+                    }
                   >
-                    <path
-                      d="M1.34375 7.53125L1.34375 7.54043C1.34374 8.04211 1.34372 8.76295 1.6611 9.65585C1.9795 10.5516 2.60026 11.5779 3.77681 12.7544C5.59273 14.5704 7.58105 16.0215 8.33387 16.5497C8.73525 16.8313 9.26573 16.8313 9.66705 16.5496C10.4197 16.0213 12.4074 14.5703 14.2232 12.7544C15.3997 11.5779 16.0205 10.5516 16.3389 9.65585C16.6563 8.76296 16.6563 8.04211 16.6562 7.54043V7.53125C16.6562 5.23466 15.0849 3.25 12.6562 3.25C11.5214 3.25 10.6433 3.78244 9.99228 4.45476C9.59009 4.87012 9.26356 5.3491 9 5.81533C8.73645 5.3491 8.40991 4.87012 8.00772 4.45476C7.35672 3.78244 6.47861 3.25 5.34375 3.25C2.9151 3.25 1.34375 5.23466 1.34375 7.53125Z"
-                      strokeWidth="1.25"
-                    />
-                  </svg>
-                </button>
-              )}
-            </div>
-          )}
-          {showMeta && (
-            <div
-              css={(t) =>
-                css({
-                  marginTop: "0.6rem",
-                  color: t.colors.textDimmed,
-                  fontSize: t.text.sizes.small,
-                  a: {
-                    color: "inherit",
-                    textDecoration: "none",
-                    "@media(hover: hover)": {
-                      "&:hover": { textDecoration: "underline" },
-                    },
-                  },
-                })
-              }
-            >
-              {!isOnScreen ? (
-                <>&nbsp;</>
-              ) : (
-                [
-                  item.repostingItems?.length > 0 && {
-                    key: "reposts",
-                    element: (
-                      <Tooltip.Root>
-                        <Tooltip.Trigger>
-                          {item.repostingItems.length}{" "}
-                          {item.repostingItems.length === 1
-                            ? "repost"
-                            : "reposts"}
-                        </Tooltip.Trigger>
-                        <Tooltip.Content sideOffset={4}>
-                          {item.repostingItems.map((item, i) => (
-                            <React.Fragment key={item.id}>
-                              {i > 0 && <br />}
-                              <AccountDisplayName
-                                address={item.authorAccount}
-                              />
-                            </React.Fragment>
-                          ))}
-                        </Tooltip.Content>
-                      </Tooltip.Root>
-                    ),
-                  },
-                  likes?.length > 0 && {
-                    key: "likes",
-                    element: (
-                      <Tooltip.Root>
-                        <Tooltip.Trigger>
-                          {likes.length} {likes.length === 1 ? "like" : "likes"}
-                        </Tooltip.Trigger>
-                        <Tooltip.Content sideOffset={4}>
-                          {arrayUtils
-                            .sortBy(
-                              {
-                                value: (a) =>
-                                  a.votingPower == null
-                                    ? Infinity
-                                    : a.votingPower,
-                                order: "desc",
-                              },
-                              likes,
-                            )
-                            .map((farcasterAccount, i) => (
-                              <React.Fragment key={farcasterAccount.fid}>
-                                <span
-                                  data-voting-power={
-                                    farcasterAccount.votingPower
-                                  }
-                                  css={(t) =>
-                                    css({
-                                      '&[data-voting-power="0"]': {
-                                        color: t.colors.textDimmed,
-                                      },
-                                    })
-                                  }
-                                >
-                                  {i > 0 && <br />}
-                                  <AccountDisplayName
-                                    address={farcasterAccount.nounerAddress}
-                                  />
-                                  {farcasterAccount.votingPower != null && (
-                                    <> ({farcasterAccount.votingPower})</>
-                                  )}
-                                </span>
-                              </React.Fragment>
-                            ))}
-                        </Tooltip.Content>
-                      </Tooltip.Root>
-                    ),
-                  },
-                ]
-                  .filter(Boolean)
-                  .map(({ key, element }, index) => (
-                    <React.Fragment key={key}>
-                      {index > 0 && <> &middot; </>}
-                      {element}
-                    </React.Fragment>
-                  ))
-              )}
-            </div>
-          )}
-        </div>
+                    Write a reply...
+                  </button>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
     );
   },
@@ -973,7 +1101,7 @@ const ItemBody = React.memo(
     }, []);
 
     return (
-      <div css={css({ margin: "0.5rem 0" })}>
+      <div className="body-container">
         <div
           ref={containerRef}
           css={css({ overflow: "hidden" })}
@@ -1011,7 +1139,7 @@ const ItemBody = React.memo(
               component="button"
               onClick={() => setTruncated((s) => !s)}
               size="small"
-              color={(t) => t.colors.textDimmed}
+              variant="dimmed"
             >
               {isTruncated ? "Expand..." : "Collapse"}
             </Link>
@@ -1022,11 +1150,12 @@ const ItemBody = React.memo(
   },
 );
 
-const ItemTitle = ({ item, context, isOnScreen }) => {
+const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
   const isIsolatedContext = ["proposal", "candidate"].includes(context);
 
   const proposal = useProposal(item.proposalId ?? item.targetProposalId);
   const candidate = useProposalCandidate(item.candidateId);
+  const isTopicCandidate = candidate?.latestVersion?.type === "topic";
 
   const { open: openAuctionDialog } = useDialog("auction");
 
@@ -1062,7 +1191,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
           prefetch
           href={
             ["vote", "feedback-post"].includes(item.type)
-              ? `${candidateUrl}?tab=activity#${item.id}`
+              ? `${candidateUrl}?tab=activity&item=${item.id}`
               : candidateUrl
           }
         >
@@ -1084,6 +1213,8 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
   );
 
   const renderTitle = () => {
+    if (variant === "author-only") return author;
+
     switch (item.type) {
       case "event": {
         switch (item.eventType) {
@@ -1155,7 +1286,11 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
           case "candidate-updated": {
             const label =
               context === "candidate" ? (
-                "Candidate"
+                isTopicCandidate ? (
+                  "Topic"
+                ) : (
+                  "Candidate"
+                )
               ) : context === "proposal" ? (
                 <ContextLink {...item}>
                   {item.targetProposalId != null
@@ -1169,7 +1304,19 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
                 </>
               ) : (
                 <>
-                  Candidate <ContextLink {...item} />
+                  {isTopicCandidate ? "Topic" : "Candidate"}{" "}
+                  <ContextLink {...item} />
+                </>
+              );
+
+            if (item.body != null && item.body.trim().length > 0)
+              return (
+                <>
+                  {author}{" "}
+                  {item.eventType === "candidate-created"
+                    ? "created"
+                    : "updated"}{" "}
+                  {label}
                 </>
               );
 
@@ -1201,11 +1348,15 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
                       : "Update candidate"}
                   </ContextLink>
                 ) : context === "candidate" ? (
-                  "Candidate"
+                  isTopicCandidate ? (
+                    "Topic"
+                  ) : (
+                    "Candidate"
+                  )
                 ) : (
                   <ContextLink {...item} />
                 )}{" "}
-                was canceled
+                was {isTopicCandidate ? "closed" : "canceled"}
               </>
             );
 
@@ -1360,9 +1511,14 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
       case "vote":
       case "feedback-post": {
         const signalWord = (() => {
+          const hasBody = item.body != null && item.body.trim() !== "";
           const isRepost =
             item.reposts?.length > 0 &&
-            item.reposts.every((post) => post.support === item.support);
+            (!hasBody ||
+              // People often use reposts as a way of simply addressing the
+              // post, so we only qualify reposts with comments with the same
+              // `support` signal.
+              item.reposts.every((post) => post.support === item.support));
 
           if (isRepost) return item.type === "vote" ? "revoted" : "reposted";
 
@@ -1373,8 +1529,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
               if (item.support !== 2) return "signaled";
 
               const isReplyWithoutAdditionalComment =
-                item.replies?.length > 0 &&
-                (item.body == null || item.body.trim() === "");
+                item.replies?.length > 0 && !hasBody;
 
               return isReplyWithoutAdditionalComment ? "replied" : "commented";
             }
@@ -1441,7 +1596,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
               >
                 {item.authorDisplayName}
               </a>{" "}
-              commented
+              {item.castType === "reply" ? "replied" : "commented"}
               {!isIsolatedContext && (
                 <>
                   {" "}
@@ -1453,7 +1608,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
 
         return (
           <>
-            {author} commented{" "}
+            {author} {item.castType === "reply" ? "replied" : "commented"}
             {!isIsolatedContext && (
               <>
                 {" "}
@@ -1478,7 +1633,7 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
         );
 
       case "noun-transfer":
-        return <NounTransferItem item={item} isOnScreen={isOnScreen} />;
+        return <NounTransferItem item={item} isOnScreen={hasBeenOnScreen} />;
 
       case "noun-delegation":
         return (
@@ -1565,30 +1720,29 @@ const ItemTitle = ({ item, context, isOnScreen }) => {
     <>
       {renderTitle()}
       {item.timestamp != null && (
-        <span className="nowrap">
+        <span
+          className="nowrap"
+          css={(t) =>
+            css({
+              lineHeight: "calc(20/12)",
+              fontSize: t.text.sizes.small,
+              color: t.colors.textDimmed,
+            })
+          }
+        >
           &nbsp;&middot;&nbsp;
-          <span
-            css={(t) =>
-              css({
-                lineHeight: "calc(20/12)",
-                fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
-              })
+          <FormattedDateWithTooltip
+            tinyRelative
+            relativeDayThreshold={7}
+            month="short"
+            day="numeric"
+            year={
+              getDateYear(item.timestamp) !== getDateYear(new Date())
+                ? "numeric"
+                : undefined
             }
-          >
-            <FormattedDateWithTooltip
-              tinyRelative
-              relativeDayThreshold={7}
-              month="short"
-              day="numeric"
-              year={
-                getDateYear(item.timestamp) !== getDateYear(new Date())
-                  ? "numeric"
-                  : undefined
-              }
-              value={item.timestamp}
-            />
-          </span>
+            value={item.timestamp}
+          />
         </span>
       )}
     </>
@@ -1935,6 +2089,7 @@ const QuotedVoteOrFeedbackPost = ({
   return (
     <div
       data-expandable={enableExpansion || undefined}
+      className="quoted-post"
       css={(t) =>
         css({
           position: "relative",
@@ -2007,7 +2162,7 @@ const QuotedVoteOrFeedbackPost = ({
       :{" "}
       <CompactMarkdownRichText
         inline={enableExpansion && !isExpanded}
-        text={item.reason.replaceAll(REPOST_REGEX, "")}
+        text={quotedText}
       />
       {enableExpansion && (
         <button className="expand-button" onClick={onToggleExpanded}>
@@ -2055,9 +2210,11 @@ const FeedItemActionDropdown = ({ context, item }) => {
 
   const latestBlockNumber = useBlockNumber();
   const proposal = useProposal(item.proposalId);
+  const candidate = useProposalCandidate(item.candidateId);
 
   const actionItems = (() => {
     const itemCategory = (() => {
+      if (item.type === "farcaster-cast") return "farcaster-cast";
       if (
         item.type === "event"
           ? item.eventType.startsWith("auction-")
@@ -2068,7 +2225,6 @@ const FeedItemActionDropdown = ({ context, item }) => {
         return "propdate";
       if (item.proposalId != null) return "proposal";
       if (item.candidateId != null) return "candidate";
-      if (item.type === "farcaster-cast") return "farcaster-cast";
       return null;
     })();
 
@@ -2126,7 +2282,13 @@ const FeedItemActionDropdown = ({ context, item }) => {
         case "open-proposal":
           return { id: key, label: "Go to proposal" };
         case "open-candidate":
-          return { id: key, label: "Go to candidate" };
+          return {
+            id: key,
+            label:
+              candidate?.latestVersion?.type === "topic"
+                ? "Go to topic"
+                : "Go to candidate",
+          };
         case "open-auction":
           return { id: key, label: "Go to auction" };
         case "open-vote-overview":
@@ -2271,12 +2433,281 @@ const FeedItemActionDropdown = ({ context, item }) => {
       >
         {(item) => (
           <DropdownMenu.Section items={item.children}>
-            {(item) => <DropdownMenu.Item>{item.label}</DropdownMenu.Item>}
+            {(item) => (
+              <DropdownMenu.Item textValue={item.textValue}>
+                {item.label}
+              </DropdownMenu.Item>
+            )}
           </DropdownMenu.Section>
         )}
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   );
 };
+
+const NestedReplyItem = ({
+  item,
+  context,
+  hasBeenOnScreen,
+  createRepostHref,
+  onRepost,
+  onLike,
+}) => {
+  const userAccountAddress = useUserEthereumAccountAddress();
+  const userFarcasterAccount =
+    useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
+
+  const likes = useItemLikes(item, { enabled: hasBeenOnScreen });
+
+  const renderRepostAction = (item) => {
+    const [component, props] =
+      createRepostHref != null
+        ? [NextLink, { href: createRepostHref(item) }]
+        : ["button", { onClick: () => onRepost(item.id) }];
+
+    return <RepostAction item={item} component={component} {...props} />;
+  };
+
+  const renderLikeAction = (item) => {
+    const hasLiked = likes?.some(
+      (l) =>
+        l.nounerAddress === userAccountAddress ||
+        l.fid === userFarcasterAccount?.fid,
+    );
+
+    return (
+      <LikeAction
+        item={item}
+        hasLiked={hasLiked}
+        onClick={() => {
+          onLike(item.id, hasLiked ? "remove" : "add");
+        }}
+      />
+    );
+  };
+
+  const showRepostAction =
+    (onRepost != null || createRepostHref != null) &&
+    ["vote", "feedback-post"].includes(item.type);
+
+  const hasLikes = likes?.length > 0;
+  const hasBeenReposted = item.repostingItems?.length > 0;
+
+  const showLikeAction = item.transactionHash != null;
+  const showMeta = hasLikes || hasBeenReposted;
+
+  return (
+    <>
+      <div className="item-header">
+        <div className="avatar-container">
+          <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+            <button className="avatar-button">
+              <AccountAvatar address={item.authorAccount} size="2rem" />
+            </button>
+          </AccountPreviewPopoverTrigger>
+        </div>
+        <div className="item-title-container">
+          <div>
+            <ItemTitle
+              variant="author-only"
+              item={item}
+              context={context}
+              hasBeenOnScreen={hasBeenOnScreen}
+            />
+          </div>
+          <div>
+            {item.isPending ? (
+              <div style={{ padding: "0.5rem 0" }}>
+                <Spinner size="1rem" />
+              </div>
+            ) : !hasBeenOnScreen ? (
+              <div style={{ width: "2rem" }} />
+            ) : (
+              <FeedItemActionDropdown context={context} item={item} />
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="body-container">
+        <CompactMarkdownRichText text={item.replyBody} />
+      </div>
+
+      {(showRepostAction || showLikeAction) && (
+        <div className="action-bar-container">
+          {showRepostAction && renderRepostAction(item)}
+          {showLikeAction && renderLikeAction(item)}
+        </div>
+      )}
+
+      {showMeta && (
+        <MetaBar
+          hide={!hasBeenOnScreen}
+          repostingItems={item.repostingItems}
+          likes={likes}
+        />
+      )}
+    </>
+  );
+};
+
+const RepostAction = ({ item, component: Component = "div", ...props }) => (
+  <Component {...props} disabled={item.isPending}>
+    <svg
+      aria-label="Repost"
+      viewBox="0 0 18 18"
+      fill="currentColor"
+      style={{ width: "1.4rem", height: "auto" }}
+    >
+      <path d="M6.41256 1.23531C6.6349 0.971277 7.02918 0.937481 7.29321 1.15982L9.96509 3.40982C10.1022 3.52528 10.1831 3.69404 10.1873 3.87324C10.1915 4.05243 10.1186 4.2248 9.98706 4.34656L7.31518 6.81971C7.06186 7.05419 6.66643 7.03892 6.43196 6.7856C6.19748 6.53228 6.21275 6.13685 6.46607 5.90237L7.9672 4.51289H5.20312C3.68434 4.51289 2.45312 5.74411 2.45312 7.26289V9.51289V11.7629C2.45312 13.2817 3.68434 14.5129 5.20312 14.5129C5.5483 14.5129 5.82812 14.7927 5.82812 15.1379C5.82812 15.4831 5.5483 15.7629 5.20312 15.7629C2.99399 15.7629 1.20312 13.972 1.20312 11.7629V9.51289V7.26289C1.20312 5.05375 2.99399 3.26289 5.20312 3.26289H7.85002L6.48804 2.11596C6.22401 1.89362 6.19021 1.49934 6.41256 1.23531Z" />
+      <path d="M11.5874 17.7904C11.3651 18.0545 10.9708 18.0883 10.7068 17.8659L8.03491 15.6159C7.89781 15.5005 7.81687 15.3317 7.81267 15.1525C7.80847 14.9733 7.8814 14.801 8.01294 14.6792L10.6848 12.206C10.9381 11.9716 11.3336 11.9868 11.568 12.2402C11.8025 12.4935 11.7872 12.8889 11.5339 13.1234L10.0328 14.5129H12.7969C14.3157 14.5129 15.5469 13.2816 15.5469 11.7629V9.51286V7.26286C15.5469 5.74408 14.3157 4.51286 12.7969 4.51286C12.4517 4.51286 12.1719 4.23304 12.1719 3.88786C12.1719 3.54269 12.4517 3.26286 12.7969 3.26286C15.006 3.26286 16.7969 5.05373 16.7969 7.26286V9.51286V11.7629C16.7969 13.972 15.006 15.7629 12.7969 15.7629H10.15L11.512 16.9098C11.776 17.1321 11.8098 17.5264 11.5874 17.7904Z" />
+    </svg>
+  </Component>
+);
+
+const LikeAction = ({ item, hasLiked, onClick }) => (
+  <button
+    data-liked={hasLiked}
+    onClick={(e) => {
+      onClick?.(e);
+      e.currentTarget.dataset.clicked = "true";
+    }}
+    disabled={item.isPending}
+    css={(t) =>
+      css({
+        '&[data-liked="true"]': {
+          color: t.colors.red,
+          "@media(hover: hover)": {
+            ":not(:disabled):hover": { color: t.colors.red },
+          },
+          '&[data-clicked="true"]': {
+            animationName: heartBounceAnimation,
+            animationDuration: "0.45s",
+            animationTimingFunction: "ease-in-out",
+          },
+        },
+      })
+    }
+  >
+    <svg
+      aria-label="Like"
+      role="img"
+      viewBox="0 0 18 18"
+      fill={hasLiked ? "currentColor" : "transparent"}
+      stroke="currentColor"
+      style={{ width: "1.4rem", height: "auto" }}
+    >
+      <path
+        d="M1.34375 7.53125L1.34375 7.54043C1.34374 8.04211 1.34372 8.76295 1.6611 9.65585C1.9795 10.5516 2.60026 11.5779 3.77681 12.7544C5.59273 14.5704 7.58105 16.0215 8.33387 16.5497C8.73525 16.8313 9.26573 16.8313 9.66705 16.5496C10.4197 16.0213 12.4074 14.5703 14.2232 12.7544C15.3997 11.5779 16.0205 10.5516 16.3389 9.65585C16.6563 8.76296 16.6563 8.04211 16.6562 7.54043V7.53125C16.6562 5.23466 15.0849 3.25 12.6562 3.25C11.5214 3.25 10.6433 3.78244 9.99228 4.45476C9.59009 4.87012 9.26356 5.3491 9 5.81533C8.73645 5.3491 8.40991 4.87012 8.00772 4.45476C7.35672 3.78244 6.47861 3.25 5.34375 3.25C2.9151 3.25 1.34375 5.23466 1.34375 7.53125Z"
+        strokeWidth="1.25"
+      />
+    </svg>
+  </button>
+);
+
+const useItemLikes = (item, { enabled = true } = {}) => {
+  const transactionLikes = useFarcasterTransactionLikes(item.transactionHash, {
+    enabled,
+  });
+  const castLikes = useFarcasterCastLikes(item.castHash, {
+    enabled,
+  });
+
+  return transactionLikes ?? castLikes;
+};
+
+const useUserEthereumAccountAddress = () => {
+  const { address: connectedAccount } = useWallet();
+  const { address: loggedInAccount } = useSessionState();
+  return connectedAccount ?? loggedInAccount;
+};
+
+const MetaBar = ({ hide = false, repostingItems, replyingItems, likes }) => (
+  <div className="meta-bar-container">
+    {hide ? (
+      <>&nbsp;</>
+    ) : (
+      [
+        repostingItems?.length > 0 && {
+          key: "reposts",
+          element: (
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {repostingItems.length}{" "}
+                {repostingItems.length === 1 ? "repost" : "reposts"}
+              </Tooltip.Trigger>
+              <Tooltip.Content sideOffset={4}>
+                {repostingItems.map((item, i) => (
+                  <React.Fragment key={item.id}>
+                    {i > 0 && <br />}
+                    <AccountDisplayName address={item.authorAccount} />
+                  </React.Fragment>
+                ))}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          ),
+        },
+        replyingItems?.length > 0 && {
+          key: "replies",
+          element: (
+            <>
+              {replyingItems.length}{" "}
+              {replyingItems.length === 1 ? "reply" : "replies"}
+            </>
+          ),
+        },
+        likes?.length > 0 && {
+          key: "likes",
+          element: (
+            <Tooltip.Root>
+              <Tooltip.Trigger>
+                {likes.length} {likes.length === 1 ? "like" : "likes"}
+              </Tooltip.Trigger>
+              <Tooltip.Content sideOffset={4}>
+                {arrayUtils
+                  .sortBy(
+                    {
+                      value: (a) =>
+                        a.votingPower == null ? Infinity : a.votingPower,
+                      order: "desc",
+                    },
+                    likes,
+                  )
+                  .map((farcasterAccount, i) => (
+                    <React.Fragment key={farcasterAccount.fid}>
+                      <span
+                        data-voting-power={farcasterAccount.votingPower}
+                        css={(t) =>
+                          css({
+                            '&[data-voting-power="0"]': {
+                              color: t.colors.textDimmed,
+                            },
+                          })
+                        }
+                      >
+                        {i > 0 && <br />}
+                        <AccountDisplayName
+                          address={farcasterAccount.nounerAddress}
+                        />
+                        {farcasterAccount.votingPower != null && (
+                          <> ({farcasterAccount.votingPower})</>
+                        )}
+                      </span>
+                    </React.Fragment>
+                  ))}
+              </Tooltip.Content>
+            </Tooltip.Root>
+          ),
+        },
+      ]
+        .filter(Boolean)
+        .map(({ key, element }, index) => (
+          <React.Fragment key={key}>
+            {index > 0 && <> &middot; </>}
+            {element}
+          </React.Fragment>
+        ))
+    )}
+  </div>
+);
 
 export default ActivityFeed;

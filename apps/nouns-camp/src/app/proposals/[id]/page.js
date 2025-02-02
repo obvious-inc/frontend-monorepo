@@ -97,7 +97,7 @@ export async function generateMetadata({ params, searchParams }) {
       images: ogImage,
     },
     other:
-      item && firstImage.url
+      item && firstImage?.url
         ? {}
         : {
             "fc:frame": "vNext",

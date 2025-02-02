@@ -99,11 +99,11 @@ export const getForYouGroup = ({ connectedAccountAddress }, p) => {
 
   if (connectedAccountAddress == null) return "ongoing";
 
-  if (
-    p.proposerId === connectedAccountAddress ||
-    p.signers?.some((s) => s.id === connectedAccountAddress)
-  )
-    return "authored";
+  // if (
+  //   p.proposerId === connectedAccountAddress ||
+  //   p.signers?.some((s) => s.id === connectedAccountAddress)
+  // )
+  //   return "authored";
 
   if (
     isVotableState(p.state) &&

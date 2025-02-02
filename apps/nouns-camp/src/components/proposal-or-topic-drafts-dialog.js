@@ -5,12 +5,11 @@ import { array as arrayUtils } from "@shades/common/utils";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Button from "@shades/ui-web/button";
-import { Plus as PlusIcon } from "@shades/ui-web/icons";
 import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import { useCollection as useDrafts } from "../hooks/drafts.js";
-import ProposalList from "./proposal-list.js";
+import ProposalList from "./sectioned-list.js";
 
-const ProposalDraftsDialog = ({ isOpen, close }) => {
+const ProposalOrTopicDraftsDialog = ({ isOpen, close }) => {
   return (
     <Dialog
       isOpen={isOpen}
@@ -54,7 +53,7 @@ const Content = ({ titleProps, dismiss }) => {
       })}
     >
       <DialogHeader
-        title="Proposal drafts"
+        title="Proposal & topic drafts"
         subtitle={hasDrafts ? info : null}
         titleProps={titleProps}
         dismiss={dismiss}
@@ -68,27 +67,40 @@ const Content = ({ titleProps, dismiss }) => {
               css({
                 textAlign: "center",
                 color: t.colors.textDimmed,
-                padding: "2.4rem 3.2rem 4rem",
+                padding: "2.4rem 0 4rem",
                 h3: {
                   fontSize: t.text.sizes.larger,
                   fontWeight: t.text.weights.normal,
                   margin: "0 0 0.8rem",
                 },
+                ".text-content": {
+                  padding: "0 3.2rem",
+                },
+                ".button-grid": {
+                  marginTop: "3.2rem",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+                  justifyContent: "center",
+                  gap: "1.6rem",
+                },
               })
             }
           >
-            <h3>No drafts</h3>
-            <p>{info}</p>
-            <Button
-              component={NextLink}
-              href="/new"
-              prefetch
-              variant="primary"
-              icon={<PlusIcon style={{ width: "1.2rem" }} />}
-              style={{ marginTop: "3.2rem" }}
-            >
-              New proposal
-            </Button>
+            <div className="text-content">
+              <h3>No drafts</h3>
+              <p>{info}</p>
+            </div>
+
+            <div css={css({ display: "flex", justifyContent: "center" })}>
+              <div className="button-grid">
+                <Button component={NextLink} href="/new" prefetch>
+                  New proposal
+                </Button>
+                <Button component={NextLink} href="/new?topic=1" prefetch>
+                  New topic
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </main>
@@ -96,4 +108,4 @@ const Content = ({ titleProps, dismiss }) => {
   );
 };
 
-export default ProposalDraftsDialog;
+export default ProposalOrTopicDraftsDialog;
