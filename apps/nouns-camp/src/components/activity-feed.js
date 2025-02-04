@@ -1526,7 +1526,7 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
             case "vote":
               return "voted";
             case "feedback-post": {
-              if (item.support !== 2) return "signaled";
+              if (!isTopicCandidate && item.support !== 2) return "signaled";
 
               const isReplyWithoutAdditionalComment =
                 item.replies?.length > 0 && !hasBody;
@@ -1541,6 +1541,9 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
           <>
             {author}{" "}
             {(() => {
+              if (isTopicCandidate)
+                return isIsolatedContext ? signalWord : <>{signalWord} on</>;
+
               switch (item.support) {
                 case 0:
                   return (
