@@ -297,19 +297,6 @@ const TopicScreenContent = ({ candidateId }) => {
 
       if (targetItem == null) throw new Error();
 
-      if (targetItem.type === "farcaster-cast") {
-        await submitCastReply({
-          fid: data.fid,
-          text: pendingRepliesByTargetItemId[targetItemId],
-          targetCastId: {
-            fid: targetItem.authorFid,
-            hash: targetItem.castHash,
-          },
-        });
-        console.log("cast reply submit successful");
-        return;
-      }
-
       // Edge case for when a submit is triggered from a target which is not the
       // "active" one. Should be very uncommon.
       if (activeReplyTargetItemId !== targetItemId) {
@@ -320,7 +307,20 @@ const TopicScreenContent = ({ candidateId }) => {
         throw new Error();
       }
 
-      await submitCommentTransaction();
+      if (targetItem.type === "farcaster-cast") {
+        await submitCastReply({
+          fid: data.fid,
+          text: pendingRepliesByTargetItemId[targetItemId],
+          targetCastId: {
+            fid: targetItem.authorFid,
+            hash: targetItem.castHash,
+          },
+        });
+        console.log("cast reply submit successful");
+      } else {
+        await submitCommentTransaction();
+      }
+
       setPendingReplyState((s) => ({
         activeReplyTargetItemId: null,
         pendingRepliesByTargetItemId: {

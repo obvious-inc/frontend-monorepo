@@ -1021,8 +1021,10 @@ const FeedItem = React.memo(
                     setReason={(replyText) => {
                       onInlineReplyChange(item.id, replyText);
                     }}
-                    onSubmit={(data) => {
-                      submitInlineReply(item.id, data);
+                    onSubmit={async (data) => {
+                      const res = await submitInlineReply(item.id, data);
+                      setReplyFormExpanded(false);
+                      return res;
                     }}
                     onCancel={() => {
                       setReplyFormExpanded(false);
