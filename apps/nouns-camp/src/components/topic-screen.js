@@ -277,10 +277,10 @@ const TopicScreenContent = ({ candidateId }) => {
       setPendingComment(reason);
     },
     support: pendingSupport,
-    setSupport: (support) => {
-      setPendingReplyState((s) => ({ ...s, activeReplyTargetItemId: null }));
-      setPendingSupport(support);
-    },
+    // setSupport: (support) => {
+    //   setPendingReplyState((s) => ({ ...s, activeReplyTargetItemId: null }));
+    //   setPendingSupport(support);
+    // },
     onSubmit: handleFormSubmit,
     cancelRepost,
     repostTargetFeedItems,
