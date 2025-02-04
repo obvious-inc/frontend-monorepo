@@ -106,7 +106,7 @@ export const useCollection = () => {
   const items = entriesById == null ? [] : Object.values(entriesById);
 
   const createItem = React.useCallback(
-    async ({ type }) => {
+    ({ type }) => {
       invariant(type != null, '"type" is required');
       const item =
         type === "topic" ? createEmptyTopicItem() : createEmptyProposalItem();
