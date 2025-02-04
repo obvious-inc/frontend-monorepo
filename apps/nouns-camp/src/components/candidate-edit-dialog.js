@@ -27,6 +27,7 @@ import {
   SubmitUpdateDialog,
   createMarkdownDescription,
 } from "./proposal-edit-dialog.js";
+import { createTopicTransactions } from "@/utils/candidates.js";
 
 const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
@@ -57,7 +58,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const [title, setTitle] = React.useState(persistedTitle);
   const [body, setBody] = React.useState(persistedRichTextBody);
   const [actions, setActions] = React.useState(
-    persistedActions.length === 0 ? null : persistedActions,
+    candidate.latestVersion.type === "topic" ? null : persistedActions,
   );
 
   const submitTargetType = actions == null ? "topic" : "proposal";
@@ -154,7 +155,9 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
 
       const description = createMarkdownDescription({ title, body });
       const transactions =
-        actions?.flatMap((a) => resolveActionTransactions(a)) ?? [];
+        submitTargetType === "topic"
+          ? createTopicTransactions()
+          : actions.flatMap((a) => resolveActionTransactions(a));
 
       await updateProposalCandidate({
         description,

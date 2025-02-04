@@ -726,7 +726,7 @@ const CandidateOrTopicListItem = React.memo(
     const isPromoted = candidate.latestVersion.proposalId != null;
     const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
     const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
-    const isTopic = candidate.latestVersion.content.transactions.length === 0;
+    const isTopic = candidate?.latestVersion?.type === "topic";
 
     const hasUpdate =
       candidate.lastUpdatedTimestamp != null &&

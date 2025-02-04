@@ -213,3 +213,16 @@ export const getScore = (candidate) => {
   if (forVotes.length === 0 && abstainVotes.length === 0) return null;
   return forVotes.length - againstVotes.length;
 };
+
+const ZERO_ADDRESS = "0x".padEnd(42, "0");
+
+export const createTopicTransactions = () => [
+  { type: "transfer", target: ZERO_ADDRESS, value: 0n },
+];
+
+export const matchTopicTransactions = (transactions) => {
+  if (transactions.length === 0) return true;
+  if (transactions.length > 1) return false;
+  const tx = transactions[0];
+  return tx.type === "transfer" && tx.target === ZERO_ADDRESS && tx.value == 0n;
+};

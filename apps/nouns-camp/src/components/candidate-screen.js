@@ -1549,7 +1549,7 @@ const CandidateScreen = ({ candidateId: rawId }) => {
 
   if (
     pathname.startsWith("/topics/") ||
-    candidate?.latestVersion.content.transactions?.length === 0
+    candidate?.latestVersion.type === "topic"
   )
     return <TopicScreen candidateId={rawId} />;
 

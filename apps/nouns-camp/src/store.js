@@ -2068,7 +2068,7 @@ export const useProposalCandidates = ({
 
     const filteredCandidates = candidates.filter((c) => {
       const isProposal = c.latestVersion?.content.transactions?.length > 0;
-      const isTopic = c.latestVersion?.content.transactions?.length === 0;
+      const isTopic = c?.latestVersion?.type === "topic";
 
       if (type === "topic" && isProposal) return false;
       if (type === "proposal" && isTopic) return false;
