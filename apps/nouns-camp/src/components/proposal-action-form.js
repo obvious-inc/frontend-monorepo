@@ -437,8 +437,10 @@ const ProposalActionForm = ({
                 value={mode}
                 onChange={(m) => {
                   setMode(m);
-                  // Default to "abstain" for comments, and reset for votes
-                  setSupport(m === "onchain-comment" ? 2 : null);
+                  if (setSupport != null) {
+                    // Default to "abstain" for comments, and reset for votes
+                    setSupport(m === "onchain-comment" ? 2 : null);
+                  }
                 }}
                 options={availableModes.map((m) => ({
                   value: m,
