@@ -644,50 +644,7 @@ const FeedItem = React.memo(
               {(() => {
                 switch (item.type) {
                   case "farcaster-cast":
-                    return (
-                      <div style={{ position: "relative" }}>
-                        {item.authorAccount == null ? (
-                          <Avatar url={item.authorAvatarUrl} size="2rem" />
-                        ) : (
-                          <AccountPreviewPopoverTrigger
-                            accountAddress={item.authorAccount}
-                          >
-                            <button className="avatar-button">
-                              <AccountAvatar
-                                address={item.authorAccount}
-                                fallbackImageUrl={item.authorAvatarUrl}
-                                size="2rem"
-                              />
-                            </button>
-                          </AccountPreviewPopoverTrigger>
-                        )}
-                        <span
-                          css={(t) =>
-                            css({
-                              position: "absolute",
-                              top: 0,
-                              right: 0,
-                              display: "flex",
-                              width: "1rem",
-                              height: "1rem",
-                              borderRadius: "50%",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              background: "#855DCD", // Farcaster purple
-                              transform: "translateY(-35%) translateX(35%)",
-                              boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
-                              svg: {
-                                width: "0.6rem",
-                                height: "auto",
-                                color: "white",
-                              },
-                            })
-                          }
-                        >
-                          <FarcasterGateIcon />
-                        </span>
-                      </div>
-                    );
+                    return <CastItemAvatar item={item} />;
 
                   case "noun-transfer": {
                     if (nounTransferMeta == null) return null;
@@ -2505,11 +2462,15 @@ const NestedReplyItem = ({
     <>
       <div className="item-header">
         <div className="avatar-container">
-          <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
-            <button className="avatar-button">
-              <AccountAvatar address={item.authorAccount} size="2rem" />
-            </button>
-          </AccountPreviewPopoverTrigger>
+          {item.type === "farcaster-cast" ? (
+            <CastItemAvatar item={item} />
+          ) : (
+            <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+              <button className="avatar-button">
+                <AccountAvatar address={item.authorAccount} size="2rem" />
+              </button>
+            </AccountPreviewPopoverTrigger>
+          )}
         </div>
         <div className="item-title-container">
           <div>
@@ -2712,6 +2673,49 @@ const MetaBar = ({ hide = false, repostingItems, replyingItems, likes }) => (
           </React.Fragment>
         ))
     )}
+  </div>
+);
+
+const CastItemAvatar = ({ item }) => (
+  <div style={{ position: "relative" }}>
+    {item.authorAccount == null ? (
+      <Avatar url={item.authorAvatarUrl} size="2rem" />
+    ) : (
+      <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+        <button className="avatar-button">
+          <AccountAvatar
+            address={item.authorAccount}
+            fallbackImageUrl={item.authorAvatarUrl}
+            size="2rem"
+          />
+        </button>
+      </AccountPreviewPopoverTrigger>
+    )}
+    <span
+      css={(t) =>
+        css({
+          position: "absolute",
+          top: 0,
+          right: 0,
+          display: "flex",
+          width: "1rem",
+          height: "1rem",
+          borderRadius: "50%",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#855DCD", // Farcaster purple
+          transform: "translateY(-35%) translateX(35%)",
+          boxShadow: `0 0 0 0.15rem ${t.colors.backgroundPrimary}`,
+          svg: {
+            width: "0.6rem",
+            height: "auto",
+            color: "white",
+          },
+        })
+      }
+    >
+      <FarcasterGateIcon />
+    </span>
   </div>
 );
 
