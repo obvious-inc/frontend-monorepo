@@ -104,8 +104,7 @@ const ActivityFeed = ({
     useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
 
   const like = React.useCallback(
-    async (itemId, action) => {
-      const item = items.find((i) => i.id === itemId);
+    async (item, action) => {
       try {
         if (item.transactionHash != null) {
           await submitTransactionLike({
@@ -128,7 +127,7 @@ const ActivityFeed = ({
         alert("Ops, looks like something went wrong!");
       }
     },
-    [items, userFarcasterAccount?.fid, submitTransactionLike, submitCastLike],
+    [userFarcasterAccount?.fid, submitTransactionLike, submitCastLike],
   );
 
   // Enable the like action if there’s a delegate entry for the user’s
@@ -621,7 +620,7 @@ const FeedItem = React.memo(
           item={item}
           hasLiked={hasLiked}
           onClick={() => {
-            onLike(item.id, hasLiked ? "remove" : "add");
+            onLike(item, hasLiked ? "remove" : "add");
           }}
         />
       );
@@ -2166,13 +2165,36 @@ const CompactMarkdownRichText = ({
   />
 );
 
-const FeedItemActionDropdown = ({ context, item }) => {
+const FeedItemActionDropdown = ({
+  context,
+  item,
+  onRepost,
+  onLike,
+  onRemoveLike,
+  primaryActions,
+  secondaryActions,
+}) => {
   const navigate = useNavigate();
   const { open: openVoteOverviewDialog } = useDialog("vote-overview");
 
   const latestBlockNumber = useBlockNumber();
   const proposal = useProposal(item.proposalId);
   const candidate = useProposalCandidate(item.candidateId);
+
+  const enhanceItem = React.useCallback((item) => {
+    if (item.external)
+      return {
+        ...item,
+        textValue: item.label,
+        label: (
+          <>
+            <span style={{ flex: 1, marginRight: "0.8rem" }}>{item.label}</span>
+            {"\u2197"}
+          </>
+        ),
+      };
+    return item;
+  }, []);
 
   const actionItems = (() => {
     const itemCategory = (() => {
@@ -2190,56 +2212,53 @@ const FeedItemActionDropdown = ({ context, item }) => {
       return null;
     })();
 
-    const mainSectionActionKeys = (() => {
-      switch (itemCategory) {
-        case "proposal": {
-          if (context === "proposal") return [];
+    const primarySectionActionKeys =
+      primaryActions?.map(enhanceItem) ??
+      (() => {
+        switch (itemCategory) {
+          case "proposal": {
+            if (context === "proposal") return [];
 
-          const hasVotingStarted =
-            proposal?.startBlock != null &&
-            latestBlockNumber > Number(proposal.startBlock);
+            const hasVotingStarted =
+              proposal?.startBlock != null &&
+              latestBlockNumber > Number(proposal.startBlock);
 
-          return hasVotingStarted
-            ? ["open-proposal", "open-vote-overview"]
-            : ["open-proposal"];
+            return hasVotingStarted
+              ? ["open-proposal", "open-vote-overview"]
+              : ["open-proposal"];
+          }
+          case "candidate":
+            return context === "candidate" ? [] : ["open-candidate"];
+          case "auction":
+            return ["open-auction"];
+          case "propdate":
+            return ["open-proposal"];
+          default:
+            return [];
         }
-        case "candidate":
-          return context === "candidate" ? [] : ["open-candidate"];
-        case "auction":
-          return ["open-auction"];
-        case "propdate":
-          return ["open-proposal"];
-        default:
-          return [];
-      }
-    })();
+      })();
 
-    const bottomSectionActionKeys = (() => {
-      if (["vote", "feedback-post"].includes(item.type))
-        return ["open-block-explorer", "copy-link"];
+    const secondarySectionActionKeys =
+      secondaryActions?.map(enhanceItem) ??
+      (() => {
+        if (["vote", "feedback-post"].includes(item.type))
+          return ["open-block-explorer", "copy-link"];
 
-      switch (itemCategory) {
-        case "proposal":
-        case "candidate":
-        case "auction":
-          return item.transactionHash != null ? ["open-block-explorer"] : [];
-        case "propdate":
-          return ["open-updates-wtf", "open-block-explorer"];
-        case "farcaster-cast":
-          return ["open-farcaster-client"];
-        default:
-          return item.transactionHash != null ? ["open-block-explorer"] : [];
-      }
-    })();
+        switch (itemCategory) {
+          case "proposal":
+          case "candidate":
+          case "auction":
+            return item.transactionHash != null ? ["open-block-explorer"] : [];
+          case "propdate":
+            return ["open-updates-wtf", "open-block-explorer"];
+          case "farcaster-cast":
+            return ["open-farcaster-client"];
+          default:
+            return item.transactionHash != null ? ["open-block-explorer"] : [];
+        }
+      })();
 
     const buildActionItem = (key) => {
-      const renderExternalLabel = (label) => (
-        <>
-          <span style={{ flex: 1, marginRight: "0.8rem" }}>{label}</span>
-          {"\u2197"}
-        </>
-      );
-
       switch (key) {
         case "open-proposal":
           return { id: key, label: "Go to proposal" };
@@ -2258,21 +2277,27 @@ const FeedItemActionDropdown = ({ context, item }) => {
         case "open-block-explorer":
           return {
             id: key,
-            textValue: "View transaction on Etherscan",
-            label: renderExternalLabel("View transaction on Etherscan"),
+            label: "View transaction on Etherscan",
+            external: true,
           };
         case "open-farcaster-client":
           return {
             id: key,
-            textValue: "View on Warpcast",
-            label: renderExternalLabel("View on Warpcast"),
+            label: "View on Warpcast",
+            external: true,
           };
         case "open-updates-wtf":
           return {
             id: key,
-            textValue: "View on updates.wtf",
-            label: renderExternalLabel("View on updates.wtf"),
+            label: "View on updates.wtf",
+            external: true,
           };
+        case "like":
+          return { id: key, label: "Like" };
+        case "remove-like":
+          return { id: key, label: "Remove like" };
+        case "repost":
+          return { id: key, label: "Repost" };
         case "copy-link":
           return {
             id: key,
@@ -2285,16 +2310,20 @@ const FeedItemActionDropdown = ({ context, item }) => {
 
     const actionItems = [];
 
-    if (mainSectionActionKeys.length > 0)
+    if (primarySectionActionKeys.length > 0)
       actionItems.push({
-        id: "main",
-        children: mainSectionActionKeys.map(buildActionItem),
+        id: "primary",
+        children: primarySectionActionKeys.map((key) =>
+          enhanceItem(buildActionItem(key)),
+        ),
       });
 
-    if (bottomSectionActionKeys.length > 0)
+    if (secondarySectionActionKeys.length > 0)
       actionItems.push({
-        id: "misc",
-        children: bottomSectionActionKeys.map(buildActionItem),
+        id: "secondary",
+        children: secondarySectionActionKeys.map((key) =>
+          enhanceItem(buildActionItem(key)),
+        ),
       });
 
     return actionItems;
@@ -2346,6 +2375,18 @@ const FeedItemActionDropdown = ({ context, item }) => {
         );
         break;
 
+      case "like":
+        onLike();
+        break;
+
+      case "remove-like":
+        onRemoveLike();
+        break;
+
+      case "repost":
+        onRepost();
+        break;
+
       case "copy-link": {
         if (!["vote", "feedback-post"].includes(item.type)) throw new Error();
 
@@ -2361,6 +2402,9 @@ const FeedItemActionDropdown = ({ context, item }) => {
         navigator.clipboard.writeText(url);
         break;
       }
+
+      default:
+        throw new Error(`No action handler for "${key}"`);
     }
   };
 
@@ -2415,47 +2459,29 @@ const NestedReplyItem = ({
   onRepost,
   onLike,
 }) => {
+  const navigate = useNavigate();
+
   const userAccountAddress = useUserEthereumAccountAddress();
   const userFarcasterAccount =
     useFarcasterAccountsWithVerifiedEthAddress(userAccountAddress)?.[0];
 
   const likes = useItemLikes(item, { enabled: hasBeenOnScreen });
-
-  const renderRepostAction = (item) => {
-    const [component, props] =
-      createRepostHref != null
-        ? [NextLink, { href: createRepostHref(item) }]
-        : ["button", { onClick: () => onRepost(item.id) }];
-
-    return <RepostAction item={item} component={component} {...props} />;
-  };
-
-  const renderLikeAction = (item) => {
-    const hasLiked = likes?.some(
-      (l) =>
-        l.nounerAddress === userAccountAddress ||
-        l.fid === userFarcasterAccount?.fid,
-    );
-
-    return (
-      <LikeAction
-        item={item}
-        hasLiked={hasLiked}
-        onClick={() => {
-          onLike(item.id, hasLiked ? "remove" : "add");
-        }}
-      />
-    );
-  };
-
-  const showRepostAction =
-    (onRepost != null || createRepostHref != null) &&
-    ["vote", "feedback-post"].includes(item.type);
+  const hasLiked = likes?.some(
+    (l) =>
+      l.nounerAddress === userAccountAddress ||
+      l.fid === userFarcasterAccount?.fid,
+  );
 
   const hasLikes = likes?.length > 0;
   const hasBeenReposted = item.repostingItems?.length > 0;
 
-  const showLikeAction = item.transactionHash != null;
+  const showLikeAction =
+    onLike != null &&
+    (item.type === "farcaster-cast" || item.transactionHash != null);
+  const showRepostAction =
+    (onRepost != null || createRepostHref != null) &&
+    ["vote", "feedback-post"].includes(item.type);
+
   const showMeta = hasLikes || hasBeenReposted;
 
   return (
@@ -2489,7 +2515,33 @@ const NestedReplyItem = ({
             ) : !hasBeenOnScreen ? (
               <div style={{ width: "2rem" }} />
             ) : (
-              <FeedItemActionDropdown context={context} item={item} />
+              <FeedItemActionDropdown
+                item={item}
+                onLike={() => {
+                  onLike(item, "add");
+                }}
+                onRemoveLike={() => {
+                  onLike(item, "remove");
+                }}
+                onRepost={() => {
+                  if (createRepostHref != null) {
+                    navigate(createRepostHref(item));
+                    return;
+                  }
+                  onRepost(item.id);
+                }}
+                primaryActions={[
+                  showLikeAction && (hasLiked ? "remove-like" : "like"),
+                  showRepostAction && "repost",
+                ].filter(Boolean)}
+                secondaryActions={
+                  item.type === "farcaster-cast"
+                    ? ["open-farcaster-client"]
+                    : item.transactionHash != null
+                      ? ["open-block-explorer"]
+                      : []
+                }
+              />
             )}
           </div>
         </div>
@@ -2497,13 +2549,6 @@ const NestedReplyItem = ({
       <div className="body-container">
         <CompactMarkdownRichText text={item.replyBody} />
       </div>
-
-      {(showRepostAction || showLikeAction) && (
-        <div className="action-bar-container">
-          {showRepostAction && renderRepostAction(item)}
-          {showLikeAction && renderLikeAction(item)}
-        </div>
-      )}
 
       {showMeta && (
         <MetaBar
