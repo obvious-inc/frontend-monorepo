@@ -439,10 +439,11 @@ export const useSubmitCandidateCast = (candidateId) => {
 };
 
 export const useSubmitCastReply = () => {
-  const { setState } = React.useContext(Context);
+  const queryClient = useTanstackQueryClient();
+  const { address: connectedAccountAddress } = useWallet();
 
-  return React.useCallback(
-    async ({ text, fid, targetCastId }) => {
+  const { mutateAsync } = useTanstackMutation({
+    mutationFn: async ({ fid, text, targetCastId }) => {
       const response = await fetch("/api/farcaster-replies", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -452,26 +453,57 @@ export const useSubmitCastReply = () => {
       if (!response.ok) {
         console.error(await response.text());
         alert("Ops, looks like something went wrong!");
-        return; // TODO
+        throw new Error();
       }
 
-      const cast = await response.json();
-
-      setState((s) => ({
-        ...s,
-        accountsByFid: { ...s.accountsByFid, [cast.fid]: cast.account },
-        castsByHash: { ...s.castsByHash, [cast.hash]: cast },
-        castHashesByParentHash: {
-          ...s.castHashesByParentHash,
-          [targetCastId.hash]: [
-            ...(s.castHashesByParentHash[targetCastId.hash] ?? []),
-            cast.hash,
-          ],
-        },
-      }));
+      return response.json();
     },
-    [setState],
-  );
+    onMutate: ({ fid, text, targetCastId }) => {
+      const verifiedAccounts = queryClient.getQueryData([
+        "verified-farcaster-accounts",
+        connectedAccountAddress,
+      ]);
+      const account = verifiedAccounts.find((a) => a.fid === fid);
+      queryClient.setQueryData(
+        ["farcaster-cast-conversation", targetCastId.hash],
+        (casts) => [
+          ...casts,
+          {
+            fid,
+            text,
+            timestamp: new Date().toISOString(),
+            replies: [],
+            account,
+            hash: Math.random(),
+            isPending: true,
+          },
+        ],
+      );
+    },
+    onSuccess: (createdCast, { targetCastId }) => {
+      queryClient.setQueryData(
+        ["farcaster-cast-conversation", targetCastId.hash],
+        (casts) =>
+          casts.map((c) => {
+            if (c.isPending && c.fid === createdCast.fid)
+              return { ...createdCast, replies: [] };
+            return c;
+          }),
+      );
+    },
+    onError: (_, { fid, targetCastId }) => {
+      queryClient.setQueryData(
+        ["farcaster-cast-conversation", targetCastId.hash],
+        (casts) =>
+          casts.filter((c) => {
+            const isPending = c.isPending && c.fid === fid;
+            return !isPending;
+          }),
+      );
+    },
+  });
+
+  return mutateAsync;
 };
 
 export const useRecentCasts = ({ filter, ...fetchOptions } = {}) => {
