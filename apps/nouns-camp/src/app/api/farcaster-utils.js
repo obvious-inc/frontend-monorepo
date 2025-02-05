@@ -275,7 +275,9 @@ const parseNeynarUsers = async (users) => {
   const { delegates } = await subgraphFetch({
     query: `
       query {
-        delegates(where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }) {
+        delegates(
+          where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }
+        ) {
           id
           delegatedVotes
         }
@@ -292,11 +294,17 @@ const parseNeynarUsers = async (users) => {
 
     const verifiedAddresses = user.verifications.map((a) => a.toLowerCase());
 
-    const delegate = delegates.find((d) => verifiedAddresses.includes(d.id));
+    const userDelegates = delegates.filter((d) =>
+      verifiedAddresses.includes(d.id),
+    );
 
-    if (delegate != null) {
-      account.nounerAddress = delegate.id;
-      account.votingPower = Number(delegate.delegatedVotes);
+    if (userDelegates.length > 0) {
+      const [delegateWithMostVotingPower] = arrayUtils.sortBy(
+        { value: (d) => Number(d.delegatedVotes), order: "desc" },
+        userDelegates,
+      );
+      account.nounerAddress = delegateWithMostVotingPower.id;
+      account.votingPower = Number(delegateWithMostVotingPower.delegatedVotes);
     }
 
     return account;
