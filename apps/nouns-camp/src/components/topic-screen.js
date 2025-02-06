@@ -506,7 +506,7 @@ const TopicScreenContent = ({ candidateId }) => {
                 )}
               </div>
               <Select
-                size="default"
+                size="small"
                 aria-label="Feed sorting"
                 value={sortStrategy}
                 options={[
@@ -544,7 +544,7 @@ const TopicScreenContent = ({ candidateId }) => {
 
           <div css={css({ marginTop: "4rem" })}>
             <ProposalActionForm
-              size="small"
+              size="large"
               variant="boxed"
               {...actionFormProps}
             />
@@ -692,7 +692,7 @@ const AdminDropdown = React.memo(({ candidateId }) => {
     <DropdownMenu.Root placement="bottom end">
       <DropdownMenu.Trigger asChild>
         <Button
-          size="default"
+          size="medium"
           iconRight={
             <CaretDownIcon style={{ width: "1.1rem", height: "auto" }} />
           }

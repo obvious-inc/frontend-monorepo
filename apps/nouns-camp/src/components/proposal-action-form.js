@@ -1,7 +1,10 @@
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { AutoAdjustingHeightTextarea } from "@shades/common/react";
+import {
+  AutoAdjustingHeightTextarea,
+  useMatchMedia,
+} from "@shades/common/react";
 import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Select from "@shades/ui-web/select";
@@ -9,10 +12,6 @@ import Avatar from "@shades/ui-web/avatar";
 import { CHAIN_ID } from "../constants/env.js";
 import { getChain } from "../utils/chains.js";
 import { pickDisplayName as pickFarcasterAccountDisplayName } from "../utils/farcaster.js";
-import {
-  isFinalState as isFinalProposalState,
-  isSucceededState as isSucceededProposalState,
-} from "../utils/proposals.js";
 import { REPOST_REGEX } from "@/utils/votes-and-feedbacks";
 import { useProposal, useDelegate } from "../store.js";
 import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
@@ -47,7 +46,11 @@ const ProposalActionForm = ({
   cancelReply,
   cancelRepost,
   inputRef,
+  messagePlaceholder,
+  helpText: customHelpText,
 }) => {
+  const isSmallDevice = useMatchMedia("(max-width: 600px)");
+
   const [isPending, setPending] = React.useState(false);
   // const [error, setError] = React.useState(null);
 
@@ -168,37 +171,30 @@ const ProposalActionForm = ({
       }
     }
 
-    if (mode !== "vote") {
-      const isFinalOrSucceededState =
-        proposal != null &&
-        (isFinalProposalState(proposal.state) ||
-          isSucceededProposalState(proposal.state));
+    if (mode === "vote") {
+      if (currentVoteCount > 0 && proposalVoteCount === 0)
+        return (
+          <>
+            <p>
+              Although you currently control <em>{currentVoteCount}</em>{" "}
+              {currentVoteCount === 1 ? "vote" : "votes"}, your voting power on
+              this proposal is <em>0</em>, which represents your voting power at
+              this proposal’s vote snapshot block.
+            </p>
+            <p>
+              You may still vote with <em>0</em> votes, but gas spent will not
+              be refunded.
+            </p>
+          </>
+        );
 
-      if (isFinalOrSucceededState) return null;
+      if (proposalVoteCount === 0)
+        return "You can vote with zero voting power, but gas spent will not be refunded.";
 
-      return null; // "Signal your voting intentions to influence and guide proposers.";
+      return "Gas spent on voting will be refunded.";
     }
 
-    if (currentVoteCount > 0 && proposalVoteCount === 0)
-      return (
-        <>
-          <p>
-            Although you currently control <em>{currentVoteCount}</em>{" "}
-            {currentVoteCount === 1 ? "vote" : "votes"}, your voting power on
-            this proposal is <em>0</em>, which represents your voting power at
-            this proposal’s vote snapshot block.
-          </p>
-          <p>
-            You may still vote with <em>0</em> votes, but gas spent will not be
-            refunded.
-          </p>
-        </>
-      );
-
-    if (proposalVoteCount === 0)
-      return "You can vote with zero voting power, but gas spent will not be refunded.";
-
-    return "Gas spent on voting will be refunded.";
+    return customHelpText;
   };
 
   const helpText = renderHelpText();
@@ -209,6 +205,9 @@ const ProposalActionForm = ({
     isPending ||
     connectedWalletAccountAddress == null ||
     !isConnectedToTargetChainId;
+
+  const helpTextElement =
+    helpText == null ? null : <div className="hint-container">{helpText}</div>;
 
   return (
     <div
@@ -249,6 +248,18 @@ const ProposalActionForm = ({
               },
             },
           },
+          ".message-input-label": {
+            lineHeight: 1.2,
+            fontSize: t.text.sizes.small,
+            color: t.colors.textDimmed,
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            em: {
+              fontStyle: "normal",
+              fontWeight: t.text.weights.emphasis,
+            },
+          },
           ".hint-container": {
             marginTop: "1.2rem",
             fontSize: t.text.sizes.tiny,
@@ -263,6 +274,17 @@ const ProposalActionForm = ({
           '&[data-size="small"]': {
             form: {
               padding: "0.8rem",
+            },
+          },
+
+          '&[data-size="large"]': {
+            ".message-input-label": {
+              ".account-preview-trigger": {
+                color: t.colors.textNormal,
+              },
+              "@media(min-width: 600px)": {
+                fontSize: t.text.sizes.base,
+              },
             },
           },
 
@@ -292,27 +314,17 @@ const ProposalActionForm = ({
     >
       <div className="box-container">
         <div
-          style={{
+          css={css({
             display: "flex",
             gap: "0.6rem",
             justifyContent: "space-between",
             alignItems: "flex-end",
-          }}
+            "@container(max-width: 360px)": {
+              ".wide-only": { display: "none" },
+            },
+          })}
         >
-          <label
-            htmlFor="message-input"
-            css={(t) =>
-              css({
-                fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
-                em: {
-                  fontStyle: "normal",
-                  fontWeight: t.text.weights.emphasis,
-                },
-                // "& + *": { marginTop: "0.8rem" },
-              })
-            }
-          >
+          <label className="message-input-label" htmlFor="message-input">
             {connectedWalletAccountAddress == null ? null : (
               <>
                 {mode === "farcaster-comment" ? (
@@ -335,7 +347,7 @@ const ProposalActionForm = ({
 
                       return (
                         <>
-                          Comment as{" "}
+                          <span className="wide-only">Comment as </span>
                           {pfpUrl != null && (
                             <Avatar
                               url={pfpUrl}
@@ -348,14 +360,16 @@ const ProposalActionForm = ({
                             />
                           )}
                           <em>{displayName}</em>
-                          {username !== displayName && <> (@{username})</>}
+                          <span className="wide-only">
+                            {username !== displayName && <> (@{username})</>}
+                          </span>
                         </>
                       );
                     }
 
                     return (
                       <>
-                        Comment as{" "}
+                        <span className="wide-only">Comment as </span>
                         <NativeSelect
                           value={String(selectedFarcasterAccountFid)}
                           options={farcasterAccounts.map((a, i, as) => {
@@ -407,10 +421,12 @@ const ProposalActionForm = ({
                                     username ??
                                     `FID ${account.fid}`}
                                 </em>
-                                {username != null &&
-                                  username !== displayName && (
-                                    <> (@{username})</>
-                                  )}
+                                <span className="wide-only">
+                                  {username != null &&
+                                    username !== displayName && (
+                                      <> (@{username})</>
+                                    )}
+                                </span>
                               </>
                             );
                           }}
@@ -420,7 +436,9 @@ const ProposalActionForm = ({
                   })()
                 ) : (
                   <>
-                    {mode === "vote" ? "Cast vote as" : "Comment as"}{" "}
+                    <span className="wide-only">
+                      {mode === "vote" ? "Cast vote as" : "Comment as"}{" "}
+                    </span>
                     <AccountPreviewPopoverTrigger
                       showAvatar
                       accountAddress={connectedWalletAccountAddress}
@@ -462,13 +480,14 @@ const ProposalActionForm = ({
                       throw new Error();
                   }
                 }}
-                size="tiny"
-                variant="opaque"
+                // size="tiny"
+                // variant="opaque"
+                size={
+                  size === "large" ? (isSmallDevice ? "tiny" : "small") : "tiny"
+                }
+                variant={size === "large" ? "default" : "opaque"}
                 width="max-content"
                 align="right"
-                buttonProps={{
-                  css: (t) => css({ color: t.colors.textDimmed }),
-                }}
               />
             </div>
           )}
@@ -596,13 +615,14 @@ const ProposalActionForm = ({
             ref={inputRef}
             id="message-input"
             className="text-input"
-            rows={1}
+            rows={size === "large" ? 3 : 1}
             placeholder={
-              hasRepostTarget
+              messagePlaceholder ??
+              (hasRepostTarget
                 ? "Optional comment..."
                 : hasReplyTarget
                   ? "Optional additional comment..."
-                  : "..."
+                  : "...")
             }
             value={reason}
             onChange={(e) => {
@@ -624,6 +644,7 @@ const ProposalActionForm = ({
               Error: {error.message}
             </div>
           )} */}
+          {variant === "boxed" && helpTextElement}
           <div
             css={css({
               display: "flex",
@@ -645,6 +666,14 @@ const ProposalActionForm = ({
               )}
 
               {(() => {
+                // Button size
+                const buttonSize =
+                  size === "large"
+                    ? isSmallDevice
+                      ? "small"
+                      : "default"
+                    : size;
+
                 switch (mode) {
                   case "vote":
                   case "onchain-comment":
@@ -655,7 +684,7 @@ const ProposalActionForm = ({
                           onClick={() => {
                             requestWalletAccess();
                           }}
-                          size={size}
+                          size={buttonSize}
                         >
                           Connect wallet to{" "}
                           {mode === "vote" ? "vote" : "comment"}
@@ -667,7 +696,7 @@ const ProposalActionForm = ({
                         {setSupport != null && (
                           <SupportSelect
                             mode={mode}
-                            size={size}
+                            size={buttonSize}
                             value={support}
                             onChange={(value) => {
                               setSupport(value);
@@ -682,7 +711,7 @@ const ProposalActionForm = ({
                             variant="primary"
                             disabled={hasPendingWalletAction}
                             isLoading={hasPendingWalletAction}
-                            size={size}
+                            size={buttonSize}
                             onClick={() => {
                               requestWalletNetworkSwitchToTargetChain();
                             }}
@@ -695,7 +724,7 @@ const ProposalActionForm = ({
                             variant="primary"
                             disabled={isPending || !hasRequiredInputs}
                             isLoading={isPending}
-                            size={size}
+                            size={buttonSize}
                           >
                             {(() => {
                               switch (mode) {
@@ -732,7 +761,7 @@ const ProposalActionForm = ({
                           onClick={() => {
                             requestWalletAccess();
                           }}
-                          size={size}
+                          size={buttonSize}
                         >
                           Connect wallet to cast
                         </Button>
@@ -740,7 +769,12 @@ const ProposalActionForm = ({
 
                     if (farcasterAccounts == null)
                       return (
-                        <Button type="button" size={size} isLoading disabled>
+                        <Button
+                          type="button"
+                          size={buttonSize}
+                          isLoading
+                          disabled
+                        >
                           Cast comment
                         </Button>
                       );
@@ -757,7 +791,7 @@ const ProposalActionForm = ({
                       return (
                         <Button
                           type="button"
-                          size={size}
+                          size={buttonSize}
                           onClick={() => {
                             openFarcasterSetupDialog();
                           }}
@@ -772,7 +806,7 @@ const ProposalActionForm = ({
                       return (
                         <Button
                           type="button"
-                          size={size}
+                          size={buttonSize}
                           onClick={() => {
                             openAuthenticationDialog({ intent: "cast" });
                           }}
@@ -787,7 +821,7 @@ const ProposalActionForm = ({
                         variant="primary"
                         disabled={isPending || !hasRequiredInputs}
                         isLoading={isPending}
-                        size={size}
+                        size={buttonSize}
                       >
                         Cast comment
                       </Button>
@@ -803,7 +837,7 @@ const ProposalActionForm = ({
         </form>
       </div>
 
-      {helpText != null && <div className="hint-container">{helpText}</div>}
+      {variant !== "boxed" && helpTextElement}
     </div>
   );
 };

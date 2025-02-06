@@ -332,7 +332,6 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
             css={(t) =>
               css({
                 fontSize: t.text.sizes.small,
-                color: t.colors.textDimmed,
                 "[data-underline]": { textDecoration: "underline" },
               })
             }

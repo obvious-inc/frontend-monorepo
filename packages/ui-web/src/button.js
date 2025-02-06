@@ -42,7 +42,7 @@ const stylesByVariant = (t, { danger }) => {
   return {
     default: defaultStyles,
     opaque: {
-      color: t.colors.textNormal,
+      color: t.colors.textDimmed,
       background: t.colors.backgroundModifierNormal,
       "@media (hover: hover)": {
         "&:not([disabled]):hover": {
