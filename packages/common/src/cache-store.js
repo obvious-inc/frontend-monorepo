@@ -49,6 +49,8 @@ export const useStore = () => {
   return store;
 };
 
+const getServerSnapshot = () => null;
+
 export const useCachedState = (key, initialState, { middleware } = {}) => {
   const store = useStore();
 
@@ -76,7 +78,11 @@ export const useCachedState = (key, initialState, { middleware } = {}) => {
     }
   }, []);
 
-  const cachedValue = React.useSyncExternalStore(store.subscribe, getSnapshot);
+  const cachedValue = React.useSyncExternalStore(
+    store.subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   const state = React.useMemo(() => {
     if (cachedValue == null) return initialStateRef.current;
