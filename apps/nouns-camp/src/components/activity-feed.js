@@ -432,6 +432,9 @@ const FeedItem = React.memo(
 
     const likes = useItemLikes(item, { enabled: hasBeenOnScreen });
 
+    const candidate = useProposalCandidate(item.candidateId);
+    const isTopicCandidate = candidate?.latestVersion?.type === "topic";
+
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
     const itemBody = nounTransferMeta?.reason ?? item.body;
 
@@ -799,7 +802,7 @@ const FeedItem = React.memo(
                             if (target.proposalId != null)
                               return `/proposals/${target.proposalId}?tab=activity&item=${target.id}`;
                             if (target.candidateId != null)
-                              return `/candidates/${encodeURIComponent(
+                              return `/${isTopicCandidate ? "topics" : "candidates"}/${encodeURIComponent(
                                 makeCandidateUrlId(target.candidateId),
                               )}?tab=activity&item=${target.id}`;
                             console.error("Invalid reply target", target);
@@ -850,7 +853,7 @@ const FeedItem = React.memo(
                         if (voteOrFeedbackPost.proposalId != null)
                           return `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity&item=${voteOrFeedbackPost.id}`;
                         if (voteOrFeedbackPost.candidateId != null)
-                          return `/candidates/${encodeURIComponent(
+                          return `/${isTopicCandidate ? "topics" : "candidates"}/${encodeURIComponent(
                             makeCandidateUrlId(voteOrFeedbackPost.candidateId),
                           )}?tab=activity&item=${voteOrFeedbackPost.id}`;
                         console.error(
@@ -1141,7 +1144,7 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
       const title =
         candidate?.latestVersion?.content.title ??
         extractSlugFromCandidateId(candidateId);
-      const candidateUrl = `/candidates/${encodeURIComponent(
+      const candidateUrl = `/${isTopicCandidate ? "topics" : "candidates"}/${encodeURIComponent(
         makeCandidateUrlId(candidateId),
       )}`;
       return (
