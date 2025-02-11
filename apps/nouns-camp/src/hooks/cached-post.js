@@ -1,5 +1,10 @@
 import React from "react";
 import { useCachedState } from "@shades/common/app";
+import {
+  isFinalState as isFinalProposalState,
+  isSucceededState as isSucceededProposalState,
+} from "@/utils/proposals";
+import { useProposal } from "@/store";
 
 const cacheKeyNamespace = "post-drafts";
 
@@ -12,9 +17,16 @@ const emptyPost = {
 
 const useCachedPost = (
   cacheId,
-  { initialRepostPostId, initialReplyTargetPostId } = {},
+  {
+    initialSupport = emptyPost.support,
+    initialRepostPostId,
+    initialReplyTargetPostId,
+  } = {},
 ) => {
-  const [post, setPost] = useCachedState(cacheId, emptyPost);
+  const [post, setPost] = useCachedState(cacheId, {
+    ...emptyPost,
+    support: initialSupport,
+  });
 
   const hasSetInitialStateRef = React.useRef(false);
 
@@ -84,11 +96,6 @@ const useCachedPost = (
     hasSetInitialStateRef.current = true;
   }, [initialRepostPostId, initialReplyTargetPostId, addRepost, addReply]);
 
-  // if post is empty, remove it from cache
-  React.useEffect(() => {
-    if (JSON.stringify(post) == JSON.stringify(emptyPost)) setPost();
-  }, [post, setPost]);
-
   const { comment = "", support, replies = [], reposts = [] } = post ?? {};
 
   return [
@@ -108,7 +115,25 @@ const useCachedPost = (
 
 export const useCachedProposalPost = (proposalId, opts) => {
   const cacheKey = [cacheKeyNamespace, "proposals", proposalId].join(":");
-  return useCachedPost(cacheKey, opts);
+
+  const proposal = useProposal(proposalId);
+
+  const isFinalOrSucceededState =
+    isFinalProposalState(proposal.state) ||
+    isSucceededProposalState(proposal.state);
+
+  const initialSupport = isFinalOrSucceededState ? 2 : emptyPost.support;
+
+  const [state, actions] = useCachedPost(cacheKey, { initialSupport, ...opts });
+
+  const [{ support }, { setSupport }] = [state, actions];
+
+  // for finalized props, default to 'no signal' comments
+  React.useEffect(() => {
+    if (support == null && support != initialSupport) setSupport(2);
+  }, [initialSupport, support, setSupport]);
+
+  return [state, actions];
 };
 
 export const useCachedCandidatePost = (candidateId, opts) => {
