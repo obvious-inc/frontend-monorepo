@@ -46,6 +46,13 @@ export const requestIdleCallback =
       ? window.requestIdleCallback
       : window.setTimeout;
 
+export const cancelIdleCallback =
+  typeof window === "undefined"
+    ? undefined
+    : typeof window.cancelIdleCallback === "function"
+      ? window.cancelIdleCallback
+      : window.clearTimeout;
+
 export const reloadPageOnce = () => {
   try {
     // This might throw in contexts where storage access isn’t allowed
