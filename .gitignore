@@ -6,3 +6,4 @@ dist
 .next
 .turbo
 .DS_Store
+.aider*
