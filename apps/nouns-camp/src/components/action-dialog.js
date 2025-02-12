@@ -13,6 +13,7 @@ import {
 } from "viem";
 import { normalize as normalizeEnsName } from "viem/ens";
 import { css } from "@emotion/react";
+import { object as objectUtils } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
 import {
   TrashCan as TrashCanIcon,
@@ -1088,17 +1089,15 @@ const formConfigByActionType = {
         type: "custom-transaction",
         contractCallTarget: state.target,
         contractCallSignature: state.signature,
-        contractCallArguments: JSON.parse(
-          JSON.stringify(
-            // Encoding and decoding gives us valid defaults for empty
-            // arguments, e.g. empty numbers turn into zeroes
-            decodeAbiParameters(
-              inputTypes,
-              encodeAbiParameters(inputTypes, state.arguments),
-            ),
-            (_, value) =>
-              typeof value === "bigint" ? value.toString() : value,
+        // Stringify BigInts to avoid serialization issues downstream
+        contractCallArguments: objectUtils.traverse(
+          // Encoding and decoding gives us valid defaults for empty
+          // arguments, e.g. empty numbers turn into zeroes
+          decodeAbiParameters(
+            inputTypes,
+            encodeAbiParameters(inputTypes, state.arguments),
           ),
+          (v) => (typeof v === "bigint" ? v.toString() : v),
         ),
         contractCallValue: parseEther(state.ethValue).toString(),
         contractCallCustomAbiString: state.customAbiString,

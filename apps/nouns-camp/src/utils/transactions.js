@@ -10,6 +10,7 @@ import {
 } from "viem";
 import {
   array as arrayUtils,
+  object as objectUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
 import { resolveAddress, resolveIdentifier } from "../contracts.js";
@@ -683,7 +684,10 @@ export const buildActions = (transactions) => {
       type: "custom-transaction",
       contractCallTarget: targets[0],
       contractCallSignature: signature,
-      contractCallArguments: inputs,
+      // Stringify BigInts to avoid serialization issues downstream
+      contractCallArguments: objectUtils.traverse(inputs, (value) =>
+        typeof value === "bigint" ? value.toString() : value,
+      ),
       contractCallValue: values[0],
       firstTransactionIndex: getTransactionIndex(tx),
     };

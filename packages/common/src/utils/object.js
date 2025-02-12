@@ -38,3 +38,9 @@ export const merge = (mergingFn, ...objects) => {
     };
   }, null);
 };
+
+export const traverse = (data, mapper) => {
+  if (data == null || typeof data !== "object") return mapper(data);
+  if (Array.isArray(data)) return data.map((item) => traverse(item, mapper));
+  return mapValues((value) => traverse(value, mapper), data);
+};
