@@ -423,11 +423,15 @@ const FeedItem = React.memo(
       enabled: item.type === "noun-transfer" && hasBeenOnScreen,
     });
 
-    const authorReplyCasts = (() => {
+    const authorThreadCasts = (() => {
       if (replyCasts == null) return null;
       const flatten = (casts) =>
         casts.flatMap((c) => [c, ...flatten(c.replies)]);
-      return flatten(replyCasts).filter((c) => c.fid === item.authorFid);
+      const flatReplies = flatten(replyCasts);
+      const firstNonAuthorReplyIndex = flatReplies.findIndex(
+        (c) => c.fid !== item.authorFid,
+      );
+      return flatReplies.slice(0, firstNonAuthorReplyIndex);
     })();
 
     const likes = useItemLikes(item, { enabled: hasBeenOnScreen });
@@ -886,9 +890,8 @@ const FeedItem = React.memo(
               />
             )}
             {!isBoxedVariant &&
-              authorReplyCasts?.map((cast) => (
-                // This renders all author replies together with the origin post
-                // as one big concatinated item body
+              authorThreadCasts?.map((cast) => (
+                // This renders the full thread as one big concatinated item body
                 <ItemBody key={cast.hash} text={cast.text} />
               ))}
             {item.type === "candidate-signature" && (
