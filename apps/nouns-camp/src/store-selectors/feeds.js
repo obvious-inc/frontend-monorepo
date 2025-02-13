@@ -27,6 +27,8 @@ const createFarcasterCastItem = (cast) => {
     authorUsername: cast.account.username,
     body: cast.text,
     timestamp: new Date(cast.timestamp),
+    proposalId: cast.proposalId,
+    candidateId: cast.candidateId,
   };
 };
 

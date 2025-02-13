@@ -548,8 +548,9 @@ const FeedItem = React.memo(
 
     const renderReplyAction = (item) => {
       const [Component, props] = (() => {
-        if (createReplyHref != null)
-          return [NextLink, { href: createReplyHref(item) }];
+        const replyHref = createReplyHref != null && createReplyHref(item);
+
+        if (replyHref != null) return [NextLink, { href: replyHref }];
 
         if (onReply != null)
           return ["button", { onClick: () => onReply(item.id) }];

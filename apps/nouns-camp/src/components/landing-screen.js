@@ -1072,14 +1072,14 @@ const TruncatedActivityFeed = ({ items }) => {
       <ActivityFeed
         items={visibleItems}
         createReplyHref={(item) => {
-          if (!allowItemActions) return null;
+          if (!allowItemActions(item)) return null;
           return `${createItemOriginUrl(item)}?${new URLSearchParams({
             tab: "activity",
             "reply-target": item.id,
           })}`;
         }}
         createRepostHref={(item) => {
-          if (!allowItemActions) return null;
+          if (!allowItemActions(item)) return null;
           return `${createItemOriginUrl(item)}?${new URLSearchParams({
             tab: "activity",
             "repost-target": item.id,
