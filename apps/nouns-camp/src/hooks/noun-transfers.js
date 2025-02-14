@@ -175,7 +175,7 @@ export const useTransferMeta = (transactionHash, { enabled = true } = {}) => {
         to: e.args.to.toLowerCase(),
         nounId: parseInt(e.args.tokenId),
       }))
-      .filter((t) => t.from !== zeroAddress);
+      .filter((t) => t.from !== zeroAddress && t.to !== zeroAddress);
     const senders = arrayUtils.unique(transfers.map((t) => t.from));
     const receivers = arrayUtils.unique(transfers.map((t) => t.to));
 
