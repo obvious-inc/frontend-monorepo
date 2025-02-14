@@ -304,26 +304,25 @@ export const useCastConversation = (
         casts.map((c) => ({ ...c, parentHash: castHash })),
       );
 
-      setState((s) => {
-        return {
-          ...s,
-          accountsByFid: objectUtils.merge(
-            (a1, a2) => ({ ...a1, ...a2 }),
-            s.accountsByFid,
-            accountsByFid,
-          ),
-          castsByHash: { ...s.castsByHash, ...fetchedCastsByHash },
-          castHashesByParentHash: objectUtils.merge(
-            (hs1 = [], hs2 = []) => [...hs1, ...hs2],
-            s.castHashesByParentHash,
-            fetchedCastHashesByParentHash,
-          ),
-        };
-      });
+      setState((s) => ({
+        ...s,
+        accountsByFid: objectUtils.merge(
+          (a1, a2) => ({ ...a1, ...a2 }),
+          s.accountsByFid,
+          accountsByFid,
+        ),
+        castsByHash: { ...s.castsByHash, ...fetchedCastsByHash },
+        castHashesByParentHash: objectUtils.merge(
+          (hs1 = [], hs2 = []) => arrayUtils.unique([...hs1, ...hs2]),
+          s.castHashesByParentHash,
+          fetchedCastHashesByParentHash,
+        ),
+      }));
 
       return casts.map((cast) =>
         selectCastWithAccountAndReplies(
           {
+            accountsByFid,
             castsByHash: fetchedCastsByHash,
             castHashesByParentHash: fetchedCastHashesByParentHash,
           },
