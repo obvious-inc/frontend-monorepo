@@ -552,7 +552,8 @@ const FeedItem = React.memo(
 
     const renderReplyAction = (item) => {
       const [Component, props] = (() => {
-        const replyHref = createReplyHref != null && createReplyHref(item);
+        const replyHref =
+          createReplyHref != null ? createReplyHref(item) : null;
 
         if (replyHref != null) return [NextLink, { href: replyHref }];
 
@@ -608,9 +609,12 @@ const FeedItem = React.memo(
     };
 
     const renderRepostAction = (item) => {
+      const repostHref =
+        createRepostHref != null ? createRepostHref(item) : null;
+
       const [component, props] =
-        createRepostHref != null
-          ? [NextLink, { href: createRepostHref(item) }]
+        repostHref != null
+          ? [NextLink, { href: repostHref }]
           : ["button", { onClick: () => onRepost(item.id) }];
 
       return <RepostAction item={item} component={component} {...props} />;
