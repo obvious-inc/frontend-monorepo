@@ -86,6 +86,8 @@ const Channel = ({ channelId }) => {
 
   const disableInput = !canPost;
 
+  const enableThreads = false; // layout !== "bubbles"
+
   React.useEffect(() => {
     if (!inputDeviceCanHover || disableInput) return;
     inputRef.current.focus();
@@ -156,11 +158,13 @@ const Channel = ({ channelId }) => {
     throttledRegisterTypingActivity();
   });
 
-  const initReply = useLatestCallback((targetMessageId) => {
-    const targetMessage = selectors.selectMessage(targetMessageId);
-    setReplyTargetMessageId(
-      targetMessage?.replyTargetMessageId ?? targetMessageId,
-    );
+  const initReply = useLatestCallback((targetMessageId_) => {
+    const targetMessageId = enableThreads
+      ? // If threads are enabled, we reply to the thread target message
+        (selectors.selectMessage(targetMessageId_)?.replyTargetMessageId ??
+        targetMessageId_)
+      : targetMessageId_;
+    setReplyTargetMessageId(targetMessageId);
     inputRef.current.focus();
   });
 
@@ -196,7 +200,7 @@ const Channel = ({ channelId }) => {
         didScrollToBottomRef={didScrollToBottomRef}
         renderHeader={renderScrollViewHeader}
         renderMessage={renderMessage}
-        // threads={layout !== "bubbles"}
+        threads={enableThreads}
       />
 
       <div css={css({ padding: "0 1.6rem" })}>
