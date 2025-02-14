@@ -103,18 +103,26 @@ const TopicScreenContent = ({ candidateId }) => {
     };
   });
 
-  const {
-    comments: commentCount,
-    replies: replyCount, // Does not include Farcaster replies
-  } = feedItems.reduce(
-    ({ comments, replies }, item) => ({
-      comments:
-        item.body == null || item.body.trim() === "" ? comments : comments + 1,
-      replies:
-        item.replyingItems == null
-          ? replies
-          : replies + item.replyingItems.length,
-    }),
+  const countCastReplies = (cast) =>
+    cast.replies.reduce(
+      (sum, replyCast) => sum + 1 + countCastReplies(replyCast),
+      0,
+    );
+
+  const { comments: commentCount, replies: replyCount } = feedItems.reduce(
+    ({ comments, replies }, item) => {
+      const isComment = item.body != null && item.body.trim() !== "";
+      const onchainReplyCount = item.replyingItems?.length ?? 0;
+      const castReplyCount =
+        item.replyingCasts?.reduce(
+          (sum, cast) => sum + 1 + countCastReplies(cast),
+          0,
+        ) ?? 0;
+      return {
+        comments: isComment ? comments + 1 : comments,
+        replies: replies + onchainReplyCount + castReplyCount,
+      };
+    },
     { comments: 0, replies: 0 },
   );
 
@@ -168,14 +176,24 @@ const TopicScreenContent = ({ candidateId }) => {
 
   const participantAccountIds = feedItems.reduce(
     (acc, item) => {
-      const authorId = item.authorAccount?.toLowerCase();
-      if (
-        authorId == null ||
-        // authorId === candidate.proposerId ||
-        acc.includes(authorId)
-      )
-        return acc;
-      acc.push(authorId);
+      const collectParticipants = (feedItem) => {
+        const authorId = feedItem.authorAccount?.toLowerCase();
+        if (authorId != null && !acc.includes(authorId)) {
+          acc.push(authorId);
+        } // Collect from onchain replies
+        feedItem.replyingItems?.forEach(collectParticipants);
+        // Collect from farcaster replies recursively
+        const collectCastParticipants = (cast) => {
+          const castAuthorId = cast.account?.nounerAddress?.toLowerCase();
+          if (castAuthorId != null && !acc.includes(castAuthorId)) {
+            acc.push(castAuthorId);
+          }
+          // Recursively collect from all nested replies
+          cast.replies?.forEach(collectCastParticipants);
+        };
+        feedItem.replyingCasts?.forEach(collectCastParticipants);
+      };
+      collectParticipants(item);
       return acc;
     },
     [candidate.proposerId],

@@ -27,8 +27,7 @@ const createFarcasterCastItem = (cast) => {
     authorUsername: cast.account.username,
     body: cast.text,
     timestamp: new Date(cast.timestamp),
-    proposalId: cast.proposalId,
-    candidateId: cast.candidateId,
+    replyingCasts: cast.replies,
   };
 };
 
@@ -151,7 +150,7 @@ export const buildProposalFeed = (
   const castItems =
     casts?.map((c) => {
       const item = createFarcasterCastItem(c);
-      item.proposalId = proposal.id;
+      item.proposalId = proposalId;
       return item;
     }) ?? [];
 
