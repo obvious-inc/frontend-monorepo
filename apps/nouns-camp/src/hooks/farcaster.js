@@ -46,6 +46,19 @@ export const Provider = ({ children }) => {
   return <Context.Provider value={contextValue}>{children}</Context.Provider>;
 };
 
+const selectCastWithAccountAndReplies = (state, hash) => {
+  const cast = state.castsByHash[hash];
+  const replyHashes = state.castHashesByParentHash[hash] ?? [];
+  const replies = replyHashes.map((replyHash) =>
+    selectCastWithAccountAndReplies(state, replyHash),
+  );
+  return {
+    ...cast,
+    replies,
+    account: state.accountsByFid[cast.fid],
+  };
+};
+
 export const useAccountsWithVerifiedEthAddress = (address, queryOptions) => {
   const { data: accounts } = useTanstackQuery({
     queryKey: ["verified-farcaster-accounts", address],
@@ -80,10 +93,8 @@ export const useProposalCasts = (
   proposalId,
   { filter, ...fetchOptions } = {},
 ) => {
-  const {
-    state: { accountsByFid, castsByHash, castHashesByProposalId },
-    setState,
-  } = React.useContext(Context);
+  const { state, setState } = React.useContext(Context);
+  const { castHashesByProposalId } = state;
 
   useFetch(
     async () => {
@@ -121,24 +132,16 @@ export const useProposalCasts = (
   if (castHashes == null) return [];
 
   return castHashes.reduce((casts, hash) => {
-    const cast_ = castsByHash[hash];
-    const cast = {
-      ...cast_,
-      account: accountsByFid[cast_.fid],
-    };
-
+    const cast = selectCastWithAccountAndReplies(state, hash);
     if (isFiltered(filter, cast)) return casts;
-
     casts.push(cast);
     return casts;
   }, []);
 };
 
 export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
-  const {
-    state: { accountsByFid, castsByHash, castHashesByCandidateId },
-    setState,
-  } = React.useContext(Context);
+  const { state, setState } = React.useContext(Context);
+  const { castHashesByCandidateId } = state;
 
   useFetch(
     async () => {
@@ -178,14 +181,8 @@ export const useCandidateCasts = (candidateId, { filter, ...fetchOptions }) => {
   if (castHashes == null) return [];
 
   return castHashes.reduce((casts, hash) => {
-    const cast_ = castsByHash[hash];
-    const cast = {
-      ...cast_,
-      account: accountsByFid[cast_.fid],
-    };
-
+    const cast = selectCastWithAccountAndReplies(state, hash);
     if (isFiltered(filter, cast)) return casts;
-
     casts.push(cast);
     return casts;
   }, []);
@@ -255,6 +252,8 @@ export const useCastConversation = (
   castHash,
   { enabled = true, ...queryOptions } = {},
 ) => {
+  const { setState } = React.useContext(Context);
+
   const { data: casts } = useTanstackQuery({
     queryKey: ["farcaster-cast-conversation", castHash],
     queryFn: async ({ queryKey: [, hash] }) => {
@@ -263,26 +262,80 @@ export const useCastConversation = (
       );
 
       if (!response.ok) {
-        console.log(
-          `Error fetching conversation for: [${hash}]`,
-          await response.text(),
-        );
-        return;
+        const errorText = await response.text();
+        console.error(`Error fetching conversation for: [${hash}]`, errorText);
+        throw new Error(`Failed to fetch conversation: ${errorText}`);
       }
 
       const { casts, accounts } = await response.json();
       const accountsByFid = arrayUtils.indexBy((a) => a.fid, accounts);
-      const parseCast = (cast) => ({
-        ...cast,
-        replies: cast.replies.map(parseCast),
-        account: accountsByFid[cast.fid],
+
+      const normalizeCastsWithReplies = (casts) => {
+        const castsByHash = {};
+        const castHashesByParentHash = {};
+
+        const collectCastAndReplies = (cast) => {
+          castsByHash[cast.hash] = cast;
+
+          if (cast.parentHash != null) {
+            castHashesByParentHash[cast.parentHash] =
+              castHashesByParentHash[cast.parentHash] || [];
+            castHashesByParentHash[cast.parentHash].push(cast.hash);
+          }
+
+          // Collect replies recursively
+          cast.replies.forEach((replyCast) =>
+            collectCastAndReplies({ ...replyCast, parentHash: cast.hash }),
+          );
+        };
+
+        casts.forEach(collectCastAndReplies);
+
+        return {
+          castsByHash,
+          castHashesByParentHash,
+        };
+      };
+
+      const {
+        castsByHash: fetchedCastsByHash,
+        castHashesByParentHash: fetchedCastHashesByParentHash,
+      } = normalizeCastsWithReplies(
+        casts.map((c) => ({ ...c, parentHash: castHash })),
+      );
+
+      setState((s) => {
+        return {
+          ...s,
+          accountsByFid: objectUtils.merge(
+            (a1, a2) => ({ ...a1, ...a2 }),
+            s.accountsByFid,
+            accountsByFid,
+          ),
+          castsByHash: { ...s.castsByHash, ...fetchedCastsByHash },
+          castHashesByParentHash: objectUtils.merge(
+            (hs1 = [], hs2 = []) => [...hs1, ...hs2],
+            s.castHashesByParentHash,
+            fetchedCastHashesByParentHash,
+          ),
+        };
       });
-      return casts.map(parseCast);
+
+      return casts.map((cast) =>
+        selectCastWithAccountAndReplies(
+          {
+            castsByHash: fetchedCastsByHash,
+            castHashesByParentHash: fetchedCastHashesByParentHash,
+          },
+          cast.hash,
+        ),
+      );
     },
     enabled: enabled && castHash != null,
     staleTime: 1000 * 30,
     ...queryOptions,
   });
+
   return casts;
 };
 
