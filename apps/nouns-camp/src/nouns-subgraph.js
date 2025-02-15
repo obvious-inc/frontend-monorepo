@@ -374,11 +374,13 @@ export const parseCandidate = (data) => {
   if (data.versions != null)
     parsedData.versions = data.versions.map(parseCandidateVersion);
 
-  if (
-    data.latestVersion?.content?.transactions != null &&
-    matchTopicTransactions(data.latestVersion?.content?.transactions)
-  )
-    parsedData.latestVersion.type = "topic";
+  if (data.latestVersion?.content?.transactions != null) {
+    parsedData.latestVersion.type = matchTopicTransactions(
+      data.latestVersion.content.transactions,
+    )
+      ? "topic"
+      : "proposal";
+  }
 
   return parsedData;
 };

@@ -99,10 +99,9 @@ const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
 
   const candidates = useProposalCandidates({
     includeCanceled: true,
-    includePromoted: true,
-    includeProposalUpdates: true,
     type: candidateType,
   });
+
   const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
   const [showRegular, setShowRegular] = React.useState(true);
