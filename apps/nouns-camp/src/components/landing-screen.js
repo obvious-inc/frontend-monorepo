@@ -190,6 +190,7 @@ const createDigestSections = ({
       key: "proposals:awaiting-vote",
       title: "Not yet voted",
       sort: sortProposalsByEndsSoon,
+      showVotingBar: true,
     },
     {
       key: "proposals:ongoing",
@@ -197,6 +198,7 @@ const createDigestSections = ({
       description: "Currently voting",
       sort: sortProposalsByEndsSoon,
       truncationThreshold: 2,
+      showVotingBar: true,
     },
     {
       key: "proposals:new",

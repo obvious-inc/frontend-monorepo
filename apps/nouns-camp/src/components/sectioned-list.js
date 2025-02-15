@@ -1,3 +1,4 @@
+import { isAddress } from "viem";
 import getDateYear from "date-fns/getYear";
 import React from "react";
 import { css } from "@emotion/react";
@@ -17,18 +18,19 @@ import {
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
+import { buildEtherscanLink } from "@/utils/etherscan";
 import {
   useDelegate,
   useAccount,
   useProposal,
   useProposalCandidate,
   useProposalCandidateVotingPower,
-} from "../store.js";
+} from "@/store";
 import {
   getSignals as getCandidateSignals,
   makeUrlId as makeCandidateUrlId,
   getSponsorSignatures as getCandidateSponsorSignatures,
-} from "../utils/candidates.js";
+} from "@/utils/candidates";
 import { useSearchParams } from "../hooks/navigation.js";
 import { useWallet } from "../hooks/wallet.js";
 import { useDialog } from "../hooks/global-dialogs.js";
@@ -46,8 +48,7 @@ import FormattedNumber from "./formatted-number.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Tag from "./tag.js";
 import VotesTagGroup from "./votes-tag-group.js";
-import { buildEtherscanLink } from "../utils/etherscan.js";
-import { isAddress } from "viem";
+import VotingBar from "./voting-bar.js";
 
 const isDebugSession =
   typeof location !== "undefined" &&
@@ -184,6 +185,14 @@ const SectionedList = ({
                   display: "flex",
                   flexDirection: "column",
                   gap: "0.1rem",
+                },
+                ".voting-bar-container": {
+                  margin: "0.2rem 0 0.3rem",
+                  ".voting-bar-placeholder": {
+                    height: "0.2rem",
+                    margin: "0.1rem 0",
+                    background: t.colors.backgroundModifierNormal,
+                  },
                 },
                 ".title-status-container": {
                   display: "flex",
@@ -375,7 +384,7 @@ const SectionedList = ({
           </li>
         ) : (
           items.map((item) => {
-            const renderItem = (item) => {
+            const renderItem = (item, parentItem) => {
               const props = getItemProps?.(item);
               return (
                 <li key={item.id}>
@@ -391,6 +400,7 @@ const SectionedList = ({
                     <ProposalListItem
                       proposalId={item.id}
                       sortStrategy={sortStrategy}
+                      showVotingBar={parentItem?.showVotingBar}
                       {...props}
                     />
                   ) : isAddress(item.id) ? (
@@ -460,7 +470,7 @@ const SectionedList = ({
                     ))}
                   {!isCollapsed && (
                     <>
-                      <ul>{visibleChildren.map(renderItem)}</ul>
+                      <ul>{visibleChildren.map((i) => renderItem(i, item))}</ul>
                       {enableTruncation && (
                         <div className="truncation-button-container">
                           <Link
@@ -512,180 +522,198 @@ const SectionedList = ({
   );
 };
 
-const ProposalListItem = React.memo(({ proposalId, sortStrategy }) => {
-  const containerRef = React.useRef();
-  const hasBeenOnScreenRef = React.useRef(false);
+const ProposalListItem = React.memo(
+  ({ proposalId, sortStrategy, showVotingBar = false }) => {
+    const containerRef = React.useRef();
+    const hasBeenOnScreenRef = React.useRef(false);
 
-  const proposal = useProposal(proposalId, { watch: false });
-  const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
+    const proposal = useProposal(proposalId, { watch: false });
+    const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
 
-  const isOnScreen = useIsOnScreen(containerRef);
+    const isOnScreen = useIsOnScreen(containerRef);
 
-  React.useEffect(() => {
-    if (isOnScreen) hasBeenOnScreenRef.current = true;
-  });
-
-  const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
-
-  const statusText = (() => {
-    const baseStatusText = renderPropStatusText({
-      proposal,
-      calculateBlockTimestamp,
+    React.useEffect(() => {
+      if (isOnScreen) hasBeenOnScreenRef.current = true;
     });
 
-    const voteCount =
-      proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
+    const hasBeenOnScreen = isOnScreen || (hasBeenOnScreenRef.current ?? false);
 
-    if (sortStrategy === "token-turnout")
-      return (
-        <>
-          {baseStatusText} &middot;{" "}
-          <FormattedNumber
-            value={voteCount / proposal.adjustedTotalSupply}
-            style="percent"
-            maximumFractionDigits={1}
-          />{" "}
-          turnout
-        </>
-      );
+    const statusText = (() => {
+      const baseStatusText = renderPropStatusText({
+        proposal,
+        calculateBlockTimestamp,
+      });
 
-    if (sortStrategy === "for-votes")
-      return (
-        <>
-          {baseStatusText} &middot;{" "}
-          <FormattedNumber
-            value={proposal.forVotes / voteCount}
-            style="percent"
-            maximumFractionDigits={1}
-          />{" "}
-          of votes in favor
-        </>
-      );
+      const voteCount =
+        proposal.forVotes + proposal.againstVotes + proposal.abstainVotes;
 
-    if (sortStrategy === "against-votes")
-      return (
-        <>
-          {baseStatusText} &middot;{" "}
-          <FormattedNumber
-            value={proposal.againstVotes / voteCount}
-            style="percent"
-            maximumFractionDigits={1}
-          />{" "}
-          of votes opposed
-        </>
-      );
+      if (sortStrategy === "token-turnout")
+        return (
+          <>
+            {baseStatusText} &middot;{" "}
+            <FormattedNumber
+              value={voteCount / proposal.adjustedTotalSupply}
+              style="percent"
+              maximumFractionDigits={1}
+            />{" "}
+            turnout
+          </>
+        );
 
-    if (sortStrategy === "abstain-votes")
-      return (
-        <>
-          {baseStatusText} &middot;{" "}
-          <FormattedNumber
-            value={proposal.abstainVotes / voteCount}
-            style="percent"
-            maximumFractionDigits={1}
-          />{" "}
-          abstained votes
-        </>
-      );
+      if (sortStrategy === "for-votes")
+        return (
+          <>
+            {baseStatusText} &middot;{" "}
+            <FormattedNumber
+              value={proposal.forVotes / voteCount}
+              style="percent"
+              maximumFractionDigits={1}
+            />{" "}
+            of votes in favor
+          </>
+        );
 
-    return baseStatusText;
-  })();
+      if (sortStrategy === "against-votes")
+        return (
+          <>
+            {baseStatusText} &middot;{" "}
+            <FormattedNumber
+              value={proposal.againstVotes / voteCount}
+              style="percent"
+              maximumFractionDigits={1}
+            />{" "}
+            of votes opposed
+          </>
+        );
 
-  const showVoteStatus = !["pending", "updatable"].includes(proposal.state);
+      if (sortStrategy === "abstain-votes")
+        return (
+          <>
+            {baseStatusText} &middot;{" "}
+            <FormattedNumber
+              value={proposal.abstainVotes / voteCount}
+              style="percent"
+              maximumFractionDigits={1}
+            />{" "}
+            abstained votes
+          </>
+        );
 
-  const isDimmed =
-    proposal.state != null && ["canceled", "expired"].includes(proposal.state);
+      return baseStatusText;
+    })();
 
-  return (
-    <>
-      <NextLink
-        className="link"
-        prefetch
-        href={`/proposals/${proposalId}`}
-        data-dimmed={isDimmed}
-      />
-      <div ref={containerRef} className="item-container proposal">
-        <div className="small dimmed nowrap">
-          Prop {proposalId}{" "}
-          <span data-show={hasBeenOnScreen}>
-            {hasBeenOnScreen && (
-              <>
-                by{" "}
-                <em
-                  css={(t) =>
-                    css({
-                      pointerEvents: "all",
-                      fontWeight: t.text.weights.emphasis,
-                      fontStyle: "normal",
-                    })
-                  }
-                >
-                  {proposal.proposerId == null ? (
-                    "..."
-                  ) : (
-                    <AccountPreviewPopoverTrigger
-                      accountAddress={proposal.proposerId}
-                    />
+    const showVoteStatus = !["pending", "updatable"].includes(proposal.state);
+
+    const isDimmed =
+      proposal.state != null &&
+      ["canceled", "expired"].includes(proposal.state);
+
+    const shouldShowVotingBar = showVotingBar && proposal.votes?.length > 0;
+
+    return (
+      <>
+        <NextLink
+          className="link"
+          prefetch
+          href={`/proposals/${proposalId}`}
+          data-dimmed={isDimmed}
+        />
+        <div ref={containerRef} className="item-container proposal">
+          <div className="small dimmed nowrap">
+            Prop {proposalId}{" "}
+            <span data-show={hasBeenOnScreen}>
+              {hasBeenOnScreen && (
+                <>
+                  by{" "}
+                  <em
+                    css={(t) =>
+                      css({
+                        pointerEvents: "all",
+                        fontWeight: t.text.weights.emphasis,
+                        fontStyle: "normal",
+                      })
+                    }
+                  >
+                    {proposal.proposerId == null ? (
+                      "..."
+                    ) : (
+                      <AccountPreviewPopoverTrigger
+                        accountAddress={proposal.proposerId}
+                      />
+                    )}
+                  </em>
+                  {proposal.signers != null && proposal.signers.length > 0 && (
+                    <>
+                      , sponsored by{" "}
+                      {proposal.signers.map((signer, i) => (
+                        <React.Fragment key={signer.id}>
+                          {i > 0 && <>, </>}
+                          <em
+                            css={(t) =>
+                              css({
+                                pointerEvents: "all",
+                                fontWeight: t.text.weights.emphasis,
+                                fontStyle: "normal",
+                              })
+                            }
+                          >
+                            <AccountPreviewPopoverTrigger
+                              accountAddress={signer.id}
+                            />
+                          </em>
+                        </React.Fragment>
+                      ))}
+                    </>
                   )}
-                </em>
-                {proposal.signers != null && proposal.signers.length > 0 && (
-                  <>
-                    , sponsored by{" "}
-                    {proposal.signers.map((signer, i) => (
-                      <React.Fragment key={signer.id}>
-                        {i > 0 && <>, </>}
-                        <em
-                          css={(t) =>
-                            css({
-                              pointerEvents: "all",
-                              fontWeight: t.text.weights.emphasis,
-                              fontStyle: "normal",
-                            })
-                          }
-                        >
-                          <AccountPreviewPopoverTrigger
-                            accountAddress={signer.id}
-                          />
-                        </em>
-                      </React.Fragment>
-                    ))}
-                  </>
-                )}
-              </>
-            )}
-          </span>
-        </div>
-        <div className="title-status-container">
-          <div className="title">
-            {proposal.title === null ? "Untitled" : proposal.title}
+                </>
+              )}
+            </span>
           </div>
-          <div data-show={hasBeenOnScreen} className="status-container">
-            <div className="tags-container">
-              <ProposalStateTag data-state-tag proposalId={proposalId} />
-              {showVoteStatus &&
-                (hasBeenOnScreen ? (
-                  <ProposalVotesTag proposalId={proposalId} />
-                ) : (
-                  <div className="votes-tag-placeholder" />
-                ))}
+          <div className="title-status-container">
+            <div className="title">
+              {proposal.title === null ? "Untitled" : proposal.title}
             </div>
-            {statusText != null && (
-              <span className="small dimmed narrow-only">{statusText}</span>
+            {shouldShowVotingBar && (
+              <div className="voting-bar-container">
+                {hasBeenOnScreen ? (
+                  <VotingBar
+                    votes={proposal.votes ?? []}
+                    quorumVotes={proposal.quorumVotes}
+                    height="0.2rem"
+                  />
+                ) : (
+                  <div className="voting-bar-placeholder" />
+                )}
+              </div>
             )}
+            <div data-show={hasBeenOnScreen} className="status-container">
+              <div className="tags-container">
+                <ProposalStateTag data-state-tag proposalId={proposalId} />
+                {showVoteStatus &&
+                  (hasBeenOnScreen ? (
+                    <ProposalVotesTag proposalId={proposalId} />
+                  ) : (
+                    <div className="votes-tag-placeholder" />
+                  ))}
+              </div>
+              {statusText != null && (
+                <span className="small dimmed narrow-only">{statusText}</span>
+              )}
+            </div>
           </div>
+          {statusText != null && (
+            <div
+              className="small dimmed wide-only"
+              style={{ padding: "0 0.1rem" }}
+            >
+              {statusText}
+            </div>
+          )}
         </div>
-        {statusText != null && (
-          <div
-            className="small dimmed wide-only"
-            style={{ padding: "0 0.1rem" }}
-          >
-            {statusText}
-          </div>
-        )}
-      </div>
-    </>
-  );
-});
+      </>
+    );
+  },
+);
 
 const CandidateOrTopicListItem = React.memo(
   ({ candidateId, showScoreStack }) => {
