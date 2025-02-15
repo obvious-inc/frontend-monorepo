@@ -689,7 +689,6 @@ const BrowseScreen = () => {
                 <>
                   <SectionedList
                     forcePlaceholder={!hasFetchedOnce}
-                    showCandidateScore
                     items={[
                       {
                         key: "topics",
@@ -767,12 +766,12 @@ const BrowseScreen = () => {
               <>
                 <SectionedList
                   forcePlaceholder={!hasFetchedOnce}
-                  showCandidateScore
                   items={[
                     {
                       key: "candidates",
                       type: "section",
                       children: paginate(items),
+                      showScoreStack: true,
                     },
                   ]}
                 />
