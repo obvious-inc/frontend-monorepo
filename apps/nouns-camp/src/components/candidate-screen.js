@@ -7,7 +7,11 @@ import React from "react";
 import NextLink from "next/link";
 import { notFound as nextNotFound, usePathname } from "next/navigation";
 import { css } from "@emotion/react";
-import { array as arrayUtils, reloadPageOnce } from "@shades/common/utils";
+import {
+  array as arrayUtils,
+  markdown as markdownUtils,
+  reloadPageOnce,
+} from "@shades/common/utils";
 import { ErrorBoundary, useMatchMedia } from "@shades/common/react";
 import Dialog from "@shades/ui-web/dialog";
 import DialogHeader from "@shades/ui-web/dialog-header";
@@ -19,8 +23,8 @@ import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   CaretDown as CaretDownIcon,
   Checkmark as CheckmarkIcon,
-  Share as ShareIcon,
 } from "@shades/ui-web/icons";
+import { fromMessageBlocks as messageToRichTextBlocks } from "@shades/ui-web/rich-text-editor";
 import { diffParagraphs } from "../utils/diff.js";
 import { stringify as stringifyTransaction } from "../utils/transactions.js";
 import {
@@ -30,6 +34,7 @@ import {
   getSignals,
 } from "../utils/candidates.js";
 import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
+import { buildActions as buildActionsFromTransactions } from "../utils/transactions.js";
 import {
   useProposalCandidate,
   useDelegate,
@@ -59,6 +64,7 @@ import {
 import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitCandidateCast } from "../hooks/farcaster.js";
+import { useCollection as useDrafts } from "../hooks/drafts.js";
 import { ProposalHeader, ProposalBody } from "./proposal-screen.js";
 import ProposalActionForm from "./proposal-action-form.js";
 import VotingBar from "./voting-bar.js";
@@ -106,7 +112,11 @@ const ProposalCandidateScreenContent = ({
   const proposerId = candidateId.split("-")[0];
   const slug = extractSlugFromCandidateId(candidateId);
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const isDesktopLayout = useMatchDesktopLayout();
+  const isTouchScreen = useMatchMedia("(pointer: coarse)");
+
   const selectedTab =
     searchParams.get("tab") ?? (isDesktopLayout ? "activity" : "description");
 
@@ -153,6 +163,7 @@ const ProposalCandidateScreenContent = ({
   const submitProposalUpdate = useUpdateSponsoredProposalWithSignatures(
     candidate?.latestVersion.targetProposalId,
   );
+  const { createItem: createDraft } = useDrafts();
 
   const proposerDelegate = useDelegate(candidate.proposerId);
   const candidateVotingPower = proposerVotingPower + sponsorsVotingPower;
@@ -793,6 +804,73 @@ const ProposalCandidateScreenContent = ({
             createdAt={candidate.createdTimestamp}
             updatedAt={candidate.lastUpdatedTimestamp}
             transactions={candidate.latestVersion.content.transactions}
+            actionItems={[
+              {
+                id: "main",
+                children: [
+                  connectedWalletAccountAddress != null && {
+                    key: "fork",
+                    label: "Use as template",
+                  },
+                  isTouchScreen && navigator?.share != null
+                    ? {
+                        key: "share",
+                        label: "Share candidate",
+                      }
+                    : {
+                        key: "copy-link",
+                        label: "Copy link to candidate",
+                      },
+                ].filter(Boolean),
+              },
+              {
+                id: "external",
+                children: [
+                  {
+                    key: "open-nouns-game",
+                    label: "nouns.game",
+                  },
+                  {
+                    key: "open-nounswap",
+                    label: "NounSwap",
+                  },
+                ],
+              },
+            ]}
+            handleAction={(key) => {
+              switch (key) {
+                case "fork": {
+                  const draft = createDraft({
+                    name: candidate.latestVersion.content.title,
+                    body: messageToRichTextBlocks(
+                      markdownUtils.toMessageBlocks(
+                        candidate.latestVersion.content.body,
+                      ),
+                    ),
+                    actions: buildActionsFromTransactions(
+                      candidate.latestVersion.content.transactions,
+                    ),
+                  });
+                  navigate(`/new/${draft.id}`);
+                  break;
+                }
+
+                case "copy-link":
+                  navigator.clipboard.writeText(
+                    `${window.location.origin}/candidates/${candidateId}`,
+                  );
+                  break;
+
+                case "share":
+                  navigator
+                    .share({ url: `/candidates/${candidateId}` })
+                    .catch((error) => console.error("Error sharing", error));
+                  break;
+
+                default:
+                  throw new Error();
+              }
+            }}
           />
 
           {isDesktopLayout ? (
@@ -1437,7 +1515,6 @@ const CandidateScreen = ({ candidateId: rawId }) => {
   const scrollContainerRef = React.useRef();
 
   const pathname = usePathname();
-  const isTouchScreen = useMatchMedia("(pointer: coarse)");
 
   const [notFound, setNotFound] = React.useState(false);
   const [fetchError, setFetchError] = React.useState(null);
@@ -1520,31 +1597,6 @@ const CandidateScreen = ({ candidateId: rawId }) => {
     ],
   );
 
-  const getPageActions = () => {
-    if (candidate == null) return [];
-
-    const actions = [];
-
-    if (isTouchScreen && navigator?.share != null) {
-      actions.push({
-        buttonProps: {
-          // Margin to compensate for less padding on icon buttons
-          style: { display: "flex", marginInline: "0.3rem" },
-          icon: <ShareIcon css={css({ width: "1.6rem" })} />,
-        },
-        onSelect: () => {
-          navigator
-            .share({
-              url: `/candidates/${encodeURIComponent(candidate.number ?? candidateId)}`,
-            })
-            .catch((error) => console.error("Error sharing", error));
-        },
-      });
-    }
-
-    return actions.length === 0 ? undefined : actions;
-  };
-
   if (notFound) nextNotFound();
 
   if (
@@ -1580,7 +1632,6 @@ const CandidateScreen = ({ candidateId: rawId }) => {
             ),
           },
         ]}
-        actions={getPageActions()}
       >
         {candidate == null ? (
           <div

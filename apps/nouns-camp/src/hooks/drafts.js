@@ -3,7 +3,6 @@ import { parseAbiItem, parseEther } from "viem";
 import { useAccount } from "wagmi";
 import { useCachedState } from "@shades/common/app";
 import {
-  invariant,
   message as messageUtils,
   object as objectUtils,
   function as functionUtils,
@@ -15,16 +14,11 @@ const { createEmptyParagraphElement } = messageUtils;
 const createCacheKey = (address) =>
   [address?.toLowerCase(), "proposal-drafts"].filter(Boolean).join("-");
 
-const createEmptyProposalItem = () => ({
+const createEmptyItem = () => ({
   id: String(Date.now()),
   name: "",
   body: [createEmptyParagraphElement()],
   actions: [],
-});
-
-const createEmptyTopicItem = () => ({
-  ...createEmptyProposalItem(),
-  actions: null,
 });
 
 const SCHEMA_VERSION = 1;
@@ -106,10 +100,8 @@ export const useCollection = () => {
   const items = entriesById == null ? [] : Object.values(entriesById);
 
   const createItem = React.useCallback(
-    ({ type }) => {
-      invariant(type != null, '"type" is required');
-      const item =
-        type === "topic" ? createEmptyTopicItem() : createEmptyProposalItem();
+    (values) => {
+      const item = { ...createEmptyItem(), ...values };
       setState((state) => ({
         entriesById: {
           ...state.entriesById,
