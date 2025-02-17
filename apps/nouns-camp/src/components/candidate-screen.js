@@ -823,19 +823,6 @@ const ProposalCandidateScreenContent = ({
                       },
                 ].filter(Boolean),
               },
-              {
-                id: "external",
-                children: [
-                  {
-                    key: "open-nouns-game",
-                    label: "nouns.game",
-                  },
-                  {
-                    key: "open-nounswap",
-                    label: "NounSwap",
-                  },
-                ],
-              },
             ]}
             handleAction={(key) => {
               switch (key) {
