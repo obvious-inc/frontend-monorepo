@@ -28,6 +28,19 @@ import {
   createMarkdownDescription,
 } from "./proposal-edit-dialog.js";
 import { createTopicTransactions } from "@/utils/candidates.js";
+import { useCachedState } from "@shades/common/app";
+
+const useCandidateEdit = (candidateId, initialState) => {
+  const cacheKey = ["edit-drafts", "candidates", candidateId].join(":");
+  const [draft, setDraft] = useCachedState(cacheKey, initialState);
+
+  const setTitle = (title) => setDraft((prev) => ({ ...prev, title: title }));
+  const setBody = (body) => setDraft((prev) => ({ ...prev, body }));
+  const setActions = (actions) => setDraft((prev) => ({ ...prev, actions }));
+  const clearDraft = () => setDraft(null);
+
+  return [draft, { setTitle, setBody, setActions, clearDraft }];
+};
 
 const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const theme = useTheme();
@@ -55,11 +68,14 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
 
-  const [title, setTitle] = React.useState(persistedTitle);
-  const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(
-    candidate.latestVersion.type === "topic" ? null : persistedActions,
-  );
+  const [
+    { title, body, actions },
+    { setTitle, setBody, setActions, clearDraft },
+  ] = useCandidateEdit(candidateId, {
+    title: persistedTitle,
+    body: persistedRichTextBody,
+    actions: candidate.latestVersion.type === "topic" ? null : persistedActions,
+  });
 
   const submitTargetType = actions == null ? "topic" : "proposal";
 
@@ -117,6 +133,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
 
   const dismissDialog = () => {
     if (!hasChanges) {
+      clearDraft();
       closeDialog();
       return;
     }
@@ -128,6 +145,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
     )
       return;
 
+    clearDraft();
     closeDialog();
   };
 
@@ -165,6 +183,7 @@ const CandidateEditDialog = ({ candidateId, isOpen, close: closeDialog }) => {
         targetProposalId: candidate.latestVersion.targetProposalId,
         updateMessage,
       });
+      clearDraft();
       closeDialog();
     } catch (e) {
       console.log(e);
