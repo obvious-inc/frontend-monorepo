@@ -100,6 +100,7 @@ export const Content = ({
   disabledKeys,
   onSelectionChange,
   widthFollowTrigger = false,
+  footerNote,
   children,
   ...props
 }) => {
@@ -107,15 +108,99 @@ export const Content = ({
   return (
     <Popover.Content
       widthFollowTrigger={widthFollowTrigger}
-      css={(theme) =>
+      css={(t) =>
         css({
           width: "min-content", // theme.dropdownMenus.width,
-          minWidth: theme.dropdownMenus.minWidth,
-          maxWidth: theme.dropdownMenus.maxWidth,
-          padding: theme.dropdownMenus.padding,
-          background: theme.colors.popoverBackground,
-          borderRadius: theme.dropdownMenus.borderRadius,
-          boxShadow: theme.dropdownMenus.boxShadow,
+          minWidth: t.dropdownMenus.minWidth,
+          maxWidth: t.dropdownMenus.maxWidth,
+          padding: t.dropdownMenus.padding,
+          background: t.colors.popoverBackground,
+          borderRadius: t.dropdownMenus.borderRadius,
+          boxShadow: t.dropdownMenus.boxShadow,
+          ".menu-root": {
+            listStyle: "none",
+            outline: "none",
+            ".section-header": {
+              color: t.colors.textDimmed,
+              fontSize: t.text.sizes.micro,
+              fontWeight: t.text.weights.smallTextEmphasis,
+              textTransform: "uppercase",
+              padding: "0 0.8rem",
+            },
+            ".separator": {
+              height: "0.1rem",
+              background: t.colors.borderLighter,
+              margin: `0.5rem -${t.dropdownMenus.padding}`,
+            },
+            ".menu-item": {
+              color: t.colors.textNormal,
+              width: "100%",
+              minHeight: t.dropdownMenus.itemHeight,
+              display: "flex",
+              alignItems: "flex-start",
+              justifyContent: "flex-start",
+              gap: "0.8rem",
+              padding: "0.4rem 0.8rem",
+              lineHeight: "calc(20/14)",
+              fontSize: t.fontSizes.menus,
+              fontWeight: "400",
+              cursor: "pointer",
+              borderRadius: "0.3rem",
+              whiteSpace: "nowrap",
+              margin: "0.1rem 0",
+              ":focus": {
+                background: t.colors.backgroundModifierHover,
+                outline: "none",
+              },
+              "&[aria-disabled]": {
+                cursor: "default",
+                color: t.colors.textMuted,
+              },
+              '&[aria-checked="true"]': {
+                background: t.colors.backgroundModifierSelected,
+                color: t.colors.textNormal,
+              },
+              '&[aria-checked="true"]:focus': {
+                color: t.colors.textAccent,
+              },
+              "&[data-danger]": { color: t.colors.textDanger },
+              "&[data-primary]": { color: t.colors.textPrimary },
+              ".title-container": {
+                flex: 1,
+                minWidth: 0,
+              },
+              ".description-container": {
+                color: t.colors.textDimmed,
+                fontSize: t.text.sizes.tiny,
+                paddingBottom: "0.1rem",
+              },
+              ".icon-container": {
+                padding: "0.2rem 0",
+                width: "1.6rem",
+                height: "2rem",
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                ".selected-checkmark": {
+                  width: "1.1rem",
+                  height: "auto",
+                },
+              },
+            },
+          },
+          ".menu-footer": {
+            borderTop: "0.1rem solid",
+            borderColor: t.colors.borderLighter,
+            margin: `-${t.dropdownMenus.padding}`,
+            marginTop: t.dropdownMenus.padding,
+            padding: t.dropdownMenus.padding,
+            ".content": {
+              color: t.colors.textMuted,
+              fontSize: t.text.sizes.tiny,
+              lineHeight: "calc(16/12)",
+              padding: "0.4rem 0.8rem",
+            },
+          },
         })
       }
       {...props}
@@ -127,6 +212,7 @@ export const Content = ({
         disabledKeys={disabledKeys}
         onAction={onAction}
         onSelectionChange={onSelectionChange}
+        footerNote={footerNote}
         {...menuProps}
       >
         {children}
@@ -137,37 +223,28 @@ export const Content = ({
 
 export { Item, Section };
 
-const Menu = (props) => {
+const Menu = ({ footerNote, ...props }) => {
   const state = useTreeState(props);
   const ref = React.useRef(null);
   const { menuProps } = useMenu(props, state, ref);
 
   return (
-    <ul
-      ref={ref}
-      css={(t) =>
-        css({
-          listStyle: "none",
-          outline: "none",
-          ".section-heading": {
-            color: t.colors.textDimmed,
-            fontSize: t.text.sizes.micro,
-            fontWeight: t.text.weights.smallTextEmphasis,
-            textTransform: "uppercase",
-            padding: "0 0.8rem",
-          },
-        })
-      }
-      {...menuProps}
-    >
-      {[...state.collection].map((item) =>
-        item.type === "section" ? (
-          <MenuSection key={item.key} section={item} state={state} />
-        ) : (
-          <MenuItem key={item.key} item={item} state={state} />
-        ),
+    <>
+      <ul ref={ref} className="menu-root" {...menuProps}>
+        {[...state.collection].map((item) =>
+          item.type === "section" ? (
+            <MenuSection key={item.key} section={item} state={state} />
+          ) : (
+            <MenuItem key={item.key} item={item} state={state} />
+          ),
+        )}
+      </ul>
+      {footerNote != null && (
+        <div className="menu-footer">
+          <div className="content">{footerNote}</div>
+        </div>
       )}
-    </ul>
+    </>
   );
 };
 
@@ -186,66 +263,9 @@ const MenuItem = ({ item, state }) => {
     <li
       {...menuItemProps}
       ref={ref}
-      css={(t) =>
-        css({
-          "--text-primary": t.colors.textPrimary,
-          "--text-danger": t.colors.textDanger,
-          color: `var(--color, ${t.colors.textNormal})`,
-          width: "100%",
-          minHeight: t.dropdownMenus.itemHeight,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "flex-start",
-          gap: "0.8rem",
-          padding: "0.4rem 0.8rem",
-          lineHeight: "calc(20/14)",
-          fontSize: t.fontSizes.menus,
-          fontWeight: "400",
-          cursor: "pointer",
-          borderRadius: "0.3rem",
-          whiteSpace: "nowrap",
-          margin: "0.1rem 0",
-          ":focus": {
-            background: t.colors.backgroundModifierHover,
-            outline: "none",
-          },
-          "&[aria-disabled]": {
-            cursor: "default",
-            color: t.colors.textMuted,
-          },
-          '&[aria-checked="true"]': {
-            background: t.colors.backgroundModifierSelected,
-            color: t.colors.textNormal,
-          },
-          '&[aria-checked="true"]:focys': {
-            color: t.colors.textAccent,
-          },
-          ".title-container": {
-            flex: 1,
-            minWidth: 0,
-          },
-          ".description-container": {
-            color: t.colors.textDimmed,
-            fontSize: t.text.sizes.tiny,
-            paddingBottom: "0.1rem",
-          },
-          ".icon-container": {
-            padding: "0.2rem 0",
-            width: "1.6rem",
-            height: "2rem",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          },
-        })
-      }
-      style={{
-        "--color": item.props.primary
-          ? "var(--text-primary)"
-          : item.props.danger
-            ? "var(--text-danger)"
-            : undefined,
-      }}
+      className="menu-item"
+      data-primary={item.props.primary || undefined}
+      data-danger={item.props.danger || undefined}
     >
       {item.props.icon && (
         <div className="icon-container">{item.props.icon}</div>
@@ -261,7 +281,7 @@ const MenuItem = ({ item, state }) => {
       {(isSelected || item.props.iconRight) && (
         <div className="icon-container">
           {isSelected ? (
-            <CheckmarkIcon style={{ width: "1.1rem", height: "auto" }} />
+            <CheckmarkIcon className="selected-checkmark" />
           ) : (
             item.props.iconRight
           )}
@@ -284,20 +304,11 @@ const MenuSection = ({ section, state, onAction, onClose }) => {
   return (
     <>
       {section.key !== state.collection.getFirstKey() && (
-        <li
-          {...separatorProps}
-          css={(t) =>
-            css({
-              height: "0.1rem",
-              background: t.colors.borderLighter,
-              margin: `0.5rem -${t.dropdownMenus.padding}`,
-            })
-          }
-        />
+        <li {...separatorProps} className="separator" />
       )}
       <li {...itemProps}>
         {section.rendered && (
-          <span {...headingProps} className="section-heading">
+          <span {...headingProps} className="section-header">
             {section.rendered}
           </span>
         )}

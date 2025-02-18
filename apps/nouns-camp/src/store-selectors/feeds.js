@@ -80,6 +80,7 @@ const buildVoteAndFeedbackPostFeedItems = ({
     if (candidateId != null || p.candidateId != null)
       item.candidateId = candidateId ?? p.candidateId;
     if (p.candidateNumber != null) item.candidateNumber = p.candidateNumber;
+    if (p.clientId != null) item.clientId = p.clientId;
 
     acc.push(item);
 

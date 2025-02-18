@@ -26,6 +26,7 @@ export const VOTE_FIELDS = `
     votes
     voter { id }
     proposal { id }
+    clientId
   }`;
 
 export const CANDIDATE_FEEDBACK_FIELDS = `
@@ -94,6 +95,7 @@ export const FULL_PROPOSAL_FIELDS = `
     executionETA
     quorumVotes
     adjustedTotalSupply
+    clientId
     proposer { id }
     signers { id }
     votes { ...VoteFields }
@@ -211,6 +213,7 @@ export const parseProposalVote = (v) => ({
   votes: v.votes == null ? undefined : Number(v.votes),
   voterId: v.voter?.id,
   proposalId: v.proposal?.id,
+  clientId: Number(v.clientId),
 });
 
 const parseProposalVersion = (v) => ({

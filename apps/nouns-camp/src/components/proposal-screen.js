@@ -95,6 +95,7 @@ import NativeSelect from "./native-select.js";
 import { useDialog } from "@/hooks/global-dialogs.js";
 import useScrollToElement from "@/hooks/scroll-to-element.js";
 import { useCachedProposalPost } from "@/hooks/cached-post.js";
+import { getClientData } from "@/client.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 const ProposalEditDialog = React.lazy(
@@ -917,22 +918,22 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         },
                   ].filter(Boolean),
                 },
-                // {
-                //   id: "external",
-                //   title: "Other clients",
-                //   children: [
-                //     {
-                //       id: "open-nouns-game",
-                //       title: "nouns.game",
-                //       iconRight: <span>{"\u2197"}</span>,
-                //     },
-                //     {
-                //       id: "open-nounswap",
-                //       title: "NounSwap",
-                //       iconRight: <span>{"\u2197"}</span>,
-                //     },
-                //   ],
-                // },
+                {
+                  id: "external",
+                  title: "Other clients",
+                  children: [
+                    {
+                      id: "open-nounswap",
+                      title: "NounSwap",
+                      iconRight: <span>{"\u2197"}</span>,
+                    },
+                    {
+                      id: "open-nouns-game",
+                      title: "nouns.game",
+                      iconRight: <span>{"\u2197"}</span>,
+                    },
+                  ],
+                },
               ]}
               handleAction={(key) => {
                 switch (key) {
@@ -980,6 +981,29 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                     throw new Error();
                 }
               }}
+              actionMenuFooterNote={(() => {
+                if (proposal.clientId == null || proposal.clientId === 0)
+                  return null;
+
+                const { name, url } = getClientData(proposal.clientId) ?? {};
+
+                if (name == null)
+                  return (
+                    <>
+                      Proposal submitted with client ID{" "}
+                      {`"${proposal.clientId}"`}
+                    </>
+                  );
+
+                return (
+                  <div css={css({ a: { color: "inherit" } })}>
+                    Proposal submitted from{" "}
+                    <a href={url} rel="noreferrer" target="_blank">
+                      {name}
+                    </a>
+                  </div>
+                );
+              })()}
             />
             {isDesktopLayout ? (
               <ProposalBody markdownText={proposal.body} />
@@ -1117,6 +1141,7 @@ export const ProposalHeader = ({
   hasSucceeded,
   actionItems = [],
   handleAction,
+  actionMenuFooterNote,
   ...props
 }) => {
   const [searchParams] = useSearchParams();
@@ -1260,9 +1285,10 @@ export const ProposalHeader = ({
               })}
               items={actionItems}
               onAction={handleAction}
+              footerNote={actionMenuFooterNote}
             >
-              {(item) => (
-                <DropdownMenu.Section title={item.title} items={item.children}>
+              {({ children, ...sectionProps }) => (
+                <DropdownMenu.Section items={children} {...sectionProps}>
                   {(item) => <DropdownMenu.Item {...item} />}
                 </DropdownMenu.Section>
               )}
