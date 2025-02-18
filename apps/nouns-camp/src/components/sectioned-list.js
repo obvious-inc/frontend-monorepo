@@ -213,10 +213,17 @@ const SectionedList = ({
                 ".votes-tag-placeholder": { width: "10rem" },
                 "@container(min-width: 540px)": {
                   ".title-status-container": {
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "0.8rem",
+                    gap: "0.2rem 0.8rem",
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0,1fr) auto",
+                    gridTemplateAreas: '"title status" "bar bar"',
+                    ".title": { gridArea: "title" },
+                    ".voting-bar-container": { gridArea: "bar" },
+                    ".status-container": {
+                      gridArea: "status",
+                      position: "relative",
+                      bottom: "0.2rem",
+                    },
                   },
                   ".tags-container": {
                     flexDirection: "row-reverse",
