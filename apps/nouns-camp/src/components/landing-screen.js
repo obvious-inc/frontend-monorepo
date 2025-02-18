@@ -184,7 +184,14 @@ const createDigestSections = ({
       title: "Missing your signature",
       description:
         "Pending updates of sponsored proposals that you need to sign",
-      sort: sortCandidatesChronological,
+      sort: (cs) => {
+        const updatesByTargetProposalId = arrayUtils.groupBy(
+          (c) => c.latestVersion?.targetProposalId ?? "-",
+          sortCandidatesReverseChronological(cs),
+        );
+        // If there’s multiple updates for the same proposal, only show the latest one
+        return Object.values(updatesByTargetProposalId).map(([first]) => first);
+      },
     },
     {
       key: "proposals:awaiting-vote",
