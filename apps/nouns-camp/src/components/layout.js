@@ -134,11 +134,11 @@ const defaultActions = [
         children: [
           {
             id: "new-proposal",
-            label: "Proposal",
+            title: "Proposal",
           },
           {
             id: "new-discussion-topic",
-            label: "Discussion topic",
+            title: "Discussion topic",
           },
         ],
       },
@@ -673,27 +673,18 @@ const NavBar = ({
                   id: "dao",
                   title: "DAO",
                   children: [
-                    {
-                      id: "navigate-to-auction",
-                      label: "Auction",
-                    },
-                    {
-                      id: "navigate-to-proposal-listing",
-                      label: "Proposals",
-                    },
+                    { id: "navigate-to-auction", title: "Auction" },
+                    { id: "navigate-to-proposal-listing", title: "Proposals" },
                     {
                       id: "navigate-to-candidate-listing",
-                      label: "Candidates",
+                      title: "Candidates",
                     },
                     {
                       id: "navigate-to-topic-listing",
-                      label: "Discussion topics",
+                      title: "Discussion topics",
                     },
-                    {
-                      id: "navigate-to-account-listing",
-                      label: "Voters",
-                    },
-                    { id: "open-treasury-dialog", label: "Treasury" },
+                    { id: "navigate-to-account-listing", title: "Voters" },
+                    { id: "open-treasury-dialog", title: "Treasury" },
                   ],
                 };
                 const externalSection = {
@@ -702,27 +693,13 @@ const NavBar = ({
                   children: [
                     {
                       id: "open-warpcast",
-                      textValue: "Farcaster",
-                      label: (
-                        <>
-                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
-                            Farcaster
-                          </span>
-                          {"\u2197"}
-                        </>
-                      ),
+                      title: "Farcaster",
+                      iconRight: <span>{"\u2197"}</span>,
                     },
                     {
                       id: "open-flows",
-                      textValue: "Flows",
-                      label: (
-                        <>
-                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
-                            Flows
-                          </span>
-                          {"\u2197"}
-                        </>
-                      ),
+                      title: "Flows",
+                      iconRight: <span>{"\u2197"}</span>,
                     },
                   ],
                 };
@@ -730,30 +707,16 @@ const NavBar = ({
                   id: "settings",
                   title: "Camp",
                   children: [
-                    { id: "open-settings-dialog", label: "Settings" },
+                    { id: "open-settings-dialog", title: "Settings" },
                     {
                       id: "open-camp-changelog",
-                      textValue: "Changelog",
-                      label: (
-                        <>
-                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
-                            Changelog
-                          </span>
-                          {"\u2197"}
-                        </>
-                      ),
+                      title: "Changelog",
+                      iconRight: <span>{"\u2197"}</span>,
                     },
                     {
                       id: "open-camp-github",
-                      textValue: "Github",
-                      label: (
-                        <>
-                          <span style={{ flex: 1, marginRight: "0.8rem" }}>
-                            GitHub
-                          </span>
-                          {"\u2197"}
-                        </>
-                      ),
+                      title: "GitHub",
+                      iconRight: <span>{"\u2197"}</span>,
                     },
                   ],
                 };
@@ -767,7 +730,7 @@ const NavBar = ({
                       settingsSection,
                       loggedInAccountAddress != null && {
                         id: "disconnect",
-                        children: [{ id: "sign-out", label: "Log out" }],
+                        children: [{ id: "sign-out", title: "Log out" }],
                       },
                     ].filter(Boolean),
                     buttonProps: {
@@ -787,31 +750,31 @@ const NavBar = ({
                       children: [
                         {
                           id: "open-account-dialog",
-                          label: "Account",
+                          title: "Account",
                         },
                         (hasNouns || hasVotingPower) && {
                           id: "open-delegation-dialog",
-                          label: "Manage delegation",
+                          title: "Manage delegation",
                         },
                         hasStreams && {
                           id: "open-streams-dialog",
-                          label: "Streams",
+                          title: "Streams",
                         },
                         {
                           id: "open-drafts-dialog",
-                          label: "Proposal & topic drafts",
+                          title: "Proposal & topic drafts",
                         },
                         !hasVerifiedFarcasterAccount
                           ? null
                           : !hasFarcasterAccountKey
                             ? {
                                 id: "setup-farcaster",
-                                label: "Setup Farcaster",
+                                title: "Setup Farcaster",
                               }
                             : !isConnectedWalletAccountAuthenticated
                               ? {
                                   id: "sign-in",
-                                  label: "Authenticate account",
+                                  title: "Authenticate account",
                                 }
                               : null,
                       ].filter(Boolean),
@@ -824,11 +787,11 @@ const NavBar = ({
                       children: [
                         loggedInAccountAddress != null && {
                           id: "sign-out",
-                          label: "Log out",
+                          title: "Log out",
                         },
                         connectedWalletAccountAddress != null && {
                           id: "disconnect-wallet",
-                          label: "Disconnect wallet",
+                          title: "Disconnect wallet",
                         },
                       ].filter(Boolean),
                     },
@@ -897,14 +860,7 @@ const NavBar = ({
                             title={item.title}
                             items={item.children}
                           >
-                            {(item) => (
-                              <DropdownMenu.Item
-                                primary={item.primary}
-                                textValue={item.textValue}
-                              >
-                                {item.label}
-                              </DropdownMenu.Item>
-                            )}
+                            {(item) => <DropdownMenu.Item {...item} />}
                           </DropdownMenu.Section>
                         )}
                       </DropdownMenu.Content>

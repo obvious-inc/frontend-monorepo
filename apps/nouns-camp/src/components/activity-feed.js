@@ -2196,13 +2196,7 @@ const FeedItemActionDropdown = ({
     if (item.external)
       return {
         ...item,
-        textValue: item.label,
-        label: (
-          <>
-            <span style={{ flex: 1, marginRight: "0.8rem" }}>{item.label}</span>
-            {"\u2197"}
-          </>
-        ),
+        iconRight: <span>{"\u2197"}</span>,
       };
     return item;
   }, []);
@@ -2451,9 +2445,7 @@ const FeedItemActionDropdown = ({
         {(item) => (
           <DropdownMenu.Section items={item.children}>
             {(item) => (
-              <DropdownMenu.Item textValue={item.textValue}>
-                {item.label}
-              </DropdownMenu.Item>
+              <DropdownMenu.Item {...item}>{item.label}</DropdownMenu.Item>
             )}
           </DropdownMenu.Section>
         )}

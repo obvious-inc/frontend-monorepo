@@ -8,6 +8,7 @@ import { css } from "@emotion/react";
 import {
   date as dateUtils,
   array as arrayUtils,
+  markdown as markdownUtils,
   reloadPageOnce,
 } from "@shades/common/utils";
 import { ErrorBoundary, useFetch, useMatchMedia } from "@shades/common/react";
@@ -17,14 +18,21 @@ import {
   Checkmark as CheckmarkIcon,
   Queue as QueueIcon,
   CrossCircle as CrossCircleIcon,
+  DotsHorizontal as DotsHorizontalIcon,
+  Copy as CopyIcon,
+  Link as LinkIcon,
   Share as ShareIcon,
 } from "@shades/ui-web/icons";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
 import * as Tooltip from "@shades/ui-web/tooltip";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
+import { fromMessageBlocks as messageToRichTextBlocks } from "@shades/ui-web/rich-text-editor";
 import { formatReply, formatRepost } from "../utils/votes-and-feedbacks.js";
-import { extractAmounts as extractAmountsFromTransactions } from "../utils/transactions.js";
+import {
+  extractAmounts as extractAmountsFromTransactions,
+  buildActions as buildActionsFromTransactions,
+} from "../utils/transactions.js";
 import {
   EXECUTION_GRACE_PERIOD_IN_MILLIS,
   isFinalState as isFinalProposalState,
@@ -61,6 +69,7 @@ import { useWallet } from "../hooks/wallet.js";
 import useMatchDesktopLayout from "../hooks/match-desktop-layout.js";
 import { useSubmitProposalCast } from "../hooks/farcaster.js";
 import useRecentAuctionProceeds from "../hooks/recent-auction-proceeds.js";
+import { useCollection as useDrafts } from "../hooks/drafts.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import ProposalStateTag from "./proposal-state-tag.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
@@ -104,6 +113,7 @@ const supportToString = (n) => {
 };
 
 const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
+  const navigate = useNavigate();
   const latestBlockNumber = useBlockNumber();
   const calculateBlockTimestamp = useApproximateBlockTimestampCalculator();
   const {
@@ -112,6 +122,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   } = useWallet();
 
   const isDesktopLayout = useMatchDesktopLayout();
+  const isTouchScreen = useMatchMedia("(pointer: coarse)");
+
   const mobileTabAnchorRef = React.useRef();
   const mobileTabContainerRef = React.useRef();
   const proposalActionInputRef = React.useRef();
@@ -134,6 +146,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const { open: openVoteOverviewDialog } = useDialog("vote-overview");
 
   const latestProposalVersionBlock = getLatestVersionBlock(proposal);
+
+  const { createItem: createDraft } = useDrafts();
 
   const {
     data: simulationResults,
@@ -840,9 +854,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
                         button: {
                           textAlign: "left",
                           width: "100%",
-                        },
-                        "@media(min-width: 600px)": {
-                          button: {
+                          "@media(min-width: 600px)": {
                             width: "auto",
                           },
                         },
@@ -864,6 +876,110 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
               transactions={proposal.transactions}
               hasPassed={isFinalOrSucceededState}
               hasSucceeded={isSucceededProposalState(proposal.state)}
+              actionItems={[
+                {
+                  id: "main",
+                  children: [
+                    connectedWalletAccountAddress != null && {
+                      id: "fork",
+                      title: "Use as template",
+                      description: "Draft a new proposal based on this one",
+                      icon: (
+                        <CopyIcon
+                          aria-hidden="true"
+                          role="graphics-symbol"
+                          style={{ width: "1.6rem", height: "auto" }}
+                        />
+                      ),
+                    },
+                    isTouchScreen && navigator?.share != null
+                      ? {
+                          id: "share",
+                          title: "Share proposal",
+                          icon: (
+                            <ShareIcon
+                              aria-hidden="true"
+                              role="graphics-symbol"
+                              style={{ width: "1.6rem", height: "auto" }}
+                            />
+                          ),
+                        }
+                      : {
+                          id: "copy-link",
+                          title: "Copy link to proposal",
+                          icon: (
+                            <LinkIcon
+                              aria-hidden="true"
+                              role="graphics-symbol"
+                              style={{ width: "1.6rem", height: "auto" }}
+                            />
+                          ),
+                        },
+                  ].filter(Boolean),
+                },
+                // {
+                //   id: "external",
+                //   title: "Other clients",
+                //   children: [
+                //     {
+                //       id: "open-nouns-game",
+                //       title: "nouns.game",
+                //       iconRight: <span>{"\u2197"}</span>,
+                //     },
+                //     {
+                //       id: "open-nounswap",
+                //       title: "NounSwap",
+                //       iconRight: <span>{"\u2197"}</span>,
+                //     },
+                //   ],
+                // },
+              ]}
+              handleAction={(key) => {
+                switch (key) {
+                  case "fork": {
+                    const draft = createDraft({
+                      name: proposal.title,
+                      body: messageToRichTextBlocks(
+                        markdownUtils.toMessageBlocks(proposal.body),
+                      ),
+                      actions: buildActionsFromTransactions(
+                        proposal.transactions,
+                      ),
+                    });
+                    navigate(`/new/${draft.id}`);
+                    break;
+                  }
+
+                  case "copy-link":
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/proposals/${proposalId}`,
+                    );
+                    break;
+
+                  case "share":
+                    navigator
+                      .share({ url: `/proposals/${proposalId}` })
+                      .catch((error) => console.error("Error sharing", error));
+                    break;
+
+                  case "open-nouns-game":
+                    window.open(
+                      `https://nouns.game/vote/${proposalId}`,
+                      "_blank",
+                    );
+                    break;
+
+                  case "open-nounswap":
+                    window.open(
+                      `https://nounswap.wtf/vote/${proposalId}`,
+                      "_blank",
+                    );
+                    break;
+
+                  default:
+                    throw new Error();
+                }
+              }}
             />
             {isDesktopLayout ? (
               <ProposalBody markdownText={proposal.body} />
@@ -999,9 +1115,12 @@ export const ProposalHeader = ({
   transactions = [],
   hasPassed,
   hasSucceeded,
+  actionItems = [],
+  handleAction,
   ...props
 }) => {
   const [searchParams] = useSearchParams();
+  const isSmallScreen = useMatchMedia("(max-width: 600px)");
 
   const forceAskBreakdown = searchParams.get("force-ask-breakdown") != null;
 
@@ -1100,21 +1219,57 @@ export const ProposalHeader = ({
       })}
       {...props}
     >
-      <h1
-        css={(t) =>
-          css({
-            fontSize: t.text.sizes.headerLarger,
-            lineHeight: 1.15,
-            margin: "0 0 0.3rem",
-            color: t.colors.textHeader,
-            "@media(min-width: 600px)": {
-              fontSize: t.text.sizes.huge,
-            },
-          })
-        }
-      >
-        {title}
-      </h1>
+      <div css={css({ display: "flex", gap: "0.4rem" })}>
+        <h1
+          css={(t) =>
+            css({
+              flex: 1,
+              minWidth: 0,
+              fontSize: t.text.sizes.headerLarger,
+              lineHeight: 1.15,
+              margin: "0 0 0.3rem",
+              color: t.colors.textHeader,
+              "@media(min-width: 600px)": {
+                fontSize: t.text.sizes.huge,
+              },
+            })
+          }
+        >
+          {title}
+        </h1>
+        {actionItems.length > 0 && (
+          <DropdownMenu.Root placement="bottom end">
+            <DropdownMenu.Trigger asChild>
+              <Button
+                size={isSmallScreen ? "small" : "medium"}
+                icon={
+                  <DotsHorizontalIcon
+                    style={{
+                      width: isSmallScreen ? "1.6rem" : "2rem",
+                      height: "auto",
+                    }}
+                  />
+                }
+              />
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content
+              css={css({
+                width: "min-content",
+                minWidth: "min-content",
+                maxWidth: "calc(100vw - 2rem)",
+              })}
+              items={actionItems}
+              onAction={handleAction}
+            >
+              {(item) => (
+                <DropdownMenu.Section title={item.title} items={item.children}>
+                  {(item) => <DropdownMenu.Item {...item} />}
+                </DropdownMenu.Section>
+              )}
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        )}
+      </div>
       <div
         css={(t) =>
           css({
@@ -1608,7 +1763,6 @@ const StreamStatus = ({ transaction }) => {
 const ProposalScreen = ({ proposalId }) => {
   const navigate = useNavigate();
   const isSmallScreen = useMatchMedia("(max-width: 600px)");
-  const isTouchScreen = useMatchMedia("(pointer: coarse)");
 
   const proposal = useProposal(proposalId);
 
@@ -1663,29 +1817,6 @@ const ProposalScreen = ({ proposalId }) => {
     },
   });
 
-  const getPageActions = () => {
-    if (proposal == null) return [];
-
-    const actions = [];
-
-    if (isTouchScreen && navigator?.share) {
-      actions.push({
-        buttonProps: {
-          // Margin to compensate for less padding on icon buttons
-          style: { display: "flex", marginInline: "0.3rem" },
-          icon: <ShareIcon css={css({ width: "1.6rem" })} />,
-        },
-        onSelect: () => {
-          navigator
-            .share({ url: `/proposals/${proposalId}` })
-            .catch((error) => console.error("Error sharing", error));
-        },
-      });
-    }
-
-    return actions.length === 0 ? undefined : actions;
-  };
-
   if (notFound) nextNotFound();
 
   return (
@@ -1729,7 +1860,6 @@ const ProposalScreen = ({ proposalId }) => {
             },
           },
         ]}
-        actions={getPageActions()}
       >
         {proposal == null ? (
           <div
@@ -2245,6 +2375,8 @@ const ProposalsSelect = React.memo(({ selectedProposalId, ...props }) => {
 const AdminDropdown = React.memo(({ proposalId }) => {
   const navigate = useNavigate();
 
+  const isSmallScreen = useMatchMedia("(max-width: 600px)");
+
   const { isProposer, isSponsor, toggleEditDialog } = useScreenContext();
 
   const proposal = useProposal(proposalId);
@@ -2259,7 +2391,7 @@ const AdminDropdown = React.memo(({ proposalId }) => {
     <DropdownMenu.Root placement="bottom end">
       <DropdownMenu.Trigger asChild>
         <Button
-          size="default"
+          size={isSmallScreen ? "default" : "medium"}
           iconRight={
             <CaretDownIcon style={{ width: "1.1rem", height: "auto" }} />
           }

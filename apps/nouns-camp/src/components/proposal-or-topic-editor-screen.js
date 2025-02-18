@@ -620,7 +620,7 @@ export default function ProposalOfTopicEditorScreen({ draftId }) {
       return;
     }
 
-    const draft = createDraft({ type: targetType });
+    const draft = createDraft({ actions: targetType === "topic" ? null : [] });
     navigate(`/new/${draft.id}?${newSearchParams}`, { replace: true });
   }, [
     draftId,

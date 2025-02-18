@@ -626,7 +626,7 @@ const TopicScreen = ({ candidateId: rawId }) => {
     const actions = [];
     if (isTouchScreen && navigator?.share != null) {
       actions.push({
-        label: <ShareIcon css={css({ width: "1.7rem" })} />,
+        title: <ShareIcon css={css({ width: "1.7rem" })} />,
         onSelect: () => {
           const urlToShare = `/topics/${encodeURIComponent(candidate.number ?? candidateId)}`;
           navigator

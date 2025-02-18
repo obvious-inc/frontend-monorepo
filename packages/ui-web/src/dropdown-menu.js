@@ -175,6 +175,8 @@ const MenuItem = ({ item, state }) => {
   const ref = React.useRef(null);
   const {
     menuItemProps,
+    descriptionProps,
+    labelProps,
     // isFocused,
     isSelected,
     // isDisabled,
@@ -191,12 +193,12 @@ const MenuItem = ({ item, state }) => {
           color: `var(--color, ${t.colors.textNormal})`,
           width: "100%",
           minHeight: t.dropdownMenus.itemHeight,
-          padding: "0.3rem 0.8rem",
-          display: "inline-flex",
-          gap: "1.2rem",
-          alignItems: "center",
+          display: "flex",
+          alignItems: "flex-start",
           justifyContent: "flex-start",
-          lineHeight: 1.4,
+          gap: "0.8rem",
+          padding: "0.4rem 0.8rem",
+          lineHeight: "calc(20/14)",
           fontSize: t.fontSizes.menus,
           fontWeight: "400",
           cursor: "pointer",
@@ -218,13 +220,23 @@ const MenuItem = ({ item, state }) => {
           '&[aria-checked="true"]:focys': {
             color: t.colors.textAccent,
           },
-          ".content-container": {
+          ".title-container": {
             flex: 1,
+            minWidth: 0,
+          },
+          ".description-container": {
+            color: t.colors.textDimmed,
+            fontSize: t.text.sizes.tiny,
+            paddingBottom: "0.1rem",
+          },
+          ".icon-container": {
+            padding: "0.2rem 0",
+            width: "1.6rem",
+            height: "2rem",
             display: "flex",
+            justifyContent: "center",
             alignItems: "center",
           },
-          ".icon-container": { padding: "0 0.4rem" },
-          ".icon-container svg": { width: "1.1rem", height: "auto" },
         })
       }
       style={{
@@ -235,10 +247,24 @@ const MenuItem = ({ item, state }) => {
             : undefined,
       }}
     >
-      <div className="content-container">{item.rendered}</div>
-      {isSelected && (
+      {item.props.icon && (
+        <div className="icon-container">{item.props.icon}</div>
+      )}
+      <div className="title-container">
+        <div {...labelProps}>{item.rendered ?? item.props.title}</div>
+        {item.props.description && (
+          <div className="description-container" {...descriptionProps}>
+            {item.props.description}
+          </div>
+        )}
+      </div>
+      {(isSelected || item.props.iconRight) && (
         <div className="icon-container">
-          <CheckmarkIcon style={{ width: "1.1rem" }} />
+          {isSelected ? (
+            <CheckmarkIcon style={{ width: "1.1rem", height: "auto" }} />
+          ) : (
+            item.props.iconRight
+          )}
         </div>
       )}
     </li>
