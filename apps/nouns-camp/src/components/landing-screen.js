@@ -2,7 +2,7 @@
 
 import dateSubtractDays from "date-fns/subDays";
 import dateStartOfDay from "date-fns/startOfDay";
-import { formatEther } from "viem";
+
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
@@ -48,7 +48,7 @@ import {
   useMainFeedItems,
 } from "../store.js";
 import { useCollection as useDrafts } from "../hooks/drafts.js";
-import useTreasuryData from "../hooks/treasury-data.js";
+
 import * as Tabs from "./tabs.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import SectionedList from "./sectioned-list.js";
@@ -300,8 +300,6 @@ const BrowseScreen = () => {
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
     hasFetchedBrowseDataOnce,
   );
-
-  const treasuryData = useTreasuryData();
 
   const eagerMatchingEnsAddress = useEnsAddress(deferredQuery);
   const matchingEnsAddress = React.useDeferredValue(eagerMatchingEnsAddress);
@@ -858,60 +856,10 @@ const BrowseScreen = () => {
       <Layout
         scrollContainerRef={scrollContainerRef}
         actions={[
-          // {
-          //   label: "Propose",
-          //   buttonProps: {
-          //     component: NextLink,
-          //     href: "/new",
-          //     prefetch: true,
-          //   },
-          // },
-          {
-            type: "dropdown",
-            label: "New",
-            placement: "bottom start",
-            items: [
-              {
-                id: "-",
-                children: [
-                  {
-                    id: "new-proposal",
-                    title: "Proposal",
-                  },
-                  {
-                    id: "new-discussion-topic",
-                    title: "Discussion topic",
-                  },
-                ],
-              },
-            ],
-            buttonProps: {
-              iconRight: (
-                <CaretDownIcon style={{ width: "0.9rem", height: "auto" }} />
-              ),
-            },
-          },
-          treasuryData != null && {
-            label: (
-              <>
-                <span data-desktop-only>Treasury </span>
-                {"Ξ"}{" "}
-                {Math.round(
-                  parseFloat(formatEther(treasuryData.totals.allInEth)),
-                ).toLocaleString()}
-              </>
-            ),
-            buttonProps: {
-              component: NextLink,
-              href: (() => {
-                const linkSearchParams = new URLSearchParams(searchParams);
-                linkSearchParams.set("treasury", 1);
-                return `?${linkSearchParams}`;
-              })(),
-              prefetch: true,
-            },
-          },
-        ].filter(Boolean)}
+          { extends: "create-menu", desktopOnly: false },
+          { extends: "treasury-dialog-trigger", desktopOnly: false },
+          { extends: "auction-dialog-trigger", desktopOnly: false },
+        ]}
       >
         <div css={css({ padding: "0 1.6rem" })}>
           <MainContentContainer

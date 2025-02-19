@@ -81,7 +81,7 @@ const NounScreen = ({ nounId: eagerSpecifiedNounId }) => {
   return (
     <EmotionThemeProvider theme={getTheme("light")}>
       <Layout
-        hideAuction
+        actions={["create-menu"]}
         navigationStack={[
           {
             key: "noun",
