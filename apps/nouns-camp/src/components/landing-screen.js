@@ -204,7 +204,6 @@ const createDigestSections = ({
       title: "Ongoing proposals",
       description: "Currently voting",
       sort: sortProposalsByEndsSoon,
-      truncationThreshold: 2,
       showVotingBar: true,
     },
     {
