@@ -6,7 +6,7 @@ const clientDataById = {
   },
   3: { url: "https://www.nouns.camp", name: "Camp" },
   4: { url: "https://nouns.biz", name: "nouns.biz" },
-  5: { url: null, name: null }, // "Home"
+  5: { url: "https://www.nounswap.wtf", name: "NounSwap" },
   6: { url: "https://www.nouns.game", name: "nouns.game" },
   7: { url: "https://nouns.sh", name: "Nouns Terminal" },
   8: { url: "https://nouns.gg", name: "Nouns GG" },
