@@ -35,10 +35,29 @@ import { useUpdateProposal } from "../hooks/dao-contract.js";
 import { useCreateProposalCandidate } from "../hooks/data-contract.js";
 import DiffBlock from "./diff-block.js";
 import ProposalEditor from "./proposal-editor.js";
+import { useCachedState } from "@shades/common/app";
 
 export const createMarkdownDescription = ({ title, body }) => {
   const markdownBody = messageUtils.toMarkdown(richTextToMessageBlocks(body));
   return `# ${title.trim()}\n\n${markdownBody}`;
+};
+
+const useProposalEdit = (proposalId, initialState) => {
+  const cacheKey = ["edit-drafts", "proposals", proposalId].join(":");
+  const [draft, setDraft] = useCachedState(cacheKey, initialState);
+
+  const setTitle = (title) => setDraft((d) => ({ ...d, title }));
+  const setBody = (body) => setDraft((d) => ({ ...d, body }));
+  const setActions = (fnOrValue) => {
+    setDraft((d) => ({
+      ...d,
+      actions:
+        typeof fnOrValue === "function" ? fnOrValue(d.actions) : fnOrValue,
+    }));
+  };
+  const clearDraft = () => setDraft(null);
+
+  return [draft, { setTitle, setBody, setActions, clearDraft }];
 };
 
 const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
@@ -69,12 +88,16 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
   const [showPreviewDialog, setShowPreviewDialog] = React.useState(false);
   const [showSubmitDialog, setShowSubmitDialog] = React.useState(false);
-
-  const [title, setTitle] = React.useState(persistedTitle);
-  const [body, setBody] = React.useState(persistedRichTextBody);
-  const [actions, setActions] = React.useState(persistedActions);
-
   const [hasPendingSubmit, setPendingSubmit] = React.useState(false);
+
+  const [
+    { title, body, actions },
+    { setTitle, setBody, setActions, clearDraft },
+  ] = useProposalEdit(proposalId, {
+    title: persistedTitle,
+    body: persistedRichTextBody,
+    actions: persistedActions,
+  });
 
   const deferredBody = React.useDeferredValue(body);
 
@@ -120,6 +143,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
 
   const dismissDialog = () => {
     if (!hasChanges) {
+      clearDraft();
       closeDialog();
       return;
     }
@@ -131,6 +155,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
     )
       return;
 
+    clearDraft();
     closeDialog();
   };
 
@@ -202,6 +227,8 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           encodeURIComponent(slug),
         ].join("-");
 
+        clearDraft();
+
         await functionUtils.retryAsync(
           () => fetchProposalCandidate(candidateId),
           { retries: 100 },
@@ -214,6 +241,7 @@ const ProposalEditDialog = ({ proposalId, isOpen, close: closeDialog }) => {
           transactions: getTransactionsIfChanged(),
           updateMessage,
         });
+        clearDraft();
         closeDialog();
       }
     } catch (e) {

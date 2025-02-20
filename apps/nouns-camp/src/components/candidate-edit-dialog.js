@@ -34,9 +34,15 @@ const useCandidateEdit = (candidateId, initialState) => {
   const cacheKey = ["edit-drafts", "candidates", candidateId].join(":");
   const [draft, setDraft] = useCachedState(cacheKey, initialState);
 
-  const setTitle = (title) => setDraft((prev) => ({ ...prev, title: title }));
-  const setBody = (body) => setDraft((prev) => ({ ...prev, body }));
-  const setActions = (actions) => setDraft((prev) => ({ ...prev, actions }));
+  const setTitle = (title) => setDraft((d) => ({ ...d, title }));
+  const setBody = (body) => setDraft((d) => ({ ...d, body }));
+  const setActions = (fnOrValue) => {
+    setDraft((d) => ({
+      ...d,
+      actions:
+        typeof fnOrValue === "function" ? fnOrValue(d.actions) : fnOrValue,
+    }));
+  };
   const clearDraft = () => setDraft(null);
 
   return [draft, { setTitle, setBody, setActions, clearDraft }];
