@@ -154,7 +154,7 @@ export const Content = ({
               },
               "&[aria-disabled]": {
                 cursor: "default",
-                color: t.colors.textMuted,
+                color: t.colors.textMutedAlpha,
               },
               '&[aria-checked="true"]': {
                 background: t.colors.backgroundModifierSelected,
@@ -195,7 +195,7 @@ export const Content = ({
             marginTop: t.dropdownMenus.padding,
             padding: t.dropdownMenus.padding,
             ".content": {
-              color: t.colors.textMuted,
+              color: t.colors.textMutedAlpha,
               fontSize: t.text.sizes.tiny,
               lineHeight: "calc(16/12)",
               padding: "0.4rem 0.8rem",
