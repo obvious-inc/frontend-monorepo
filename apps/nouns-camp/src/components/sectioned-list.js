@@ -166,6 +166,9 @@ const SectionedList = ({
               ".item-container": {
                 pointerEvents: "none",
                 position: "relative",
+                "&:not([on-screen])": {
+                  contentVisibility: "auto",
+                },
               },
               ".small": { fontSize: t.text.sizes.small },
               ".dimmed": { color: t.colors.textDimmed },
@@ -623,8 +626,13 @@ const ProposalListItem = React.memo(
           prefetch
           href={`/proposals/${proposalId}`}
           data-dimmed={isDimmed}
+          aria-label={`Proposal ${proposalId}`}
         />
-        <div ref={containerRef} className="item-container proposal">
+        <div
+          ref={containerRef}
+          data-on-screen={isOnScreen}
+          className="item-container proposal"
+        >
           <div className="small dimmed nowrap">
             Prop {proposalId}{" "}
             <span data-show={hasBeenOnScreen}>
@@ -825,8 +833,20 @@ const CandidateOrTopicListItem = React.memo(
               ? `/topics/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
               : `/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
           }
+          aria-label={[
+            isProposalUpdate
+              ? `Proposal ${candidate.targetProposalId} update`
+              : isTopic
+                ? "Topic"
+                : `Candidate ${candidate.number}`,
+            candidate.latestVersion.content.title,
+          ].join(": ")}
         />
-        <div ref={containerRef} className="item-container proposal-candidate">
+        <div
+          ref={containerRef}
+          data-on-screen={isOnScreen}
+          className="item-container proposal-candidate"
+        >
           <div className="left-container" data-score={showScoreStack}>
             {showScoreStack && <div />}
             <div>
@@ -1102,8 +1122,13 @@ const AccountListItem = React.memo(
         <NextLink
           className="link"
           href={`/voters/${ensName ?? accountAddress}`}
+          aria-label={`View ${displayName}'s profile`}
         />
-        <div className="item-container account" ref={containerRef}>
+        <div
+          ref={containerRef}
+          data-on-screen={isOnScreen}
+          className="item-container account"
+        >
           {isOnScreen ? (
             <AccountAvatar size="3.6rem" address={accountAddress} />
           ) : (
@@ -1325,13 +1350,21 @@ const DraftListItem = ({ draftId }) => {
   const [draft] = useDraft(draftId);
   const { address: connectedAccountAddress } = useWallet();
 
+  const isTopic = draft.actions == null;
+  const title = draft.name || "Untitled draft";
+
   return (
     <>
-      <NextLink className="link" prefetch href={`/new/${draftId}`} />
+      <NextLink
+        className="link"
+        prefetch
+        href={`/new/${draftId}`}
+        aria-label={`Draft: ${title}`}
+      />
       <div className="item-container proposal-draft">
         <div className="content-container">
           <div className="small dimmed">
-            Draft by{" "}
+            {isTopic ? "Topic draft" : "Proposal draft"} by{" "}
             <em
               css={(t) =>
                 css({
@@ -1346,7 +1379,7 @@ const DraftListItem = ({ draftId }) => {
               />
             </em>
           </div>
-          <div className="title">{draft.name || "Untitled draft"}</div>
+          <div className="title">{title}</div>
         </div>
         <div className="right-column">
           <div className="status-tag">

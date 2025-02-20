@@ -255,7 +255,7 @@ const predefinedActions = {
           {
             id: "new-discussion-topic",
             title: "Discussion topic",
-            description: "Start a community discussion (onchain)",
+            description: "Start a discussion thread (onchain)",
             icon: (
               <ChatBubblesIcon
                 style={{
