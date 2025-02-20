@@ -30,8 +30,8 @@ import DateRangePicker from "./date-range-picker.js";
 import ProposalList from "./sectioned-list.js";
 import { FULL_PROPOSAL_CANDIDATE_FIELDS } from "@/nouns-subgraph.js";
 
-const NEW_THRESHOLD_IN_DAYS = 3;
-const ACTIVE_THRESHOLD_IN_DAYS = 5;
+const NEW_THRESHOLD_IN_DAYS = 7;
+const ACTIVE_THRESHOLD_IN_DAYS = 7;
 
 const sectionConfigByKey = {
   authored: { title: "Authored" },
