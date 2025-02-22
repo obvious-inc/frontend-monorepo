@@ -1,4 +1,5 @@
 import {
+  invariant,
   markdown as markdownUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
@@ -119,9 +120,11 @@ export const createRepostExtractor =
 export const formatRepost = (targetReason) =>
   `+1\n\n${markdownUtils.blockquote(targetReason.trim())}`;
 
-export const formatReply = ({ target, body }) =>
-  [
+export const formatReply = ({ target, body }) => {
+  invariant(body != null && body.trim() !== "", "body is required");
+  return [
     `@${ethereumUtils.truncateAddress(target.voterId)}`,
     body,
     markdownUtils.blockquote(target.reason),
   ].join("\n\n");
+};
