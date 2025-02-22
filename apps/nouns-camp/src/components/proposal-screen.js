@@ -264,16 +264,20 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   }, [currentFormAction, feedItems, pendingReposts]);
 
   const reasonWithRepostsAndReplies = React.useMemo(() => {
-    const replyMarkedQuotesAndReplyText = replyTargetFeedItems.map((item) => {
-      const replyText = pendingReplies[item.id];
-      return formatReply({
-        body: replyText,
-        target: {
-          voterId: item.authorAccount,
-          reason: item.reason,
-        },
-      });
-    });
+    const replyMarkedQuotesAndReplyText = replyTargetFeedItems
+      .map((item) => {
+        const replyText = pendingReplies[item.id];
+        // Skip replies without content
+        if (!replyText?.trim()) return null;
+        return formatReply({
+          body: replyText,
+          target: {
+            voterId: item.authorAccount,
+            reason: item.reason,
+          },
+        });
+      })
+      .filter(Boolean); // Remove null entries
     const repostMarkedQuotes = repostTargetFeedItems.map((item) =>
       formatRepost(item.reason),
     );
