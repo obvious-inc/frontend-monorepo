@@ -266,6 +266,8 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
   const reasonWithRepostsAndReplies = React.useMemo(() => {
     const replyMarkedQuotesAndReplyText = replyTargetFeedItems.map((item) => {
       const replyText = pendingReplies[item.id];
+      // Skip replies without content
+      if (!replyText?.trim()) return null;
       return formatReply({
         body: replyText,
         target: {
@@ -273,7 +275,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
           reason: item.reason,
         },
       });
-    });
+    }).filter(Boolean); // Remove null entries
     const repostMarkedQuotes = repostTargetFeedItems.map((item) =>
       formatRepost(item.reason),
     );
