@@ -317,17 +317,15 @@ export default ({
     if (lock != null) await lock;
 
     return requestAccessTokenRefreshLock(async () => {
-      const cachedRefreshToken = await cacheStore.read(REFRESH_TOKEN_CACHE_KEY);
+      const cachedRefreshToken = cacheStore.read(REFRESH_TOKEN_CACHE_KEY);
 
       // Prevents race conditions where a refresh happened when we were waiting
       // for the lock to release
       if (refreshToken !== cachedRefreshToken) return;
 
       const tokens = await refreshAccessToken(refreshToken);
-      await Promise.all([
-        cacheStore.write(ACCESS_TOKEN_CACHE_KEY, tokens.accessToken),
-        cacheStore.write(REFRESH_TOKEN_CACHE_KEY, tokens.refreshToken),
-      ]);
+      cacheStore.write(ACCESS_TOKEN_CACHE_KEY, tokens.accessToken);
+      cacheStore.write(REFRESH_TOKEN_CACHE_KEY, tokens.refreshToken);
     });
   };
 
@@ -340,10 +338,10 @@ export default ({
       if (lock != null) await lock;
     }
 
-    const [accessToken, refreshToken] = await Promise.all([
+    const [accessToken, refreshToken] = [
       cacheStore.read(ACCESS_TOKEN_CACHE_KEY),
       cacheStore.read(REFRESH_TOKEN_CACHE_KEY),
-    ]);
+    ];
 
     if (requireAccessToken && accessToken == null)
       throw new Error("Missing access token");
@@ -372,17 +370,16 @@ export default ({
       let newAccessToken;
       try {
         await refreshAccessTokenWithLock(refreshToken);
-        const accessToken = await cacheStore.read(ACCESS_TOKEN_CACHE_KEY);
+        const accessToken = cacheStore.read(ACCESS_TOKEN_CACHE_KEY);
         newAccessToken = accessToken;
       } catch (e) {
         if (e.message !== "refresh-token-expired")
           return Promise.reject(new Error("access-token-refresh-failed"));
 
         // Log out if the refresh token had expired
-        await Promise.all([
-          cacheStore.write(ACCESS_TOKEN_CACHE_KEY, null),
-          cacheStore.write(REFRESH_TOKEN_CACHE_KEY, null),
-        ]);
+        cacheStore.write(ACCESS_TOKEN_CACHE_KEY, null);
+        cacheStore.write(REFRESH_TOKEN_CACHE_KEY, null);
+
         emit("user-authentication-expired");
         return Promise.reject(new Error("access-token-expired"));
       }
@@ -636,10 +633,10 @@ export default ({
   return {
     parsers,
     getAuthenticationData: async () => {
-      const [accessToken, refreshToken] = await Promise.all([
+      const [accessToken, refreshToken] = [
         cacheStore.read(ACCESS_TOKEN_CACHE_KEY),
         cacheStore.read(REFRESH_TOKEN_CACHE_KEY),
-      ]);
+      ];
       if (accessToken == null) return null;
       return { accessToken, refreshToken };
     },
@@ -653,10 +650,10 @@ export default ({
       refreshToken,
     }) {
       if (accessToken != null)
-        return Promise.all([
-          cacheStore.write(ACCESS_TOKEN_CACHE_KEY, accessToken),
-          cacheStore.write(REFRESH_TOKEN_CACHE_KEY, refreshToken),
-        ]);
+        return {
+          accessToken: cacheStore.write(ACCESS_TOKEN_CACHE_KEY, accessToken),
+          refreshToken: cacheStore.write(REFRESH_TOKEN_CACHE_KEY, refreshToken),
+        };
 
       const body = await fetch(`${apiOrigin}/auth/login`, {
         method: "POST",
@@ -675,10 +672,8 @@ export default ({
         return Promise.reject(new Error(response.statusText));
       });
 
-      await Promise.all([
-        cacheStore.write(ACCESS_TOKEN_CACHE_KEY, body.access_token),
-        cacheStore.write(REFRESH_TOKEN_CACHE_KEY, body.refresh_token),
-      ]);
+      cacheStore.write(ACCESS_TOKEN_CACHE_KEY, body.access_token);
+      cacheStore.write(REFRESH_TOKEN_CACHE_KEY, body.refresh_token);
 
       return {
         accessToken: body.access_token,
@@ -686,7 +681,7 @@ export default ({
       };
     },
     async connect({ userId }, optionalListener) {
-      const accessToken = await cacheStore.read(ACCESS_TOKEN_CACHE_KEY);
+      const accessToken = cacheStore.read(ACCESS_TOKEN_CACHE_KEY);
       // Pusher.logToConsole = debug;
       const pusher = await initPusherConnection({
         Pusher,
