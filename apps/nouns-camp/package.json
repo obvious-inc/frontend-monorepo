@@ -19,7 +19,7 @@
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@farcaster/core": "^0.15.6",
-    "@nouns/assets": "^0.10.0",
+    "@nomonouns/assets": "^0.12.0",
     "@nouns/contracts": "^0.3.0",
     "@nouns/sdk": "^0.4.0",
     "@radix-ui/react-toolbar": "^1.1.1",

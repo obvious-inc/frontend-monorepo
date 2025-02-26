@@ -2,7 +2,7 @@ import {
   ImageData,
   getNounSeedFromBlockHash,
   getNounData,
-} from "@nouns/assets";
+} from "@nomonouns/assets";
 import { buildSVG } from "@nouns/sdk";
 
 const svgCacheBySeed = new Map();
