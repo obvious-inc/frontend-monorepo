@@ -12,7 +12,7 @@ const clientDataById = {
   8: { url: "https://nouns.gg", name: "Nouns GG" },
   9: { url: "https://www.probe.wtf", name: "Probe" },
   10: { url: "https://nounsagora.com", name: "Nouns Agora" },
-  11: { url: "https://nouns.farm", name: "Nouns Farm" },
+  11: { url: "https://nouns95.wtf", name: "Nouns 95" },
   12: {
     url: null, // "https://proplaunchpad.com"
     name: "Prop Launchpad",
