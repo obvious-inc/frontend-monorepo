@@ -23,6 +23,7 @@ import {
   useAccountProposals,
   useAccountProposalCandidates,
   useAccountSponsoredProposals,
+  useAccountTopics,
   useActions,
   useDelegate,
   useDelegateFetch,
@@ -790,8 +791,11 @@ const VoterMainSection = ({ voterAddress }) => {
   const delegate = useDelegate(voterAddress);
 
   const proposals = useAccountProposals(voterAddress);
-  const candidates = useAccountProposalCandidates(voterAddress);
+  const candidates = useAccountProposalCandidates(voterAddress, {
+    includeTopics: false,
+  });
   const sponsoredProposals = useAccountSponsoredProposals(voterAddress);
+  const topics = useAccountTopics(voterAddress);
 
   const [hasFetchedData, setHasFetchedData] = React.useState(
     () => proposals.length > 0,
@@ -820,6 +824,10 @@ const VoterMainSection = ({ voterAddress }) => {
   const sponsoredTabTitle = sponsoredProposals.length
     ? `Sponsored (${sponsoredProposals.length})`
     : "Sponsored";
+
+  const topicsTabTitle = topics?.length
+    ? `Topics (${topics?.length})`
+    : "Topics";
 
   return (
     <>
@@ -982,6 +990,43 @@ const VoterMainSection = ({ voterAddress }) => {
                   </div>
                   {sponsoredProposals.length >
                     VOTER_LIST_PAGE_ITEM_COUNT * page && (
+                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
+                      <Button
+                        size="small"
+                        onClick={() => {
+                          setPage((p) => p + 1);
+                        }}
+                      >
+                        Show more
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Tabs.Item>
+              <Tabs.Item key="topics" title={topicsTabTitle}>
+                <div>
+                  {hasFetchedData && topics.length === 0 && (
+                    <Tabs.EmptyPlaceholder
+                      title="No topics"
+                      description="This account has not created any topics"
+                      css={css({ padding: "6.4rem 0" })}
+                    />
+                  )}
+                  <div style={{ marginTop: "2rem" }}>
+                    <ProposalList
+                      forcePlaceholder={!hasFetchedData && topics.length === 0}
+                      items={arrayUtils
+                        .sortBy(
+                          {
+                            value: (p) => p.lastUpdatedTimestamp,
+                            order: "desc",
+                          },
+                          topics,
+                        )
+                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                    />
+                  </div>
+                  {topics.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
                     <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
                       <Button
                         size="small"

@@ -2174,14 +2174,33 @@ export const useAccountSponsoredProposals = (accountAddress) => {
   }, [proposalsById, accountAddress]);
 };
 
-export const useAccountProposalCandidates = (accountAddress) => {
+export const useAccountProposalCandidates = (
+  accountAddress,
+  { includeTopics = false } = {},
+) => {
   const candidatesById = useStore((s) => s.proposalCandidatesById);
 
   return React.useMemo(() => {
     if (accountAddress == null) return [];
     const candidates = Object.values(candidatesById);
     return candidates.filter(
-      (c) => c.proposerId?.toLowerCase() === accountAddress.toLowerCase(),
+      (c) =>
+        c.proposerId?.toLowerCase() === accountAddress.toLowerCase() &&
+        (includeTopics || c.latestVersion?.type !== "topic"),
+    );
+  }, [candidatesById, accountAddress, includeTopics]);
+};
+
+export const useAccountTopics = (accountAddress) => {
+  const candidatesById = useStore((s) => s.proposalCandidatesById);
+
+  return React.useMemo(() => {
+    if (accountAddress == null) return [];
+    const candidates = Object.values(candidatesById);
+    return candidates.filter(
+      (c) =>
+        c.proposerId?.toLowerCase() === accountAddress.toLowerCase() &&
+        c.latestVersion?.type === "topic",
     );
   }, [candidatesById, accountAddress]);
 };
