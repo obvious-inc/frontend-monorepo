@@ -14,6 +14,9 @@ import GlobalStylesWrapper from "../global-styles-wrapper.js";
 import SessionProvider from "../session-provider.js";
 import { Provider as StoreProvider } from "../store.js";
 import { Provider as FarcasterStateProvider } from "../hooks/farcaster.js";
+// MobileDevTools will be lazy-loaded in development and preview deployments
+import { lazy, Suspense } from 'react';
+const MobileDevTools = lazy(() => import('@/components/mobile-devtools'));
 
 import "../reset.css";
 import "../index.css";
@@ -120,6 +123,11 @@ export default async function RootLayout({ children }) {
                       <StoreProvider>
                         <FarcasterStateProvider>
                           {children}
+                          {(process.env.NODE_ENV === 'development' || process.env.VERCEL_ENV === 'preview') && (
+                            <Suspense fallback={null}>
+                              <MobileDevTools />
+                            </Suspense>
+                          )}
                         </FarcasterStateProvider>
                       </StoreProvider>
                     </SessionProvider>
