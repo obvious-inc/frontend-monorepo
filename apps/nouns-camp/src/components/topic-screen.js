@@ -149,6 +149,8 @@ const TopicScreenContent = ({ candidateId }) => {
       .filter((i) => i.type !== "farcaster-cast")
       .map((item) => {
         const replyText = pendingRepliesByTargetItemId[item.id];
+        // Skip empty replies
+        if (!replyText || replyText.trim() === "") return null;
         return formatReply({
           body: replyText,
           target: {
@@ -156,7 +158,8 @@ const TopicScreenContent = ({ candidateId }) => {
             reason: item.reason,
           },
         });
-      });
+      })
+      .filter(Boolean);
     const repostMarkedQuotes = repostTargetFeedItems.map((item) =>
       formatRepost(item.reason),
     );
