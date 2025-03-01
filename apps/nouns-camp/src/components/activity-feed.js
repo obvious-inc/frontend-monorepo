@@ -403,7 +403,9 @@ const FeedItem = React.memo(
       expandedReplyTargetAndRepostIds,
       setExpandedReplyTargetAndRepostIds,
     ] = React.useState([]);
-    const [isReplyFormExpanded, setReplyFormExpanded] = React.useState(false);
+    const [isReplyFormExpanded, setReplyFormExpanded] = React.useState(
+      pendingReply != null,
+    );
 
     const isBoxedVariant = variant === "boxed";
 
@@ -490,7 +492,8 @@ const FeedItem = React.memo(
     const hasBody = itemBody != null && itemBody.trim() !== "";
     // const hasReason = item.reason != null && item.reason.trim() !== "";
 
-    const showReplyForm = isReplyFormExpanded || hasReplies;
+    // Always show the reply form for boxed variant with body content
+    const showReplyForm = isBoxedVariant || isReplyFormExpanded || hasReplies;
 
     const showReplyAction = (() => {
       // Casts simply link to Warpcast for now
@@ -569,7 +572,12 @@ const FeedItem = React.memo(
                 ReactDOM.flushSync(() => {
                   setReplyFormExpanded(true);
                 });
-                inlineReplyInputRef.current.focus();
+                // Ensure we scroll to and focus the input field
+                inlineReplyInputRef.current?.focus();
+                inlineReplyInputRef.current?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
               },
             },
           ];
@@ -956,16 +964,7 @@ const FeedItem = React.memo(
               </ul>
             )}
 
-            {/* {hasBody && showReplyForm && (
-              <ReplyForm
-                inputRef={inlineReplyInputRef}
-                onChange={(replyText) => {
-                  onInlineReplyChange(item.id, replyText);
-                }}
-                data-has-replies={hasReplies || undefined}
-              />
-            )} */}
-            {hasBody && showReplyForm && (
+            {hasBody && (
               <div
                 css={(t) =>
                   css({
@@ -999,12 +998,20 @@ const FeedItem = React.memo(
                     }}
                   />
                 ) : (
-                  <button
-                    onClick={() => {
+                  <input
+                    type="text"
+                    placeholder="Write a reply..."
+                    ref={inlineReplyInputRef}
+                    onFocus={() => {
                       ReactDOM.flushSync(() => {
                         setReplyFormExpanded(true);
                       });
-                      inlineReplyInputRef.current.focus();
+                      // Ensure we scroll to and focus the input field
+                      inlineReplyInputRef.current?.focus();
+                      inlineReplyInputRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                      });
                     }}
                     css={(t) =>
                       css({
@@ -1017,12 +1024,12 @@ const FeedItem = React.memo(
                         borderRadius: "0.4rem",
                         padding: "0.3rem 0.7rem",
                         outline: "none",
-                        cursor: "text",
+                        "&:focus": {
+                          color: t.colors.textNormal,
+                        },
                       })
                     }
-                  >
-                    Write a reply...
-                  </button>
+                  />
                 )}
               </div>
             )}
