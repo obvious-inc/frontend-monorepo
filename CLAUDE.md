@@ -12,6 +12,15 @@
 - `pnpm --filter [app-name] format` - Format specific app
 - `pnpm --filter [app-name] test` - Run tests for specific app
 
+## Git Workflow
+- **Before Committing**: Always run lint and format checks
+  - `pnpm --filter [app-name] lint`
+  - `pnpm --filter [app-name] format`
+- **Conventional Commits**: Use conventional commit format
+  - Format: `type(scope): message`
+  - Types: feat, fix, docs, style, refactor, test, chore
+  - Example: `feat(camp): add user profile page`
+
 ## App-Specific Information
 Each app has its own CLAUDE.md file with app-specific commands and guidelines:
 - [Nouns Camp CLAUDE.md](/apps/nouns-camp/CLAUDE.md)
