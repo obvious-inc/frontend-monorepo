@@ -50,7 +50,6 @@ import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));
 
-const VOTER_LIST_PAGE_ITEM_COUNT = 20;
 const FEED_PAGE_ITEM_COUNT = 30;
 
 const isProduction = process.env.NODE_ENV === "production";
@@ -787,7 +786,6 @@ const VoterHeader = ({ accountAddress }) => {
 const VoterMainSection = ({ voterAddress }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
-  const [page, setPage] = React.useState(1);
   const delegate = useDelegate(voterAddress);
 
   const proposals = useAccountProposals(voterAddress);
@@ -899,29 +897,15 @@ const VoterMainSection = ({ voterAddress }) => {
                       forcePlaceholder={
                         !hasFetchedData && proposals.length === 0
                       }
-                      items={arrayUtils
-                        .sortBy(
-                          {
-                            value: (p) => Number(p.id),
-                            order: "desc",
-                          },
-                          proposals,
-                        )
-                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                      items={arrayUtils.sortBy(
+                        {
+                          value: (p) => Number(p.id),
+                          order: "desc",
+                        },
+                        proposals,
+                      )}
                     />
                   </div>
-                  {proposals.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
-                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setPage((p) => p + 1);
-                        }}
-                      >
-                        Show more
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </Tabs.Item>
               <Tabs.Item key="candidates" title={candidatesTabTitle}>
@@ -938,29 +922,15 @@ const VoterMainSection = ({ voterAddress }) => {
                       forcePlaceholder={
                         !hasFetchedData && candidates.length === 0
                       }
-                      items={arrayUtils
-                        .sortBy(
-                          {
-                            value: (p) => p.lastUpdatedTimestamp,
-                            order: "desc",
-                          },
-                          candidates,
-                        )
-                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                      items={arrayUtils.sortBy(
+                        {
+                          value: (p) => p.lastUpdatedTimestamp,
+                          order: "desc",
+                        },
+                        candidates,
+                      )}
                     />
                   </div>
-                  {candidates.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
-                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setPage((p) => p + 1);
-                        }}
-                      >
-                        Show more
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </Tabs.Item>
               <Tabs.Item key="sponsored" title={sponsoredTabTitle}>
@@ -977,30 +947,15 @@ const VoterMainSection = ({ voterAddress }) => {
                       forcePlaceholder={
                         !hasFetchedData && sponsoredProposals.length === 0
                       }
-                      items={arrayUtils
-                        .sortBy(
-                          {
-                            value: (p) => p.lastUpdatedTimestamp,
-                            order: "desc",
-                          },
-                          sponsoredProposals,
-                        )
-                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                      items={arrayUtils.sortBy(
+                        {
+                          value: (p) => p.lastUpdatedTimestamp,
+                          order: "desc",
+                        },
+                        sponsoredProposals,
+                      )}
                     />
                   </div>
-                  {sponsoredProposals.length >
-                    VOTER_LIST_PAGE_ITEM_COUNT * page && (
-                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setPage((p) => p + 1);
-                        }}
-                      >
-                        Show more
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </Tabs.Item>
               <Tabs.Item key="topics" title={topicsTabTitle}>
@@ -1015,29 +970,15 @@ const VoterMainSection = ({ voterAddress }) => {
                   <div style={{ marginTop: "2rem" }}>
                     <ProposalList
                       forcePlaceholder={!hasFetchedData && topics.length === 0}
-                      items={arrayUtils
-                        .sortBy(
-                          {
-                            value: (p) => p.lastUpdatedTimestamp,
-                            order: "desc",
-                          },
-                          topics,
-                        )
-                        .slice(0, VOTER_LIST_PAGE_ITEM_COUNT * page)}
+                      items={arrayUtils.sortBy(
+                        {
+                          value: (p) => p.lastUpdatedTimestamp,
+                          order: "desc",
+                        },
+                        topics,
+                      )}
                     />
                   </div>
-                  {topics.length > VOTER_LIST_PAGE_ITEM_COUNT * page && (
-                    <div css={{ textAlign: "center", padding: "3.2rem 0" }}>
-                      <Button
-                        size="small"
-                        onClick={() => {
-                          setPage((p) => p + 1);
-                        }}
-                      >
-                        Show more
-                      </Button>
-                    </div>
-                  )}
                 </div>
               </Tabs.Item>
             </Tabs.Root>
