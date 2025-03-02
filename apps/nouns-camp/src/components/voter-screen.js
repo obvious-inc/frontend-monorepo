@@ -624,18 +624,6 @@ const VoterHeader = ({ accountAddress }) => {
                         label: "Etherscan",
                       },
                       {
-                        id: "open-mogu",
-                        label: "Mogu",
-                      },
-                      {
-                        id: "open-agora",
-                        label: "Agora",
-                      },
-                      {
-                        id: "open-nounskarma",
-                        label: "NounsKarma",
-                      },
-                      {
                         id: "open-rainbow",
                         label: "Rainbow",
                       },
@@ -675,27 +663,6 @@ const VoterHeader = ({ accountAddress }) => {
                     case "open-etherscan":
                       window.open(
                         buildEtherscanLink(`/address/${accountAddress}`),
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-mogu":
-                      window.open(
-                        `https://mmmogu.com/address/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-agora":
-                      window.open(
-                        `https://nounsagora.com/delegate/${accountAddress}`,
-                        "_blank",
-                      );
-                      break;
-
-                    case "open-nounskarma":
-                      window.open(
-                        `https://nounskarma.xyz/player/${accountAddress}`,
                         "_blank",
                       );
                       break;
