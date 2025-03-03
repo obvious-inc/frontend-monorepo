@@ -76,7 +76,7 @@ import AccountAvatar from "./account-avatar.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import Callout from "./callout.js";
-import Tag from "./tag.js";
+import Tag from "@/components/tag";
 import * as Tabs from "./tabs.js";
 import TransactionList from "./transaction-list.js";
 import DiffBlock from "./diff-block.js";

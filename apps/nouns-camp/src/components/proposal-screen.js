@@ -268,7 +268,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       .map((item) => {
         const replyText = pendingReplies[item.id];
         // Skip replies without content
-        if (!replyText?.trim()) return null;
+        if (replyText.trim() === "") return null;
         return formatReply({
           body: replyText,
           target: {

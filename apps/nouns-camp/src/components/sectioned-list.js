@@ -46,7 +46,7 @@ import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import AccountAvatar from "./account-avatar.js";
 import FormattedNumber from "./formatted-number.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import Tag from "./tag.js";
+import Tag from "@/components/tag";
 import VotesTagGroup from "./votes-tag-group.js";
 import VotingBar from "./voting-bar.js";
 

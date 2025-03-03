@@ -70,16 +70,16 @@ const Layout = ({
     {...props}
   >
     <NavBar navigationStack={navigationStack} actions={actions} />
-    <div
-      css={css({
-        position: "relative",
-        flex: 1,
-        display: "flex",
-        minHeight: 0,
-        minWidth: 0,
-      })}
-    >
-      {scrollView ? (
+    {scrollView ? (
+      <div
+        css={css({
+          position: "relative",
+          flex: 1,
+          display: "flex",
+          minHeight: 0,
+          minWidth: 0,
+        })}
+      >
         <div
           ref={scrollContainerRef}
           css={css({
@@ -95,7 +95,7 @@ const Layout = ({
             overflowAnchor: "none",
           })}
         >
-          <div
+          <main
             css={css({
               display: "flex",
               flexDirection: "column",
@@ -105,12 +105,21 @@ const Layout = ({
             })}
           >
             {children}
-          </div>
+          </main>
         </div>
-      ) : (
-        children
-      )}
-    </div>
+      </div>
+    ) : (
+      <main
+        css={css({
+          flex: 1,
+          display: "flex",
+          minHeight: 0,
+          minWidth: 0,
+        })}
+      >
+        {children}
+      </main>
+    )}
   </div>
 );
 
@@ -458,482 +467,480 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
   };
 
   return (
-    <>
+    <nav
+      css={(t) =>
+        css({
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-start",
+          whiteSpace: "nowrap",
+          minHeight: t.navBarHeight, // "4.7rem",
+          "@media (max-width: 599px)": {
+            '[data-desktop-only="true"]': {
+              display: "none",
+            },
+          },
+        })
+      }
+    >
+      <div
+        css={css({
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: "0.2rem",
+          overflow: "hidden",
+          padding: "1rem 1.6rem 1rem 1.3rem",
+          "@media (min-width: 600px)": {
+            padding: "1rem",
+          },
+        })}
+      >
+        {[
+          (() => {
+            const logo = (
+              <LogoSymbol
+                css={css({
+                  display: "inline-block",
+                  width: "1.8rem",
+                  height: "auto",
+                  backfaceVisibility: "hidden",
+                })}
+                style={{
+                  filter: isTestnet ? "invert(1)" : undefined,
+                }}
+              />
+            );
+
+            if (pathname !== "/")
+              return {
+                to: "/",
+                label: (
+                  <>
+                    {logo}
+                    <span
+                      css={css({
+                        display: "none",
+                        "@media(min-width: 600px)": {
+                          display: "inline",
+                          marginLeft: "0.6rem",
+                        },
+                      })}
+                    >
+                      {isTestnet ? chain.name : "Camp"}
+                    </span>
+                  </>
+                ),
+              };
+
+            return {
+              key: "root-logo",
+              component: "div",
+              props: {
+                style: {
+                  pointerEvents: "none",
+                  height: "2.8rem",
+                  minWidth: "2.8rem",
+                  paddingBlock: 0,
+                  perspective: "200vmax",
+                },
+              },
+              label: (
+                <>
+                  <div
+                    css={css({
+                      position: "relative",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      width: "1.8rem",
+                      height: "1.8rem",
+                      animation: `${flipAnimation} 24s linear 12s infinite`,
+                      transition: "0.25s transform ease-out",
+                      transformStyle: "preserve-3d",
+                      svg: { display: "block" },
+                    })}
+                  >
+                    {logo}
+                    <div
+                      css={css({
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        backfaceVisibility: "hidden",
+                        transform:
+                          "translateX(-50%) translateY(-50%) rotate3d(0.4,1,0,180deg)",
+                        width: "2.4rem",
+                        height: "2.4rem",
+                        svg: {
+                          display: "block",
+                          width: "100%",
+                          height: "100%",
+                          borderRadius: "0.3rem",
+                        },
+                      })}
+                    >
+                      <NoggleImage />
+                    </div>
+                  </div>
+                  {isTestnet && (
+                    <span
+                      css={css({
+                        display: "none",
+                        "@media(min-width: 600px)": {
+                          display: "inline",
+                          marginLeft: "0.6rem",
+                        },
+                      })}
+                    >
+                      {chain.name}
+                    </span>
+                  )}
+                </>
+              ),
+            };
+          })(),
+          ...navigationStack,
+        ].map((item, index) => {
+          const [Component, componentProps] =
+            item.component != null
+              ? [item.component, item.props]
+              : [
+                  NextLink,
+                  {
+                    prefetch: true,
+                    href: item.to,
+                  },
+                ];
+          return (
+            <React.Fragment key={item.key ?? item.to}>
+              {index > 0 && (
+                <span
+                  data-index={index}
+                  data-desktop-only={item.desktopOnly}
+                  css={(t) =>
+                    css({
+                      color: t.colors.textMuted,
+                      fontSize: t.text.sizes.base,
+                    })
+                  }
+                >
+                  {"/"}
+                </span>
+              )}
+              <Component
+                {...componentProps}
+                data-index={index}
+                data-image={item.image || undefined}
+                // data-disabled={pathname === item.to}
+                data-desktop-only={item.desktopOnly}
+                css={(t) =>
+                  css({
+                    display: "inline-block",
+                    height: "2.8rem",
+                    minWidth: "2.8rem",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontSize: t.fontSizes.base,
+                    color: t.colors.textNormal,
+                    padding: "0.3rem 0.5rem",
+                    borderRadius: "0.4rem",
+                    textDecoration: "none",
+                    '&[data-index="0"]': {
+                      display: "inline-flex",
+                      alignItems: "center",
+                      minWidth: "max-content",
+                    },
+                    '&[data-disabled="true"]': { pointerEvents: "none" },
+                    "@media(hover: hover)": {
+                      cursor: "pointer",
+                      ":hover": {
+                        background: t.colors.backgroundModifierHover,
+                      },
+                    },
+                  })
+                }
+              >
+                {item.label}
+              </Component>
+            </React.Fragment>
+          );
+        })}
+      </div>
       <div
         css={(t) =>
           css({
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "flex-start",
-            whiteSpace: "nowrap",
-            minHeight: t.navBarHeight, // "4.7rem",
-            "@media (max-width: 599px)": {
-              '[data-desktop-only="true"]': {
-                display: "none",
-              },
+            fontSize: t.text.sizes.base,
+            padding: "0 1.6rem 0 0",
+            ul: {
+              display: "grid",
+              gridAutoFlow: "column",
+              gridGap: "0.3rem",
+              alignItems: "center",
+            },
+            li: { listStyle: "none" },
+            '[role="separator"]': {
+              width: "0.1rem",
+              background: t.colors.borderLight,
+              height: "1.6rem",
+              margin: "0 0.4rem",
+            },
+            "@media (min-width: 600px)": {
+              padding: "0 1rem",
             },
           })
         }
       >
-        <div
-          css={css({
-            flex: 1,
-            minWidth: 0,
-            display: "flex",
-            alignItems: "center",
-            gap: "0.2rem",
-            overflow: "hidden",
-            padding: "1rem 1.6rem 1rem 1.3rem",
-            "@media (min-width: 600px)": {
-              padding: "1rem",
-            },
-          })}
-        >
+        <ul>
           {[
-            (() => {
-              const logo = (
-                <LogoSymbol
-                  css={css({
-                    display: "inline-block",
-                    width: "1.8rem",
-                    height: "auto",
-                    backfaceVisibility: "hidden",
-                  })}
-                  style={{
-                    filter: isTestnet ? "invert(1)" : undefined,
-                  }}
-                />
-              );
-
-              if (pathname !== "/")
-                return {
-                  to: "/",
+            ...actions,
+            actions.length > 0 && { type: "separator" },
+            connectedWalletAccountAddress == null
+              ? {
+                  onSelect: () => {
+                    requestWalletAccess();
+                  },
+                  buttonProps: {
+                    variant: "default",
+                    isLoading: requestWalletAccess == null || isLoadingWallet,
+                    disabled: requestWalletAccess == null || isLoadingWallet,
+                    style: { marginLeft: "0.8rem", marginRight: "0.4rem" },
+                  },
                   label: (
                     <>
-                      {logo}
-                      <span
-                        css={css({
-                          display: "none",
-                          "@media(min-width: 600px)": {
-                            display: "inline",
-                            marginLeft: "0.6rem",
-                          },
-                        })}
-                      >
-                        {isTestnet ? chain.name : "Camp"}
-                      </span>
+                      Connect<span data-desktop-only> Wallet</span>
                     </>
                   ),
-                };
-
-              return {
-                key: "root-logo",
-                component: "div",
-                props: {
-                  style: {
-                    pointerEvents: "none",
-                    height: "2.8rem",
-                    minWidth: "2.8rem",
-                    paddingBlock: 0,
-                    perspective: "200vmax",
-                  },
-                },
-                label: (
-                  <>
-                    <div
-                      css={css({
-                        position: "relative",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        width: "1.8rem",
-                        height: "1.8rem",
-                        animation: `${flipAnimation} 24s linear 12s infinite`,
-                        transition: "0.25s transform ease-out",
-                        transformStyle: "preserve-3d",
-                        svg: { display: "block" },
-                      })}
-                    >
-                      {logo}
-                      <div
-                        css={css({
-                          position: "absolute",
-                          top: "50%",
-                          left: "50%",
-                          backfaceVisibility: "hidden",
-                          transform:
-                            "translateX(-50%) translateY(-50%) rotate3d(0.4,1,0,180deg)",
-                          width: "2.4rem",
-                          height: "2.4rem",
-                          svg: {
-                            display: "block",
-                            width: "100%",
-                            height: "100%",
-                            borderRadius: "0.3rem",
-                          },
-                        })}
-                      >
-                        <NoggleImage />
-                      </div>
-                    </div>
-                    {isTestnet && (
-                      <span
-                        css={css({
-                          display: "none",
-                          "@media(min-width: 600px)": {
-                            display: "inline",
-                            marginLeft: "0.6rem",
-                          },
-                        })}
-                      >
-                        {chain.name}
-                      </span>
-                    )}
-                  </>
-                ),
-              };
-            })(),
-            ...navigationStack,
-          ].map((item, index) => {
-            const [Component, componentProps] =
-              item.component != null
-                ? [item.component, item.props]
-                : [
-                    NextLink,
-                    {
-                      prefetch: true,
-                      href: item.to,
-                    },
-                  ];
-            return (
-              <React.Fragment key={item.key ?? item.to}>
-                {index > 0 && (
-                  <span
-                    data-index={index}
-                    data-desktop-only={item.desktopOnly}
-                    css={(t) =>
-                      css({
-                        color: t.colors.textMuted,
-                        fontSize: t.text.sizes.base,
-                      })
-                    }
-                  >
-                    {"/"}
-                  </span>
-                )}
-                <Component
-                  {...componentProps}
-                  data-index={index}
-                  data-image={item.image || undefined}
-                  // data-disabled={pathname === item.to}
-                  data-desktop-only={item.desktopOnly}
-                  css={(t) =>
-                    css({
-                      display: "inline-block",
-                      height: "2.8rem",
-                      minWidth: "2.8rem",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      fontSize: t.fontSizes.base,
-                      color: t.colors.textNormal,
-                      padding: "0.3rem 0.5rem",
-                      borderRadius: "0.4rem",
-                      textDecoration: "none",
-                      '&[data-index="0"]': {
-                        display: "inline-flex",
-                        alignItems: "center",
-                        minWidth: "max-content",
-                      },
-                      '&[data-disabled="true"]': { pointerEvents: "none" },
-                      "@media(hover: hover)": {
-                        cursor: "pointer",
-                        ":hover": {
-                          background: t.colors.backgroundModifierHover,
-                        },
-                      },
-                    })
-                  }
-                >
-                  {item.label}
-                </Component>
-              </React.Fragment>
-            );
-          })}
-        </div>
-        <div
-          css={(t) =>
-            css({
-              fontSize: t.text.sizes.base,
-              padding: "0 1.6rem 0 0",
-              ul: {
-                display: "grid",
-                gridAutoFlow: "column",
-                gridGap: "0.3rem",
-                alignItems: "center",
-              },
-              li: { listStyle: "none" },
-              '[role="separator"]': {
-                width: "0.1rem",
-                background: t.colors.borderLight,
-                height: "1.6rem",
-                margin: "0 0.4rem",
-              },
-              "@media (min-width: 600px)": {
-                padding: "0 1rem",
-              },
-            })
-          }
-        >
-          <ul>
-            {[
-              ...actions,
-              actions.length > 0 && { type: "separator" },
-              connectedWalletAccountAddress == null
+                }
+              : !isConnectedToTargetChain
                 ? {
                     onSelect: () => {
-                      requestWalletAccess();
+                      switchWalletToTargetChain();
                     },
                     buttonProps: {
                       variant: "default",
-                      isLoading: requestWalletAccess == null || isLoadingWallet,
-                      disabled: requestWalletAccess == null || isLoadingWallet,
-                      style: { marginLeft: "0.8rem", marginRight: "0.4rem" },
+                      isLoading: isLoadingWallet,
+                      disabled:
+                        switchWalletToTargetChain == null || isLoadingWallet,
+                      style: { marginLeft: "0.8rem" },
                     },
-                    label: (
-                      <>
-                        Connect<span data-desktop-only> Wallet</span>
-                      </>
-                    ),
+                    label: `Switch to ${CHAIN_ID === 1 ? "Mainnet" : chain.name}`,
                   }
-                : !isConnectedToTargetChain
-                  ? {
-                      onSelect: () => {
-                        switchWalletToTargetChain();
-                      },
-                      buttonProps: {
-                        variant: "default",
-                        isLoading: isLoadingWallet,
-                        disabled:
-                          switchWalletToTargetChain == null || isLoadingWallet,
-                        style: { marginLeft: "0.8rem" },
-                      },
-                      label: `Switch to ${CHAIN_ID === 1 ? "Mainnet" : chain.name}`,
-                    }
-                  : null,
-              (() => {
-                const daoSection = {
-                  id: "dao",
-                  title: "DAO",
-                  children: [
-                    { id: "navigate-to-auction", title: "Auction" },
-                    { id: "navigate-to-proposal-listing", title: "Proposals" },
-                    {
-                      id: "navigate-to-candidate-listing",
-                      title: "Candidates",
-                    },
-                    {
-                      id: "navigate-to-topic-listing",
-                      title: "Discussion topics",
-                    },
-                    { id: "navigate-to-account-listing", title: "Voters" },
-                    { id: "open-treasury-dialog", title: "Treasury" },
-                  ],
-                };
-                const externalSection = {
-                  id: "external",
-                  title: "External",
-                  children: [
-                    {
-                      id: "open-warpcast",
-                      title: "Farcaster",
-                      iconRight: <span>{"\u2197"}</span>,
-                    },
-                    {
-                      id: "open-flows",
-                      title: "Flows",
-                      iconRight: <span>{"\u2197"}</span>,
-                    },
-                  ],
-                };
-                const settingsSection = {
-                  id: "settings",
-                  title: "Camp",
-                  children: [
-                    { id: "open-settings-dialog", title: "Settings" },
-                    {
-                      id: "open-camp-changelog",
-                      title: "Changelog",
-                      iconRight: <span>{"\u2197"}</span>,
-                    },
-                    {
-                      id: "open-camp-github",
-                      title: "GitHub",
-                      iconRight: <span>{"\u2197"}</span>,
-                    },
-                  ],
-                };
+                : null,
+            (() => {
+              const daoSection = {
+                id: "dao",
+                title: "DAO",
+                children: [
+                  { id: "navigate-to-auction", title: "Auction" },
+                  { id: "navigate-to-proposal-listing", title: "Proposals" },
+                  {
+                    id: "navigate-to-candidate-listing",
+                    title: "Candidates",
+                  },
+                  {
+                    id: "navigate-to-topic-listing",
+                    title: "Discussion topics",
+                  },
+                  { id: "navigate-to-account-listing", title: "Voters" },
+                  { id: "open-treasury-dialog", title: "Treasury" },
+                ],
+              };
+              const externalSection = {
+                id: "external",
+                title: "External",
+                children: [
+                  {
+                    id: "open-warpcast",
+                    title: "Farcaster",
+                    iconRight: <span>{"\u2197"}</span>,
+                  },
+                  {
+                    id: "open-flows",
+                    title: "Flows",
+                    iconRight: <span>{"\u2197"}</span>,
+                  },
+                ],
+              };
+              const settingsSection = {
+                id: "settings",
+                title: "Camp",
+                children: [
+                  { id: "open-settings-dialog", title: "Settings" },
+                  {
+                    id: "open-camp-changelog",
+                    title: "Changelog",
+                    iconRight: <span>{"\u2197"}</span>,
+                  },
+                  {
+                    id: "open-camp-github",
+                    title: "GitHub",
+                    iconRight: <span>{"\u2197"}</span>,
+                  },
+                ],
+              };
 
-                if (connectedWalletAccountAddress == null)
-                  return {
-                    type: "dropdown",
-                    items: [
-                      daoSection,
-                      externalSection,
-                      settingsSection,
-                      loggedInAccountAddress != null && {
-                        id: "disconnect",
-                        children: [{ id: "sign-out", title: "Log out" }],
-                      },
-                    ].filter(Boolean),
-                    buttonProps: {
-                      style: { display: "flex" },
-                      icon: (
-                        <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
-                      ),
-                    },
-                  };
-
+              if (connectedWalletAccountAddress == null)
                 return {
                   type: "dropdown",
                   items: [
-                    {
-                      id: "connected-account",
-                      title: "You",
-                      children: [
-                        {
-                          id: "open-account-dialog",
-                          title: "Account",
-                        },
-                        (hasNouns || hasVotingPower) && {
-                          id: "open-delegation-dialog",
-                          title: "Manage delegation",
-                        },
-                        hasStreams && {
-                          id: "open-streams-dialog",
-                          title: "Streams",
-                        },
-                        {
-                          id: "open-drafts-dialog",
-                          title: "Proposal & topic drafts",
-                        },
-                        !hasVerifiedFarcasterAccount
-                          ? null
-                          : !hasFarcasterAccountKey
-                            ? {
-                                id: "setup-farcaster",
-                                title: "Setup Farcaster",
-                              }
-                            : !isConnectedWalletAccountAuthenticated
-                              ? {
-                                  id: "sign-in",
-                                  title: "Authenticate account",
-                                }
-                              : null,
-                      ].filter(Boolean),
-                    },
                     daoSection,
                     externalSection,
                     settingsSection,
-                    {
+                    loggedInAccountAddress != null && {
                       id: "disconnect",
-                      children: [
-                        loggedInAccountAddress != null && {
-                          id: "sign-out",
-                          title: "Log out",
-                        },
-                        connectedWalletAccountAddress != null && {
-                          id: "disconnect-wallet",
-                          title: "Disconnect wallet",
-                        },
-                      ].filter(Boolean),
+                      children: [{ id: "sign-out", title: "Log out" }],
                     },
-                  ],
+                  ].filter(Boolean),
                   buttonProps: {
-                    css: css({
-                      display: "flex",
-                      "@media(max-width: 600px)": {
-                        paddingInline: "0.4rem",
-                        marginLeft: "0.3rem",
-                        ".account-display-name": { display: "none" },
-                      },
-                    }),
-                    iconRight: (
-                      <CaretDownIcon
-                        style={{ width: "0.9rem", height: "auto" }}
-                      />
+                    style: { display: "flex" },
+                    icon: (
+                      <DotsIcon style={{ width: "1.8rem", height: "auto" }} />
                     ),
                   },
-                  label: (
-                    <div
-                      css={css({
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.8rem",
-                      })}
-                    >
-                      {pathname === "/" && (
-                        <div className="account-display-name">
-                          {userAccountDisplayName}
-                        </div>
-                      )}
-                      <AccountAvatar address={userAccountAddress} size="2rem" />
-                    </div>
-                  ),
                 };
-              })(),
-            ]
-              .filter(Boolean)
-              .map((a, i) => {
-                if (a.type === "separator")
-                  return (
-                    <li key={i} role="separator" aria-orientation="vertical" />
-                  );
 
-                const [ButtonComponent, buttonProps] = [
-                  a.component ?? Button,
+              return {
+                type: "dropdown",
+                items: [
                   {
-                    variant: a.buttonVariant ?? "transparent",
-                    size: "small",
-                    children: a.label,
-                    ...a.buttonProps,
+                    id: "connected-account",
+                    title: "You",
+                    children: [
+                      {
+                        id: "open-account-dialog",
+                        title: "Account",
+                      },
+                      (hasNouns || hasVotingPower) && {
+                        id: "open-delegation-dialog",
+                        title: "Manage delegation",
+                      },
+                      hasStreams && {
+                        id: "open-streams-dialog",
+                        title: "Streams",
+                      },
+                      {
+                        id: "open-drafts-dialog",
+                        title: "Proposal & topic drafts",
+                      },
+                      !hasVerifiedFarcasterAccount
+                        ? null
+                        : !hasFarcasterAccountKey
+                          ? {
+                              id: "setup-farcaster",
+                              title: "Setup Farcaster",
+                            }
+                          : !isConnectedWalletAccountAuthenticated
+                            ? {
+                                id: "sign-in",
+                                title: "Authenticate account",
+                              }
+                            : null,
+                    ].filter(Boolean),
                   },
-                ];
-
-                return (
-                  <li key={a.key ?? i} data-desktop-only={a.desktopOnly}>
-                    {a.type === "dropdown" ? (
-                      <DropdownMenu.Root placement={a.placement ?? "bottom"}>
-                        <DropdownMenu.Trigger asChild>
-                          <ButtonComponent {...buttonProps} />
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content
-                          css={css({
-                            width: "min-content",
-                            minWidth: "min-content",
-                            maxWidth: "calc(100vw - 2rem)",
-                          })}
-                          items={a.items}
-                          onAction={handleDropDownAction}
-                        >
-                          {(item) => (
-                            <DropdownMenu.Section
-                              title={item.title}
-                              items={item.children}
-                            >
-                              {(item) => <DropdownMenu.Item {...item} />}
-                            </DropdownMenu.Section>
-                          )}
-                        </DropdownMenu.Content>
-                      </DropdownMenu.Root>
-                    ) : (
-                      <ButtonComponent {...buttonProps} onClick={a.onSelect} />
+                  daoSection,
+                  externalSection,
+                  settingsSection,
+                  {
+                    id: "disconnect",
+                    children: [
+                      loggedInAccountAddress != null && {
+                        id: "sign-out",
+                        title: "Log out",
+                      },
+                      connectedWalletAccountAddress != null && {
+                        id: "disconnect-wallet",
+                        title: "Disconnect wallet",
+                      },
+                    ].filter(Boolean),
+                  },
+                ],
+                buttonProps: {
+                  css: css({
+                    display: "flex",
+                    "@media(max-width: 600px)": {
+                      paddingInline: "0.4rem",
+                      marginLeft: "0.3rem",
+                      ".account-display-name": { display: "none" },
+                    },
+                  }),
+                  iconRight: (
+                    <CaretDownIcon
+                      style={{ width: "0.9rem", height: "auto" }}
+                    />
+                  ),
+                },
+                label: (
+                  <div
+                    css={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.8rem",
+                    })}
+                  >
+                    {pathname === "/" && (
+                      <div className="account-display-name">
+                        {userAccountDisplayName}
+                      </div>
                     )}
-                  </li>
+                    <AccountAvatar address={userAccountAddress} size="2rem" />
+                  </div>
+                ),
+              };
+            })(),
+          ]
+            .filter(Boolean)
+            .map((a, i) => {
+              if (a.type === "separator")
+                return (
+                  <li key={i} role="separator" aria-orientation="vertical" />
                 );
-              })}
-          </ul>
-        </div>
+
+              const [ButtonComponent, buttonProps] = [
+                a.component ?? Button,
+                {
+                  variant: a.buttonVariant ?? "transparent",
+                  size: "small",
+                  children: a.label,
+                  ...a.buttonProps,
+                },
+              ];
+
+              return (
+                <li key={a.key ?? i} data-desktop-only={a.desktopOnly}>
+                  {a.type === "dropdown" ? (
+                    <DropdownMenu.Root placement={a.placement ?? "bottom"}>
+                      <DropdownMenu.Trigger asChild>
+                        <ButtonComponent {...buttonProps} />
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Content
+                        css={css({
+                          width: "min-content",
+                          minWidth: "min-content",
+                          maxWidth: "calc(100vw - 2rem)",
+                        })}
+                        items={a.items}
+                        onAction={handleDropDownAction}
+                      >
+                        {(item) => (
+                          <DropdownMenu.Section
+                            title={item.title}
+                            items={item.children}
+                          >
+                            {(item) => <DropdownMenu.Item {...item} />}
+                          </DropdownMenu.Section>
+                        )}
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Root>
+                  ) : (
+                    <ButtonComponent {...buttonProps} onClick={a.onSelect} />
+                  )}
+                </li>
+              );
+            })}
+        </ul>
       </div>
-    </>
+    </nav>
   );
 };
 

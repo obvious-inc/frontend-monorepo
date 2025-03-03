@@ -46,7 +46,7 @@ import ProposalActionForm from "./proposal-action-form.js";
 import Layout, { MainContentContainer } from "./layout.js";
 import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
 import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import Tag from "./tag.js";
+import Tag from "@/components/tag";
 // import FloatingNavBar from "./floating-nav-bar.js";
 
 const ActivityFeed = React.lazy(() => import("./activity-feed.js"));

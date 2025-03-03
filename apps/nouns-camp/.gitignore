@@ -9,3 +9,7 @@ public/service-worker.js.map
 src/abis
 
 certificates
+
+# Playwright
+playwright-report
+test-results

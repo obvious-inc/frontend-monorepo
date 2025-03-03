@@ -1,5 +1,6 @@
 import { css } from "@emotion/react";
 
+// Tag component for displaying labels and badges
 const Tag = ({ variant, size = "normal", active, ...props }) => (
   <span
     data-variant={variant}

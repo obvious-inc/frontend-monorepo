@@ -3,7 +3,7 @@
 import React from "react";
 import { reportError } from "../utils/monitoring.js";
 import EmotionRootStyleRegistry from "./emotion-style-root-registry.js";
-import ThemeProvider from "../theme-provider.js";
+import ThemeProvider from "@/theme-provider";
 import ErrorScreen from "../components/error-screen.js";
 
 export default function Error({ error }) {
