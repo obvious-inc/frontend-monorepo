@@ -2,27 +2,15 @@
 
 ## Build & Development Commands
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run format` - Format code with Prettier
-- `npm run lint` - Lint code with ESLint & check formatting
-- `npm run test` - Run tests with Vitest
-- `npm run test -- [testFile]` - Run a specific test file
-- `npm run test -- -t "[testName]"` - Run specific test by name
+- `pnpm -F nouns-camp dev` - Start development server
+- `pnpm -F nouns-camp build` - Build for production
+- `pnpm -F nouns-camp start` - Start production server
+- `pnpm -F nouns-camp format` - Format code with Prettier
+- `pnpm -F nouns-camp lint` - Lint code with ESLint & check formatting
+- `pnpm -F nouns-camp test` - Run tests with Vitest
+- `pnpm -F nouns-camp test -- [testFile]` - Run a specific test file
+- `pnpm -F nouns-camp test -- -t "[testName]"` - Run specific test by name
 
-## Code Style Guidelines
+## Project specific code style guidelines
 
 - **Imports**: Use absolute imports via `@/*` path alias
-- **Formatting**: Prettier for auto-formatting
-- **Components**: React functional components with hooks
-- **State Management**: Zustand for state management
-- **Testing**: Vitest for unit tests
-- **Error Handling**: Use try/catch blocks appropriately
-- **Naming**:
-  - camelCase for variables/functions
-  - PascalCase for components
-  - kebab-case for file names
-- **File Structure**: Group related functionality into dedicated files
-- **React Patterns**: Prefer composition over inheritance
-- **Type Safety**: Avoid `any` types, be explicit with functions and data structures
