@@ -1,5 +1,8 @@
 {
   "name": "@obvious/monorepo",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "build": "turbo build",
     "lint": "turbo lint",
