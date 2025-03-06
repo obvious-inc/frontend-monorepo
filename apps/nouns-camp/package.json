@@ -49,6 +49,7 @@
     "abitype": "^1.0.8",
     "date-fns": "^2.29.3",
     "diff": "^5.2.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
     "iron-session": "^8.0.4",
     "is-hotkey": "^0.2.0",
     "lodash.throttle": "^4.1.1",
