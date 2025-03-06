@@ -1,4 +1,4 @@
-# CLAUDE.md - Nouns Camp
+# AI-CONTEXT.md - Nouns Camp
 
 ## Build & Development Commands
 
