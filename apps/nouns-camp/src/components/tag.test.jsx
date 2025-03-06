@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { renderWithProviders, screen } from "../test/test-utils";
-import Tag from "./tag";
+import { renderWithProviders, screen } from "@/test/test-utils";
+import Tag from "@/components/tag";
 
 describe("Tag Component", () => {
   it("renders tag with correct text content", () => {

@@ -1,5 +1,5 @@
 import { usePublicClient as usePublicClient_ } from "wagmi";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const usePublicClient = (options) => {
   return usePublicClient_({

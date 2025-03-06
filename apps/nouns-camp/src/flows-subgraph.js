@@ -1,4 +1,4 @@
-import { CHAIN_ID } from "./constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const VOTE_FIELDS = `
   fragment VoteFields on Vote {

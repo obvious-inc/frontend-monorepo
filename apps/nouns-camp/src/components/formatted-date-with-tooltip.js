@@ -2,7 +2,7 @@ import React from "react";
 import datesDifferenceInDays from "date-fns/differenceInCalendarDays";
 import { date as dateUtils } from "@shades/common/utils";
 import * as Tooltip from "@shades/ui-web/tooltip";
-import FormattedDate from "./formatted-date.js";
+import FormattedDate from "@/components/formatted-date";
 
 const FormattedDateWithTooltip = React.memo(
   ({

@@ -1,11 +1,11 @@
 import { hexToBytes } from "viem";
 import { isLoggedIn, isLoggedInAccountFid } from "@/app/api/auth-utils";
-import { parseEpochTimestamp } from "../../../utils/farcaster.js";
-import { submitCastAdd, fetchAccount } from "../farcaster-utils.js";
+import { parseEpochTimestamp } from "@/utils/farcaster";
+import { submitCastAdd, fetchAccount } from "@/app/api/farcaster-utils";
 import {
   getAccountKeyForFid,
   deleteAccountKeyForFid,
-} from "../farcaster-account-key-utils.js";
+} from "@/app/api/farcaster-account-key-utils";
 
 export async function POST(request) {
   const { targetCastId, text, fid } = await request.json();

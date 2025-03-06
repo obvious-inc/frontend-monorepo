@@ -9,7 +9,7 @@ import {
 import {
   getAccountKeyForFid,
   deleteAccountKeyForFid,
-} from "../farcaster-account-key-utils";
+} from "@/app/api/farcaster-account-key-utils";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);

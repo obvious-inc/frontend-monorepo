@@ -10,7 +10,7 @@ import {
   NobleEd25519Signer,
 } from "@farcaster/core";
 import { array as arrayUtils } from "@shades/common/utils";
-import { subgraphFetch } from "../../nouns-subgraph.js";
+import { subgraphFetch } from "@/nouns-subgraph";
 
 const fetchAccounts = async (fids) => {
   if (fids.length === 0) return [];

@@ -1,6 +1,6 @@
 import React from "react";
-import { resolveAction, unparse } from "../utils/transactions";
-import { parseProposalAction } from "../app/api/tenderly-utils";
+import { resolveAction, unparse } from "@/utils/transactions";
+import { parseProposalAction } from "@/app/api/tenderly-utils";
 
 const fetchSimulationBundle = async ({
   targets,

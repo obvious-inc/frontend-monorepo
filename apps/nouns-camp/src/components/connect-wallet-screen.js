@@ -1,8 +1,8 @@
 import { css } from "@emotion/react";
 import Button from "@shades/ui-web/button";
 import Spinner from "@shades/ui-web/spinner";
-import { useWallet } from "../hooks/wallet.js";
-import Layout from "./layout.js";
+import { useWallet } from "@/hooks/wallet";
+import Layout from "@/components/layout";
 
 const ConnectWalletScreen = () => {
   const { requestAccess, isLoading, reset } = useWallet();

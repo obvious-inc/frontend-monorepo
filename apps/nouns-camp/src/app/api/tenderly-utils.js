@@ -1,7 +1,7 @@
 import { decodeAbiParameters, encodeFunctionData, parseAbiItem } from "viem";
-import { reportError } from "../../utils/monitoring.js";
-import { resolveIdentifier } from "../../contracts.js";
-import { CHAIN_ID } from "../../constants/env.js";
+import { reportError } from "@/utils/monitoring";
+import { resolveIdentifier } from "@/contracts";
+import { CHAIN_ID } from "@/constants/env";
 
 export const TENDERLY_API_ENDPOINT = `https://api.tenderly.co/api/v1/account/me/project/${process.env.TENDERLY_PROJECT_SLUG}`;
 export const TENDERLY_SIMULATION_OPTIONS = {

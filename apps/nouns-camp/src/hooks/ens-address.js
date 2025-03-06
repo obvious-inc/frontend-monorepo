@@ -1,6 +1,6 @@
 import { normalize } from "viem/ens";
 import { useEnsAddress as useEnsAddress_ } from "wagmi";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const useEnsAddress = (name, { enabled = true, ...options } = {}) => {
   const nameQuery = (() => {

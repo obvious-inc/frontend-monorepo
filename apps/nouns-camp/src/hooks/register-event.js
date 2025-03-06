@@ -1,5 +1,5 @@
 import { mainnet } from "wagmi/chains";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const useRegisterEvent = () => {
   return (name, data) => {

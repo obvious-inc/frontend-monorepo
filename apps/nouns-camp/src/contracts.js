@@ -1,6 +1,6 @@
 import { mainnet, sepolia } from "wagmi/chains";
 import { object as objectUtils } from "@shades/common/utils";
-import { CHAIN_ID } from "./constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const ETH_TOKEN_CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
 

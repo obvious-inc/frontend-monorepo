@@ -1,7 +1,7 @@
 "use client";
 
-import ClientAppProvider from "../../client-app-provider.js";
-import VoterScreen from "../../../components/voter-screen.js";
+import ClientAppProvider from "@/app/client-app-provider";
+import VoterScreen from "@/components/voter-screen";
 
 // export const runtime = "edge";
 

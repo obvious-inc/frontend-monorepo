@@ -5,7 +5,7 @@ import {
   createReplyExtractor,
   formatReply,
   formatRepost,
-} from "./votes-and-feedbacks.js";
+} from "@/utils/votes-and-feedbacks";
 
 describe("repost extraction", () => {
   const sourceReasons = ["foo", "bar", `baz\n\n+1\n\n> foo`, "foo\u2028bar"];

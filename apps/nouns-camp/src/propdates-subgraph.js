@@ -1,4 +1,4 @@
-import { CHAIN_ID } from "./constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const PROPDATE_FIELDS = `
   fragment PropdateFields on PropUpdate {

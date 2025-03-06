@@ -2,7 +2,7 @@ import React from "react";
 import { css } from "@emotion/react";
 import * as Popover from "@shades/ui-web/popover";
 import InlineButton from "@shades/ui-web/inline-button";
-import NounPreviewPopoverTrigger from "./noun-preview-popover-trigger.js";
+import NounPreviewPopoverTrigger from "@/components/noun-preview-popover-trigger";
 import { array as arrayUtils } from "@shades/common/utils";
 
 const NounsPreviewPopoverTrigger = React.forwardRef(

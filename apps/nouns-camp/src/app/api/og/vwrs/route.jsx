@@ -3,7 +3,7 @@ import { getTheme } from "@/theme";
 import { getChain } from "@/utils/chains";
 import { getJsonRpcUrl } from "@/wagmi-config";
 import { createPublicClient, http } from "viem";
-import { displayName, formatDate, getFonts } from "../../og-utils";
+import { displayName, formatDate, getFonts } from "@/app/api/og-utils";
 import { ImageResponse } from "next/og";
 import {
   CANDIDATE_FEEDBACK_FIELDS,

@@ -4,11 +4,11 @@ import Dialog from "@shades/ui-web/dialog";
 import Button from "@shades/ui-web/button";
 import DialogHeader from "@shades/ui-web/dialog-header";
 import Avatar from "@shades/ui-web/avatar";
-import { useWallet, useWalletAuthentication } from "../hooks/wallet.js";
-import { useDialog } from "../hooks/global-dialogs.js";
-import { useConnectedFarcasterAccounts } from "../hooks/farcaster.js";
-import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster.js";
-import { reportError } from "@/utils/monitoring.js";
+import { useWallet, useWalletAuthentication } from "@/hooks/wallet";
+import { useDialog } from "@/hooks/global-dialogs";
+import { useConnectedFarcasterAccounts } from "@/hooks/farcaster";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster";
+import { reportError } from "@/utils/monitoring";
 
 const AccountAuthenticationDialog = ({ isOpen, close }) => {
   const { isAuthenticated } = useWallet();

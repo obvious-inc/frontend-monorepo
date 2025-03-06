@@ -1,6 +1,6 @@
 import { useReadContract } from "wagmi";
-import { CHAIN_ID } from "../constants/env.js";
-import { resolveIdentifier } from "../contracts.js";
+import { CHAIN_ID } from "@/constants/env";
+import { resolveIdentifier } from "@/contracts";
 
 const { address: contractAddress } = resolveIdentifier("descriptor");
 

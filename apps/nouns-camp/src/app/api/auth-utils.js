@@ -1,6 +1,6 @@
 import { invariant } from "@shades/common/utils";
 import { getSession } from "@/utils/session";
-import { verifyEthAddress } from "./farcaster-utils.js";
+import { verifyEthAddress } from "@/app/api/farcaster-utils";
 
 export const isLoggedIn = async () => {
   const session = await getSession();

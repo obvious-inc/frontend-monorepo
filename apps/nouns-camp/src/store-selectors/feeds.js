@@ -1,13 +1,13 @@
 "use client";
 
 import { array as arrayUtils } from "@shades/common/utils";
-import { resolveIdentifier } from "../contracts.js";
+import { resolveIdentifier } from "@/contracts";
 import {
   createReplyExtractor,
   createRepostExtractor,
-} from "../utils/votes-and-feedbacks.js";
-import { getSponsorSignatures as getCandidateSponsorSignatures } from "../utils/candidates.js";
-import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster.js";
+} from "@/utils/votes-and-feedbacks";
+import { getSponsorSignatures as getCandidateSponsorSignatures } from "@/utils/candidates";
+import { pickDisplayName as pickFarcasterAccountDisplayName } from "@/utils/farcaster";
 import { base } from "viem/chains";
 
 const createFarcasterCastItem = (cast) => {

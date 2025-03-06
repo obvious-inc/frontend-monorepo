@@ -1,5 +1,7 @@
 import { isAddress as isEthereumAccountAddress } from "viem";
-import { truncateAddress } from "../../../../../packages/common/src/utils/ethereum";
+import { ethereum as ethereumUtils } from "@shades/common/utils";
+
+const { truncateAddress } = ethereumUtils;
 
 export const getFonts = async () => {
   const fontName = "Inter";

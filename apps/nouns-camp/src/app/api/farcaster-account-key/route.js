@@ -4,7 +4,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import {
   persistPendingAccountKeyForFid,
   setPendingAccountKey,
-} from "../farcaster-account-key-utils";
+} from "@/app/api/farcaster-account-key-utils";
 
 const SIGNED_KEY_REQUEST_VALIDATOR_EIP_712_DOMAIN = {
   name: "Farcaster SignedKeyRequestValidator",

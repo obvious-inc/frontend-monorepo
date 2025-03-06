@@ -11,7 +11,7 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
-import { useWallet } from "./wallet.js";
+import { useWallet } from "@/hooks/wallet";
 
 const isFiltered = (filter, cast) => {
   switch (filter) {

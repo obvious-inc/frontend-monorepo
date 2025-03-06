@@ -1,5 +1,5 @@
 import { getAbiItem, decodeFunctionData } from "viem";
-import useEtherscanContractInfo from "./etherscan-contract-info.js";
+import useEtherscanContractInfo from "@/hooks/etherscan-contract-info";
 
 const decodeCalldataWithAbi = ({ abi, calldata }) => {
   try {

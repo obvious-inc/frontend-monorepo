@@ -12,8 +12,8 @@ import {
   safe,
   injected,
 } from "wagmi/connectors";
-import { CHAIN_ID } from "./constants/env.js";
-import { getChain } from "./utils/chains.js";
+import { CHAIN_ID } from "@/constants/env";
+import { getChain } from "@/utils/chains";
 
 const chain = getChain(CHAIN_ID);
 

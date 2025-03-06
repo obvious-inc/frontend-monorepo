@@ -1,5 +1,5 @@
 import React from "react";
-import useBlockNumber from "./block-number.js";
+import useBlockNumber from "@/hooks/block-number";
 
 const secondsPerBlock = 12;
 

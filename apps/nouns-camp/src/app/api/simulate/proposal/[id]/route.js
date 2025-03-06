@@ -1,9 +1,9 @@
 import { createPublicClient, http } from "viem";
-import { getChain } from "../../../../../utils/chains";
-import { getJsonRpcUrl } from "../../../../../wagmi-config";
-import { CHAIN_ID } from "../../../../../constants/env";
-import { resolveIdentifier } from "../../../../../contracts";
-import { fetchSimulationBundle } from "../../../tenderly-utils";
+import { getChain } from "@/utils/chains";
+import { getJsonRpcUrl } from "@/wagmi-config";
+import { CHAIN_ID } from "@/constants/env";
+import { resolveIdentifier } from "@/contracts";
+import { fetchSimulationBundle } from "@/app/api/tenderly-utils";
 
 const chain = getChain(CHAIN_ID);
 

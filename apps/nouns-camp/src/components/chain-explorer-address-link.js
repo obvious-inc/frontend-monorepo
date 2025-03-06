@@ -1,4 +1,4 @@
-import { buildEtherscanLink } from "../utils/etherscan.js";
+import { buildEtherscanLink } from "@/utils/etherscan";
 
 const ChainExplorerAddressLink = ({ address, ...props }) => (
   <a

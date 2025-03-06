@@ -1,5 +1,5 @@
 import { useAccountDisplayName as useAccountDisplayName_ } from "@shades/common/ethereum-react";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const useAccountDisplayName = (address, options) => {
   const name = useAccountDisplayName_(address, {

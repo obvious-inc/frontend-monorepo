@@ -1,21 +1,21 @@
 import { ImageResponse } from "next/og";
-import { parseProposal, subgraphFetch } from "../../../nouns-subgraph";
+import { parseProposal, subgraphFetch } from "@/nouns-subgraph";
 import {
   getState,
   getStateLabel,
   isFinalState as isFinalProposalState,
   isSucceededState as isSucceededProposalState,
-} from "../../../utils/proposals";
+} from "@/utils/proposals";
 import React from "react";
 import { createPublicClient, formatEther, formatUnits, http } from "viem";
-import { getChain } from "../../../utils/chains";
-import { getJsonRpcUrl } from "../../../wagmi-config";
-import { CHAIN_ID } from "../../../constants/env";
-import { extractAmounts } from "../../../utils/transactions";
+import { getChain } from "@/utils/chains";
+import { getJsonRpcUrl } from "@/wagmi-config";
+import { CHAIN_ID } from "@/constants/env";
+import { extractAmounts } from "@/utils/transactions";
 import { approximateBlockTimestamp } from "@/hooks/approximate-block-timestamp-calculator";
 import { date as dateUtils } from "@shades/common/utils";
 import { getTheme } from "@/theme";
-import { displayName, formatDate, getFonts } from "../og-utils";
+import { displayName, formatDate, getFonts } from "@/app/api/og-utils";
 
 const theme = getTheme("light");
 

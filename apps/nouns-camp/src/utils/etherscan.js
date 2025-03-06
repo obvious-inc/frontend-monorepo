@@ -1,5 +1,5 @@
 import { base, mainnet, sepolia } from "viem/chains";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const getEtherscanLinkHost = (chainId) => {
   switch (chainId) {

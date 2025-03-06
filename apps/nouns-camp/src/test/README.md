@@ -32,8 +32,8 @@ Example component test:
 
 ```javascript
 import { describe, it, expect } from "vitest";
-import { renderWithProviders, screen, fireEvent } from "../test/test-utils";
-import MyComponent from "./my-component";
+import import { renderWithProviders, screen, fireEvent } from "@/test/test-utils";
+import import MyComponent from "@/test/my-component";
 
 describe("MyComponent", () => {
   it("renders with default props", () => {

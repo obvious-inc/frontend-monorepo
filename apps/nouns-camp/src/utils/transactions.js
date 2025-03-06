@@ -13,7 +13,7 @@ import {
   object as objectUtils,
   ethereum as ethereumUtils,
 } from "@shades/common/utils";
-import { resolveAddress, resolveIdentifier } from "../contracts.js";
+import { resolveAddress, resolveIdentifier } from "@/contracts";
 
 const decimalsByCurrency = {
   eth: 18,

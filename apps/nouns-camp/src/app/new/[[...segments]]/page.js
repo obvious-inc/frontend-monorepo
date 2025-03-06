@@ -1,9 +1,9 @@
 "use client";
 
-import { useWallet } from "../../../hooks/wallet.js";
-import ClientAppProvider from "../../client-app-provider.js";
-import ProposalOrTopicEditorScreen from "../../../components/proposal-or-topic-editor-screen.js";
-import ConnectWalletScreen from "../../../components/connect-wallet-screen.js";
+import { useWallet } from "@/hooks/wallet";
+import ClientAppProvider from "@/app/client-app-provider";
+import ProposalOrTopicEditorScreen from "@/components/proposal-or-topic-editor-screen";
+import ConnectWalletScreen from "@/components/connect-wallet-screen";
 
 export default function Page({ params }) {
   const draftId = params.segments?.[0];

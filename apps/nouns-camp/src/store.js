@@ -15,7 +15,7 @@ import {
 import {
   getState as getProposalState,
   isActiveState as isActiveProposalState,
-} from "./utils/proposals.js";
+} from "@/utils/proposals";
 import {
   buildAuctionFeed,
   buildAccountFeed,
@@ -24,19 +24,19 @@ import {
   buildPropdateFeedItem,
   buildNounsTokenRepresentationFeed,
   buildFlowVotesFeed,
-} from "./store-selectors/feeds.js";
+} from "@/store-selectors/feeds";
 import {
   extractSlugFromId as extractSlugFromCandidateId,
   getSponsorSignatures as getCandidateSponsorSignatures,
-} from "./utils/candidates.js";
-import usePublicClient from "./hooks/public-client.js";
-import useBlockNumber from "./hooks/block-number.js";
-import useSetting from "./hooks/setting.js";
+} from "@/utils/candidates";
+import usePublicClient from "@/hooks/public-client";
+import useBlockNumber from "@/hooks/block-number";
+import useSetting from "@/hooks/setting";
 import {
   useProposalCasts,
   useCandidateCasts,
   useRecentCasts,
-} from "./hooks/farcaster.js";
+} from "@/hooks/farcaster";
 import {
   parsedSubgraphFetch,
   FULL_PROPOSAL_FIELDS,
@@ -46,9 +46,9 @@ import {
   DELEGATION_EVENT_FIELDS,
   TRANSFER_EVENT_FIELDS,
   FULL_PROPOSAL_CANDIDATE_FIELDS,
-} from "./nouns-subgraph.js";
-import * as PropdatesSubgraph from "./propdates-subgraph.js";
-import * as FlowsSubgraph from "./flows-subgraph.js";
+} from "@/nouns-subgraph";
+import * as PropdatesSubgraph from "@/propdates-subgraph";
+import * as FlowsSubgraph from "@/flows-subgraph";
 
 const createFeedbackPostCompositeId = (post) =>
   [post.proposalId, post.candidateId, post.reason, post.support, post.voterId]

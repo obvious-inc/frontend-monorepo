@@ -6,8 +6,8 @@ import {
   useWriteContract,
 } from "wagmi";
 import { CHAIN_ID, CAMP_CLIENT_ID } from "@/constants/env";
-import { resolveIdentifier } from "../contracts.js";
-import useBlockNumber from "./block-number.js";
+import { resolveIdentifier } from "@/contracts";
+import useBlockNumber from "@/hooks/block-number";
 
 const { address: contractAddress } = resolveIdentifier("auction-house");
 

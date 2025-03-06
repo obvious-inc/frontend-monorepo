@@ -1,5 +1,5 @@
-import { fetchSimulationBundle } from "../../../tenderly-utils";
-import { parseCandidate, subgraphFetch } from "../../../../../nouns-subgraph";
+import { fetchSimulationBundle } from "@/app/api/tenderly-utils";
+import { parseCandidate, subgraphFetch } from "@/nouns-subgraph";
 
 const fetchCandidate = async (id) => {
   const data = await subgraphFetch({

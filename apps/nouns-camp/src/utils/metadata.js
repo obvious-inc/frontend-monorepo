@@ -1,4 +1,4 @@
-import metaConfig from "../metadata-config.js";
+import metaConfig from "@/metadata-config";
 
 export const build = ({ title, description, canonicalPathname }) => {
   const canonicalUrl =

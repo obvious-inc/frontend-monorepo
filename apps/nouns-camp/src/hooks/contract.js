@@ -1,4 +1,4 @@
-import { resolveIdentifier, resolveAddress } from "../contracts.js";
+import { resolveIdentifier, resolveAddress } from "@/contracts";
 
 const useContract = (identifierOrAddress) => {
   return (

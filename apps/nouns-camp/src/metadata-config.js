@@ -1,4 +1,4 @@
-import { APP_HOST } from "./constants/env.js";
+import { APP_HOST } from "@/constants/env";
 
 export default {
   viewportLightThemeColor: "#ffffff",

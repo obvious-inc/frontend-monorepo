@@ -1,8 +1,8 @@
 "use client";
 
 import Spinner from "@shades/ui-web/spinner";
-import ClientAppProvider from "./client-app-provider.js";
-import Layout from "../components/layout.js";
+import ClientAppProvider from "@/app/client-app-provider";
+import Layout from "@/components/layout";
 
 export default function Loading() {
   return (

@@ -1,4 +1,4 @@
-import { useWallet } from "./wallet.js";
+import { useWallet } from "@/hooks/wallet";
 
 const canaryFeatures = [];
 const betaFeatures = [];

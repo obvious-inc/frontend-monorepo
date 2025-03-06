@@ -1,4 +1,4 @@
-import useScrollToElement from "./scroll-to-element.js";
+import useScrollToElement from "@/hooks/scroll-to-element";
 
 const useScrollToHash = (scrollToElementOptions) => {
   useScrollToElement({

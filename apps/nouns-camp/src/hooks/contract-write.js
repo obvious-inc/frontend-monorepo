@@ -1,4 +1,4 @@
-import { useWallet } from "./wallet";
+import { useWallet } from "@/hooks/wallet";
 import { useWriteContract as useWagmiContractWrite } from "wagmi";
 
 export const useWriteContract = () => {

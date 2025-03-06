@@ -1,8 +1,8 @@
 import { css } from "@emotion/react";
 import NextLink from "next/link";
 import Button from "@shades/ui-web/button";
-import Layout from "./layout.js";
-import Code from "./code.js";
+import Layout from "@/components/layout";
+import Code from "@/components/code";
 
 const ErrorScreen = ({
   title = "Error",

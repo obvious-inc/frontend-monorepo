@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import ClientAppProvider from "../../client-app-provider.js";
-import ErrorScreen from "../../../components/error-screen.js";
+import ClientAppProvider from "@/app/client-app-provider";
+import ErrorScreen from "@/components/error-screen";
 
 export default function NotFound() {
   const params = useParams();

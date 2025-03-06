@@ -1,18 +1,18 @@
 import { isLoggedIn, isLoggedInAccountFid } from "@/app/api/auth-utils";
-import { subgraphFetch } from "../../../nouns-subgraph.js";
-import { CHAIN_ID, APP_PRODUCTION_URL } from "../../../constants/env.js";
-import { makeUrlId as makeCandidateUrlId } from "../../../utils/candidates.js";
-import { parseEpochTimestamp } from "../../../utils/farcaster.js";
-import { createUri as createTransactionReceiptUri } from "../../../utils/erc-2400.js";
+import { subgraphFetch } from "@/nouns-subgraph";
+import { CHAIN_ID, APP_PRODUCTION_URL } from "@/constants/env";
+import { makeUrlId as makeCandidateUrlId } from "@/utils/candidates";
+import { parseEpochTimestamp } from "@/utils/farcaster";
+import { createUri as createTransactionReceiptUri } from "@/utils/erc-2400";
 import {
   submitCastAdd,
   fetchCastsByParentUrl,
   fetchAccount,
-} from "../farcaster-utils.js";
+} from "@/app/api/farcaster-utils";
 import {
   getAccountKeyForFid,
   deleteAccountKeyForFid,
-} from "../farcaster-account-key-utils.js";
+} from "@/app/api/farcaster-account-key-utils";
 
 const createCanonicalCandidateUrl = async (candidateId) => {
   const { proposalCandidate } = await subgraphFetch({

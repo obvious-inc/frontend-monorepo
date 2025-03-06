@@ -1,5 +1,5 @@
 import { useEnsName as useEnsName_ } from "wagmi";
-import { CHAIN_ID } from "../constants/env.js";
+import { CHAIN_ID } from "@/constants/env";
 
 const useEnsName = (address, { enabled = true, ...options } = {}) => {
   const { data: name } = useEnsName_({

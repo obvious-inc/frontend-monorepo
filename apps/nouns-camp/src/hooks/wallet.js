@@ -18,7 +18,7 @@ import {
   useActions as useSessionActions,
 } from "@/session-provider";
 import { isAddress } from "viem";
-import useEnsAddress from "./ens-address";
+import useEnsAddress from "@/hooks/ens-address";
 
 const impersonationParam =
   typeof location === "undefined"

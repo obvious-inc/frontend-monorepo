@@ -12,16 +12,16 @@ import {
   DotsHorizontal as DotsHorizontalIcon,
   Fullscreen as FullscreenIcon,
 } from "@shades/ui-web/icons";
-import { useActions, useNoun } from "../store.js";
-import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
+import { useActions, useNoun } from "@/store";
+import { resolveIdentifier as resolveContractIdentifier } from "@/contracts";
 import { buildEtherscanLink } from "@/utils/etherscan";
 import { useTransferMeta as useNounTransferMeta } from "@/hooks/noun-transfers";
-import NounAvatar from "./noun-avatar.js";
-import FormattedDateWithTooltip from "./formatted-date-with-tooltip.js";
-import { FormattedEthWithConditionalTooltip } from "./transaction-list.js";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger.js";
-import ChainExplorerTransactionLink from "./chain-explorer-transaction-link.js";
-import { useDialog } from "@/hooks/global-dialogs.js";
+import NounAvatar from "@/components/noun-avatar";
+import FormattedDateWithTooltip from "@/components/formatted-date-with-tooltip";
+import { FormattedEthWithConditionalTooltip } from "@/components/transaction-list";
+import AccountPreviewPopoverTrigger from "@/components/account-preview-popover-trigger";
+import ChainExplorerTransactionLink from "@/components/chain-explorer-transaction-link";
+import { useDialog } from "@/hooks/global-dialogs";
 
 const NounPreviewPopoverTrigger = React.forwardRef(
   (

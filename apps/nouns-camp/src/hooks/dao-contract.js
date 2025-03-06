@@ -1,16 +1,16 @@
 import { parseEventLogs } from "viem";
 import React from "react";
 import { useReadContract, useSimulateContract } from "wagmi";
-import { CHAIN_ID, CAMP_CLIENT_ID } from "../constants/env.js";
-import { unparse as unparseTransactions } from "../utils/transactions.js";
-import { resolveIdentifier } from "../contracts.js";
-import { useActions } from "../store.js";
-import useBlockNumber from "./block-number.js";
-import usePublicClient from "./public-client.js";
-import { useWallet } from "./wallet.js";
-import useRegisterEvent from "./register-event.js";
-import { useCurrentVotes } from "./token-contract.js";
-import { useWriteContract } from "./contract-write.js";
+import { CHAIN_ID, CAMP_CLIENT_ID } from "@/constants/env";
+import { unparse as unparseTransactions } from "@/utils/transactions";
+import { resolveIdentifier } from "@/contracts";
+import { useActions } from "@/store";
+import useBlockNumber from "@/hooks/block-number";
+import usePublicClient from "@/hooks/public-client";
+import { useWallet } from "@/hooks/wallet";
+import useRegisterEvent from "@/hooks/register-event";
+import { useCurrentVotes } from "@/hooks/token-contract";
+import { useWriteContract } from "@/hooks/contract-write";
 
 const { address: contractAddress } = resolveIdentifier("dao");
 

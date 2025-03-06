@@ -1,6 +1,6 @@
 import React from "react";
 import { array as arrayUtils } from "@shades/common/utils";
-import { useSearchParams } from "./navigation.js";
+import { useSearchParams } from "@/hooks/navigation";
 
 const ReactLazyWithPreload = (fetcher) => {
   const LazyComponent = React.lazy(fetcher);
@@ -15,63 +15,63 @@ const dialogs = [
     key: "auction",
     search: true,
     component: ReactLazyWithPreload(
-      () => import("../components/auction-dialog.js"),
+      () => import("@/components/auction-dialog"),
     ),
   },
   {
     key: "vote-overview",
     search: true,
     component: ReactLazyWithPreload(
-      () => import("../components/proposal-votes-dialog.js"),
+      () => import("@/components/proposal-votes-dialog"),
     ),
   },
   {
     key: "treasury",
     search: true,
     component: ReactLazyWithPreload(
-      () => import("../components/treasury-dialog.js"),
+      () => import("@/components/treasury-dialog"),
     ),
   },
   {
     key: "account",
     component: ReactLazyWithPreload(
-      () => import("../components/account-dialog.js"),
+      () => import("@/components/account-dialog"),
     ),
   },
   {
     key: "delegation",
     component: ReactLazyWithPreload(
-      () => import("../components/delegation-dialog.js"),
+      () => import("@/components/delegation-dialog"),
     ),
   },
   {
     key: "drafts",
     component: ReactLazyWithPreload(
-      () => import("../components/proposal-or-topic-drafts-dialog.js"),
+      () => import("@/components/proposal-or-topic-drafts-dialog"),
     ),
   },
   {
     key: "settings",
     component: ReactLazyWithPreload(
-      () => import("../components/settings-dialog.js"),
+      () => import("@/components/settings-dialog"),
     ),
   },
   {
     key: "account-authentication",
     component: ReactLazyWithPreload(
-      () => import("../components/account-authentication-dialog.js"),
+      () => import("@/components/account-authentication-dialog"),
     ),
   },
   {
     key: "farcaster-setup",
     component: ReactLazyWithPreload(
-      () => import("../components/farcaster-setup-dialog.js"),
+      () => import("@/components/farcaster-setup-dialog"),
     ),
   },
   {
     key: "streams",
     component: ReactLazyWithPreload(
-      () => import("../components/streams-dialog.js"),
+      () => import("@/components/streams-dialog"),
     ),
   },
 ];

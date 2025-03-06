@@ -2,10 +2,10 @@
 
 import { isAddress } from "viem";
 import { useParams } from "next/navigation";
-import ClientAppProvider from "../../client-app-provider.js";
-import { normalizeId, extractSlugFromId } from "../../../utils/candidates.js";
-import AccountPreviewPopoverTrigger from "../../../components/account-preview-popover-trigger.js";
-import ErrorScreen from "../../../components/error-screen.js";
+import ClientAppProvider from "@/app/client-app-provider";
+import { normalizeId, extractSlugFromId } from "@/utils/candidates";
+import AccountPreviewPopoverTrigger from "@/components/account-preview-popover-trigger";
+import ErrorScreen from "@/components/error-screen";
 
 export default function NotFound() {
   const params = useParams();

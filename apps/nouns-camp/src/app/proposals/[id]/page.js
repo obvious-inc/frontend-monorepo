@@ -4,11 +4,11 @@ import {
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import metaConfig from "../../../metadata-config.js";
-import { subgraphFetch, parseProposal } from "../../../nouns-subgraph.js";
-import { Hydrater as StoreHydrater } from "../../../store.js";
-import ClientAppProvider from "../../client-app-provider.js";
-import ProposalScreen from "../../../components/proposal-screen.js";
+import metaConfig from "@/metadata-config";
+import { subgraphFetch, parseProposal } from "@/nouns-subgraph";
+import { Hydrater as StoreHydrater } from "@/store";
+import ClientAppProvider from "@/app/client-app-provider";
+import ProposalScreen from "@/components/proposal-screen";
 
 const fetchProposal = async (id) => {
   const data = await subgraphFetch({

@@ -1,17 +1,17 @@
 import { isLoggedIn, isLoggedInAccountFid } from "@/app/api/auth-utils";
-import { CHAIN_ID, APP_PRODUCTION_URL } from "../../../constants/env.js";
-import { subgraphFetch } from "../../../nouns-subgraph.js";
-import { parseEpochTimestamp } from "../../../utils/farcaster.js";
-import { createUri as createTransactionReceiptUri } from "../../../utils/erc-2400.js";
+import { CHAIN_ID, APP_PRODUCTION_URL } from "@/constants/env";
+import { subgraphFetch } from "@/nouns-subgraph";
+import { parseEpochTimestamp } from "@/utils/farcaster";
+import { createUri as createTransactionReceiptUri } from "@/utils/erc-2400";
 import {
   fetchCastsByParentUrl,
   fetchAccount,
   submitCastAdd,
-} from "../farcaster-utils.js";
+} from "@/app/api/farcaster-utils";
 import {
   getAccountKeyForFid,
   deleteAccountKeyForFid,
-} from "../farcaster-account-key-utils.js";
+} from "@/app/api/farcaster-account-key-utils";
 
 const createCanonicalProposalUrl = async (proposalId) => {
   const { proposal } = await subgraphFetch({

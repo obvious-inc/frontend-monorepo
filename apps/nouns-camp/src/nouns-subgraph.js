@@ -2,8 +2,8 @@ import {
   array as arrayUtils,
   object as objectUtils,
 } from "@shades/common/utils";
-import { parse as parseTransactions } from "./utils/transactions.js";
-import { matchTopicTransactions } from "./utils/candidates.js";
+import { parse as parseTransactions } from "@/utils/transactions";
+import { matchTopicTransactions } from "@/utils/candidates";
 
 const customSubgraphEndpoint =
   typeof location === "undefined"

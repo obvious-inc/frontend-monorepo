@@ -2,10 +2,10 @@ import { css } from "@emotion/react";
 import { useAccount } from "wagmi";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
-import config from "../config.js";
-import useSetting, { getConfig as getSettingConfig } from "../hooks/setting.js";
-import { useSearchParams } from "../hooks/navigation.js";
-import { useWallet } from "../hooks/wallet.js";
+import config from "@/config";
+import useSetting, { getConfig as getSettingConfig } from "@/hooks/setting";
+import { useSearchParams } from "@/hooks/navigation";
+import { useWallet } from "@/hooks/wallet";
 
 const BUILD_ID = process.env.BUILD_ID;
 

@@ -4,12 +4,12 @@ import {
   markdown as markdownUtils,
   message as messageUtils,
 } from "@shades/common/utils";
-import metaConfig from "../../../metadata-config.js";
-import { subgraphFetch, parseCandidate } from "../../../nouns-subgraph.js";
-import { normalizeId } from "../../../utils/candidates.js";
-import { Hydrater as StoreHydrater } from "../../../store.js";
-import ClientAppProvider from "../../client-app-provider.js";
-import CandidateScreen from "../../../components/candidate-screen.js";
+import metaConfig from "@/metadata-config";
+import { subgraphFetch, parseCandidate } from "@/nouns-subgraph";
+import { normalizeId } from "@/utils/candidates";
+import { Hydrater as StoreHydrater } from "@/store";
+import ClientAppProvider from "@/app/client-app-provider";
+import CandidateScreen from "@/components/candidate-screen";
 
 // export const runtime = "edge";
 

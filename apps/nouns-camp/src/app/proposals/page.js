@@ -1,6 +1,6 @@
-import ClientAppProvider from "../client-app-provider.js";
-import { build as buildMetadata } from "../../utils/metadata.js";
-import BrowseProposalsScreen from "../../components/browse-proposals-screen.js";
+import ClientAppProvider from "@/app/client-app-provider";
+import { build as buildMetadata } from "@/utils/metadata";
+import BrowseProposalsScreen from "@/components/browse-proposals-screen";
 
 export const metadata = buildMetadata({
   title: "Proposals",

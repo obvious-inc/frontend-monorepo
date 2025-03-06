@@ -1,9 +1,9 @@
 import { isAddress } from "viem";
 import { useReadContract, useReadContracts, useSimulateContract } from "wagmi";
-import { CHAIN_ID } from "../constants/env.js";
-import { resolveIdentifier } from "../contracts.js";
-import usePublicClient from "./public-client.js";
-import { useWriteContract } from "./contract-write.js";
+import { CHAIN_ID } from "@/constants/env";
+import { resolveIdentifier } from "@/contracts";
+import usePublicClient from "@/hooks/public-client";
+import { useWriteContract } from "@/hooks/contract-write";
 
 const { address: contractAddress } = resolveIdentifier("token");
 

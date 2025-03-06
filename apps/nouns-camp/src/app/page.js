@@ -1,5 +1,5 @@
-import ClientAppProvider from "./client-app-provider.js";
-import LandingScreen from "../components/landing-screen.js";
+import ClientAppProvider from "@/app/client-app-provider";
+import LandingScreen from "@/components/landing-screen";
 
 export default function Page() {
   return (

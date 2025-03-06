@@ -1,6 +1,6 @@
 import { notFound as nextNotFound } from "next/navigation";
-import { subgraphFetch } from "../../../nouns-subgraph.js";
-import ClientAppProvider from "../../client-app-provider.js";
+import { subgraphFetch } from "@/nouns-subgraph";
+import ClientAppProvider from "@/app/client-app-provider";
 import NounScreen from "@/components/noun-screen";
 
 const fetchNoun = async (id) => {

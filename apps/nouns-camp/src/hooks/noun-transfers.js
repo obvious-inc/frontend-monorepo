@@ -1,7 +1,7 @@
 import React from "react";
 import { decodeEventLog, zeroAddress } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
-import { resolveIdentifier as resolveContractIdentifier } from "../contracts.js";
+import { resolveIdentifier as resolveContractIdentifier } from "@/contracts";
 import { useTransaction, useTransactionReceipt } from "wagmi";
 
 const decodeEventLogs = ({ logs, abi }) => {

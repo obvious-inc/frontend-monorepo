@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { createRepostExtractor } from "./votes-and-feedbacks.js";
+import { createRepostExtractor } from "@/utils/votes-and-feedbacks";
 
 const sourceReasons = [
   "foo",

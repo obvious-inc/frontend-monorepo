@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { array as arrayUtils } from "@shades/common/utils";
-import { subgraphFetch as queryNounsSubgraph } from "../nouns-subgraph.js";
+import { subgraphFetch as queryNounsSubgraph } from "@/nouns-subgraph";
 
 const useRecentAuctionProceeds = ({
   auctionCount = 30,

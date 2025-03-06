@@ -1,5 +1,5 @@
-import { getStateLabel as getProposalStateLabel } from "../utils/proposals.js";
-import { useProposal } from "../store.js";
+import { getStateLabel as getProposalStateLabel } from "@/utils/proposals";
+import { useProposal } from "@/store";
 import Tag from "@/components/tag";
 
 const ProposalStateTag = ({ proposalId, ...props }) => {
