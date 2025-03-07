@@ -1,0 +1,16 @@
+{
+  proposals(where: { status: "ACTIVE" }, orderBy: startBlock, orderDirection: desc) {
+    id
+    title
+    status
+    description
+    proposer {
+      id
+    }
+    forVotes
+    againstVotes
+    abstainVotes
+    startBlock
+    endBlock
+  }
+}
