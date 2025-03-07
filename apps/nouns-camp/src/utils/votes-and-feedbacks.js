@@ -35,6 +35,12 @@ export const GENERAL_REPLY_REGEX =
 /**
  * Helper function to extract structured reply data from text.
  * Used internally by createReplyExtractor when dealing with complex replies.
+ * 
+ * Enhanced to better handle:
+ * - Multiple quotes within the same feedback
+ * - Embedded quotes within reply text
+ * - Preserving intro text separate from replies
+ * - More accurate pairing of replies with their quotes
  */
 function extractStructuredReply(text) {
   if (!text) return null;
@@ -44,135 +50,186 @@ function extractStructuredReply(text) {
 
   const { author, content } = matches[0].groups;
 
-  // Find all the quote blocks in the content
-  const quoteBlocks = [];
+  // First, let's scan the entire content and identify:
+  // 1. All quote blocks (the > prefix lines)
+  // 2. All text segments (non-quoted text)
+  // 3. The correct sequence and relationship of these blocks
+
+  const segments = [];
   let currentQuote = [];
+  let currentText = [];
   let inQuote = false;
-  let replyTexts = []; // Will collect text segments between quotes
-  let currentReplyText = [];
 
   const lines = content.split("\n");
 
-  // First pass: identify all quote blocks and text segments
-  // Add a marker for the first line to ensure we capture intro text correctly
-  let isFirstText = true;
-  
+  // First pass: identify all segments and their types in sequence
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const isQuoteLine = line.startsWith("> ") || line === ">";
 
-    if (line.startsWith("> ") || line === ">") {
-      // Start or continue a quote block
-      if (!inQuote && currentReplyText.length > 0) {
-        // Store the text before this quote as a potential reply
-        const textType = isFirstText ? 'introText' : 'replyText';
-        replyTexts.push({
-          type: textType,
-          content: currentReplyText.join("\n")
-        });
-        isFirstText = false;
-        currentReplyText = [];
+    if (isQuoteLine) {
+      // We're entering or continuing a quote block
+      if (!inQuote) {
+        // If we were collecting text, save it before starting the quote
+        if (currentText.length > 0) {
+          segments.push({
+            type: "text", 
+            content: currentText.join("\n"),
+            index: segments.length
+          });
+          currentText = [];
+        }
+        inQuote = true;
       }
-      
-      inQuote = true;
       currentQuote.push(line);
     } else {
+      // We're in regular text
       if (inQuote) {
-        // End of a quote block
+        // We just finished a quote block, save it
         if (currentQuote.length > 0) {
-          quoteBlocks.push(currentQuote.join("\n"));
+          segments.push({
+            type: "quote", 
+            content: currentQuote.join("\n"),
+            index: segments.length
+          });
           currentQuote = [];
         }
         inQuote = false;
       }
       
-      // Add to current reply text if not empty
+      // Add this line to the current text block if it's not empty
       if (line.trim() !== '') {
-        currentReplyText.push(line);
+        currentText.push(line);
       }
     }
   }
 
-  // Add the last quote block if we're still in one
-  if (currentQuote.length > 0) {
-    quoteBlocks.push(currentQuote.join("\n"));
-  }
-  
-  // Add any remaining reply text
-  if (currentReplyText.length > 0) {
-    const textType = isFirstText ? 'introText' : 'replyText';
-    replyTexts.push({
-      type: textType,
-      content: currentReplyText.join("\n")
+  // Handle any remaining content
+  if (inQuote && currentQuote.length > 0) {
+    segments.push({
+      type: "quote", 
+      content: currentQuote.join("\n"),
+      index: segments.length
+    });
+  } else if (currentText.length > 0) {
+    segments.push({
+      type: "text", 
+      content: currentText.join("\n"),
+      index: segments.length
     });
   }
 
   // If no quote blocks found, this isn't a reply
-  if (quoteBlocks.length === 0) return null;
+  const quoteSegments = segments.filter(s => s.type === "quote");
+  if (quoteSegments.length === 0) return null;
 
-  // Extract intro text if it exists
-  let introText = '';
-  let actualReplies = [];
+  // Determine the intro text - this is the first text segment (if any)
+  const firstSegment = segments.length > 0 ? segments[0] : null;
+  const introText = (firstSegment && firstSegment.type === "text") 
+    ? firstSegment.content.trim() 
+    : "";
+
+  // Now identify the replies
+  // A reply could be:
+  // 1. Simple: text segment followed by a quote - the text is directly replying to the quote
+  // 2. Complex: quote followed by text - the text is a reply to the quoted content
   
-  // Separate intro text and reply texts
-  for (const textItem of replyTexts) {
-    if (textItem.type === 'introText') {
-      introText = textItem.content;
-    } else {
-      actualReplies.push(textItem.content);
+  const replies = [];
+  
+  // For each quote, find the text that might be a reply to it
+  for (let i = 0; i < segments.length; i++) {
+    const segment = segments[i];
+    
+    if (segment.type === "quote") {
+      // Check if the segment following this quote is text
+      const nextIndex = i + 1;
+      if (nextIndex < segments.length && segments[nextIndex].type === "text") {
+        // This is likely a reply to the quote
+        replies.push({
+          author,
+          reply: segments[nextIndex].content.trim(),
+          quote: segment.content,
+          replyLocation: "after", // The reply appears after the quote
+          quoteIndex: segment.index,
+          replyIndex: segments[nextIndex].index
+        });
+      }
+      
+      // Also check if the segment before this quote is text
+      // (but not if it was the intro text and we already have a "after" reply for a previous quote)
+      const prevIndex = i - 1;
+      if (prevIndex >= 0 && segments[prevIndex].type === "text") {
+        // Only treat this as a reply if:
+        // 1. It's not the first text segment (which is the intro)
+        // 2. OR if there are multiple quotes and this is clearly a reply
+        const isFirstText = prevIndex === 0 && segments[0].type === "text";
+        const hasMultipleQuotes = quoteSegments.length > 1;
+        
+        if (!isFirstText || (hasMultipleQuotes && quoteSegments[0].index > 0)) {
+          replies.push({
+            author,
+            reply: segments[prevIndex].content.trim(),
+            quote: segment.content,
+            replyLocation: "before", // The reply appears before the quote
+            quoteIndex: segment.index,
+            replyIndex: segments[prevIndex].index
+          });
+        }
+      }
     }
   }
   
-  // For the simplest case with no complex structure,
-  // use the traditional approach
-  if (quoteBlocks.length === 1 && actualReplies.length === 0 && introText) {
+  // Special handling for the simple case of one quote
+  if (quoteSegments.length === 1 && replies.length === 0 && introText) {
+    // If there's just one quote and intro text but no identified replies,
+    // the intro text is probably the reply
     return {
       author,
-      reply: introText.trim(),
-      quote: quoteBlocks[0],
+      reply: introText,
+      quote: quoteSegments[0].content,
     };
   }
   
-  // For more complex cases, we need to identify replies and pair them with quotes
-  const replies = [];
-  
-  // Each quote is paired with the text that follows it (if any)
-  for (let i = 0; i < quoteBlocks.length; i++) {
-    const quote = quoteBlocks[i];
-    
-    // Find the text that comes AFTER this quote (if any)
-    const replyText = i < actualReplies.length ? actualReplies[i] : '';
-    
-    replies.push({
-      author,
-      reply: replyText.trim(),
-      quote,
-    });
-  }
-  
-  // If we found reply segments, return them along with intro text
+  // For complex cases with multiple replies or quotes
   if (replies.length > 0) {
-    // Filter out empty replies
-    const validReplies = replies.filter(r => r.reply.trim() !== '');
+    // Sort replies by their original sequence in the text
+    const sortedReplies = [...replies].sort((a, b) => {
+      // First by quote index, then by reply position
+      if (a.quoteIndex !== b.quoteIndex) return a.quoteIndex - b.quoteIndex;
+      if (a.replyLocation === "before" && b.replyLocation === "after") return -1;
+      if (a.replyLocation === "after" && b.replyLocation === "before") return 1;
+      return a.replyIndex - b.replyIndex;
+    });
     
-    if (validReplies.length > 0) {
-      return {
-        multipleReplies: true,
-        introText,
-        replies: validReplies,
-        author,
-      };
-    }
+    // Remove position info from final output
+    const cleanedReplies = sortedReplies.map(({ author, reply, quote }) => ({
+      author, reply, quote
+    }));
+    
+    return {
+      multipleReplies: true,
+      introText,
+      replies: cleanedReplies,
+      author,
+    };
   }
 
   // Fall back to the original behavior as a last resort
-  // This should rarely happen with the improved algorithm
-  const quote = quoteBlocks[quoteBlocks.length - 1];
-  const lastQuoteIndex = content.lastIndexOf(quote);
-  const reply = content.substring(0, lastQuoteIndex).trim();
+  const quote = quoteSegments[quoteSegments.length - 1].content;
+  
+  // Look for any text that appears before this quote as the reply
+  const lastQuoteIndex = segments.findIndex(s => 
+    s.type === "quote" && s.content === quote
+  );
+  
+  const replySegment = lastQuoteIndex > 0 ? segments[lastQuoteIndex - 1] : null;
+  const reply = (replySegment && replySegment.type === "text") 
+    ? replySegment.content.trim() 
+    : introText;
 
   return {
     author,
-    reply: reply || introText, // Use intro text if reply is empty
+    reply: reply || "", // Use empty string if no reply text found
     quote,
   };
 }
@@ -200,19 +257,13 @@ export function extractAllReplies(text) {
       
       // Handle the new multipleReplies format
       if (result.multipleReplies) {
-        // Add the intro text as a special type (if it exists)
-        if (result.introText && result.introText.trim() !== '') {
-          allReplies.push({
-            type: 'introText',
-            author: result.author,
-            content: result.introText
-          });
-        }
-        
-        // Add each reply separately
-        for (const reply of result.replies) {
-          allReplies.push(reply);
-        }
+        // Add a special marker to the whole structured reply
+        allReplies.push({
+          type: 'structuredReply',
+          introText: result.introText,
+          replies: result.replies,
+          author: result.author
+        });
       } else {
         // Just a regular reply
         allReplies.push(result);
@@ -291,26 +342,35 @@ export const createReplyExtractor =
     let introText = '';
     let strippedText = reason;
 
-    // First look for intro text and multiple replies structure
+    // First look for complex structures with intro text and multiple replies
     let foundIntroText = '';
     let complexReplies = [];
     
+    // Find all complex structure replies
     for (const item of parsedReplies) {
-      // Handle the special multipleReplies format
-      if (item.multipleReplies) {
+      // Handle the special structuredReply format
+      if (item.type === 'structuredReply') {
         foundIntroText = item.introText || '';
         complexReplies = item.replies || [];
         break;
       }
     }
     
-    // If we found a complex structure with intro text and multiple replies
+    // If we found a complex structure with multiple replies
     if (complexReplies.length > 0) {
+      // First, set the stripped text to the intro paragraph immediately,
+      // so it's preserved even if no replies match
+      strippedText = foundIntroText;
+      
       // Process each reply in the complex structure
       for (const { author, reply, quote } of complexReplies) {
         try {
           // Skip empty replies
           if (!reply || reply.trim() === '') continue;
+          
+          // Skip if the reply text appears to be the intro text (duplicate)
+          // This can happen due to how the parser works
+          if (reply.trim() === foundIntroText.trim()) continue;
           
           const quoteBody = markdownUtils.unquote(quote.trim());
           const truncatedReplyTargetAuthorAddress = author.toLowerCase();
@@ -320,8 +380,16 @@ export const createReplyExtractor =
             ({ voterId: originVoterId, reason: originReason }) => {
               if (originReason == null) return false;
   
-              // Check content
-              const contentMatch = originReason.trim() === quoteBody.trim();
+              // Check content - try both exact and substring matches
+              // This helps with partial quotes or where formatting might differ slightly
+              const exactMatch = originReason.trim() === quoteBody.trim();
+              
+              // For longer quotes (over 50 chars), also try substring matching
+              // This helps with cases where only part of the message is quoted
+              const substringMatch = quoteBody.length > 50 && 
+                originReason.includes(quoteBody.trim());
+              
+              const contentMatch = exactMatch || substringMatch;
   
               // Check author - we compare truncated IDs
               const truncatedOriginVoterId = [
@@ -348,20 +416,24 @@ export const createReplyExtractor =
         }
       }
       
-      // Set the stripped text to the intro paragraph
-      strippedText = foundIntroText;
-      
       // If we found replies, return them along with intro text
       if (replies.length > 0) {
         return [replies, strippedText];
       }
     }
     
-    // Fall back to normal processing if we didn't find a complex structure
+    // Fall back to processing individual replies if we didn't find a complex structure
+    // Or, even if we found complex structure, but couldn't match any replies
     for (const item of parsedReplies) {
       try {
-        // Skip anything that's not a normal reply
-        if (item.type === 'introText' || item.multipleReplies) continue;
+        // Skip complex reply structures (already processed) and intro text
+        if (item.type === 'introText' || item.type === 'structuredReply') continue;
+        
+        // Handle items with type='introText' separately
+        if (item.type === 'introText') {
+          introText = item.content || '';
+          continue;
+        }
         
         const { author, reply, quote } = item;
         
@@ -376,8 +448,15 @@ export const createReplyExtractor =
           ({ voterId: originVoterId, reason: originReason }) => {
             if (originReason == null) return false;
 
-            // Check content
-            const contentMatch = originReason.trim() === quoteBody.trim();
+            // Check content - try both exact and substring matches
+            const exactMatch = originReason.trim() === quoteBody.trim();
+            
+            // Also try to match if the quote is a substring of the original reason
+            // This helps with partial quotes or nested quotes
+            const substringMatch = quoteBody.length > 50 && 
+              originReason.includes(quoteBody.trim());
+              
+            const contentMatch = exactMatch || substringMatch;
 
             // Check author - we compare truncated IDs
             const truncatedOriginVoterId = [
@@ -404,9 +483,9 @@ export const createReplyExtractor =
       }
     }
 
-    // If we found replies but didn't already set strippedText,
-    // check if there's intro text from any introText type
+    // If we found replies but didn't already set strippedText:
     if (replies.length > 0 && strippedText === reason) {
+      // 1. First check if there's a dedicated introText 
       for (const item of parsedReplies) {
         if (item.type === 'introText') {
           strippedText = item.content || '';
@@ -414,7 +493,17 @@ export const createReplyExtractor =
         }
       }
       
-      // If we still didn't find intro text, empty the strippedText
+      // 2. If we didn't find explicit introText, check if we already collected any
+      if (strippedText === reason && introText) {
+        strippedText = introText;
+      }
+      
+      // 3. If we still didn't find intro text, check if foundIntroText exists
+      if (strippedText === reason && foundIntroText) {
+        strippedText = foundIntroText;
+      }
+      
+      // 4. Finally, if we have no intro text, empty the strippedText
       if (strippedText === reason) {
         strippedText = '';
       }
