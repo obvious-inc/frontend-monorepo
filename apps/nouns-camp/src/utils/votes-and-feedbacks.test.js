@@ -1,6 +1,7 @@
 import { expect, test, describe } from "vitest";
 import {
   REPLY_REGEX,
+  GENERAL_REPLY_REGEX,
   createRepostExtractor,
   createReplyExtractor,
   formatReply,
@@ -74,6 +75,24 @@ describe("REPLY_REGEX", () => {
       expect(matches).toHaveLength(0);
     });
   });
+
+  test("has limitations with embedded quotes", () => {
+    const replyWithEmbeddedQuote = `@0xA123...456A\n\nHere's my comment:\n\n> This is an embedded quote\n\nAnd more text\n\n> Original message.`;
+
+    // The original regex might match, but it won't correctly identify the structure
+    const matches = [...replyWithEmbeddedQuote.matchAll(REPLY_REGEX)];
+    if (matches.length > 0) {
+      const { reply } = matches[0].groups;
+      // It won't include all content correctly
+      expect(reply).not.toContain("And more text");
+    }
+
+    // But the general regex can match the whole structure
+    const generalMatches = [
+      ...replyWithEmbeddedQuote.matchAll(GENERAL_REPLY_REGEX),
+    ];
+    expect(generalMatches).toHaveLength(1);
+  });
 });
 
 describe("reply extraction", () => {
@@ -122,6 +141,56 @@ describe("reply extraction", () => {
     const [replies, remaining] = extract(null);
     expect(replies).toHaveLength(0);
     expect(remaining).toBe(null);
+  });
+
+  test("handles reply with embedded quotes", () => {
+    // Mock source data
+    const mockData = [
+      {
+        voterId: "0xA123000000000000000000000000000000456A",
+        reason: "Original message.",
+      },
+    ];
+
+    // Reply text with embedded quote
+    const replyText = `@0xA123...456A\n\nThis is a reply with > some embedded quote formatting\n\n> Original message.`;
+
+    // Test extraction
+    const extractor = createReplyExtractor(mockData);
+    const [replies] = extractor(replyText);
+
+    // Extractor should properly handle the embedded quote
+    expect(replies).toHaveLength(1);
+    expect(replies[0].body).toContain("embedded quote");
+    expect(replies[0].target).toBe(mockData[0]);
+  });
+
+  test("handles multiple replies in one feedback", () => {
+    // Create mock data
+    const mockData = [
+      {
+        voterId: "0xA123000000000000000000000000000000456A",
+        reason: "Original message 1.",
+      },
+      {
+        voterId: "0xB456000000000000000000000000000000789B",
+        reason: "Original message 2.",
+      },
+    ];
+
+    // Text with multiple replies
+    const multiRepliesText = `@0xA123...456A\n\nFirst reply\n\n> Original message 1.\n\n@0xB456...789B\n\nSecond reply\n\n> Original message 2.`;
+
+    // Test extraction
+    const extractor = createReplyExtractor(mockData);
+    const [replies] = extractor(multiRepliesText);
+
+    // Should find both replies
+    expect(replies).toHaveLength(2);
+    expect(replies[0].body.trim()).toBe("First reply");
+    expect(replies[1].body.trim()).toBe("Second reply");
+    expect(replies[0].target).toBe(mockData[0]);
+    expect(replies[1].target).toBe(mockData[1]);
   });
 });
 
