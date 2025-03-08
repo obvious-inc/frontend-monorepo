@@ -1,0 +1,14 @@
+{
+  nouns(first: 10, orderBy: id, orderDirection: desc) {
+    id
+    seed {
+      background
+      body
+      accessory
+      head
+    }
+    owner {
+      id
+    }
+  }
+}
