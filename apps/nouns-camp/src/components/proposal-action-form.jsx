@@ -908,7 +908,10 @@ const SupportSelect = ({ mode, value, ...props }) => (
 
 const QuotedFeedItem = ({ component: Component = "div", item, onCancel }) => {
   // Strip reposts (some risk of stripping unintened content here (it’s fine))
-  const quotedText = item.reason.replaceAll(REPOST_REGEX, "");
+  const quotedText =
+    item.type === "farcaster-cast"
+      ? item.body
+      : item.reason.replaceAll(REPOST_REGEX, "");
   return (
     <Component
       css={(t) =>

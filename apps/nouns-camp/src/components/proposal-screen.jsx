@@ -253,7 +253,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
       .map((targetFeedItemId) =>
         feedItems.find((i) => i.id === targetFeedItemId),
       )
-      .filter(Boolean);
+      .filter((item) => item != null && item.type !== "farcaster-cast");
   }, [currentFormAction, feedItems, pendingReplies]);
 
   const repostTargetFeedItems = React.useMemo(() => {
@@ -316,6 +316,16 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
 
   const onReply = React.useCallback(
     (postId) => {
+      const targetPost = feedItems.find((i) => i.id === postId);
+
+      if (targetPost.type === "farcaster-cast") {
+        window.open(
+          `https://warpcast.com/${targetPost.authorUsername}/${targetPost.castHash}`,
+          "_blank",
+        );
+        return;
+      }
+
       addReply(postId);
 
       const input = proposalActionInputRef.current;
@@ -326,7 +336,7 @@ const ProposalMainSection = ({ proposalId, scrollContainerRef }) => {
         input.selectionEnd = 0;
       }, 0);
     },
-    [addReply],
+    [feedItems, addReply],
   );
 
   const cancelReply = (id) => {
