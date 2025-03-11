@@ -1,8 +1,30 @@
 import { isAddress } from "viem";
 import { array as arrayUtils } from "@shades/common/utils";
 
+export const isStillEncoded = (str) => {
+  return /%[0-9A-Fa-f]{2}/.test(str);
+};
+
+export const safelyDecodeURIComponent = (str) => {
+  let decoded = str;
+  let previousDecoded = "";
+
+  while (decoded !== previousDecoded && isStillEncoded(decoded)) {
+    try {
+      previousDecoded = decoded;
+      decoded = decodeURIComponent(decoded);
+    } catch (e) {
+      return previousDecoded;
+    }
+  }
+
+  return decoded;
+};
+
 export const normalizeId = (id) => {
-  const parts = id.split("-");
+  const fullyDecodedId = safelyDecodeURIComponent(id);
+
+  const parts = fullyDecodedId.split("-");
   const proposerFirst = isAddress(
     parts[0].startsWith("0x") ? parts[0] : `0x${parts[0]}`,
   );
