@@ -14,7 +14,7 @@ import {
 export const REPOST_REGEX = /^\+1$(\n){2}(?<quote>(?:^>.*?$\s*)+)/gms;
 
 // Matches an @-prefixed truncated address like "@0xe3D7...A436", followed by
-// the reply content, and an end boundry consisting of the quoted reply target
+// the reply content, and an end boundary consisting of the quoted reply target
 // `reason`.
 //
 // Example:
@@ -27,46 +27,91 @@ export const REPOST_REGEX = /^\+1$(\n){2}(?<quote>(?:^>.*?$\s*)+)/gms;
 export const REPLY_REGEX =
   /^@(?<author>0x[a-zA-Z0-9]{4}(\.){3}[a-zA-Z0-p]{4})(\n){2}(?<reply>.+?)\n(?<quote>(?:^>.*?$\s*)+)/gms;
 
+// Matches the initial pattern of a reply (@address followed by double newline)
+// Used to extract the author and the rest of the content for further processing
+const REPLY_SHAPE_REGEX =
+  /^@(?<author>0x[a-zA-Z0-9]{4}(?:\.){3}[a-zA-Z0-p]{4})(?:\n){2}(?<rest>.*)/gms;
+
+// Matches a blockquote (one or more lines starting with '>')
+const BLOCKQUOTE_REGEX = /^>.*(?:\n^>.*)*$/gm;
+
 export const createReplyExtractor =
   (ascendingSourceVotesAndFeedbackPosts) => (reason) => {
     if (reason == null || reason.trim() === "") return [[], reason];
 
-    const matches = [...reason.matchAll(REPLY_REGEX)];
+    // Split the text by @mention patterns to process each potential reply separately
+    const matches = reason
+      .slice(
+        Math.max(
+          0,
+          reason.indexOf(/^@0x[a-zA-Z0-9]{4}(?:\.){3}[a-zA-Z0-p]{4}$/m),
+        ),
+      )
+      .split(/(?=^@0x[a-zA-Z0-9]{4}(?:\.){3}[a-zA-Z0-p]{4}$)/m);
 
     let strippedText = reason;
     const replies = [];
 
-    for (const match of matches) {
-      try {
-        const quoteBody = markdownUtils.unquote(match.groups.quote.trim());
-        const truncatedReplyTargetAuthorAddress =
-          match.groups.author.toLowerCase();
-        const matchedReplyTarget = ascendingSourceVotesAndFeedbackPosts.find(
-          ({ voterId: originVoterId, reason: originReason }) => {
-            if (originReason == null) return false;
+    for (const match_ of matches) {
+      // Extract the author and rest of the content
+      const [match] = match_.matchAll(REPLY_SHAPE_REGEX);
+      if (match == null) continue;
 
-            // Check content
-            if (originReason.trim() !== quoteBody.trim()) return false;
+      // Process each blockquote in the content
+      for (const [blockquote] of [
+        ...match.groups.rest.matchAll(BLOCKQUOTE_REGEX),
+      ]) {
+        try {
+          // Extract the unquoted content from the blockquote
+          const quoteBody = markdownUtils.unquote(blockquote.trim());
+          const truncatedReplyTargetAuthorAddress =
+            match.groups.author.toLowerCase();
 
-            // Check author
-            const truncatedOriginVoterId = [
-              originVoterId.slice(0, 6),
-              originVoterId.slice(-4),
-            ].join("...");
-            return truncatedOriginVoterId === truncatedReplyTargetAuthorAddress;
-          },
-        );
-        if (matchedReplyTarget == null) {
-          // console.warn(`No match found for reply target "${match.groups.quote}"`);
+          // Find the matching target post
+          const matchedReplyTarget = ascendingSourceVotesAndFeedbackPosts.find(
+            ({ voterId: originVoterId, reason: originReason }) => {
+              if (originReason == null) return false;
+
+              // Check if content matches
+              if (originReason.trim() !== quoteBody.trim()) return false;
+
+              // Check if author matches
+              const truncatedOriginVoterId = [
+                originVoterId.slice(0, 6),
+                originVoterId.slice(-4),
+              ]
+                .join("...")
+                .toLowerCase();
+
+              return (
+                truncatedOriginVoterId === truncatedReplyTargetAuthorAddress
+              );
+            },
+          );
+
+          if (matchedReplyTarget == null) continue;
+
+          // Identify the entire reply section
+          const matchedReply = match[0].slice(
+            0,
+            match[0].indexOf(blockquote) + blockquote.length,
+          );
+
+          const content = match.groups.rest;
+
+          // Extract the reply text (everything before the blockquote)
+          const replyText = content.slice(0, content.indexOf(blockquote));
+
+          // Remove the processed reply from the original text
+          strippedText = strippedText.replace(matchedReply, "");
+
+          replies.push({
+            body: replyText.trimEnd(),
+            target: matchedReplyTarget,
+          });
+        } catch (e) {
           continue;
         }
-        strippedText = strippedText.replace(match[0], "");
-        replies.push({
-          body: match.groups.reply,
-          target: matchedReplyTarget,
-        });
-      } catch (e) {
-        continue;
       }
     }
 
