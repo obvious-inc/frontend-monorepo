@@ -36,7 +36,8 @@
         "SENTRY_AUTH_TOKEN",
         "SESSION_SEAL_SECRET",
         "TENDERLY_API_KEY",
-        "TENDERLY_PROJECT_SLUG"
+        "TENDERLY_PROJECT_SLUG",
+        "REDASH_API_KEY"
       ],
       "outputs": [".next/**", "!.next/cache/**"]
     },
