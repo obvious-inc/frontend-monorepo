@@ -43,7 +43,7 @@ export const executeQuery = async (
 
 const pollJobStatus = async (jobId, apiKey, apiEndpoint) => {
   const maxAttempts = 10;
-  const pollInterval = 500;
+  const pollInterval = 750;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     const response = await fetch(`${apiEndpoint}/api/jobs/${jobId}`, {
