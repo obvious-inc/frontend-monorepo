@@ -87,9 +87,7 @@ export const fetchNounerLikesByTargetUrl = async (targetUrl) => {
 export const fetchNounerLikesByTargetUrlSql = async (targetUrl) => {
   const QUERY_ID = 1188; // query id from redash dashboard
 
-  console.time(`fetchNounerLikesByTargetUrlSql-${targetUrl}`);
   const query_result = await executeQuery(QUERY_ID, { targetUrl });
-  console.timeEnd(`fetchNounerLikesByTargetUrlSql-${targetUrl}`);
 
   if (!query_result || !query_result.data || !query_result.data.rows) {
     return [];
