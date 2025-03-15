@@ -1,3 +1,5 @@
+const REDASH_API_ENDPOINT = "https://data.hubs.neynar.com";
+
 export const executeQuery = async (
   queryId,
   parameters = {},
@@ -6,7 +8,7 @@ export const executeQuery = async (
 ) => {
   const {
     apiKey = process.env.REDASH_API_KEY,
-    apiEndpoint = process.env.REDASH_API_ENDPOINT,
+    apiEndpoint = REDASH_API_ENDPOINT,
   } = options;
 
   const response = await fetch(
