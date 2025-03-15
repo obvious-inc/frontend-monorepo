@@ -3,7 +3,7 @@ import { parseEpochTimestamp } from "@/utils/farcaster";
 import { createUri as createTransactionReceiptUri } from "@/utils/erc-2400";
 import { isLoggedIn, isLoggedInAccountFid } from "@/app/api/auth-utils";
 import {
-  fetchNounerLikesByTargetUrl,
+  fetchNounerLikesByTargetUrlSql,
   submitReactionAdd,
   submitReactionRemove,
 } from "@/app/api/farcaster-utils";
@@ -19,7 +19,7 @@ export async function GET(request) {
   if (hash == null)
     return Response.json({ error: "hash-required" }, { status: 400 });
 
-  const likes = await fetchNounerLikesByTargetUrl(
+  const likes = await fetchNounerLikesByTargetUrlSql(
     createTransactionReceiptUri(CHAIN_ID, hash),
   );
 

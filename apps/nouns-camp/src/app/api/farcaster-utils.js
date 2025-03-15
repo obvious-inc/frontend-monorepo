@@ -11,6 +11,7 @@ import {
 } from "@farcaster/core";
 import { array as arrayUtils } from "@shades/common/utils";
 import { subgraphFetch } from "@/nouns-subgraph";
+import { executeQuery } from "./redash-utils";
 
 const fetchAccounts = async (fids) => {
   if (fids.length === 0) return [];
@@ -77,6 +78,77 @@ export const fetchNounerLikesByTargetUrl = async (targetUrl) => {
   }, []);
 
   // Only count one Farcaster account per nouner ethereum address
+  return arrayUtils.unique(
+    (a1, a2) => a1.nounerAddress === a2.nounerAddress,
+    nounerLikes,
+  );
+};
+
+export const fetchNounerLikesByTargetUrlSql = async (targetUrl) => {
+  const QUERY_ID = 1188; // query id from redash dashboard
+
+  console.time(`fetchNounerLikesByTargetUrlSql-${targetUrl}`);
+  const query_result = await executeQuery(QUERY_ID, { targetUrl });
+  console.timeEnd(`fetchNounerLikesByTargetUrlSql-${targetUrl}`);
+
+  if (!query_result || !query_result.data || !query_result.data.rows) {
+    return [];
+  }
+
+  const likes = query_result.data.rows.map((row) => ({
+    fid: row.fid,
+    username: row.username,
+    displayName: row.display_name,
+    pfpUrl: row.avatar_url,
+    verifiedAddresses: row.verified_addresses,
+  }));
+
+  const verifiedAddresses = arrayUtils.unique(
+    likes.flatMap((l) => l.verifiedAddresses.map((a) => a.toLowerCase())),
+  );
+
+  if (verifiedAddresses.length === 0) {
+    return [];
+  }
+
+  const { delegates } = await subgraphFetch({
+    query: `
+      query {
+        delegates(
+          where: { id_in: [${verifiedAddresses.map((a) => `"${a}"`)}] }
+        ) {
+          id
+          delegatedVotes
+        }
+      }`,
+  });
+
+  const likesWithNounerInfo = likes.map((like) => {
+    const account = { ...like };
+
+    const userVerifiedAddresses = like.verifiedAddresses.map((a) =>
+      a.toLowerCase(),
+    );
+    const userDelegates = delegates.filter((d) =>
+      userVerifiedAddresses.includes(d.id),
+    );
+
+    if (userDelegates.length > 0) {
+      const [delegateWithMostVotingPower] = arrayUtils.sortBy(
+        { value: (d) => Number(d.delegatedVotes), order: "desc" },
+        userDelegates,
+      );
+      account.nounerAddress = delegateWithMostVotingPower.id;
+      account.votingPower = Number(delegateWithMostVotingPower.delegatedVotes);
+    }
+
+    return account;
+  });
+
+  const nounerLikes = likesWithNounerInfo.filter(
+    (like) => like.nounerAddress != null,
+  );
+
   return arrayUtils.unique(
     (a1, a2) => a1.nounerAddress === a2.nounerAddress,
     nounerLikes,
