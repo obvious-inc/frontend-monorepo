@@ -1,5 +1,5 @@
 import { kv } from "@vercel/kv";
-import { hexToBytes } from "viem";
+import { hexToBytes, bytesToHex } from "viem";
 import {
   FarcasterNetwork,
   Message,
@@ -186,13 +186,13 @@ const submitMessage = async (
   return messageResult.match(
     async (message) => {
       const response = await fetch(
-        `${process.env.FARCASTER_HUB_HTTP_ENDPOINT}/v1/submitMessage`,
+        `https://api.neynar.com/v2/farcaster/message`,
         {
           method: "POST",
-          body: Buffer.from(Message.encode(message).finish()),
+          body: JSON.stringify(Message.toJSON(message)),
           headers: {
             api_key: process.env.NEYNAR_API_KEY,
-            "Content-Type": "application/octet-stream",
+            "Content-Type": "application/json",
           },
         },
       );
@@ -207,6 +207,14 @@ const submitMessage = async (
         )
           throw new Error("invalid-account-key");
         throw new Error();
+      }
+
+      if (
+        body.hash &&
+        body.hash.type === "Buffer" &&
+        Array.isArray(body.hash.data)
+      ) {
+        body.hash = bytesToHex(new Uint8Array(body.hash.data));
       }
 
       return body;
@@ -239,32 +247,9 @@ export const submitReactionRemove = async (
   },
 ) => submitMessage(makeReactionRemove, data, { type, targetCastId, targetUrl });
 
-const fetchVerificiation = async (fid, address) => {
-  const searchParams = new URLSearchParams({ fid, address });
-  const response = await fetch(
-    `${process.env.FARCASTER_HUB_HTTP_ENDPOINT}/v1/verificationsByFid?${searchParams}`,
-    {
-      headers: {
-        api_key: process.env.NEYNAR_API_KEY,
-      },
-    },
-  );
-
-  const body = await response.json();
-
-  if (!response.ok) {
-    if (body.errCode === "not_found") return null;
-    console.error(body);
-    throw new Error();
-  }
-
-  return body;
-};
-
 export const verifyEthAddress = async (fid, address) => {
-  const verification = await fetchVerificiation(fid, address);
-  // TODO: verify the verification
-  return verification != null;
+  const account = await fetchAccount(fid);
+  return account.verifiedAddresses.includes(address.toLowerCase());
 };
 
 const parseNeynarUsers = async (users) => {
@@ -305,6 +290,7 @@ const parseNeynarUsers = async (users) => {
       );
       account.nounerAddress = delegateWithMostVotingPower.id;
       account.votingPower = Number(delegateWithMostVotingPower.delegatedVotes);
+      account.verifiedAddresses = verifiedAddresses;
     }
 
     return account;
