@@ -252,7 +252,7 @@ describe("formatRepost", () => {
       "+1\n\n> Text with spaces",
     );
   });
-  
+
   test("handles empty lines in content", () => {
     expect(formatRepost("Paragraph one\n\nParagraph two")).toBe(
       "+1\n\n> Paragraph one\n> \n> Paragraph two",
@@ -272,7 +272,7 @@ describe("formatReply", () => {
       }),
     ).toBe("@0x1234...7890\n\nReply text\n\n> Original comment");
   });
-  
+
   test("maintains formatting in reply body", () => {
     expect(
       formatReply({
@@ -282,7 +282,9 @@ describe("formatReply", () => {
         },
         body: "Reply with **bold** and *italic* text",
       }),
-    ).toBe("@0x1234...7890\n\nReply with **bold** and *italic* text\n\n> Original comment");
+    ).toBe(
+      "@0x1234...7890\n\nReply with **bold** and *italic* text\n\n> Original comment",
+    );
   });
 
   test("formats reply with multiline reason", () => {
