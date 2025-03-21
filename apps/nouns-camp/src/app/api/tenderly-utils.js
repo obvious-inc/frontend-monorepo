@@ -53,26 +53,37 @@ export const parseProposalAction = ({ target, value, signature, calldata }) => {
     };
   }
 
-  const { name, inputs } = parseAbiItem(`function ${signature}`);
-  const args = decodeAbiParameters(inputs, calldata);
+  try {
+    const { name, inputs } = parseAbiItem(`function ${signature}`);
+    const args = decodeAbiParameters(inputs, calldata);
 
-  const encodedData = encodeFunctionData({
-    abi: [
-      {
-        inputs: inputs,
-        name: name,
-        type: "function",
-      },
-    ],
-    functionName: name,
-    args: args,
-  });
+    const encodedData = encodeFunctionData({
+      abi: [
+        {
+          inputs: inputs,
+          name: name,
+          type: "function",
+        },
+      ],
+      functionName: name,
+      args: args,
+    });
 
-  return {
-    to: target,
-    value: value || "0",
-    input: encodedData,
-  };
+    return {
+      to: target,
+      input: encodedData,
+      value: value || "0",
+    };
+  } catch (error) {
+    if (error.name === "PositionOutOfBoundsError") {
+      return {
+        to: target,
+        input: calldata,
+        value: value || "0",
+      };
+    }
+    throw error;
+  }
 };
 
 export const fetchSimulationBundle = async (unparsedTxs) => {
