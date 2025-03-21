@@ -30,7 +30,7 @@ const decimalsByCurrency = {
 };
 
 export const useEnhancedParsedTransaction = (transaction) => {
-  const { type, target, calldata, value } = transaction;
+  const { type, target, calldata, value, simulation } = transaction;
   const isUnparsed = [
     "unparsed-function-call",
     "unparsed-payable-function-call",
@@ -59,6 +59,7 @@ export const useEnhancedParsedTransaction = (transaction) => {
     functionInputs: decodedFunctionData.inputs,
     functionInputTypes: decodedFunctionData.inputTypes,
     value,
+    simulation,
   };
 };
 
