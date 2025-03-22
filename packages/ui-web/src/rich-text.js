@@ -157,7 +157,8 @@ export const createCss = (t) => ({
       boxShadow: t.shadows.focus,
     },
     '&[data-inline="true"]': {
-      margin: "var(--default-block-gap) 0",
+      display: "inline-block",
+      // margin: "var(--default-block-gap) 0",
     },
     // "&[data-editable] img": {
     //   boxShadow: `0 0 0 0.1rem ${t.colors.borderLighter}`,

@@ -66,12 +66,16 @@ const parseChildren = (token, parse, context_ = {}) => {
 const parseToken = (token, context = {}) => {
   switch (token.type) {
     case "paragraph": {
+      // Process all child tokens within this paragraph
       const children = parseChildren(token, parseToken, context);
 
+      // Special case: If paragraph contains only a single text element that's all emoji
       if (children.length === 1 && children[0].type === "text") {
+        // Extract individual characters as perceived by users (handles complex emoji)
         const maybeEmojiChars = getUserPerceivedCharacters(
           children[0].text.trim(),
         );
+        // If all characters are emoji, convert to special emoji paragraph
         if (maybeEmojiChars.every(isEmoji))
           return {
             type: "paragraph",
@@ -82,17 +86,51 @@ const parseToken = (token, context = {}) => {
           };
       }
 
+      // Check if paragraph consists of only images or empty text
       const isImageParagraph = children.every(
         (t) => t.type === "image" || t.text?.trim() === "",
       );
 
+      // If it's only images, convert to image grid
       if (isImageParagraph)
         return {
           type: "image-grid",
           children: children.filter((t) => t.type === "image"),
         };
 
-      return { type: "paragraph", children };
+      // If no images at all, return simple paragraph with all children
+      if (!children.some((c) => c.type === "image"))
+        return { type: "paragraph", children };
+
+      // Handle mixed content (images and text) by organizing into alternating paragraphs and image grids
+      return children.reduce((nodes, child) => {
+        const lastNode = nodes[nodes.length - 1];
+        if (child.type === "image") {
+          // Image handling: group consecutive images into image-grid nodes
+          if (lastNode?.type !== "image-grid") {
+            // Start a new image grid if the last node wasn't one
+            nodes.push({ type: "image-grid", children: [child] });
+            return nodes;
+          }
+          // Add to existing image grid
+          lastNode.children.push(child);
+          return nodes;
+        }
+
+        // Text/other content handling: group into paragraph nodes
+        if (lastNode?.type !== "paragraph") {
+          // Start a new paragraph if the last node wasn't one
+          nodes.push({
+            type: "paragraph",
+            // Avoid leading newlines when starting new paragraphs
+            children: [{ ...child, text: child.text.replace(/^\n+/, "") }],
+          });
+          return nodes;
+        }
+        // Add to existing paragraph
+        lastNode.children.push(child);
+        return nodes;
+      }, []);
     }
 
     case "heading":
@@ -174,7 +212,7 @@ const parseToken = (token, context = {}) => {
       const children = [];
 
       const parseCell = (cell) =>
-        cell.tokens.map((t) => parseToken(t, context));
+        cell.tokens.flatMap((t) => parseToken(t, context));
 
       if (token.header != null)
         children.push({
@@ -336,7 +374,7 @@ export const toMessageBlocks = (text, { displayImages = true } = {}) => {
   const tokens = marked.lexer(text);
   return tokens
     .filter((t) => t.type !== "space")
-    .map((token, index, tokens) =>
+    .flatMap((token, index, tokens) =>
       parseToken(token, {
         displayImages,
         index,
