@@ -44,21 +44,6 @@
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
-    "farcord#build": {
-      "dependsOn": ["^build"],
-      "env": [
-        "PUBLIC_NEYNAR_API_KEY",
-        "PUBLIC_WARPCAST_API_TOKEN",
-        "PUBLIC_FARCASTER_HUB_RPC_ENDPOINT",
-        "PUBLIC_IMGUR_CLIENT_ID",
-        "PUBLIC_INFURA_PROJECT_ID",
-        "PUBLIC_WALLET_CONNECT_PROJECT_ID",
-        "PUBLIC_FATHOM_SITE_ID",
-        "PUBLIC_APP_TITLE",
-        "PUBLIC_APP_DESCRIPTION"
-      ],
-      "outputs": ["dist/**"]
-    },
     "lint": {},
     "dev": {
       "cache": false,
