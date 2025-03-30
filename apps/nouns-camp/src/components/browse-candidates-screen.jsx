@@ -344,7 +344,7 @@ const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
       },
       { replace: true },
     );
-  });
+  }, 500);
 
   const selectedFilters = (() => {
     const toggledFilters = [];

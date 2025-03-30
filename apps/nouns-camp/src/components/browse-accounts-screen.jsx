@@ -427,7 +427,7 @@ const BrowseAccountsScreen = () => {
       },
       { replace: true },
     );
-  });
+  }, 500);
 
   useDelegatesFetch({ includeZeroVotingPower: true, includeVotes: true });
 
