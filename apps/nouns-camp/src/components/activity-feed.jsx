@@ -270,6 +270,7 @@ const ActivityFeed = ({
                   padding: "0",
                 },
                 ".replies-container": {
+                  userSelect: "text",
                   margin: "0",
                   background: t.colors.backgroundModifierLight,
                   borderTop: "0.1rem solid",
