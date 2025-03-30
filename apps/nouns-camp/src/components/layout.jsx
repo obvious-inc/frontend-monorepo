@@ -536,10 +536,9 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
 
             return {
               key: "root-logo",
-              component: "div",
+              to: "/",
               props: {
                 style: {
-                  pointerEvents: "none",
                   height: "2.8rem",
                   minWidth: "2.8rem",
                   paddingBlock: 0,
