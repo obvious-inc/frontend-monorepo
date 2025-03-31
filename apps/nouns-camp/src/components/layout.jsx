@@ -1,7 +1,7 @@
 import React from "react";
 import { css, keyframes } from "@emotion/react";
 import NextLink from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { invariant } from "@shades/common/utils";
 import { useMatchMedia } from "@shades/common/react";
 import Button from "@shades/ui-web/button";
@@ -319,6 +319,7 @@ const defaultActionIds = [
 
 const NavBar = ({ navigationStack, actions: customActions }) => {
   const unresolvedActions = customActions ?? defaultActionIds;
+  const searchParams = useSearchParams();
 
   const { open: openTreasuryDialog } = useDialog("treasury");
   const { open: openAccountDialog } = useDialog("account");
@@ -534,12 +535,18 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
                 ),
               };
 
+            // Different behavior based on current location
+            const isRoot = pathname === "/";
+            // Check if there are any search parameters
+            const hasSearchParams = searchParams.size > 0;
+
             return {
               key: "root-logo",
-              component: "div",
+              to: "/",
+              // Use replace prop when on root with search params to not add to history stack
+              replace: hasSearchParams && isRoot ? true : undefined,
               props: {
                 style: {
-                  pointerEvents: "none",
                   height: "2.8rem",
                   minWidth: "2.8rem",
                   paddingBlock: 0,
@@ -559,6 +566,11 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
                       transition: "0.25s transform ease-out",
                       transformStyle: "preserve-3d",
                       svg: { display: "block" },
+                      "@media(hover: hover)": {
+                        "&:hover": {
+                          animation: "none",
+                        },
+                      },
                     })}
                   >
                     {logo}
