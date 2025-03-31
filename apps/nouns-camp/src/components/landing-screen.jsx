@@ -458,7 +458,7 @@ const BrowseScreen = () => {
       },
       { replace: true },
     );
-  });
+  }, 500);
 
   const defaultTabKey = isDesktopLayout ? "digest" : "activity";
 

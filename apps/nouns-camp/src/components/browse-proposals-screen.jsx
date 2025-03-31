@@ -386,7 +386,7 @@ const BrowseProposalsScreen = () => {
       },
       { replace: true },
     );
-  });
+  }, 500);
 
   const subgraphFetch = useSubgraphFetch();
 
