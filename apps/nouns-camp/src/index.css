@@ -8,8 +8,13 @@ body {
   font-size: 1.4rem;
   user-select: none;
   -webkit-user-select: none;
-  overflow: hidden;
   text-rendering: optimizeLegibility;
+}
+
+@media (pointer: fine) {
+  body {
+    overflow: hidden;
+  }
 }
 
 html,
