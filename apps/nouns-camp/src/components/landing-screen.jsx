@@ -270,10 +270,13 @@ const BrowseScreen = () => {
 
   const query = searchParams.get("q") ?? "";
   const deferredQuery = React.useDeferredValue(query.trim());
-  const [inputValue, setInputValue] = React.useState(query);
+  const inputRef = React.useRef();
 
+  // Update input value directly when query changes (like when navigating to home)
   React.useEffect(() => {
-    setInputValue(query);
+    if (inputRef.current && inputRef.current.value !== query) {
+      inputRef.current.value = query;
+    }
   }, [query]);
 
   const { address: connectedAccountAddress } = useWallet();
@@ -912,13 +915,12 @@ const BrowseScreen = () => {
                 }
               >
                 <Input
+                  ref={inputRef}
                   placeholder="Search..."
-                  value={inputValue}
+                  defaultValue={query}
                   size="large"
                   onChange={(e) => {
-                    const newValue = e.target.value;
-                    setInputValue(newValue);
-                    handleSearchInputChange(newValue);
+                    handleSearchInputChange(e.target.value);
                   }}
                 />
               </div>
