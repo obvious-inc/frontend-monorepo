@@ -1,0 +1,81 @@
+NOUNS DAO CLIENT ACTIVITY REPORT - February 1, 2025 to March 1, 2025
+========================================
+Timestamps: 1738368000 to 1740787200 (Unix epoch)
+
+VOTES BY CLIENT ID (excluding 0 voting power)
+--------------------------------------------
+Camp                     [####################] 635 votes (71.7%)
+nouns.game               [####................] 122 votes (13.8%)
+Unknown (no client id)   [##..................] 58 votes (6.5%)
+NounSwap                 [#...................] 37 votes (4.2%)
+Pronouns                 [....................] 15 votes (1.7%)
+Prop Launchpad           [....................] 14 votes (1.6%)
+Lighthouse               [....................] 4 votes (0.5%)
+Nouns 95                 [....................] 1 votes (0.1%)
+
+TOTAL VOTING POWER BY CLIENT
+--------------------------------------------
+Camp                     [####################] 2232 VP (58.1%)
+nouns.game               [######..............] 713 VP (18.6%)
+Unknown (no client id)   [#...................] 101 VP (2.6%)
+NounSwap                 [###.................] 313 VP (8.2%)
+Pronouns                 [####................] 447 VP (11.6%)
+Prop Launchpad           [....................] 28 VP (0.7%)
+Lighthouse               [....................] 4 VP (0.1%)
+Nouns 95                 [....................] 1 VP (0.0%)
+
+UNIQUE VOTERS BY CLIENT ID
+--------------------------------------------
+Camp                     [####################] 71 voters (75.5%)
+nouns.game               [####................] 13 voters (13.8%)
+Unknown (no client id)   [###.................] 12 voters (12.8%)
+NounSwap                 [##..................] 8 voters (8.5%)
+Pronouns                 [#...................] 4 voters (4.3%)
+Prop Launchpad           [....................] 1 voters (1.1%)
+Lighthouse               [....................] 1 voters (1.1%)
+Nouns 95                 [....................] 1 voters (1.1%)
+
+DETAILED BREAKDOWN
+========================================
+Client ID | Description            | Vote Count | %     | Voting Power | %     | Unique Voters | %    
+-----------------------------------------------------------------------------------------------
+ 3        | Camp                   | 635        | 71.7% | 2232         | 58.1% | 71            | 75.5%
+ 6        | nouns.game             | 122        | 13.8% | 713          | 18.6% | 13            | 13.8%
+ 0        | Unknown (no client id) | 58         |  6.5% | 101          |  2.6% | 12            | 12.8%
+ 5        | NounSwap               | 37         |  4.2% | 313          |  8.2% | 8             |  8.5%
+ 14       | Pronouns               | 15         |  1.7% | 447          | 11.6% | 4             |  4.3%
+ 12       | Prop Launchpad         | 14         |  1.6% | 28           |  0.7% | 1             |  1.1%
+ 16       | Lighthouse             | 4          |  0.5% | 4            |  0.1% | 1             |  1.1%
+ 11       | Nouns 95               | 1          |  0.1% | 1            |  0.0% | 1             |  1.1%
+-----------------------------------------------------------------------------------------------
+ TOTAL    |                        | 886        |  100% | 3839         |  100% | 94            |  100%
+-----------------------------------------------------------------------------------------------
+
+PROPOSALS BY CLIENT ID
+--------------------------------------------
+Camp                     [####################] 17 proposals (94.4%)
+Unknown (no client id)   [#...................] 1 proposals (5.6%)
+
+DETAILED PROPOSALS BREAKDOWN
+========================================
+Client ID | Description            | Proposals | %     | Unique Proposers
+-----------------------------------------------------------------------
+ 3        | Camp                   | 17        | 94.4% | 15              
+ 0        | Unknown (no client id) | 1         |  5.6% | 1               
+-----------------------------------------------------------------------
+ TOTAL    |                        | 18        |  100% | 16              
+-----------------------------------------------------------------------
+
+SUMMARY
+========================================
+Total votes cast: 947
+Votes with voting power > 0: 886 (93.6%)
+Votes with 0 voting power: 61 (6.4%)
+
+Total voting power: 3839
+Total unique voters: 94
+Total proposals: 18
+
+Most active client: Camp (71.7% of votes)
+Most influential client: Camp (58.1% of voting power)
+Most active proposal creator: Camp (94.4% of proposals)
