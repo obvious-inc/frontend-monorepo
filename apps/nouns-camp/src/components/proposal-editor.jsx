@@ -160,7 +160,7 @@ const ProposalEditor = ({
     !isTitleEmpty &&
     !isBodyEmpty &&
     maybeActionTransactions != null &&
-    // maybeActionTransactions.length > 0 &&
+    maybeActionTransactions.length > 0 &&
     maybeActionTransactions.length <= MAX_TRANSACTION_COUNT;
 
   const enableSubmit = hasRequiredInput && !disabled && !submitDisabled;
