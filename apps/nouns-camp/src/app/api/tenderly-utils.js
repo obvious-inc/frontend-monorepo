@@ -220,6 +220,7 @@ export const fetchContractSimulation = async ({
   functionName,
   args,
   from,
+  value,
 }) => {
   const encodedData = encodeFunctionData({ abi, functionName, args });
 
@@ -229,6 +230,7 @@ export const fetchContractSimulation = async ({
     input: encodedData,
     estimate_gas: true,
     network_id: chainId,
+    value,
     ...TENDERLY_SIMULATION_OPTIONS,
   };
 

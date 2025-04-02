@@ -1,3 +1,4 @@
+import { object as objectUtils } from "@shades/common/utils";
 import { useWallet } from "@/hooks/wallet";
 import { useWriteContract as useWagmiContractWrite } from "wagmi";
 
@@ -14,7 +15,13 @@ export const useWriteContract = () => {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ account, ...params }),
+      body: JSON.stringify({
+        account,
+        // JSON.stringify need help with BigInts
+        ...objectUtils.traverse(params, (v) =>
+          typeof v === "bigint" ? v.toString() : v,
+        ),
+      }),
     });
 
     const body = await res.json();
