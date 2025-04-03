@@ -1,0 +1,19 @@
+query GetProposalsByClientId($startTimestamp: String!, $endTimestamp: String!) {
+  proposals(
+    where: {
+      createdTimestamp_gte: $startTimestamp
+      createdTimestamp_lt: $endTimestamp
+    }
+    first: 1000
+    orderBy: createdTimestamp
+    orderDirection: asc
+  ) {
+    id
+    clientId
+    proposer {
+      id
+    }
+    createdTimestamp
+    title
+  }
+}

@@ -13,3 +13,5 @@ certificates
 # Playwright
 playwright-report
 test-results
+
+reports

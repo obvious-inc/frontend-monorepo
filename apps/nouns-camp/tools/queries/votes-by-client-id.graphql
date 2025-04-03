@@ -1,0 +1,18 @@
+query GetVotesByClientId($startTimestamp: String!, $endTimestamp: String!) {
+  votes(
+    where: {
+      blockTimestamp_gte: $startTimestamp
+      blockTimestamp_lt: $endTimestamp
+      votes_gt: "0"
+    }
+    first: 1000
+    orderBy: blockTimestamp
+    orderDirection: asc
+  ) {
+    clientId
+    votes
+    voter {
+      id
+    }
+  }
+}
