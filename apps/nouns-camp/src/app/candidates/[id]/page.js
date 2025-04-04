@@ -6,7 +6,7 @@ import {
 } from "@shades/common/utils";
 import metaConfig from "@/metadata-config";
 import { subgraphFetch, parseCandidate } from "@/nouns-subgraph";
-import { normalizeId } from "@/utils/candidates";
+import { normalizeId, makeUrlId } from "@/utils/candidates";
 import { Hydrater as StoreHydrater } from "@/store";
 import ClientAppProvider from "@/app/client-app-provider";
 import CandidateScreen from "@/components/candidate-screen";
@@ -141,7 +141,9 @@ export default async function Page({ params, searchParams }) {
 
   if (!isNaN(Number(params.id))) {
     const urlSearchParams = new URLSearchParams(searchParams);
-    permanentRedirect(`/candidates/${candidate.id}?${urlSearchParams}`);
+    permanentRedirect(
+      `/candidates/${encodeURIComponent(makeUrlId(candidate.id))}?${urlSearchParams}`,
+    );
   }
 
   return (
