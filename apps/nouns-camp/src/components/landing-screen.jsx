@@ -376,20 +376,24 @@ const BrowseScreen = () => {
           ],
           fallbackSortProperty: p.createdBlock,
         })),
-        ...[...candidates, ...relevantProposalUpdateCandidates].map((c) => ({
-          type: "candidate",
-          data: c,
-          tokens: [
-            { value: c.id, exact: true },
-            { value: c.proposerId, exact: true },
-            { value: c.latestVersion?.content.title },
-            ...(c.latestVersion?.content.contentSignatures ?? []).map((s) => ({
-              value: s.signer.id,
-              exact: true,
-            })),
-          ],
-          fallbackSortProperty: c.createdBlock,
-        })),
+        ...[...topics, ...candidates, ...relevantProposalUpdateCandidates].map(
+          (c) => ({
+            type: "candidate",
+            data: c,
+            tokens: [
+              { value: c.id, exact: true },
+              { value: c.proposerId, exact: true },
+              { value: c.latestVersion?.content.title },
+              ...(c.latestVersion?.content.contentSignatures ?? []).map(
+                (s) => ({
+                  value: s.signer.id,
+                  exact: true,
+                }),
+              ),
+            ],
+            fallbackSortProperty: c.createdBlock,
+          }),
+        ),
       ],
       [deferredQuery, ...matchingAddresses],
     );
