@@ -287,7 +287,7 @@ const TopicEditor = ({
               onClick={() =>
                 onSubmit({
                   updateMessage:
-                    updateMessage.trim() === "" ? null : updateMessage,
+                    updateMessage.trim() === "" ? undefined : updateMessage,
                 })
               }
               isLoading={hasPendingSubmit}

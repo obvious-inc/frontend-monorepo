@@ -344,7 +344,10 @@ export const SubmitUpdateDialog = ({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            submit({ updateMessage });
+            submit({
+              updateMessage:
+                updateMessage.trim() === "" ? undefined : updateMessage,
+            });
           }}
           css={css({
             overflow: "auto",
