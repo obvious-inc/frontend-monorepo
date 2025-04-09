@@ -123,7 +123,15 @@ const parseToken = (token, context = {}) => {
           nodes.push({
             type: "paragraph",
             // Avoid leading newlines when starting new paragraphs
-            children: [{ ...child, text: child.text.replace(/^\n+/, "") }],
+            children: [
+              {
+                ...child,
+                text:
+                  child.text != null
+                    ? child.text.replace(/^\n+/, "")
+                    : undefined,
+              },
+            ],
           });
           return nodes;
         }
