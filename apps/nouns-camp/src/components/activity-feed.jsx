@@ -359,10 +359,10 @@ const ActivityFeed = ({
     >
       {(variant === "boxed"
         ? items.filter((i) => {
-            const isReply = i.replies?.length > 0;
-            const hasBody = i.body != null && i.body.trim().length > 0;
-            return !isReply || hasBody;
-          })
+          const isReply = i.replies?.length > 0;
+          const hasBody = i.body != null && i.body.trim().length > 0;
+          return !isReply || hasBody;
+        })
         : items
       ).map((item) => (
         <FeedItem
@@ -860,7 +860,7 @@ const FeedItem = React.memo(
                   margin: "0.8rem -0.1rem",
                   "li + li": { marginTop: "0.6rem" },
                 })}
-                // style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
+              // style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
               >
                 {item.reposts.map((voteOrFeedbackPost) => (
                   <li key={voteOrFeedbackPost.id}>
@@ -965,7 +965,7 @@ const FeedItem = React.memo(
               </ul>
             )}
 
-            {hasBody && (
+            {showReplyAction && (
               <div
                 css={(t) =>
                   css({
@@ -1067,7 +1067,7 @@ const ItemBody = React.memo(
         if (containerRef.current == null) return;
         setExceedsTruncationThreshold(
           containerRef.current.scrollHeight >
-            BODY_TRUNCATION_HEIGHT_THRESHOLD + 100,
+          BODY_TRUNCATION_HEIGHT_THRESHOLD + 100,
         );
       });
 
@@ -1087,7 +1087,7 @@ const ItemBody = React.memo(
             maxHeight: isTruncated
               ? `${BODY_TRUNCATION_HEIGHT_THRESHOLD}px`
               : // https://stackoverflow.com/questions/11289166/chrome-on-android-resizes-font
-                "999999px",
+              "999999px",
             maskImage: isTruncated
               ? "linear-gradient(180deg, black calc(100% - 2.8em), transparent 100%)"
               : undefined,
@@ -2409,8 +2409,8 @@ const FeedItemActionDropdown = ({
             ? item.candidateNumber != null
               ? `/candidates/${Number(item.candidateNumber)}`
               : `/candidates/${encodeURIComponent(
-                  makeCandidateUrlId(item.candidateId),
-                )}`
+                makeCandidateUrlId(item.candidateId),
+              )}`
             : `/proposals/${item.proposalId}`;
         const url = `${location.origin}${pathname}?tab=activity&item=${item.id}`;
         navigator.clipboard.writeText(url);
