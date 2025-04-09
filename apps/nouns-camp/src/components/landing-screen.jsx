@@ -416,6 +416,7 @@ const BrowseScreen = () => {
   }, [
     deferredQuery,
     matchingEnsAddress,
+    topics,
     proposals,
     candidates,
     relevantProposalUpdateCandidates,
