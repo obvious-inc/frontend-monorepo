@@ -206,6 +206,21 @@ export const parse = (data) => {
     }
 
     if (
+      target === usdcTokenContract.address &&
+      signature === "transfer(address,uint256)"
+    ) {
+      return {
+        type: "usdc-transfer",
+        usdcAmount: BigInt(functionInputs[1]),
+        target,
+        functionName,
+        functionInputs,
+        functionInputTypes,
+        receiverAddress: functionInputs[0],
+      };
+    }
+
+    if (
       target === nounsPayerContract.address &&
       signature === "sendOrRegisterDebt(address,uint256)"
     ) {
@@ -287,6 +302,7 @@ export const unparse = (transactions) => {
   const nounsTokenContract = resolveIdentifier("token");
   const wethTokenContract = resolveIdentifier("weth-token");
   const stethTokenContract = resolveIdentifier("steth-token");
+  const usdcTokenContract = resolveIdentifier("usdc-token");
   const nounsPayerContract = resolveIdentifier("payer");
   const nounsTokenBuyerContract = resolveIdentifier("token-buyer");
   const nounsStreamFactoryContract = resolveIdentifier("stream-factory");
@@ -417,6 +433,17 @@ export const unparse = (transactions) => {
             ),
           });
 
+        case "usdc-transfer":
+          return append({
+            target: usdcTokenContract.address,
+            value: "0",
+            signature: "transfer(address,uint256)",
+            calldata: encodeAbiParameters(
+              [{ type: "address" }, { type: "uint256" }],
+              [t.receiverAddress, t.usdcAmount],
+            ),
+          });
+
         // Fallback strategy
         case "usdc-approval": {
           if (
@@ -501,7 +528,8 @@ export const extractAmounts = (parsedTransactions) => {
     (t) =>
       t.type === "usdc-approval" ||
       t.type === "usdc-transfer-via-payer" ||
-      t.type === "usdc-stream-funding-via-payer",
+      t.type === "usdc-stream-funding-via-payer" ||
+      t.type === "usdc-transfer",
   );
 
   const treasuryNounTransferNounIds = parsedTransactions

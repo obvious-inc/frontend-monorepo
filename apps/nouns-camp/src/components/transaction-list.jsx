@@ -96,6 +96,7 @@ const TransactionList = ({ transactions, isSimulationRunning }) => (
 
 const ListItem = ({ transaction, isSimulationRunning }) => {
   const daoPayerContract = useContract("payer");
+  const treasuryContract = useContract("executor");
   const [isExpanded, setExpanded] = React.useState(false);
   const t = useEnhancedParsedTransaction(transaction);
 
@@ -129,6 +130,7 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
       case "transfer":
       case "usdc-approval":
       case "usdc-transfer-via-payer":
+      case "usdc-transfer":
       case "weth-transfer":
       case "weth-deposit":
       case "weth-approval":
@@ -193,6 +195,15 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
           </>
         );
 
+      case "usdc-transfer":
+        return (
+          <>
+            USDC is transfered from the{" "}
+            <AddressDisplayNameWithTooltip address={treasuryContract.address} />
+            .
+          </>
+        );
+
       case "payer-top-up":
         return (
           <>
@@ -247,6 +258,7 @@ const ListItem = ({ transaction, isSimulationRunning }) => {
       case "weth-deposit":
       case "weth-approval":
       case "usdc-approval":
+      case "usdc-transfer":
       case "usdc-transfer-via-payer":
       case "stream":
       case "usdc-stream-funding-via-payer":
@@ -568,6 +580,20 @@ export const TransactionExplanation = ({ transaction: t }) => {
       );
 
     case "usdc-transfer-via-payer":
+      return (
+        <>
+          Transfer{" "}
+          <em>
+            {parseFloat(formatUnits(t.usdcAmount, 6)).toLocaleString()} USDC
+          </em>{" "}
+          to{" "}
+          <em>
+            <AddressDisplayNameWithTooltip address={t.receiverAddress} />
+          </em>
+        </>
+      );
+
+    case "usdc-transfer":
       return (
         <>
           Transfer{" "}
