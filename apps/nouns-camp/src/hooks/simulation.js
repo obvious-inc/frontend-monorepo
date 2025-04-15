@@ -1,5 +1,9 @@
 import React from "react";
-import { resolveAction, unparse } from "@/utils/transactions";
+import {
+  resolveAction,
+  unparse,
+  isEqual as areTransactionsEqual,
+} from "@/utils/transactions";
 import { parseProposalAction } from "@/app/api/tenderly-utils";
 
 const fetchSimulationBundle = async ({
@@ -36,27 +40,40 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
   const [data, setData] = React.useState(null);
   const [isFetching, setIsFetching] = React.useState(null);
 
+  // Store previous actions to compare
+  const prevActionsRef = React.useRef([]);
+  const prevTransactionsRef = React.useRef(null);
+
   const fetchData = React.useCallback(async () => {
+    // Convert actions to transactions
+    const transactions = actions.map((action) => resolveAction(action));
+    const flatTxs = transactions.flat();
+    const txs = unparse(flatTxs);
+
+    // Check if transactions have changed
+    const prevTxs = prevTransactionsRef.current;
+    if (prevTxs && areTransactionsEqual(txs, prevTxs)) {
+      // Transactions are identical, skip fetching
+      return;
+    }
+
     try {
       setIsFetching(true);
       setError(null);
 
-      const transactions = actions.map((action) => resolveAction(action));
+      // Store current transactions for future comparison
+      prevActionsRef.current = [...actions];
+      prevTransactionsRef.current = txs;
 
-      const flatTxs = transactions.flat();
-      const txs = unparse(flatTxs);
       const sims = await fetchSimulationBundle(txs);
 
-      // if sims is not an array, then something went wrong
       if (!Array.isArray(sims)) {
         const reason =
           "One or more transactions failed to simulate due to insufficient balance.";
-
         const errorSim = {
           success: false,
           error: transactions.length > 1 ? reason : sims.error_message,
         };
-
         setError(reason);
 
         // set all sims to the error sim
@@ -69,13 +86,11 @@ export const useActionBundleSimulation = (actions, { enabled = true } = {}) => {
         setError("One or more transactions failed to simulate.");
       }
 
-      const returnSims = sims?.map((s) => {
-        return {
-          success: s?.status,
-          error: s?.error_message,
-          id: s?.id,
-        };
-      });
+      const returnSims = sims?.map((s) => ({
+        success: s?.status,
+        error: s?.error_message,
+        id: s?.id,
+      }));
 
       let lastSlicePos = 0;
       const finalSims = actions.map((_, i) => {
