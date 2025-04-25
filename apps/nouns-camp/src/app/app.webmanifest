@@ -8,14 +8,16 @@
   "theme_color": "#000000",
   "icons": [
     {
-      "src": "apple-icon.png",
-      "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
       "src": "icon2.png",
       "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon3.png",
+      "type": "image/png",
       "sizes": "512x512"
+      "purpose": "any maskable"
     }
   ]
 }
