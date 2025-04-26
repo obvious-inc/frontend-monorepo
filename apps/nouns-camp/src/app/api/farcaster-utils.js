@@ -44,10 +44,7 @@ export const fetchAccount = async (fid) => {
 };
 
 export const fetchNounerLikesByTargetUrl = async (targetUrl) => {
-  const searchParams = new URLSearchParams({
-    url: targetUrl,
-    reaction_type: "Like", // TODO: new wip required field from neynar, convert to enum once finalized
-  });
+  const searchParams = new URLSearchParams({ url: targetUrl });
   const response = await fetch(
     `${process.env.FARCASTER_HUB_HTTP_ENDPOINT}/v1/reactionsByTarget?${searchParams}`,
     {
