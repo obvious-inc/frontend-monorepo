@@ -1,5 +1,5 @@
 {
-  "name": "@obvious/monorepo",
+  "name": "@obvious/camp-monorepo",
   "engines": {
     "node": "22.x"
   },

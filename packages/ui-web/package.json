@@ -11,7 +11,6 @@
   "exports": {
     "./theme": "./dist/theme.js",
     "./icons": "./dist/icons.js",
-    "./sidebar-layout": "./dist/sidebar-layout.js",
     "./dialog": "./dist/dialog.js",
     "./dialog-header": "./dist/dialog-header.js",
     "./dialog-footer": "./dist/dialog-footer.js",

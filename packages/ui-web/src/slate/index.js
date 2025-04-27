@@ -9,5 +9,3 @@ export { default as createHorizontalDividerPlugin } from "./plugins/horizontal-d
 export { default as createEmojiPlugin } from "./plugins/emojis.js";
 export { default as createInlineLinksPlugin } from "./plugins/inline-links.js";
 export { default as createHeadingsPlugin } from "./plugins/headings.js";
-export { default as createUserMentionsPlugin } from "./plugins/user-mentions.js";
-export { default as createChannelLinksPlugin } from "./plugins/channel-link.js";

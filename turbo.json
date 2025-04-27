@@ -5,16 +5,6 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "nom-web#build": {
-      "dependsOn": ["^build"],
-      "env": [
-        "PUBLIC_PUSHER_KEY",
-        "PUBLIC_CLOUDFLARE_ACCOUNT_HASH",
-        "PUBLIC_ALCHEMY_API_KEY",
-        "PUBLIC_WALLET_CONNECT_PROJECT_ID"
-      ],
-      "outputs": ["dist/**"]
-    },
     "nouns-camp#build": {
       "dependsOn": ["^build"],
       "env": [
@@ -38,10 +28,6 @@
         "TENDERLY_API_KEY",
         "TENDERLY_PROJECT_SLUG"
       ],
-      "outputs": [".next/**", "!.next/cache/**"]
-    },
-    "obvious-landing#build": {
-      "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**"]
     },
     "lint": {},
