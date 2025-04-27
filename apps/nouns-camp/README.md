@@ -13,8 +13,8 @@ pnpm --filter @shades/common build
 pnpm --filter @shades/ui-web build
 
 # OR run in dev mode to watch for changes
-# pnpm --filter @shades/common dev
-# pnpm --filter @shades/ui-web dev
+pnpm --filter @shades/common dev
+pnpm --filter @shades/ui-web dev
 
 # Run dev server
 pnpm --filter nouns-camp dev

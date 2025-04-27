@@ -62,7 +62,6 @@ export const isEmpty = (node, options = {}) => {
     case "emoji":
     case "link":
     case "user":
-    case "channel-link":
     case "image":
     case "horizontal-divider":
       return false;
@@ -114,9 +113,6 @@ export const isEqual = (ns1, ns2, options = {}) => {
       return propertiesEqual(["url", "label"]);
 
     case "user":
-      return propertiesEqual(["ref"]);
-
-    case "channel-link":
       return propertiesEqual(["ref"]);
 
     case "emoji":
@@ -202,7 +198,7 @@ export const parseString = (string) => {
 
 export const stringifyBlocks = (
   blockElements,
-  { humanReadable = true, renderUser, renderChannelLink } = {},
+  { humanReadable = true, renderUser } = {},
 ) => {
   const stringifyTextNode = (l) => {
     let text = l.text;
@@ -242,11 +238,6 @@ export const stringifyBlocks = (
       case "user": {
         if (!humanReadable) return `@<u:${el.ref}>`;
         return renderUser(el.ref);
-      }
-
-      case "channel-link": {
-        if (!humanReadable) return `@<c:${el.ref}>`;
-        return renderChannelLink(el.ref);
       }
 
       case "link":

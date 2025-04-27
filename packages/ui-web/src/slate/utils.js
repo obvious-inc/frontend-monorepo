@@ -41,7 +41,6 @@ export const isNodeEmpty = (el, options = {}) => {
 
   switch (el.type) {
     case "user":
-    case "channel-link":
     case "attachments":
     case "image-attachment":
     case "image":
@@ -91,7 +90,6 @@ export const toMessageBlocks = (nodes) => {
         italic: n.children[0]?.italic,
       };
     if (n.type === "user") return { type: "user", ref: n.ref };
-    if (n.type === "channel-link") return { type: "channel-link", ref: n.ref };
     if (n.type === "horizontal-divider") return { type: n.type };
 
     if (n.type.startsWith("heading-")) {
@@ -147,7 +145,7 @@ export const fromMessageBlocks = (blocks) =>
       ];
 
     // Inline voids
-    if (["user", "channel-link"].includes(n.type))
+    if (["user"].includes(n.type))
       return [
         ...acc,
         { text: "" },
