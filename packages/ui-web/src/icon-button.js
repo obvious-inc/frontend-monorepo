@@ -21,7 +21,7 @@ const IconButton = React.forwardRef(
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: "0.3rem",
+          borderRadius: "0.4rem",
           background: "none",
           border: 0,
           cursor: "pointer",

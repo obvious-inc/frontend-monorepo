@@ -45,7 +45,7 @@ const Image = ({ disableFallback = false, ...props }) => {
             justifyContent: "center",
             color: t.colors.textMuted,
             fontSize: "1em",
-            borderRadius: "0.3rem",
+            borderRadius: "0.4rem",
             boxShadow: `0 0 0 0.1rem ${t.colors.borderLighter}`,
           })
         }

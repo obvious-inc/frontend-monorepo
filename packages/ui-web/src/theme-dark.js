@@ -113,7 +113,7 @@ export default {
     minWidth: "18rem",
     maxWidth: "calc(100vw - 2rem)",
     padding: "0.4rem",
-    borderRadius: "0.4rem",
+    borderRadius: "0.6rem",
     itemHeight: "2.8rem",
     boxShadow:
       "rgb(15 15 15 / 5%) 0px 0px 0px 1px, rgba(15, 15, 15, 0.1) 0px 3px 6px, rgba(15, 15, 15, 0.2) 0px 9px 24px",

@@ -10,7 +10,7 @@ const Callout = ({ icon, compact, variant, children, ...props }) => (
         gap: "1.2rem",
         background: t.colors.backgroundModifierNormal,
         padding: "1rem 1.6rem",
-        borderRadius: "0.5rem",
+        borderRadius: "0.6rem",
         '&[data-variant="error"]': {
           color: t.colors.textDanger,
         },

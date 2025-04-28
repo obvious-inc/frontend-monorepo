@@ -1564,7 +1564,7 @@ export const ProposalBody = React.memo(({ markdownText, ...props }) => {
               marginTop: "6.4rem",
               padding: "1.6rem",
               background: t.colors.backgroundSecondary,
-              borderRadius: "0.3rem",
+              borderRadius: "0.6rem",
               fontSize: t.text.sizes.large,
               whiteSpace: "pre-wrap",
               fontFamily: t.fontStacks.monospace,

@@ -89,7 +89,7 @@ export const createCss = (t) => ({
     background: t.colors.backgroundModifierHover,
     padding: "1em",
     paddingLeft: "0.75em",
-    borderRadius: "0.3rem",
+    borderRadius: "0.6rem",
     display: "flex",
   },
   "* + aside": { marginTop: "var(--default-block-gap)" },
@@ -120,7 +120,7 @@ export const createCss = (t) => ({
     overflow: "auto",
     padding: "1em",
     background: t.colors.backgroundModifierHover,
-    borderRadius: "0.3rem",
+    borderRadius: "0.4rem",
     // This prevents Slate’s absolutely positioned placeholder from
     // overflowing the code container
     position: "relative",
@@ -151,7 +151,7 @@ export const createCss = (t) => ({
   // Images
   ".image": {
     display: "block",
-    borderRadius: "0.3rem",
+    borderRadius: "0.4rem",
     // overflow: "hidden",
     '&[data-focused="true"], &:focus-visible': {
       boxShadow: t.shadows.focus,
@@ -171,7 +171,7 @@ export const createCss = (t) => ({
     },
     "& > img": {
       display: "block",
-      borderRadius: "0.3rem",
+      borderRadius: "0.4rem",
       background: t.colors.backgroundSecondary,
     },
     ".image-caption": {

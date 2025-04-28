@@ -1218,7 +1218,7 @@ export const Toolbar = ({ disabled: disabled_, onFocus, onBlur, ...props }) => {
             justifyContent: "center",
             width: "2.6rem",
             height: "2.6rem",
-            borderRadius: "0.3rem",
+            borderRadius: "0.4rem",
             color: t.colors.textNormal,
             ":disabled": { color: t.colors.textMuted },
             "@media(hover: hover)": {

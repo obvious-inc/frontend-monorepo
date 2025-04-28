@@ -665,7 +665,7 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
                     fontSize: t.fontSizes.base,
                     color: t.colors.textNormal,
                     padding: "0.3rem 0.5rem",
-                    borderRadius: "0.4rem",
+                    borderRadius: "0.6rem",
                     textDecoration: "none",
                     '&[data-index="0"]': {
                       display: "inline-flex",
@@ -796,7 +796,7 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
                   {
                     id: "open-camp-discord",
                     title: "Discord",
-                    iconRight: <span>{"\u2198"}</span>,
+                    iconRight: <span>{"\u2197"}</span>,
                   },
                   {
                     id: "open-camp-github",

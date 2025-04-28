@@ -344,7 +344,7 @@ const SectionedList = ({
             // Placeholder
             ".item-placeholder, .section-title-placeholder": {
               background: hoverColor,
-              borderRadius: "0.4rem",
+              borderRadius: "0.5rem",
             },
             ".item-placeholder": {
               height: "6.2rem",

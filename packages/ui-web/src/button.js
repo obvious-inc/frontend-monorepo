@@ -8,7 +8,7 @@ const baseStyles = (t, { align }) => ({
   fontWeight: "400",
   lineHeight: 1.25,
   border: 0,
-  borderRadius: "0.4rem",
+  borderRadius: "0.6rem",
   cursor: "pointer",
   textAlign: align === "left" ? "left" : "center",
   display: "inline-flex",
@@ -30,7 +30,7 @@ const stylesByVariant = (t, { danger }) => {
   const defaultStyles = {
     color: danger ? t.colors.textDanger : t.colors.textNormal,
     border: "1px solid",
-    borderColor: danger ? t.colors.borderDanger : t.colors.borderLight,
+    borderColor: danger ? t.colors.borderDanger : t.colors.borderLighter,
     "@media (hover: hover)": {
       "&:not([disabled]):hover": {
         background: danger
@@ -104,6 +104,7 @@ const stylesBySize = (theme, { multiline, align, icon }) => {
       padding: icon ? 0 : "0 0.4rem",
       [heightProp]: heightBySize.tiny,
       width: icon ? heightBySize.tiny : undefined,
+      borderRadius: "0.5rem",
     },
     small: {
       fontSize: theme.fontSizes.base,
@@ -114,6 +115,7 @@ const stylesBySize = (theme, { multiline, align, icon }) => {
       [heightProp]: heightBySize.small,
       width: icon ? heightBySize.small : undefined,
       lineHeight: 1.2,
+      borderRadius: "0.5rem",
     },
     medium: {
       fontSize: theme.text.sizes.button,

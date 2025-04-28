@@ -224,7 +224,7 @@ const ProposalActionForm = ({
             gap: "1.2rem",
           },
           form: {
-            borderRadius: "0.5rem",
+            borderRadius: "0.6rem",
             background: t.colors.backgroundModifierNormal,
             padding: "1rem",
             "&:has(textarea:focus-visible)": { boxShadow: t.shadows.focus },
@@ -298,7 +298,7 @@ const ProposalActionForm = ({
               ".text-input": {
                 background: t.colors.backgroundModifierNormal,
                 padding: "0.3rem 0.7rem",
-                borderRadius: "0.5rem",
+                borderRadius: "0.6rem",
                 "&:focus-visible": { boxShadow: t.shadows.focus },
               },
             },

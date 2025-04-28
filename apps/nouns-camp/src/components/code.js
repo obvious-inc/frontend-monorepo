@@ -31,7 +31,7 @@ const Code = ({ block, ...props }) => {
           overflow: "auto",
           position: "relative",
           background: t.colors.backgroundModifierNormal,
-          borderRadius: "0.3rem",
+          borderRadius: "0.6rem",
           userSelect: "text",
           lineHeight: 1.4,
           "[data-indent]": { paddingLeft: "1rem" },
