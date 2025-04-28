@@ -36,6 +36,7 @@ import AccountAvatar from "@/components/account-avatar";
 import LogoSymbol from "@/components/logo-symbol";
 import { formatEther } from "viem";
 import useTreasuryData from "@/hooks/treasury-data";
+import useEnsName from "@/hooks/ens-name";
 
 const flipAnimation = keyframes({
   "0%,52%,100%": {
@@ -323,6 +324,7 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
 
   const { open: openTreasuryDialog } = useDialog("treasury");
   const { open: openAccountDialog } = useDialog("account");
+  const { open: openEditProfileDialog } = useDialog("profile-edit");
   const { open: openProposalDraftsDialog } = useDialog("drafts");
   const { open: openDelegationDialog } = useDialog("delegation");
   const { open: openStreamsDialog } = useDialog("streams");
@@ -350,6 +352,7 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
     isAuthenticated: isConnectedWalletAccountAuthenticated,
     isLoading: isLoadingWallet,
   } = useWallet();
+  const ensName = useEnsName(connectedWalletAccountAddress);
   const { signIn: signInConnectedWalletAccount } = useWalletAuthentication();
   const { address: loggedInAccountAddress } = useSessionState();
   const { destroy: signOut } = useSessionActions();
@@ -391,6 +394,9 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
         break;
       case "open-drafts-dialog":
         openProposalDraftsDialog();
+        break;
+      case "open-edit-profile-dialog":
+        openEditProfileDialog();
         break;
       case "open-delegation-dialog":
         openDelegationDialog();
@@ -790,7 +796,7 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
                   {
                     id: "open-camp-discord",
                     title: "Discord",
-                    iconRight: <span>{"\u2197"}</span>,
+                    iconRight: <span>{"\u2198"}</span>,
                   },
                   {
                     id: "open-camp-github",
@@ -830,6 +836,10 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
                       {
                         id: "open-account-dialog",
                         title: "Account",
+                      },
+                      ensName != null && {
+                        id: "open-edit-profile-dialog",
+                        title: "Edit profile",
                       },
                       (hasNouns || hasVotingPower) && {
                         id: "open-delegation-dialog",

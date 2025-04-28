@@ -47,6 +47,8 @@ import { buildEtherscanLink } from "@/utils/etherscan";
 import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "@/hooks/farcaster";
 import Avatar from "@shades/ui-web/avatar";
 import AccountPreviewPopoverTrigger from "@/components/account-preview-popover-trigger";
+import useEnsText from "@/hooks/ens-text";
+import useEnsName from "@/hooks/ens-name";
 
 const ActivityFeed = React.lazy(() => import("@/components/activity-feed"));
 
@@ -439,6 +441,8 @@ const VoterHeader = ({ accountAddress }) => {
 
   const account = useAccount(accountAddress);
   const delegate = useDelegate(accountAddress);
+  const ensName = useEnsName(accountAddress);
+  const { text: ensBio } = useEnsText(ensName, "nouns.bio");
 
   const isMe = accountAddress.toLowerCase() === connectedAccountAddress;
   const enableDelegation = !isMe && connectedAccount?.nouns?.length > 0;
@@ -716,6 +720,18 @@ const VoterHeader = ({ accountAddress }) => {
             >
               {truncatedAddress}
             </a>
+          </div>
+        )}
+
+        {ensBio != null && (
+          <div
+            css={css({
+              marginTop: "2rem",
+              lineHeight: 1.4,
+              whiteSpace: "pre-line",
+            })}
+          >
+            {ensBio}
           </div>
         )}
       </div>

@@ -25,6 +25,7 @@ import { useWallet } from "@/hooks/wallet";
 import { useDialog } from "@/hooks/global-dialogs";
 import useEnsName from "@/hooks/ens-name";
 import useAccountDisplayName from "@/hooks/account-display-name";
+import useEnsText from "@/hooks/ens-text";
 import { useAccountsWithVerifiedEthAddress as useFarcasterAccountsWithVerifiedEthAddress } from "@/hooks/farcaster";
 import AccountAvatar from "@/components/account-avatar";
 import NounPreviewPopoverTrigger from "@/components/noun-preview-popover-trigger";
@@ -192,6 +193,10 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     },
   });
 
+  const { text: ensBio } = useEnsText(ensName, "nouns.bio", {
+    enabled: ensName != null,
+  });
+
   const { open: openDelegationDialog } = useDialog("delegation");
 
   const accountLink = `/voters/${ensName ?? accountAddress}`;
@@ -207,7 +212,9 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
     queryFn: () => fetchDelegate(accountAddress),
   });
 
-  const showStatus = !accountDataIsPending || account != null;
+  const hasBio = ensBio != null;
+
+  const showStatus = hasBio || !accountDataIsPending || account != null;
 
   return (
     <div
@@ -335,6 +342,38 @@ const AccountPreview = React.forwardRef(({ accountAddress, close }, ref) => {
               {ownedNouns.length > 1 && (
                 <NounList nouns={ownedNouns} contextAccount={accountAddress} />
               )}
+            </>
+          )}
+
+          {ensBio && (
+            <>
+              <hr
+                css={(t) =>
+                  css({
+                    width: "1.6rem",
+                    margin: 0,
+                    border: 0,
+                    borderTop: "0.1rem solid",
+                    borderColor: t.colors.borderLight,
+                  })
+                }
+              />
+              <div
+                css={(t) =>
+                  css({
+                    fontSize: t.text.sizes.small,
+                    color: t.colors.text,
+                    lineHeight: 1.4,
+                    whiteSpace: "pre-line",
+                    overflow: "hidden",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 8,
+                    WebkitBoxOrient: "vertical",
+                  })
+                }
+              >
+                {ensBio}
+              </div>
             </>
           )}
         </div>

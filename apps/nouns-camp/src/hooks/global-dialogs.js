@@ -57,6 +57,12 @@ const dialogs = [
     ),
   },
   {
+    key: "profile-edit",
+    component: ReactLazyWithPreload(
+      () => import("@/components/profile-edit-dialog"),
+    ),
+  },
+  {
     key: "account-authentication",
     component: ReactLazyWithPreload(
       () => import("@/components/account-authentication-dialog"),

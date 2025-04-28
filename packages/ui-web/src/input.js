@@ -106,6 +106,7 @@ const Input = React.forwardRef(
                 color: t.colors.textDimmed,
                 marginTop: "0.7rem",
                 strong: { fontWeight: t.text.weights.emphasis },
+                "p + p": { marginTop: "0.7em" },
               })
             }
           >

@@ -12,6 +12,7 @@ import {
   useConnectorsWithReadyState,
 } from "@/hooks/wallet";
 import { Provider as GlobalDialogsProvider } from "@/hooks/global-dialogs";
+import { Provider as Toaster } from "@/hooks/toast";
 import AppUpdateBanner from "@/components/app-update-banner";
 
 const GlobalClientFetcher = () => {
@@ -50,6 +51,7 @@ export default function ClientAppProvider({ children }) {
         <ConnectWalletDialogProvider>
           <GlobalDialogsProvider>
             <AppUpdateBanner />
+            <Toaster />
             {children}
             <GlobalClientFetcher />
             <WalletReconnector />

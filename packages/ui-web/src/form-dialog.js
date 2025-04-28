@@ -45,6 +45,7 @@ const FormDialog = ({
     } catch (e) {
       console.error(e);
       // TODO
+      alert("Something went wrong!");
     } finally {
       setPendingSubmit(false);
     }
@@ -55,7 +56,7 @@ const FormDialog = ({
   }, []);
 
   const hasChanges = controls.some((c) => {
-    const value = state[c.key];
+    const value = c.value ?? state[c.key];
 
     switch (c.type) {
       case "rich-text":
@@ -139,6 +140,7 @@ const FormDialog = ({
                       color: t.colors.textDimmed,
                       marginTop: "0.7rem",
                       strong: { fontWeight: t.text.weights.emphasis },
+                      "p + p": { marginTop: "0.7em" },
                     })
                   }
                 >

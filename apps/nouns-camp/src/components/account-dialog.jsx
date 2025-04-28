@@ -43,7 +43,7 @@ const Content = ({ titleProps, dismiss }) => {
     checksumEncodeAddress(accountAddress),
   );
 
-  const { open: openDelegationDialog } = useDialog("delegation");
+  const { open: openProfileEditDialog } = useDialog("profile-edit");
 
   const account = useAccount(accountAddress);
   const delegate = useDelegate(accountAddress);
@@ -235,14 +235,14 @@ const Content = ({ titleProps, dismiss }) => {
           },
         })}
       >
-        {hasNouns && (
+        {ensName != null && (
           <Button
             onClick={() => {
               dismiss();
-              openDelegationDialog();
+              openProfileEditDialog();
             }}
           >
-            Manage delegation
+            Edit profile
           </Button>
         )}
         <Button
@@ -251,7 +251,7 @@ const Content = ({ titleProps, dismiss }) => {
             navigate(`/voters/${ensName ?? accountAddress}`);
           }}
         >
-          Account page
+          Public account page
         </Button>
       </footer>
     </div>

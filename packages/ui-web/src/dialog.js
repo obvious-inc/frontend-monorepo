@@ -104,8 +104,8 @@ const ModalDialog = React.forwardRef(
           visualViewportHeight: window.visualViewport.height,
           visualViewportInset:
             window.innerHeight - window.visualViewport.height,
-          dialogHeight: dialogRef.current.offsetHeight,
-          navBarHeight: navBarFillerRef.current.offsetHeight,
+          dialogHeight: dialogRef.current?.offsetHeight ?? 0,
+          navBarHeight: navBarFillerRef.current?.offsetHeight ?? 0,
         });
       };
 
