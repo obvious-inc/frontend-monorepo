@@ -19,14 +19,7 @@ const DialogFooter = ({
     })}
     {...props}
   >
-    <div
-      css={css({
-        display: "grid",
-        gridAutoFlow: "column",
-        gridAutoColumns: "minmax(0,1fr)",
-        gridGap: "1rem",
-      })}
-    >
+    <div css={css({ display: "flex", gap: "1rem" })}>
       {cancel != null && (
         <Button type="button" size="medium" onClick={cancel}>
           {cancelButtonLabel}

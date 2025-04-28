@@ -65,6 +65,7 @@
     "slate": "^0.112.0",
     "slate-history": "^0.110.3",
     "slate-react": "^0.112.1",
+    "sonner": "^2.0.3",
     "tinykeys": "^3.0.0",
     "use-debounce": "^10.0.4",
     "viem": "^2.22.17",
