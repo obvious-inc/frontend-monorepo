@@ -14,6 +14,29 @@ const fixUrl = (url) => {
   }
 };
 
+const matchYouTubeUrl = (url) => {
+  // This regex extracts YouTube video IDs from URLs:
+  // - Matches youtube.com/watch?v=, youtube.com/embed/, youtube.com/shorts/ or youtu.be/ domains
+  // - Supports URLs with additional search parameters (like &t=30s)
+  // - (?:...) creates non-capturing groups for the domain patterns
+  // - The capturing group ([a-zA-Z0-9_-]{11}) extracts the 11-character video ID
+  // - The ID must be exactly 11 characters of letters, numbers, underscores or hyphens
+  const urlRegex =
+    /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&].*)?/;
+  const match = url.match(urlRegex);
+  return match ? match[1] : null;
+};
+
+const matchLoomUrl = (url) => {
+  // This regex extracts Loom video IDs from URLs:
+  // - Matches loom.com/share/ or loom.com/embed/ domains
+  // - Supports URLs with additional search parameters
+  // - The capturing group extracts the UUID-style video ID (alphanumeric with hyphens)
+  const urlRegex = /(?:loom\.com\/(?:share\/|embed\/))([a-f0-9-]+)/;
+  const match = url.match(urlRegex);
+  return match ? match[1] : null;
+};
+
 const commonHtmlEnties = {
   amp: "&",
   apos: "'",
@@ -86,9 +109,48 @@ const parseToken = (token, context = {}) => {
           };
       }
 
+      const nonEmptyChildren = children.filter(
+        (c) => !(c.type === "text" && c.text.trim() === ""),
+      );
+
+      // Match video blocks
+      if (
+        nonEmptyChildren.length === 1 &&
+        nonEmptyChildren[0].type === "link"
+      ) {
+        const linkToken = children[0];
+
+        // Only switch out links that are labeled as links, to not mess with
+        // author expectations too much
+        const isLabeledLink = (() => {
+          if (
+            linkToken.children.length > 1 ||
+            linkToken.children[0].type !== "text"
+          )
+            return false;
+
+          try {
+            new URL(linkToken.children[0].text);
+            return false;
+          } catch (e) {
+            return true;
+          }
+        })();
+
+        if (!isLabeledLink) {
+          const youtubeVideoId = matchYouTubeUrl(linkToken.url);
+          if (youtubeVideoId != null)
+            return { type: "video", provider: "youtube", ref: youtubeVideoId };
+
+          const loomVideoId = matchLoomUrl(linkToken.url);
+          if (loomVideoId != null)
+            return { type: "video", provider: "loom", ref: loomVideoId };
+        }
+      }
+
       // Check if paragraph consists of only images or empty text
-      const isImageParagraph = children.every(
-        (t) => t.type === "image" || t.text?.trim() === "",
+      const isImageParagraph = nonEmptyChildren.every(
+        (t) => t.type === "image",
       );
 
       // If it's only images, convert to image grid

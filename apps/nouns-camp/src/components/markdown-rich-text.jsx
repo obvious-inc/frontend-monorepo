@@ -102,8 +102,16 @@ const MarkdownRichText = React.forwardRef(
               }
               return null;
 
-            case "paragraph":
-              return null;
+            case "video": {
+              switch (el.provider) {
+                case "youtube":
+                  return <YouTubeEmbed videoId={el.ref} />;
+                case "loom":
+                  return <LoomEmbed videoId={el.ref} />;
+                default:
+                  return null;
+              }
+            }
 
             case "emoji":
               return <Emoji key={i} emoji={el.emoji} />;
@@ -116,6 +124,42 @@ const MarkdownRichText = React.forwardRef(
       />
     );
   },
+);
+
+const videoEmbedStyles = {
+  position: "relative",
+  paddingBottom: "calc(100% * 9/16)",
+  height: 0,
+  borderRadius: "0.6rem",
+  overflow: "hidden",
+  iframe: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    border: 0,
+  },
+};
+
+const YouTubeEmbed = ({ videoId }) => (
+  <div css={css(videoEmbedStyles)}>
+    <iframe
+      title="YouTube video"
+      src={`https://www.youtube.com/embed/${videoId}?rel=0&loop=1&color=white`}
+      allowFullScreen
+    />
+  </div>
+);
+
+const LoomEmbed = ({ videoId }) => (
+  <div css={css(videoEmbedStyles)}>
+    <iframe
+      title="Loom video"
+      src={`https://www.loom.com/embed/${videoId}?hideEmbedTopBar=true`}
+      allowFullScreen
+    />
+  </div>
 );
 
 const ImageLink = ({ element: el, maxWidth, maxHeight }) => {

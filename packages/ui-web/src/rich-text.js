@@ -120,7 +120,7 @@ export const createCss = (t) => ({
     overflow: "auto",
     padding: "1em",
     background: t.colors.backgroundModifierHover,
-    borderRadius: "0.4rem",
+    borderRadius: "0.6rem",
     // This prevents Slate’s absolutely positioned placeholder from
     // overflowing the code container
     position: "relative",
@@ -151,7 +151,7 @@ export const createCss = (t) => ({
   // Images
   ".image": {
     display: "block",
-    borderRadius: "0.4rem",
+    borderRadius: "0.6rem",
     // overflow: "hidden",
     '&[data-focused="true"], &:focus-visible': {
       boxShadow: t.shadows.focus,
@@ -171,7 +171,7 @@ export const createCss = (t) => ({
     },
     "& > img": {
       display: "block",
-      borderRadius: "0.4rem",
+      borderRadius: "0.6rem",
       background: t.colors.backgroundSecondary,
     },
     ".image-caption": {
