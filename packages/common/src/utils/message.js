@@ -254,6 +254,9 @@ export const stringifyBlocks = (
       case "image-attachment":
         return humanReadable ? el.url : "";
 
+      case "video":
+        return humanReadable ? "[video]" : "";
+
       case "horizontal-divider":
         return "\n---\n";
 
