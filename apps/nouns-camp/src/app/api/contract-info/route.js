@@ -5,23 +5,10 @@ export const runtime = "edge";
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const ONE_MONTH_IN_SECONDS = ONE_DAY_IN_SECONDS * 30;
 
-const getEtherscanApiEndpoint = () => {
-  switch (CHAIN_ID) {
-    case 1:
-      return "https://api.etherscan.io";
-    case 11155111:
-      return "https://api-sepolia.etherscan.io";
-    default:
-      throw new Error();
-  }
-};
-
 const etherscanRequest = (query) => {
+  const apiEndpoint = `https://api.etherscan.io/v2/api?chainid=${CHAIN_ID}&apikey=${process.env.ETHERSCAN_API_KEY}`;
   const searchParams = new URLSearchParams(query);
-  const apiEndpoint = getEtherscanApiEndpoint();
-  return new Request(
-    `${apiEndpoint}/api?apikey=${process.env.ETHERSCAN_API_KEY}&${searchParams}`,
-  );
+  return new Request(`${apiEndpoint}&${searchParams}`);
 };
 
 const contractInfoCache = new Map();
