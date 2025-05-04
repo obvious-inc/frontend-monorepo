@@ -118,26 +118,31 @@ const parseToken = (token, context = {}) => {
         nonEmptyChildren.length === 1 &&
         nonEmptyChildren[0].type === "link"
       ) {
-        const linkToken = children[0];
+        const linkToken = nonEmptyChildren[0];
+        const children = linkToken.children ?? [{ text: linkToken.label }];
 
         // Only switch out links that are labeled as links, to not mess with
         // author expectations too much
-        const isLabeledLink = (() => {
-          if (
-            linkToken.children.length > 1 ||
-            linkToken.children[0].type !== "text"
-          )
-            return false;
+        const isUrlLabeledLink = (() => {
+          const isPlainText =
+            children.length === 1 &&
+            (children[0].type === "text" ||
+              (children[0].type == null && children[0].text != null));
+
+          if (!isPlainText) return false; // Complex label
 
           try {
-            new URL(linkToken.children[0].text);
-            return false;
-          } catch (e) {
+            new URL(children[0].text);
             return true;
+          } catch (e) {
+            return false;
           }
         })();
 
-        if (!isLabeledLink) {
+        const isImageLink =
+          nonEmptyChildren.length === 1 && nonEmptyChildren[0].type === "image";
+
+        if (isUrlLabeledLink || isImageLink) {
           const youtubeVideoId = matchYouTubeUrl(linkToken.url);
           if (youtubeVideoId != null)
             return { type: "video", provider: "youtube", ref: youtubeVideoId };
@@ -165,6 +170,7 @@ const parseToken = (token, context = {}) => {
         return { type: "paragraph", children };
 
       // Handle mixed content (images and text) by organizing into alternating paragraphs and image grids
+      // TODO: Recursively run processing from above, video etc.
       return children.reduce((nodes, child) => {
         const lastNode = nodes[nodes.length - 1];
         if (child.type === "image") {
