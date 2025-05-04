@@ -76,6 +76,19 @@ const MarkdownRichText = React.forwardRef(
       <RichText
         ref={ref}
         blocks={blocks}
+        css={(t) =>
+          css({
+            aside: {
+              fontStyle: "italic",
+              fontSize: "calc(14em/16)",
+              color: t.colors.textDimmed,
+              padding: "1rem 1.6rem",
+              "@media(min-width: 600px)": {
+                padding: "1.6rem",
+              },
+            },
+          })
+        }
         renderElement={(el, i) => {
           if (renderElement != null) {
             const result = renderElement(el, i);

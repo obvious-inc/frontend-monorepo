@@ -88,21 +88,10 @@ export const createCss = (t) => ({
   aside: {
     background: t.colors.backgroundModifierHover,
     padding: "1em",
-    paddingLeft: "0.75em",
     borderRadius: "0.6rem",
-    display: "flex",
   },
   "* + aside": { marginTop: "var(--default-block-gap)" },
   "aside:has(+ *)": { marginBottom: "var(--default-block-gap)" },
-  "aside:before": {
-    fontSize: "1.35em",
-    lineHeight: "1em",
-    display: "block",
-    width: "1.5em",
-    height: "1.5em",
-    marginRight: "0.5em",
-    content: '"💡"',
-  },
 
   // Code
   code: {

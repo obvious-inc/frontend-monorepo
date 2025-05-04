@@ -252,6 +252,12 @@ const parseToken = (token, context = {}) => {
         children: parseChildren(token, parseToken, context),
       };
 
+    case "aside":
+      return {
+        type: "callout",
+        children: parseChildren(token, parseToken, context),
+      };
+
     case "code":
       return {
         type: "code-block",
@@ -424,21 +430,38 @@ const insExtension = {
   },
   tokenizer(src) {
     const match = src.match(/^<ins>(.*?)<\/ins>/);
+    if (!match) return;
 
-    if (match) {
-      return {
-        type: "ins",
-        raw: match[0],
-        text: match[1],
-        tokens: [{ type: "text", raw: match[1], text: match[1] }],
-      };
-    }
-
-    return;
+    return {
+      type: "ins",
+      raw: match[0],
+      text: match[1],
+      tokens: [{ type: "text", raw: match[1], text: match[1] }],
+    };
   },
 };
 
-marked.use({ extensions: [insExtension] });
+const asideExtension = {
+  name: "aside",
+  level: "block",
+  start(src) {
+    return src.indexOf("<aside>");
+  },
+  tokenizer(src) {
+    const match = src.match(/^<aside>(.*?)<\/aside>/);
+    if (!match) return;
+
+    const token = {
+      type: "aside",
+      raw: match[0],
+      tokens: [],
+    };
+    this.lexer.blockTokens(match[1], token.tokens);
+    return token;
+  },
+};
+
+marked.use({ extensions: [asideExtension, insExtension] });
 
 export const toMessageBlocks = (text, { displayImages = true } = {}) => {
   const tokens = marked.lexer(text);
