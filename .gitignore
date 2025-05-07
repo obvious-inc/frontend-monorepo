@@ -10,3 +10,5 @@ dist
 CLAUDE.md
 .goosehints
 .zed
+
+**/.claude/settings.local.json
