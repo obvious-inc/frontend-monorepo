@@ -417,7 +417,7 @@ const NavBar = ({ navigationStack, actions: customActions }) => {
         window.open("https://warpcast.com/~/channel/camp", "_blank");
         break;
       case "open-camp-discord":
-        window.open("https://discord.gg/EvAzqBTF8x", "_blank");
+        window.open("https://discord.gg/kXjMV8kTnk", "_blank");
         break;
       case "open-camp-github":
         window.open(
