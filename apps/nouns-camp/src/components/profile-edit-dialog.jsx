@@ -3,24 +3,34 @@ import { css } from "@emotion/react";
 import Dialog from "@shades/ui-web/dialog";
 import FormDialog from "@shades/ui-web/form-dialog";
 import Link from "@shades/ui-web/link";
-import { useWallet } from "@/hooks/wallet";
+import { useWallet, ConnectDialogContent } from "@/hooks/wallet";
 import useEnsName from "@/hooks/ens-name";
 import useEnsText from "@/hooks/ens-text";
 import useToast from "@/hooks/toast";
 import useEnsTextWrite from "@/hooks/ens-text-write";
 import Code from "@/components/code";
 
-const ProfileEditDialog = ({ isOpen, close }) => (
-  <Dialog
-    isOpen={isOpen}
-    onRequestClose={() => {
-      close();
-    }}
-    width="44rem"
-  >
-    {(props) => <Content dismiss={close} {...props} />}
-  </Dialog>
-);
+const ProfileEditDialog = ({ isOpen, close }) => {
+  const { address: connectedAccountAddress } = useWallet();
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      width="44rem"
+    >
+      {(props) =>
+        connectedAccountAddress == null ? (
+          <ConnectDialogContent {...props} />
+        ) : (
+          <Content dismiss={close} {...props} />
+        )
+      }
+    </Dialog>
+  );
+};
 
 const Content = ({ titleProps, dismiss }) => {
   const toast = useToast();

@@ -14,6 +14,7 @@ import {
 import { Provider as GlobalDialogsProvider } from "@/hooks/global-dialogs";
 import { Provider as Toaster } from "@/hooks/toast";
 import AppUpdateBanner from "@/components/app-update-banner";
+import CommandPalette from "@/components/command-palette";
 
 const GlobalClientFetcher = () => {
   const { address: connectedAccountAddress } = useWallet();
@@ -52,6 +53,7 @@ export default function ClientAppProvider({ children }) {
           <GlobalDialogsProvider>
             <AppUpdateBanner />
             <Toaster />
+            <CommandPalette />
             {children}
             <GlobalClientFetcher />
             <WalletReconnector />
