@@ -316,7 +316,7 @@ export const PopoverOrTrayDialog = ({
   return (
     <>
       {trigger}
-      <Dialog isOpen={isOpen} onRequestClose={close} transparent tray>
+      <Dialog isOpen={isOpen} onRequestClose={close} backdrop="none" tray>
         <div
           css={(t) =>
             css({

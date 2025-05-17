@@ -41,9 +41,10 @@ const ModalDialog = React.forwardRef(
       onRequestClose,
       width,
       height,
-      transparent,
       tray = false,
       trayViewportCoveredBehavior = "ignore",
+      background,
+      trayBackground,
       backdrop = "normal",
       modalProps: customModalProps,
       underlayProps: customUnderlayProps,
@@ -289,13 +290,13 @@ const ModalDialog = React.forwardRef(
                 height: "100%",
                 overflow: "auto",
                 transition: "0.1s background ease-out",
-                background: "var(--background, hsl(0 0% 0% / 40%))", // Backdrop color
+                background: "var(--backdrop, hsl(0 0% 0% / 40%))", // Backdrop color
 
                 // Modal defaults
                 ".modal": {
-                  width: "100%",
                   color: t.colors.textNormal,
-                  background: t.colors.dialogBackground,
+                  background: `var(--specified-background, ${t.colors.dialogBackground})`,
+                  width: "100%",
                   outline: "none",
                   margin: "auto", // Center
                 },
@@ -333,6 +334,7 @@ const ModalDialog = React.forwardRef(
                     overflow: "hidden",
                     // minHeight: "min-content",
                     minHeight: `calc(100dvh - ${t.navBarHeight})`,
+                    background: `var(--specified-tray-background, ${t.colors.dialogBackground})`,
                     animation: `${trayEnterAnimation} 0.325s ease-out forwards`,
                   },
                   '&[data-fits-in-viewport="false"]': {
@@ -372,6 +374,7 @@ const ModalDialog = React.forwardRef(
                     flexDirection: "column",
                     outline: "none",
                     minHeight: "min-content",
+                    background: `var(--specified-tray-background, ${t.colors.dialogBackground})`,
                     animation: `${trayEnterAnimation} 0.325s ease-out forwards`,
                   },
                   ".dialog": {
@@ -417,11 +420,14 @@ const ModalDialog = React.forwardRef(
           style={{
             "--specified-dialog-width": width,
             "--specified-dialog-height": height,
-            "--background": transparent
-              ? "none"
-              : backdrop === "light"
-                ? "hsl(0 0% 0% / 20%)"
-                : undefined,
+            "--specified-background": background,
+            "--specified-tray-background": trayBackground ?? background,
+            "--backdrop":
+              backdrop === "none"
+                ? "none"
+                : backdrop === "light"
+                  ? "hsl(0 0% 0% / 20%)"
+                  : undefined,
           }}
         >
           <div

@@ -10,10 +10,13 @@ export const isEventTargetTextInputOrTextArea = (target) => {
   return tagName === "textarea";
 };
 
-const useKeyboardShortcuts = (shortcutMap, { enabled = true } = {}) => {
+const useKeyboardShortcuts = (
+  shortcutMap,
+  { enabled = true, ...options } = {},
+) => {
   React.useEffect(() => {
     if (!enabled) return;
-    const unsubscribe = tinykeys(window, shortcutMap);
+    const unsubscribe = tinykeys(window, shortcutMap, options);
     return () => {
       unsubscribe();
     };

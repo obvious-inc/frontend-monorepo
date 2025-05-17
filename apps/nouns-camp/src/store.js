@@ -2210,7 +2210,7 @@ export const useProposalCandidateVotingPower = (candidateId) => {
   const proposerDelegate = useDelegate(candidate.proposerId);
   const activeProposerIds = useProposals({ filter: "active" }).flatMap((p) => [
     p.proposerId,
-    ...p.signers.map((s) => s.id),
+    ...(p.signers?.map((s) => s.id) ?? []),
   ]);
 
   const proposerDelegateNounIds =

@@ -10,7 +10,6 @@ import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
 import { useCachedState } from "@shades/common/app";
 import { array as arrayUtils, searchRecords } from "@shades/common/utils";
-import Input from "@shades/ui-web/input";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
@@ -919,15 +918,38 @@ const BrowseScreen = () => {
                   })
                 }
               >
-                <Input
-                  ref={inputRef}
-                  placeholder="Search..."
-                  defaultValue={query}
-                  size="large"
-                  onChange={(e) => {
-                    handleSearchInputChange(e.target.value);
+                <button
+                  css={(t) =>
+                    css({
+                      width: "100%",
+                      // height: "4.8rem",
+                      fontSize: t.text.sizes.large,
+                      color: t.colors.inputPlaceholder,
+                      background: t.colors.backgroundModifierNormal,
+                      borderRadius: "0.6rem",
+                      padding: "0.9rem 1.1rem",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      border: 0,
+                      outline: "none",
+                      "&:focus-visible": {
+                        boxShadow: t.shadows.focus,
+                      },
+                    })
+                  }
+                  onClick={() => {
+                    // Dispatch the keyboard shortcut to open the command palette
+                    const event = new KeyboardEvent("keydown", {
+                      key: "k",
+                      metaKey: true,
+                      bubbles: true,
+                    });
+                    document.dispatchEvent(event);
                   }}
-                />
+                >
+                  Search...
+                </button>
               </div>
 
               {deferredQuery !== "" ? (

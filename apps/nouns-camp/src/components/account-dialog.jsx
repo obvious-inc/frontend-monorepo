@@ -7,7 +7,7 @@ import { Cross as CrossIcon } from "@shades/ui-web/icons";
 import { useAccount, useDelegate } from "@/store";
 import { useNavigate } from "@/hooks/navigation";
 import { useCurrentDynamicQuorum } from "@/hooks/dao-contract";
-import { useWallet } from "@/hooks/wallet";
+import { useWallet, ConnectDialogContent } from "@/hooks/wallet";
 import { useState as useSessionState } from "@/session-provider";
 import { useDialog } from "@/hooks/global-dialogs";
 import useEnsName from "@/hooks/ens-name";
@@ -18,17 +18,27 @@ import NounPreviewPopoverTrigger from "@/components/noun-preview-popover-trigger
 import NounAvatar from "@/components/noun-avatar";
 import { buildEtherscanLink } from "@/utils/etherscan";
 
-const AccountDialog = ({ isOpen, close }) => (
-  <Dialog
-    isOpen={isOpen}
-    onRequestClose={() => {
-      close();
-    }}
-    width="44rem"
-  >
-    {(props) => <Content dismiss={close} {...props} />}
-  </Dialog>
-);
+const AccountDialog = ({ isOpen, close }) => {
+  const { address: connectedAccountAddress } = useWallet();
+
+  return (
+    <Dialog
+      isOpen={isOpen}
+      onRequestClose={() => {
+        close();
+      }}
+      width="44rem"
+    >
+      {(props) =>
+        connectedAccountAddress == null ? (
+          <ConnectDialogContent {...props} />
+        ) : (
+          <Content dismiss={close} {...props} />
+        )
+      }
+    </Dialog>
+  );
+};
 
 const Content = ({ titleProps, dismiss }) => {
   const navigate = useNavigate();
