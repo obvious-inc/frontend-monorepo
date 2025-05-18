@@ -6,15 +6,13 @@ import dateStartOfDay from "date-fns/startOfDay";
 import React from "react";
 import NextLink from "next/link";
 import { css } from "@emotion/react";
-import { useDebouncedCallback } from "use-debounce";
 import { useFetch } from "@shades/common/react";
 import { useCachedState } from "@shades/common/app";
-import { array as arrayUtils, searchRecords } from "@shades/common/utils";
+import { array as arrayUtils } from "@shades/common/utils";
 import Button from "@shades/ui-web/button";
 import Link from "@shades/ui-web/link";
 import Select from "@shades/ui-web/select";
 import * as Menu from "@shades/ui-web/dropdown-menu";
-import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 import {
   CaretDown as CaretDownIcon,
   Fullscreen as FullscreenIcon,
@@ -25,7 +23,6 @@ import {
   isSucceededState as isSucceededProposalState,
   isVotableState as isVotableProposalState,
 } from "@/utils/proposals";
-import { search as searchEns } from "@/utils/ens";
 import {
   getSponsorSignatures as getCandidateSponsorSignatures,
   // getScore as getCandidateScore,
@@ -43,7 +40,6 @@ import {
   useProposals,
   useProposalCandidates,
   useProposalUpdateCandidates,
-  useEnsCache,
   useMainFeedItems,
 } from "@/store";
 import { useCollection as useDrafts } from "@/hooks/drafts";
@@ -52,7 +48,6 @@ import * as Tabs from "@/components/tabs";
 import Layout, { MainContentContainer } from "@/components/layout";
 import SectionedList from "@/components/sectioned-list";
 import { useVotes, useRevoteCount } from "@/components/browse-accounts-screen";
-import useEnsAddress from "@/hooks/ens-address";
 
 const ActivityFeed = React.lazy(() => import("@/components/activity-feed"));
 
@@ -267,20 +262,7 @@ const BrowseScreen = () => {
   const tabAnchorRef = React.useRef();
   const tabContainerRef = React.useRef();
 
-  const query = searchParams.get("q") ?? "";
-  const deferredQuery = React.useDeferredValue(query.trim());
-  const inputRef = React.useRef();
-
-  // Update input value directly when query changes (like when navigating to home)
-  React.useEffect(() => {
-    if (inputRef.current && inputRef.current.value !== query) {
-      inputRef.current.value = query;
-    }
-  }, [query]);
-
   const { address: connectedAccountAddress } = useWallet();
-
-  const { nameByAddress: primaryEnsNameByAddress } = useEnsCache();
 
   const proposals_ = useProposals({ state: true });
   const candidates_ = useProposalCandidates({
@@ -292,7 +274,7 @@ const BrowseScreen = () => {
     includeTargetProposal: true,
   });
 
-  const { items: allProposalDrafts } = useDrafts();
+  useDrafts();
 
   const [page, setPage] = React.useState(1);
   const [proposalSortStrategy, setProposalSortStrategy] = React.useState(
@@ -307,9 +289,6 @@ const BrowseScreen = () => {
   const [hasFetchedOnce, setHasFetchedOnce] = React.useState(
     hasFetchedBrowseDataOnce,
   );
-
-  const eagerMatchingEnsAddress = useEnsAddress(deferredQuery);
-  const matchingEnsAddress = React.useDeferredValue(eagerMatchingEnsAddress);
 
   const proposals = React.useMemo(
     () => proposals_.filter((p) => p.startBlock != null),
@@ -334,95 +313,6 @@ const BrowseScreen = () => {
     });
   }, [proposalUpdateCandidates_, connectedAccountAddress]);
 
-  const proposalDrafts = React.useMemo(() => {
-    if (allProposalDrafts == null) return [];
-    return allProposalDrafts
-      .filter((d) => {
-        if (d.name.trim() !== "") return true;
-        return d.body.some((n) => !isRichTextNodeEmpty(n, { trim: true }));
-      })
-      .map((d) => ({ ...d, type: "draft" }));
-  }, [allProposalDrafts]);
-
-  const searchResultItems = React.useMemo(() => {
-    if (deferredQuery === "") return [];
-
-    const matchingAddresses =
-      deferredQuery.length >= 3
-        ? searchEns(primaryEnsNameByAddress, deferredQuery)
-        : [];
-
-    const matchingRecords = searchRecords(
-      [
-        ...proposalDrafts.map((d) => ({
-          type: "draft",
-          data: d,
-          tokens: [
-            { value: d.id, exact: true },
-            { value: d.proposerId, exact: true },
-            { value: d.name },
-          ],
-          fallbackSortProperty: Infinity,
-        })),
-        ...proposals.map((p) => ({
-          type: "proposal",
-          data: p,
-          tokens: [
-            { value: p.id, exact: true },
-            { value: p.proposerId, exact: true },
-            { value: p.title },
-            ...(p.signers ?? []).map((s) => ({ value: s.id, exact: true })),
-          ],
-          fallbackSortProperty: p.createdBlock,
-        })),
-        ...[...topics, ...candidates, ...relevantProposalUpdateCandidates].map(
-          (c) => ({
-            type: "candidate",
-            data: c,
-            tokens: [
-              { value: c.id, exact: true },
-              { value: c.proposerId, exact: true },
-              { value: c.latestVersion?.content.title },
-              ...(c.latestVersion?.content.contentSignatures ?? []).map(
-                (s) => ({
-                  value: s.signer.id,
-                  exact: true,
-                }),
-              ),
-            ],
-            fallbackSortProperty: c.createdBlock,
-          }),
-        ),
-      ],
-      [deferredQuery, ...matchingAddresses],
-    );
-
-    if (matchingEnsAddress != null) {
-      matchingRecords.unshift({
-        type: "account",
-        data: { id: matchingEnsAddress },
-      });
-    } else {
-      for (const address of matchingAddresses.toReversed()) {
-        matchingRecords.unshift({
-          type: "account",
-          data: { id: address },
-        });
-      }
-    }
-
-    return matchingRecords.map((r) => r.data);
-  }, [
-    deferredQuery,
-    matchingEnsAddress,
-    topics,
-    proposals,
-    candidates,
-    relevantProposalUpdateCandidates,
-    proposalDrafts,
-    primaryEnsNameByAddress,
-  ]);
-
   const paginate = (items) => {
     if (page == null) return items;
     return items.slice(0, BROWSE_LIST_PAGE_ITEM_COUNT * page);
@@ -437,32 +327,6 @@ const BrowseScreen = () => {
     hasFetchedBrowseDataOnce = true;
     fetchBrowseScreenData({ skip: 40, first: 1000 });
   }, [fetchBrowseScreenData]);
-
-  const handleSearchInputChange = useDebouncedCallback((query) => {
-    setPage(1);
-
-    // Clear search from path if query is empty
-    if (query.trim() === "") {
-      setSearchParams(
-        (p) => {
-          const newParams = new URLSearchParams(p);
-          newParams.delete("q");
-          return newParams;
-        },
-        { replace: true },
-      );
-      return;
-    }
-
-    setSearchParams(
-      (p) => {
-        const newParams = new URLSearchParams(p);
-        newParams.set("q", query);
-        return newParams;
-      },
-      { replace: true },
-    );
-  }, 500);
 
   const defaultTabKey = isDesktopLayout ? "digest" : "activity";
 
@@ -922,7 +786,6 @@ const BrowseScreen = () => {
                   css={(t) =>
                     css({
                       width: "100%",
-                      // height: "4.8rem",
                       fontSize: t.text.sizes.large,
                       color: t.colors.inputPlaceholder,
                       background: t.colors.backgroundModifierNormal,
@@ -952,29 +815,7 @@ const BrowseScreen = () => {
                 </button>
               </div>
 
-              {deferredQuery !== "" ? (
-                // Search results
-                <div css={css({ marginTop: "2rem" })}>
-                  <SectionedList
-                    items={
-                      page == null
-                        ? searchResultItems
-                        : searchResultItems.slice(
-                            0,
-                            BROWSE_LIST_PAGE_ITEM_COUNT * page,
-                          )
-                    }
-                  />
-                  {page != null &&
-                    searchResultItems.length >
-                      BROWSE_LIST_PAGE_ITEM_COUNT * page && (
-                      <Pagination
-                        showNext={() => setPage((p) => p + 1)}
-                        showAll={() => setPage(null)}
-                      />
-                    )}
-                </div>
-              ) : isDesktopLayout ? (
+              {isDesktopLayout ? (
                 <div
                   css={css({ transition: "0.2s ease-out opacity" })}
                   style={{

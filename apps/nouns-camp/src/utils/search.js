@@ -2,7 +2,7 @@
 
 import { searchRecords } from "@shades/common/utils";
 import { search as searchEns } from "@/utils/ens";
-import { isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
+import { isNodeEmpty as isRichTextNodeEmpty } from "@shades/ui-web/rich-text-editor";
 
 /**
  * Performs search across multiple sources of content
