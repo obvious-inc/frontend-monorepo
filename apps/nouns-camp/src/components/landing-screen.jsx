@@ -946,6 +946,10 @@ const feedFilterCategoryItems = [
     title: "Candidate activity",
   },
   {
+    key: "topics",
+    title: "Topic activity",
+  },
+  {
     key: "noun-representation",
     title: "Delegations & transfers",
   },
@@ -960,6 +964,7 @@ const feedFilterCategoryItems = [
 const defaultSelectedFeedFilterCategories = [
   "proposals",
   "candidates",
+  "topics",
   "noun-representation",
   "auction-excluding-bids",
   // "auction-bids",
