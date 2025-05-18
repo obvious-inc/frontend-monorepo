@@ -208,19 +208,6 @@ const createDigestSections = ({
       truncationThreshold: 2,
     },
     {
-      key: "topics:new",
-      title: "New topics",
-      description: `Created within the last ${DIGEST_NEW_THRESHOLD_IN_DAYS} days`,
-      sort: sortCandidatesReverseChronological,
-      truncationThreshold: 2,
-    },
-    {
-      key: "topics:active",
-      title: "Recently active topics",
-      sort: sortCandidatesByLastActivity,
-      truncationThreshold: 2,
-    },
-    {
       key: "candidates:new",
       title: "New candidates",
       description: `Created within the last ${DIGEST_NEW_THRESHOLD_IN_DAYS} days`,
@@ -230,6 +217,19 @@ const createDigestSections = ({
     {
       key: "candidates:active",
       title: "Recently active candidates",
+      sort: sortCandidatesByLastActivity,
+      truncationThreshold: 2,
+    },
+    {
+      key: "topics:new",
+      title: "New topics",
+      description: `Created within the last ${DIGEST_NEW_THRESHOLD_IN_DAYS} days`,
+      sort: sortCandidatesReverseChronological,
+      truncationThreshold: 2,
+    },
+    {
+      key: "topics:active",
+      title: "Recently active topics",
       sort: sortCandidatesByLastActivity,
       truncationThreshold: 2,
     },
