@@ -464,9 +464,11 @@ const CommandPalette = () => {
 
                 ".prop-tag": {
                   color: t.colors.textDimmed,
-                  padding: "0.15rem 0.4rem",
+                  padding: "0 0.4rem",
                   fontSize: t.text.sizes.tiny,
                   display: "inline-block",
+                  lineHeight: 1.65,
+                  verticalAlign: "text-top",
                   background: t.colors.backgroundModifierNormal,
                   borderRadius: "0.4rem",
                   fontVariantNumeric: "tabular-nums",
