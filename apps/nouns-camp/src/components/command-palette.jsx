@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, createContext, useContext } from "react";
 import {
   Autocomplete,
   Collection,
@@ -36,6 +36,13 @@ import { useCollection as useDrafts } from "@/hooks/drafts";
 import AccountAvatar from "@/components/account-avatar";
 import useEnsName from "@/hooks/ens-name";
 import useAccountDisplayName from "@/hooks/account-display-name";
+
+export const CommandPaletteContext = createContext({});
+
+export const useCommandPalette = () => {
+  const { setOpen } = useContext(CommandPaletteContext);
+  return { open: () => setOpen(true) };
+};
 
 const categoryBySearchResultType = {
   account: "accounts",
@@ -191,7 +198,7 @@ const CommandPalette = () => {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  const [isOpen, setOpen] = useState(false);
+  const { isOpen, setOpen } = useContext(CommandPaletteContext);
 
   const { open: openTreasuryDialog } = useDialog("treasury");
   const { open: openAccountDialog } = useDialog("account");
@@ -684,4 +691,16 @@ const AccountMenuItem = ({ address: accountAddress }) => {
   );
 };
 
-export default CommandPalette;
+// Provider component that also renders the command palette content
+export const CommandPaletteProvider = ({ children }) => {
+  const [isOpen, setOpen] = useState(false);
+
+  return (
+    <CommandPaletteContext.Provider value={{ isOpen, setOpen }}>
+      <CommandPalette />
+      {children}
+    </CommandPaletteContext.Provider>
+  );
+};
+
+export default CommandPaletteProvider;

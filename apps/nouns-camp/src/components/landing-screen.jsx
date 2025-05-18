@@ -42,6 +42,7 @@ import {
   useProposalUpdateCandidates,
   useMainFeedItems,
 } from "@/store";
+import { useCommandPalette } from "@/components/command-palette";
 import { useCollection as useDrafts } from "@/hooks/drafts";
 
 import * as Tabs from "@/components/tabs";
@@ -319,6 +320,8 @@ const BrowseScreen = () => {
   };
 
   const { fetchBrowseScreenData } = useActions();
+
+  const commandPalette = useCommandPalette();
 
   useFetch(async () => {
     await fetchBrowseScreenData({ first: 40 });
@@ -792,7 +795,6 @@ const BrowseScreen = () => {
                       borderRadius: "0.6rem",
                       padding: "0.9rem 1.1rem",
                       textAlign: "left",
-                      cursor: "pointer",
                       fontFamily: "inherit",
                       border: 0,
                       outline: "none",
@@ -801,15 +803,7 @@ const BrowseScreen = () => {
                       },
                     })
                   }
-                  onClick={() => {
-                    // Dispatch the keyboard shortcut to open the command palette
-                    const event = new KeyboardEvent("keydown", {
-                      key: "k",
-                      metaKey: true,
-                      bubbles: true,
-                    });
-                    document.dispatchEvent(event);
-                  }}
+                  onClick={() => commandPalette.open()}
                 >
                   Search...
                 </button>
