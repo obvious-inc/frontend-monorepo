@@ -966,7 +966,7 @@ const defaultSelectedFeedFilterCategories = [
 ];
 const useFeedFilterCategories = () => {
   const [state, setState] = useCachedState(
-    "landing-screen:selected-feed-categories",
+    "landing-screen:selected-feed-categories-v2",
     defaultSelectedFeedFilterCategories,
   );
   return [state ?? [], setState];
