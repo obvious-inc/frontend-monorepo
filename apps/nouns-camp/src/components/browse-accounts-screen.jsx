@@ -698,7 +698,7 @@ const BrowseAccountsScreen = () => {
                     {
                       value:
                         "timeframe-executed-authored-or-sponsored-proposals",
-                      label: "Most passeed authored/sponsored proposals",
+                      label: "Most passed authored/sponsored proposals",
                       inlineLabel: "Passed proposals",
                     },
                     {

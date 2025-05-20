@@ -1174,7 +1174,7 @@ const AccountListItem = React.memo(
                     key: "executedProposals",
                     element: executedProposalsCount != null && (
                       <span className="nowrap">
-                        {executedProposalsCount} succeeded{" "}
+                        {executedProposalsCount} passed{" "}
                         {executedProposalsCount === 1
                           ? "proposal"
                           : "proposals"}
