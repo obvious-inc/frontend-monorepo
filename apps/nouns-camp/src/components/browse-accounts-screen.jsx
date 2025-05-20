@@ -10,9 +10,15 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { useFetch } from "@shades/common/react";
+import { useQuery } from "@tanstack/react-query";
 import Input from "@shades/ui-web/input";
 import Select from "@shades/ui-web/select";
-import { useDelegatesFetch, useDelegates, useEnsCache } from "@/store";
+import {
+  useDelegatesFetch,
+  useDelegates,
+  useEnsCache,
+  useSubgraphFetch,
+} from "@/store";
 import { subgraphFetch } from "@/nouns-subgraph";
 import { search as searchEns } from "@/utils/ens";
 import { createRepostExtractor } from "@/utils/votes-and-feedbacks";
@@ -88,6 +94,167 @@ export const useVotes = ({ start, end } = {}) => {
   }, [votesByAccountAddress]);
 
   return { votesByAccountAddress, vwrCountByAccountAddress };
+};
+
+const useExecutedProposalsCount = ({ enabled = true, start, end } = {}) => {
+  const subgraphFetch = useSubgraphFetch();
+
+  // Use tanstack's useQuery to fetch all executed proposals
+  const { data: executedProposals } = useQuery({
+    queryKey: [
+      "executed-authored-or-sponsored-proposals",
+      start?.getTime(),
+      end?.getTime(),
+    ],
+    queryFn: async () => {
+      const fetchProposals = async ({ page = 1, pageSize = 1000 } = {}) => {
+        const whereClause = [
+          `executedTimestamp_not: null`,
+          start == null
+            ? null
+            : `executedTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
+          end == null
+            ? null
+            : `executedTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
+        ]
+          .filter(Boolean)
+          .join(",");
+
+        const { proposals } = await subgraphFetch({
+          query: `{
+            proposals(
+              where: { ${whereClause} }
+              first: ${pageSize}
+              skip: ${(page - 1) * pageSize}
+            ) {
+              id
+              proposer { id }
+              signers { id }
+            }
+          }`,
+        });
+
+        if (proposals.length < pageSize) return proposals;
+
+        const remainingProposals = await fetchProposals({
+          page: page + 1,
+          pageSize,
+        });
+
+        return [...proposals, ...remainingProposals];
+      };
+
+      return await fetchProposals();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+    enabled,
+  });
+
+  return React.useMemo(() => {
+    if (executedProposals == null) return {};
+
+    const executedProposalsCountByAccountAddress = {};
+
+    for (const proposal of executedProposals) {
+      // Count for proposer
+      if (proposal.proposer) {
+        const proposerId = proposal.proposer.id.toLowerCase();
+        executedProposalsCountByAccountAddress[proposerId] =
+          (executedProposalsCountByAccountAddress[proposerId] ?? 0) + 1;
+      }
+
+      // Count for signers (sponsors)
+      if (proposal.signers) {
+        for (const signer of proposal.signers) {
+          const signerId = signer.id.toLowerCase();
+          executedProposalsCountByAccountAddress[signerId] =
+            (executedProposalsCountByAccountAddress[signerId] ?? 0) + 1;
+        }
+      }
+    }
+
+    return executedProposalsCountByAccountAddress;
+  }, [executedProposals]);
+};
+
+export const useAllProposalsCount = ({ enabled = true, start, end } = {}) => {
+  const subgraphFetch = useSubgraphFetch();
+
+  // Use tanstack's useQuery to fetch all proposals
+  const { data: allProposals } = useQuery({
+    queryKey: [
+      "authored-or-sponsored-proposals",
+      start?.getTime(),
+      end?.getTime(),
+    ],
+    queryFn: async () => {
+      const fetchProposals = async ({ page = 1, pageSize = 1000 } = {}) => {
+        const whereClause = [
+          start == null
+            ? null
+            : `createdTimestamp_gt: "${Math.floor(start.getTime() / 1000)}"`,
+          end == null
+            ? null
+            : `createdTimestamp_lt: "${Math.floor(end.getTime() / 1000)}"`,
+        ]
+          .filter(Boolean)
+          .join(",");
+
+        const { proposals } = await subgraphFetch({
+          query: `{
+            proposals(
+              first: ${pageSize}
+              skip: ${(page - 1) * pageSize}
+              ${whereClause ? `where: { ${whereClause} }` : ""}
+            ) {
+              id
+              proposer { id }
+              signers { id }
+            }
+          }`,
+        });
+
+        if (proposals.length < pageSize) return proposals;
+
+        const remainingProposals = await fetchProposals({
+          page: page + 1,
+          pageSize,
+        });
+
+        return [...proposals, ...remainingProposals];
+      };
+
+      return await fetchProposals();
+    },
+    staleTime: 60 * 60 * 1000, // 1 hour
+    enabled,
+  });
+
+  return React.useMemo(() => {
+    if (allProposals == null) return {};
+
+    const allProposalsCountByAccountAddress = {};
+
+    for (const proposal of allProposals) {
+      // Count for proposer
+      if (proposal.proposer) {
+        const proposerId = proposal.proposer.id.toLowerCase();
+        allProposalsCountByAccountAddress[proposerId] =
+          (allProposalsCountByAccountAddress[proposerId] ?? 0) + 1;
+      }
+
+      // Count for signers (sponsors)
+      if (proposal.signers) {
+        for (const signer of proposal.signers) {
+          const signerId = signer.id.toLowerCase();
+          allProposalsCountByAccountAddress[signerId] =
+            (allProposalsCountByAccountAddress[signerId] ?? 0) + 1;
+        }
+      }
+    }
+
+    return allProposalsCountByAccountAddress;
+  }, [allProposals]);
 };
 
 export const useRevoteCount = ({ start, end } = {}) => {
@@ -201,7 +368,7 @@ export const useRevoteCount = ({ start, end } = {}) => {
 
           const revoteTargetVotes = revoteTargetVotes_.filter(
             (targetVote) =>
-              // Don’t count revotes that disagree with the revoter
+              // Don't count revotes that disagree with the revoter
               targetVote.supportDetailed === 2 ||
               targetVote.supportDetailed === vote.supportDetailed,
           );
@@ -234,8 +401,9 @@ const BrowseAccountsScreen = () => {
 
   const [sortStrategy, setSortStrategy] = React.useState("timeframe-revotes");
   const [sortOrder, setSortOrder] = React.useState("desc");
+
   const [localDateRange, setLocalDateRange] = React.useState(() => {
-    const now = new Date();
+    const now = endOfDay(new Date());
     return {
       start: toLocalDate(new Date(now.getTime() - 30 * ONE_DAY_MILLIS)),
       end: toLocalDate(now),
@@ -257,6 +425,17 @@ const BrowseAccountsScreen = () => {
 
   const deferredDateRange = React.useDeferredValue(dateRange);
 
+  const executedProposalsCountByAccountAddress = useExecutedProposalsCount({
+    enabled:
+      sortStrategy === "timeframe-executed-authored-or-sponsored-proposals",
+    ...dateRange,
+  });
+
+  const allProposalsCountByAccountAddress = useAllProposalsCount({
+    enabled: sortStrategy === "timeframe-authored-or-sponsored-proposals",
+    ...dateRange,
+  });
+
   const {
     votesByAccountAddress: timeframeVotesByAccountAddress,
     vwrCountByAccountAddress: timeframeVwrCountByAccountAddress,
@@ -276,6 +455,10 @@ const BrowseAccountsScreen = () => {
         return timeframeVwrCountByAccountAddress == null;
       case "timeframe-revotes":
         return timeframeRevoteCountByAccountAddress == null;
+      case "timeframe-executed-authored-or-sponsored-proposals":
+        return executedProposalsCountByAccountAddress == null;
+      case "timeframe-authored-or-sponsored-proposals":
+        return allProposalsCountByAccountAddress == null;
       default:
         return false;
     }
@@ -293,6 +476,24 @@ const BrowseAccountsScreen = () => {
       const invertedOrder = order === "desc" ? "asc" : "desc";
 
       switch (deferredSortStrategy) {
+        case "timeframe-authored-or-sponsored-proposals":
+          return arrayUtils.sortBy(
+            {
+              value: (a) => allProposalsCountByAccountAddress?.[a.id] ?? 0,
+              order,
+            },
+            { value: (a) => a.nounsRepresented.length, order },
+            accounts,
+          );
+        case "timeframe-executed-authored-or-sponsored-proposals":
+          return arrayUtils.sortBy(
+            {
+              value: (a) => executedProposalsCountByAccountAddress?.[a.id] ?? 0,
+              order,
+            },
+            { value: (a) => a.nounsRepresented.length, order },
+            accounts,
+          );
         case "voting-power":
           return arrayUtils.sortBy(
             { value: (a) => a.nounsRepresented.length, order },
@@ -403,6 +604,8 @@ const BrowseAccountsScreen = () => {
     timeframeVotesByAccountAddress,
     timeframeVwrCountByAccountAddress,
     timeframeRevoteCountByAccountAddress,
+    executedProposalsCountByAccountAddress,
+    allProposalsCountByAccountAddress,
   ]);
 
   const handleSearchInputChange = useDebouncedCallback((query) => {
@@ -487,6 +690,17 @@ const BrowseAccountsScreen = () => {
                       value: "timeframe-revotes",
                       label: "Most revoted",
                     },
+                    // {
+                    //   value: "timeframe-authored-or-sponsored-proposals",
+                    //   label: "Most authored/sponsored proposals",
+                    //   inlineLabel: "Total proposals",
+                    // },
+                    {
+                      value:
+                        "timeframe-executed-authored-or-sponsored-proposals",
+                      label: "Most passeed authored/sponsored proposals",
+                      inlineLabel: "Passed proposals",
+                    },
                     {
                       value: "timeframe-votes-cast",
                       label: "Most votes cast",
@@ -513,15 +727,35 @@ const BrowseAccountsScreen = () => {
                     },
                   ]}
                   onChange={(value) => {
+                    const initialDateRange = (() => {
+                      switch (value) {
+                        case "timeframe-executed-authored-or-sponsored-proposals": {
+                          const end = endOfDay(new Date());
+                          const start = new Date(
+                            end.getTime() - 365 * ONE_DAY_MILLIS,
+                          );
+                          return {
+                            start: toLocalDate(start),
+                            end: toLocalDate(end),
+                          };
+                        }
+
+                        default: {
+                          const end = endOfDay(new Date());
+                          const start = new Date(
+                            end.getTime() - 30 * ONE_DAY_MILLIS,
+                          );
+                          return {
+                            start: toLocalDate(start),
+                            end: toLocalDate(end),
+                          };
+                        }
+                      }
+                    })();
+
                     setSortStrategy(value);
                     setSortOrder("desc");
-                    const now = new Date();
-                    setLocalDateRange({
-                      start: toLocalDate(
-                        new Date(now.getTime() - 30 * ONE_DAY_MILLIS),
-                      ),
-                      end: toLocalDate(now),
-                    });
+                    setLocalDateRange(initialDateRange);
                   }}
                   fullWidth={false}
                   width="max-content"
@@ -602,6 +836,17 @@ const BrowseAccountsScreen = () => {
                           revoteCount:
                             timeframeRevoteCountByAccountAddress?.[item.id] ??
                             null,
+                        };
+                      case "timeframe-executed-authored-or-sponsored-proposals":
+                        return {
+                          executedProposalsCount:
+                            executedProposalsCountByAccountAddress?.[item.id] ??
+                            0,
+                        };
+                      case "timeframe-authored-or-sponsored-proposals":
+                        return {
+                          totalProposalsCount:
+                            allProposalsCountByAccountAddress?.[item.id] ?? 0,
                         };
                       default:
                         return undefined;
