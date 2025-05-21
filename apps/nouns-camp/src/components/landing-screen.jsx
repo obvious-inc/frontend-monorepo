@@ -299,6 +299,7 @@ const BrowseScreen = () => {
   const [candidateSortStrategy, setCandidateSortStrategy] =
     React.useState("activity");
   const [topicSortStrategy, setTopicSortStrategy] = React.useState("activity");
+  const [applicationSortStrategy, setApplicationSortStrategy] = React.useState("activity");
   const [voterSortStrategy, setVoterSortStrategy] =
     React.useState("recent-revotes");
 
@@ -622,13 +623,13 @@ const BrowseScreen = () => {
                 size="small"
                 aria-label="Application sorting"
                 inlineLabel="Order"
-                value={topicSortStrategy}
+                value={applicationSortStrategy}
                 options={[
                   { value: "activity", label: "By recent activity" },
                   { value: "reverse-chronological", label: "Chronological" },
                 ]}
                 onChange={(value) => {
-                  setTopicSortStrategy(value);
+                  setApplicationSortStrategy(value);
                 }}
                 fullWidth={false}
                 width="max-content"
@@ -653,7 +654,7 @@ const BrowseScreen = () => {
 
             {(() => {
               const items =
-                topicSortStrategy === "reverse-chronological"
+                applicationSortStrategy === "reverse-chronological"
                   ? sortCandidatesReverseChronological(applications)
                   : sortCandidatesByLastActivity(applications);
               const hasMoreItems =
