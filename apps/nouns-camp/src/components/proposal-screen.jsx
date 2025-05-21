@@ -1733,7 +1733,8 @@ const StreamStatus = ({ transaction }) => {
     connectedWalletAccountAddress?.toLowerCase() ===
     receiverAddress?.toLowerCase();
 
-  const showWithdrawButton = isStreamRecipient && recipientBalance > 0 && recipientCancelBalance === 0;
+  const showWithdrawButton =
+    isStreamRecipient && recipientBalance > 0 && recipientCancelBalance === 0;
 
   const streamStartsInFuture = Number(startTime) * 1000 > Date.now();
 
