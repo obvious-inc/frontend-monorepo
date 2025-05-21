@@ -2053,7 +2053,7 @@ export const useProposal = (id, { watch = true } = {}) => {
 };
 
 export const useProposalCandidates = ({
-  type, // proposal | topic
+  type, // proposal | topic | application
   includeCanceled = false,
   includePromoted = false,
   includeProposalUpdates = false,
@@ -2069,9 +2069,11 @@ export const useProposalCandidates = ({
     const filteredCandidates = candidates.filter((c) => {
       const isProposal = c?.latestVersion?.type === "proposal";
       const isTopic = c?.latestVersion?.type === "topic";
+      const isApplication = c?.latestVersion?.type === "application";
 
-      if (type === "topic" && isProposal) return false;
-      if (type === "proposal" && isTopic) return false;
+      if (type === "topic" && (isProposal || isApplication)) return false;
+      if (type === "proposal" && (isTopic || isApplication)) return false;
+      if (type === "application" && (isTopic || isProposal)) return false;
 
       if (c.canceledTimestamp != null)
         // Canceled candidates disregard other filters

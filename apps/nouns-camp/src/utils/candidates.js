@@ -238,6 +238,10 @@ export const getScore = (candidate) => {
 
 const ZERO_ADDRESS = "0x".padEnd(42, "0");
 
+export const isApplicationSlug = (slug) => {
+  return slug.startsWith("nouns-grants-");
+};
+
 export const createTopicTransactions = () => [
   { type: "transfer", target: ZERO_ADDRESS, value: 0n },
 ];
