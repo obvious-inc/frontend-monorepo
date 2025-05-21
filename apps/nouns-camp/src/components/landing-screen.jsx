@@ -162,8 +162,9 @@ const createDigestSections = ({
       );
       const isTopic = c.latestVersion?.type === "topic";
       const isApplication = c.latestVersion?.type === "application";
-      if (isApplication) return `applications:${forYouGroup}`;
-      return `${isTopic ? "topics" : "candidates"}:${forYouGroup}`;
+      return isApplication
+        ? `applications:${forYouGroup}`
+        : `${isTopic ? "topics" : "candidates"}:${forYouGroup}`;
     },
     [...topics, ...candidates, ...proposalUpdateCandidates],
   );
