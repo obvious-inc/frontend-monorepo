@@ -1,1 +1,1 @@
-/Users/olle/dev/obvious-frontend-monorepo/AI-CONTEXT.md
+AI-CONTEXT.md
