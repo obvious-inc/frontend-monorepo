@@ -3,7 +3,10 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { parse as parseTransactions } from "@/utils/transactions";
-import { matchTopicTransactions, determineCandidateType } from "@/utils/candidates";
+import {
+  matchTopicTransactions,
+  determineCandidateType,
+} from "@/utils/candidates";
 
 const customSubgraphEndpoint =
   typeof location === "undefined"
