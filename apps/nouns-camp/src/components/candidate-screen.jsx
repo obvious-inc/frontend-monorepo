@@ -1632,6 +1632,12 @@ const CandidateScreen = ({ candidateId: rawId }) => {
     candidate?.latestVersion.type === "topic"
   )
     return <TopicScreen candidateId={rawId} />;
+    
+  if (
+    pathname.startsWith("/applications/") ||
+    candidate?.latestVersion.type === "application"
+  )
+    return <TopicScreen candidateId={rawId} />; // Reusing TopicScreen for applications as they're similar
 
   return (
     <ScreenContext.Provider value={screenContextValue}>

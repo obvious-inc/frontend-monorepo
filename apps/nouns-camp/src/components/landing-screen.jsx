@@ -161,6 +161,8 @@ const createDigestSections = ({
         c,
       );
       const isTopic = c.latestVersion?.type === "topic";
+      const isApplication = c.latestVersion?.type === "application";
+      if (isApplication) return `applications:${forYouGroup}`;
       return `${isTopic ? "topics" : "candidates"}:${forYouGroup}`;
     },
     [...topics, ...candidates, ...proposalUpdateCandidates],
@@ -235,6 +237,19 @@ const createDigestSections = ({
       truncationThreshold: 2,
     },
     {
+      key: "applications:new",
+      title: "New applications",
+      description: `Created within the last ${DIGEST_NEW_THRESHOLD_IN_DAYS} days`,
+      sort: sortCandidatesReverseChronological,
+      truncationThreshold: 2,
+    },
+    {
+      key: "applications:active",
+      title: "Recently active applications",
+      sort: sortCandidatesByLastActivity,
+      truncationThreshold: 2,
+    },
+    {
       key: "proposals:recently-concluded",
       title: "Recently concluded proposals",
       sort: sortProposalsReverseChrononological,
@@ -295,16 +310,16 @@ const BrowseScreen = () => {
     () => proposals_.filter((p) => p.startBlock != null),
     [proposals_],
   );
-  const { candidates = [], topics = [] } = React.useMemo(
+  const { candidates = [], topics = [], applications = [] } = React.useMemo(
     () =>
       candidates_.reduce(
         (acc, c) => {
           if (c.latestVersion == null) return acc;
-          return c.latestVersion?.type === "topic"
-            ? { ...acc, topics: [...acc.topics, c] }
-            : { ...acc, candidates: [...acc.candidates, c] };
+          if (c.latestVersion?.type === "topic") return { ...acc, topics: [...acc.topics, c] };
+          if (c.latestVersion?.type === "application") return { ...acc, applications: [...acc.applications, c] };
+          return { ...acc, candidates: [...acc.candidates, c] };
         },
-        { candidates: [], topics: [] },
+        { candidates: [], topics: [], applications: [] },
       ),
     [candidates_],
   );
@@ -593,6 +608,80 @@ const BrowseScreen = () => {
             })()}
           </Tabs.Item>
         )}
+        <Tabs.Item key="applications" title="Applications">
+            <div
+              css={css({
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "0.8rem",
+                padding: "2rem 0",
+              })}
+            >
+              <Select
+                size="small"
+                aria-label="Application sorting"
+                inlineLabel="Order"
+                value={topicSortStrategy}
+                options={[
+                  { value: "activity", label: "By recent activity" },
+                  { value: "reverse-chronological", label: "Chronological" },
+                ]}
+                onChange={(value) => {
+                  setTopicSortStrategy(value);
+                }}
+                fullWidth={false}
+                width="max-content"
+              />
+              <Button
+                component={NextLink}
+                href="/applications"
+                prefetch
+                size="small"
+                variant="transparent"
+                icon={
+                  <FullscreenIcon
+                    style={{
+                      width: "1.4rem",
+                      height: "auto",
+                      transform: "scaleX(-1)",
+                    }}
+                  />
+                }
+              />
+            </div>
+
+            {(() => {
+              const items =
+                topicSortStrategy === "reverse-chronological"
+                  ? sortCandidatesReverseChronological(applications)
+                  : sortCandidatesByLastActivity(applications);
+              const hasMoreItems =
+                page != null &&
+                items.length > BROWSE_LIST_PAGE_ITEM_COUNT * page;
+              return (
+                <>
+                  <SectionedList
+                    forcePlaceholder={!hasFetchedOnce}
+                    items={[
+                      {
+                        key: "applications",
+                        type: "section",
+                        children: paginate(items),
+                      },
+                    ]}
+                  />
+
+                  {hasMoreItems && (
+                    <Pagination
+                      showNext={() => setPage((p) => p + 1)}
+                      showAll={() => setPage(null)}
+                    />
+                  )}
+                </>
+              );
+            })()}
+          </Tabs.Item>
         <Tabs.Item key="candidates" title="Candidates">
           <div
             css={css({
