@@ -147,19 +147,14 @@ export default withSentry(
 
       return config;
     },
-    // https://github.com/farcasterxyz/hub-monorepo/issues/2031
-    swcMinify: false,
-    experimental: {
-      turbo: {
-        // Ignoring modules is not a thing yet
-        resolveAlias: Object.fromEntries(
-          ignoredModules.map((n) => [
-            n,
-            { browser: "@shades/common/empty-module" },
-          ]),
-        ),
-      },
-      instrumentationHook: true,
+    turbopack: {
+      // Ignoring modules is not a thing yet
+      resolveAlias: Object.fromEntries(
+        ignoredModules.map((n) => [
+          n,
+          { browser: "@shades/common/empty-module" },
+        ]),
+      ),
     },
   }),
 );

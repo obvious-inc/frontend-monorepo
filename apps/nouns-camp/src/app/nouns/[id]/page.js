@@ -15,7 +15,8 @@ const fetchNoun = async (id) => {
   return data?.noun;
 };
 
-export async function generateMetadata({ params }) {
+export async function generateMetadata(props) {
+  const params = await props.params;
   const noun = await fetchNoun(params.id);
 
   // Can’t notFound() here since we might be on a testnet
@@ -30,7 +31,8 @@ export async function generateMetadata({ params }) {
   };
 }
 
-export default async function Page({ params }) {
+export default async function Page(props) {
+  const params = await props.params;
   return (
     <ClientAppProvider>
       <NounScreen nounId={params.id} />
