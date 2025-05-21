@@ -29,7 +29,7 @@ const fetchCandidate = async (id) => {
 };
 
 export async function GET(_, context) {
-  const candidateId = context.params.id;
+  const candidateId = (await context.params).id;
   const candidate = await fetchCandidate(candidateId);
   const { targets, values, signatures, calldatas } =
     candidate.latestVersion.content;

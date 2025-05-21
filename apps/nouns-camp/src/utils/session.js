@@ -3,8 +3,8 @@ import { getIronSession } from "iron-session";
 
 const ONE_WEEK_IN_SECONDS = 60 * 60 * 40 * 6;
 
-export const getSession = () =>
-  getIronSession(cookies(), {
+export const getSession = async () =>
+  getIronSession(await cookies(), {
     cookieName: "session",
     password: process.env.SESSION_SEAL_SECRET,
     cookieOptions: {

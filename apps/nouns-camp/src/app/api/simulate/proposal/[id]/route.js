@@ -17,7 +17,7 @@ const publicClient = createPublicClient({
 });
 
 export async function GET(_, context) {
-  const proposalId = context.params.id;
+  const proposalId = (await context.params).id;
   const { address: daoAddress } = resolveIdentifier("dao");
 
   const proposalActions = await publicClient.readContract({
