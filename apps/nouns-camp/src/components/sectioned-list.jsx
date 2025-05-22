@@ -767,8 +767,9 @@ const CandidateOrTopicListItem = React.memo(
     const isCanceled = candidate.canceledTimestamp != null;
     const isPromoted = candidate.latestVersion.proposalId != null;
     const isProposalUpdate = candidate.latestVersion.targetProposalId != null;
-    const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
     const isTopic = candidate?.latestVersion?.type === "topic";
+    const isApplication = candidate?.latestVersion?.type === "application";
+    const isProposalThresholdMet = candidateVotingPower > proposalThreshold;
 
     const hasUpdate =
       candidate.lastUpdatedTimestamp != null &&
@@ -831,14 +832,18 @@ const CandidateOrTopicListItem = React.memo(
           href={
             isTopic
               ? `/topics/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
-              : `/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
+              : isApplication
+                ? `/applications/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
+                : `/candidates/${encodeURIComponent(makeCandidateUrlId(candidateId))}`
           }
           aria-label={[
             isProposalUpdate
               ? `Proposal ${candidate.targetProposalId} update`
               : isTopic
                 ? "Topic"
-                : `Candidate ${candidate.number}`,
+                : isApplication
+                  ? "Application"
+                  : `Candidate ${candidate.number}`,
             candidate.latestVersion.content.title,
           ].join(": ")}
         />
@@ -855,7 +860,9 @@ const CandidateOrTopicListItem = React.memo(
                   ? "Proposal update"
                   : isTopic
                     ? "Topic"
-                    : `Candidate ${candidate.number}`}{" "}
+                    : isApplication
+                      ? "Application"
+                      : `Candidate ${candidate.number}`}{" "}
                 by{" "}
                 <em
                   data-show={hasBeenOnScreen}
