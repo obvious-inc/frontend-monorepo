@@ -5,6 +5,10 @@ export const isStillEncoded = (str) => {
   return /%[0-9A-Fa-f]{2}/.test(str);
 };
 
+export const isApplicationSlug = (slug) => {
+  return typeof slug === 'string' && slug.startsWith('nouns-grants-');
+};
+
 export const safelyDecodeURIComponent = (str) => {
   let decoded = str;
   let previousDecoded = "";
@@ -247,4 +251,11 @@ export const matchTopicTransactions = (transactions) => {
   if (transactions.length > 1) return false;
   const tx = transactions[0];
   return tx.type === "transfer" && tx.target === ZERO_ADDRESS && tx.value == 0n;
+};
+
+// Helper function to determine candidate type based on slug and transactions
+export const determineCandidateType = (slug, transactions) => {
+  if (isApplicationSlug(slug)) return "application";
+  if (matchTopicTransactions(transactions)) return "topic";
+  return "proposal";
 };
