@@ -14,7 +14,6 @@ import {
   Share as ShareIcon,
   CaretDown as CaretDownIcon,
 } from "@shades/ui-web/icons";
-import * as Tooltip from "@shades/ui-web/tooltip";
 import * as DropdownMenu from "@shades/ui-web/dropdown-menu";
 import {
   normalizeId,
@@ -40,16 +39,17 @@ import {
 import { useWallet } from "@/hooks/wallet";
 import useMatchDesktopLayout from "@/hooks/match-desktop-layout";
 import { useSubmitCandidateCast, useSubmitCastReply } from "@/hooks/farcaster";
-import { ProposalHeader, ProposalBody } from "@/components/proposal-screen";
+import {
+  ProposalHeader,
+  ProposalBody,
+  RequestedAmounts,
+} from "@/components/proposal-screen";
 import ProposalActionForm from "@/components/proposal-action-form";
 import Layout, { MainContentContainer } from "@/components/layout";
-import FormattedDateWithTooltip from "@/components/formatted-date-with-tooltip";
-import FormattedNumber from "@/components/formatted-number";
-import Callout from "@/components/callout";
-import { FormattedEthWithConditionalTooltip } from "@/components/transaction-list";
-import useTreasuryData from "@/hooks/treasury-data";
-import useRecentAuctionProceeds from "@/hooks/recent-auction-proceeds";
 import Tag from "@/components/tag";
+import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
+import FormattedDateWithTooltip from "./formatted-date-with-tooltip";
+import Callout from "./callout";
 
 const ActivityFeed = React.lazy(() => import("@/components/activity-feed"));
 
@@ -57,181 +57,16 @@ const CandidateEditDialog = React.lazy(
   () => import("@/components/candidate-edit-dialog"),
 );
 
-// Copied from proposal-screen.jsx
-const RequestedAmounts = ({ amounts }) => (
-  <>
-    {amounts.map(({ currency, amount, tokens }, i) => {
-      const formattedAmount = () => {
-        switch (currency) {
-          case "eth":
-            return <FormattedEthWithConditionalTooltip value={amount} />;
-
-          case "weth":
-            return (
-              <FormattedEthWithConditionalTooltip
-                value={amount}
-                tokenSymbol="WETH"
-              />
-            );
-
-          case "steth":
-            return (
-              <FormattedEthWithConditionalTooltip
-                value={amount}
-                tokenSymbol="stETH"
-              />
-            );
-
-          case "usdc":
-            return <>{parseFloat(amount).toLocaleString()} USDC</>;
-
-          case "nouns":
-            return tokens.length === 1 ? (
-              <>Noun #{tokens[0]}</>
-            ) : (
-              <>{tokens.length} nouns</>
-            );
-
-          default:
-            throw new Error();
-        }
-      };
-
-      return (
-        <React.Fragment key={currency}>
-          {i !== 0 && ` + `}
-          <em>{formattedAmount()}</em>
-        </React.Fragment>
-      );
-    })}
-  </>
-);
-
 const ScreenContext = React.createContext();
 const useScreenContext = () => React.useContext(ScreenContext);
 
-// Application Treasury Summary component
-const ApplicationTreasurySummary = ({ candidateId }) => {
+const AskAmounts = ({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
-  const treasuryData = useTreasuryData();
-  const { avgAuctionPrice } =
-    useRecentAuctionProceeds({ auctionCount: 14 }) ?? {};
-
   const requestedAmounts = extractAmountsFromTransactions(
     candidate.latestVersion.content.transactions ?? [],
   );
 
-  // Calculate treasury percentages
-  const { percentOfTreasury, percentOfOneYearIncomeForecast, numberOfDays } =
-    React.useMemo(() => {
-      if (
-        treasuryData == null ||
-        avgAuctionPrice == null ||
-        !requestedAmounts.length
-      )
-        return {};
-
-      const { totals, rates } = treasuryData;
-
-      // Helper to convert USDC to ETH
-      const usdcToEth = (usdc) => (usdc * BigInt(rates.usdcEth)) / 10n ** 6n;
-
-      // Calculate total ask in ETH
-      const totalAskInEth = requestedAmounts.reduce(
-        (sum, { currency, amount }) => {
-          switch (currency) {
-            case "eth":
-            case "weth":
-            case "steth":
-              return sum + BigInt(amount);
-            case "usdc":
-              return sum + usdcToEth(BigInt(amount));
-            case "nouns":
-              return sum;
-            default:
-              return sum;
-          }
-        },
-        0n,
-      );
-
-      // Calculate treasury percentage
-      const treasuryFractionBps = (totalAskInEth * 10_000n) / totals.allInEth;
-
-      // One year income forecast calculations
-      const projectedOneYearAuctionProceeds = avgAuctionPrice * 365n;
-      const oneYearIncomeForecast = projectedOneYearAuctionProceeds;
-      const oneYearIncomeForecastFractionBps =
-        (totalAskInEth * 10_000n) / oneYearIncomeForecast;
-      const forcastedDailyIncome = avgAuctionPrice;
-
-      return {
-        percentOfTreasury: Math.round(Number(treasuryFractionBps) / 10) / 1_000,
-        percentOfOneYearIncomeForecast:
-          oneYearIncomeForecastFractionBps > 300n
-            ? Math.round(Number(oneYearIncomeForecastFractionBps) / 100) / 100
-            : Math.round(Number(oneYearIncomeForecastFractionBps) / 10) / 1_000,
-        numberOfDays: Math.round(
-          Number((totalAskInEth * 10_000n) / forcastedDailyIncome) / 10_000,
-        ),
-      };
-    }, [treasuryData, avgAuctionPrice, requestedAmounts]);
-
-  // Return early if no transactions
-  if (!candidate?.latestVersion?.content?.transactions?.length) {
-    return null;
-  }
-
-  if (requestedAmounts.length === 0) {
-    return null;
-  }
-
-  return (
-    <Callout
-      css={(t) =>
-        css({
-          color: t.colors.textNormal,
-          fontSize: t.text.sizes.small,
-          padding: "1.2rem",
-          margin: "0 0 2rem",
-          em: {
-            fontStyle: "normal",
-            fontWeight: t.text.weights.emphasis,
-          },
-        })
-      }
-    >
-      Requesting <RequestedAmounts amounts={requestedAmounts} />
-      {percentOfTreasury && (
-        <div css={css({ marginTop: "0.8rem" })}>
-          <FormattedNumber
-            style="percent"
-            value={percentOfTreasury}
-            maximumFractionDigits={2}
-          />{" "}
-          of treasury &middot;{" "}
-          <FormattedNumber
-            style="percent"
-            value={percentOfOneYearIncomeForecast}
-            maximumFractionDigits={2}
-          />{" "}
-          of 1Y inflow projection{" "}
-          <span>
-            (
-            {numberOfDays === 1 ? (
-              "<1 day"
-            ) : (
-              <>
-                {"≈"}
-                {numberOfDays} days
-              </>
-            )}
-            )
-          </span>
-        </div>
-      )}
-    </Callout>
-  );
+  return <RequestedAmounts amounts={requestedAmounts} />;
 };
 
 const ApplicationScreenContent = ({ candidateId }) => {
@@ -356,8 +191,6 @@ const ApplicationScreenContent = ({ candidateId }) => {
   const lastActivityTimestamp =
     arrayUtils.sortBy((p) => p.timestamp, feedItems).slice(-1)[0]?.timestamp ??
     candidate.createdTimestamp;
-
-  const idleTimeMillis = new Date().getTime() - lastActivityTimestamp.getTime();
 
   const showAdminActions = isProposer && !isCanceled;
 
@@ -515,7 +348,11 @@ const ApplicationScreenContent = ({ candidateId }) => {
 
   return (
     <div css={css({ padding: "0 1.6rem" })}>
-      <MainContentContainer>
+      <MainContentContainer
+        sidebarWidth="28rem"
+        sidebarGap="6rem"
+        sidebar={<div />}
+      >
         <div
           css={css({
             display: "flex",
@@ -560,29 +397,74 @@ const ApplicationScreenContent = ({ candidateId }) => {
                   "@media (min-width: 600px)": {
                     padding: "0",
                   },
-                  dl: { lineHeight: "calc(24/14)" },
+                  dl: { lineHeight: "calc(20/14)" },
+                  "dl[data-inline]": {
+                    display: "grid",
+                    gridTemplateColumns: "auto minmax(0,1fr)",
+                    gap: "0.8rem",
+                    dt: { fontSize: t.text.sizes.base },
+                    dd: { textAlign: "right" },
+                  },
                   dt: {
                     fontSize: t.text.sizes.small,
                     color: t.colors.textDimmed,
                     lineHeight: "calc(24/12)",
 
+                    // marginTop: "1.6rem",
+                    // paddingTop: "1.6rem",
+                    // borderTop: "0.1rem solid",
+                    // borderColor: t.colors.borderLight,
+                  },
+                  "dl:not([data-inline]) dd + dt": {
                     marginTop: "1.6rem",
                     paddingTop: "1.6rem",
                     borderTop: "0.1rem solid",
                     borderColor: t.colors.borderLight,
                   },
-                  // "dd + dt": {
-                  //   marginTop: "1.6rem",
-                  //   paddingTop: "1.6rem",
-                  //   borderTop: "0.1rem solid",
-                  //   borderColor: t.colors.borderLight,
-                  // },
+                  hr: {
+                    marginBlock: "1.6rem",
+                    border: 0,
+                    borderTop: "0.1rem solid",
+                    borderColor: t.colors.borderLight,
+                  },
                 })
               }
             >
-              <div css={css({ marginBottom: "2rem" })}>
+              <div>
+                <div
+                  css={(t) =>
+                    css({
+                      borderRadius: "0.4rem",
+                      overflow: "hidden",
+                      background: t.colors.backgroundModifierStrong,
+                      ".progress-indicator": {
+                        background: t.colors.textPositive,
+                        height: "0.8rem",
+                      },
+                    })
+                  }
+                >
+                  <div
+                    className="progress-indicator"
+                    style={{ width: "30%" }}
+                  />
+                </div>
+                <div
+                  css={(t) =>
+                    css({
+                      fontSize: t.text.sizes.small,
+                      color: t.colors.textDimmed,
+                      margin: "0.8rem 0 2.8rem",
+                    })
+                  }
+                >
+                  This application has 1 sponsoring noun, <em>2 more</em> are
+                  required to move application to vote.
+                </div>
+
                 <Button
                   variant="primary"
+                  size="large"
                   fullWidth
                   onClick={() => toggleSponsorDialog()}
                 >
@@ -593,12 +475,13 @@ const ApplicationScreenContent = ({ candidateId }) => {
                     css({
                       fontSize: t.text.sizes.small,
                       color: t.colors.textDimmed,
-                      marginTop: "2rem",
                       lineHeight: "1.5",
+                      marginTop: "1.6rem",
+                      "p + p": { marginTop: "1em" },
                     })
                   }
                 >
-                  <p css={css({ marginBottom: "1em" })}>
+                  <p>
                     As a voter, you can sponsor an application to help it
                     proceed to an on-chain vote.
                   </p>
@@ -608,11 +491,45 @@ const ApplicationScreenContent = ({ candidateId }) => {
                   </p>
                 </div>
               </div>
+              {/*
+              <hr />
 
-              {/* Transaction summary */}
-              <ApplicationTreasurySummary candidateId={candidateId} />
+              <dl data-inline>
+                <dt>Ask</dt>
+                <dd css={css({ em: { fontStyle: "normal" } })}>
+                  <Tag
+                    variant="success"
+                    css={(t) =>
+                      css({
+                        fontSize: t.text.sizes.small,
+                        // fontWeight: t.text.weights.normal,
+                        padding: "0.2em 0.35em",
+                        borderRadius: "0.4rem",
+                      })
+                    }
+                  >
+                    <AskAmounts candidateId={candidateId} />
+                  </Tag>
+                </dd>
 
-              <dl>
+                <dt>Applicant</dt>
+                <dd>
+                  <AccountPreviewPopoverTrigger
+                    accountAddress={proposerId}
+                    css={css({ fontWeight: "400" })}
+                  />
+                </dd>
+
+                <dt>Submitted</dt>
+                <dd>
+                  <FormattedDateWithTooltip
+                    value={candidate.createdTimestamp}
+                    day="numeric"
+                    month="long"
+                    year="numeric"
+                  />
+                </dd>
+
                 {lastActivityTimestamp != null && (
                   <>
                     <dt>Last activity</dt>
@@ -632,12 +549,12 @@ const ApplicationScreenContent = ({ candidateId }) => {
                     <dt>Status</dt>
                     <dd>
                       <Tag size="large" variant="error">
-                        Closed
+                        Canceled
                       </Tag>
                     </dd>
                   </>
                 )}
-              </dl>
+              </dl> */}
             </div>
           )
         }
@@ -650,6 +567,23 @@ const ApplicationScreenContent = ({ candidateId }) => {
             },
           })}
         >
+          {/* <Callout
+            css={(t) =>
+              css({
+                // border: "0.1rem solid",
+                // borderColor: t.colors.borderLight,
+                // borderRadius: "0.6rem",
+                // padding: "1.6rem",
+                marginBottom: "1.6rem",
+                em: {
+                  fontStyle: "normal",
+                  fontWeight: t.text.weights.emphasis,
+                },
+              })
+            }
+          >
+            Requesting <AskAmounts candidateId={candidateId} />
+          </Callout> */}
           <div
             css={(t) =>
               css({
