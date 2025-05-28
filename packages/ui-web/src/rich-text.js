@@ -138,7 +138,7 @@ export const createCss = (t) => ({
   },
 
   // Images
-  ".image": {
+  ".image, .video": {
     display: "block",
     borderRadius: "0.6rem",
     // overflow: "hidden",

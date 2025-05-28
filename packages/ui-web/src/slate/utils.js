@@ -154,10 +154,8 @@ export const fromMessageBlocks = (blocks) =>
       ];
 
     // Block voids
-    if (["horizontal-divider"].includes(n.type))
+    if (["horizontal-divider", "image", "video"].includes(n.type))
       return [...acc, { ...n, children: [{ text: "" }] }];
-
-    if (n.type === "image") return [...acc, { ...n, children: [{ text: "" }] }];
 
     // TODO implement plugin "unsupported-element"
     if (n.children == null && n.text == null)
