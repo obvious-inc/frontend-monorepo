@@ -1320,7 +1320,11 @@ export const ProposalHeader = ({
           })
         }
       >
-        {type === "topic" ? "Posted" : "Proposed"}{" "}
+        {type === "topic" 
+          ? "Posted" 
+          : type === "application" 
+            ? "Submitted" 
+            : "Proposed"}{" "}
         {createdAt != null && (
           <>
             <FormattedDateWithTooltip
