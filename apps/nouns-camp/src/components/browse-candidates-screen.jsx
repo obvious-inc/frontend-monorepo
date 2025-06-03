@@ -88,6 +88,19 @@ const topicFilterOptions = [
   },
 ];
 
+const applicationFilterOptions = [
+  {
+    key: "non-canceled",
+    label: "Show open",
+    inlineLabel: "open",
+  },
+  {
+    key: "canceled",
+    label: "Show closed",
+    inlineLabel: "closed",
+  },
+];
+
 const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
   const isDesktopLayout = useMatchDesktopLayout();
 
@@ -487,7 +500,9 @@ const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
                         filterOptions={
                           candidateType === "topic"
                             ? topicFilterOptions
-                            : candidateFilterOptions
+                            : candidateType === "application"
+                              ? applicationFilterOptions
+                              : candidateFilterOptions
                         }
                         selectedFilters={selectedFilters}
                         setSelectedFilters={setSelectedFilters}
@@ -664,7 +679,9 @@ const BrowseCandidatesScreen = ({ candidateType = "proposal" }) => {
                       filterOptions={
                         candidateType === "topic"
                           ? topicFilterOptions
-                          : candidateFilterOptions
+                          : candidateType === "application"
+                            ? applicationFilterOptions
+                            : candidateFilterOptions
                       }
                       selectedFilters={selectedFilters}
                       setSelectedFilters={setSelectedFilters}
