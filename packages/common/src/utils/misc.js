@@ -2,8 +2,8 @@ import { sortBy } from "./array.js";
 
 let prevDummyId = 0;
 export const generateDummyId = () => {
-  const id = prevDummyId++;
-  prevDummyId = id;
+  const id = prevDummyId;
+  prevDummyId += 1;
   return id;
 };
 
