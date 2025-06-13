@@ -173,6 +173,24 @@ export const FULL_PROPOSAL_CANDIDATE_FIELDS = `
         }
       }
     }
+    versions {
+      id
+      createdBlock
+      createdTimestamp
+      content {
+        title
+        description
+        targets
+        values
+        signatures
+        calldatas
+        matchingProposalIds
+        proposalIdToUpdate
+        contentSignatures {
+          ...CandidateContentSignatureFields
+        }
+      }
+    }
   }`;
 
 const parseMarkdownDescription = (string) => {
