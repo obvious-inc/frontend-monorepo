@@ -75,7 +75,10 @@ export const parseProposalAction = ({ target, value, signature, calldata }) => {
       value: value || "0",
     };
   } catch (error) {
-    if (error.name === "PositionOutOfBoundsError" || error.name === "UnknownSignatureError") {
+    if (
+      error.name === "PositionOutOfBoundsError" ||
+      error.name === "UnknownSignatureError"
+    ) {
       return {
         to: target,
         input: calldata,
