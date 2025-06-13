@@ -177,6 +177,7 @@ export const FULL_PROPOSAL_CANDIDATE_FIELDS = `
       id
       createdBlock
       createdTimestamp
+      updateMessage
       content {
         title
         description
@@ -184,11 +185,7 @@ export const FULL_PROPOSAL_CANDIDATE_FIELDS = `
         values
         signatures
         calldatas
-        matchingProposalIds
         proposalIdToUpdate
-        contentSignatures {
-          ...CandidateContentSignatureFields
-        }
       }
     }
   }`;
