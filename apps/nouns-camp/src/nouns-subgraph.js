@@ -3,7 +3,10 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { parse as parseTransactions } from "@/utils/transactions";
-import { matchTopicTransactions } from "@/utils/candidates";
+import {
+  matchTopicTransactions,
+  determineCandidateType,
+} from "@/utils/candidates";
 
 const customSubgraphEndpoint =
   typeof location === "undefined"
@@ -393,11 +396,10 @@ export const parseCandidate = (data) => {
     parsedData.versions = data.versions.map(parseCandidateVersion);
 
   if (data.latestVersion?.content?.transactions != null) {
-    parsedData.latestVersion.type = matchTopicTransactions(
+    parsedData.latestVersion.type = determineCandidateType(
+      data.slug,
       data.latestVersion.content.transactions,
-    )
-      ? "topic"
-      : "proposal";
+    );
   }
 
   return parsedData;
