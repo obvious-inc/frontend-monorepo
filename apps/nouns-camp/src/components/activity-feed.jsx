@@ -187,6 +187,7 @@ const ActivityFeed = ({
         css({
           lineHeight: "calc(20/14)", // 20px line height given font size if 14px
           fontSize: t.text.sizes.base,
+          containerType: "inline-size",
           '[role="listitem"]': {
             scrollMargin: "calc(3.2rem + 1.6rem) 0",
           },
@@ -204,6 +205,47 @@ const ActivityFeed = ({
           ".signature-meta": {
             fontSize: t.text.sizes.small,
             color: t.colors.textDimmed,
+          },
+          ".repost-list": {
+            listStyle: "none",
+            fontSize: "0.875em",
+            margin: "0.8rem -0.1rem",
+            "li + li": { marginTop: "0.6rem" },
+          },
+          ".reply-list": {
+            margin: "0",
+            "& > li": {
+              listStyle: "none",
+              ".text-input": {
+                margin: "0.4rem 0 0",
+                padding: "0.3rem 0",
+              },
+            },
+            "li + li": { marginTop: "1.6rem" },
+            ".body-container": {
+              padding: "0.4em 0 0 0.2em",
+              margin: 0,
+            },
+            ".reply-area": {
+              display: "grid",
+              gridTemplateColumns: "auto minmax(0,1fr)",
+              gap: "0.3rem",
+            },
+            ".reply-line-container": {
+              width: "2.2rem",
+              position: "relative",
+            },
+            ".reply-line": {
+              position: "absolute",
+              top: 0,
+              right: "0.2rem",
+              width: "0.6rem",
+              height: "1.9rem",
+              borderLeft: "0.1rem solid",
+              borderBottom: "0.1rem solid",
+              borderColor: t.colors.borderLight,
+              borderBottomLeftRadius: "0.3rem",
+            },
           },
           ".action-bar-container": {
             display: "flex",
@@ -292,6 +334,29 @@ const ActivityFeed = ({
             },
           },
           "[data-nowrap]": { whiteSpace: "nowrap" },
+          ".item-reply-header": {
+            display: "grid",
+            gridTemplateColumns: "2rem minmax(0,1fr)",
+            gridGap: "0.6rem",
+            marginBottom: "0.6rem",
+            width: "calc(100% + 0.1rem)",
+            ".arc": {
+              position: "relative",
+              "&:before": {
+                position: "absolute",
+                content: '""',
+                display: "block",
+                bottom: "-0.6rem",
+                right: "-0.5rem",
+                width: "calc(50% + 0.5rem)",
+                height: "calc(50% + 0.6rem)",
+                borderTopLeftRadius: "0.4rem",
+                borderTop: "0.1rem solid",
+                borderLeft: "0.1rem solid",
+                borderColor: t.colors.borderLight,
+              },
+            },
+          },
           ".item-header": {
             display: "grid",
             gridTemplateColumns: "2rem minmax(0,1fr)",
@@ -301,10 +366,10 @@ const ActivityFeed = ({
             ".item-title-container": {
               display: "grid",
               gridTemplateColumns: "minmax(0,1fr) auto",
-              // display: "flex",
               alignItems: "flex-start",
               gap: "0.6rem",
               cursor: "default",
+              paddingRight: "0.1rem",
             },
             "a, .interactive": {
               color: t.colors.textDimmed,
@@ -384,6 +449,18 @@ const ActivityFeed = ({
   );
 };
 
+const useQuotedReplyTargetAndRepostsExpansion = () => {
+  const [expandedIds, setExpandedIds] = React.useState([]);
+
+  return {
+    isExpanded: (id) => expandedIds.includes(id),
+    toggleExpanded: (id) =>
+      setExpandedIds((ids) =>
+        ids.includes(id) ? ids.filter((id_) => id_ !== id) : [...ids, id],
+      ),
+  };
+};
+
 const FeedItem = React.memo(
   ({
     context,
@@ -400,10 +477,10 @@ const FeedItem = React.memo(
   }) => {
     const inlineReplyInputRef = React.useRef();
 
-    const [
-      expandedReplyTargetAndRepostIds,
-      setExpandedReplyTargetAndRepostIds,
-    ] = React.useState([]);
+    const {
+      isExpanded: isQuotedReplyTargetOrRepostExpanded,
+      toggleExpanded: toggleQuotedReplyTargetOrRepostExpanded,
+    } = useQuotedReplyTargetAndRepostsExpansion();
     const [isReplyFormExpanded, setReplyFormExpanded] = React.useState(
       pendingReply != null,
     );
@@ -446,10 +523,23 @@ const FeedItem = React.memo(
     const isIsolatedContext = ["proposal", "candidate"].includes(context);
     const itemBody = nounTransferMeta?.reason ?? item.body;
 
+    const hasBody = itemBody != null && itemBody.trim() !== "";
     const hasReposts = item.reposts?.length > 0;
     const hasLikes = likes?.length > 0;
     const hasBeenReposted = item.repostingItems?.length > 0;
     const isReply = item.replies?.length > 0;
+    const isMultiReply = item.replies?.length > 1;
+
+    const buildItemUrl = (item) => {
+      if (isIsolatedContext) return `?item=${item.id}`;
+      if (item.proposalId != null)
+        return `/proposals/${item.proposalId}?tab=activity&item=${item.id}`;
+      if (item.candidateId != null)
+        return `/${isTopicCandidate ? "topics" : "candidates"}/${encodeURIComponent(
+          makeCandidateUrlId(item.candidateId),
+        )}?tab=activity&item=${item.id}`;
+      return null;
+    };
 
     const parseCastReplies = (casts) => {
       return casts.reduce((acc, cast) => {
@@ -490,7 +580,6 @@ const FeedItem = React.memo(
     );
     const hasReplies = replyingItems.length > 0;
 
-    const hasBody = itemBody != null && itemBody.trim() !== "";
     // const hasReason = item.reason != null && item.reason.trim() !== "";
 
     // Always show the reply form for boxed variant with body content
@@ -660,97 +749,44 @@ const FeedItem = React.memo(
         data-pending={item.isPending || undefined}
       >
         <div className="item-container">
+          {(() => {
+            // When the vote/comment only contains a single reply, the reply
+            // target is rendered above the item header
+            if (!isReply || isMultiReply) return null;
+            const reply = item.replies[0];
+            return (
+              <div className="item-reply-header">
+                <div className="arc" />
+                <QuotedVoteOrFeedbackPost
+                  item={reply.target}
+                  href={(() => {
+                    const url = buildItemUrl(reply.target);
+                    if (url != null) return url;
+                    console.error("Invalid reply target", reply.target);
+                    return null;
+                  })()}
+                  isExpanded={isQuotedReplyTargetOrRepostExpanded(
+                    reply.target.id,
+                  )}
+                  onToggleExpanded={() => {
+                    toggleQuotedReplyTargetOrRepostExpanded(reply.target.id);
+                  }}
+                  css={(t) => css({ fontSize: t.text.sizes.small })}
+                />
+              </div>
+            );
+          })()}
           <div className="item-header">
             <div className="avatar-container">
-              {(() => {
-                switch (item.type) {
-                  case "farcaster-cast":
-                    return <CastItemAvatar item={item} />;
-
-                  case "noun-transfer": {
-                    if (nounTransferMeta == null) return null;
-
-                    const authorAccount = {
-                      "fork-join": item.fromAccount,
-                      "fork-escrow": item.fromAccount,
-                      "fork-escrow-withdrawal": item.toAccount,
-                      swap: nounTransferMeta.authorAccount,
-                      sale: nounTransferMeta.authorAccount,
-                      transfer: nounTransferMeta.authorAccount,
-                    }[nounTransferMeta.transferType];
-
-                    if (authorAccount == null)
-                      return <div className="timeline-symbol" />;
-
-                    return (
-                      <AccountPreviewPopoverTrigger
-                        accountAddress={authorAccount}
-                      >
-                        <button className="avatar-button">
-                          <AccountAvatar address={authorAccount} size="2rem" />
-                        </button>
-                      </AccountPreviewPopoverTrigger>
-                    );
-                  }
-
-                  case "event":
-                    if (item.eventType === "auction-settled")
-                      return (
-                        <AccountPreviewPopoverTrigger
-                          accountAddress={item.bidderAccount}
-                        >
-                          <button className="avatar-button">
-                            <AccountAvatar
-                              address={item.bidderAccount}
-                              size="2rem"
-                            />
-                          </button>
-                        </AccountPreviewPopoverTrigger>
-                      );
-
-                    if (item.body != null && item.body.length > 0)
-                      return (
-                        <AccountPreviewPopoverTrigger
-                          accountAddress={item.authorAccount}
-                        >
-                          <button className="avatar-button">
-                            <AccountAvatar
-                              address={item.authorAccount}
-                              size="2rem"
-                            />
-                          </button>
-                        </AccountPreviewPopoverTrigger>
-                      );
-
-                    return <div className="timeline-symbol" />;
-
-                  default:
-                    return item.authorAccount == null ? (
-                      <div className="timeline-symbol" />
-                    ) : (
-                      <AccountPreviewPopoverTrigger
-                        accountAddress={item.authorAccount}
-                      >
-                        <button className="avatar-button">
-                          <AccountAvatar
-                            address={item.authorAccount}
-                            size="2rem"
-                          />
-                        </button>
-                      </AccountPreviewPopoverTrigger>
-                    );
-                }
-              })()}
+              <ItemAvatar item={item} nounTransferMeta={nounTransferMeta} />
             </div>
             <div>
               <div className="item-title-container">
-                <div>
-                  <ItemTitle
-                    item={item}
-                    context={context}
-                    hasBeenOnScreen={hasBeenOnScreen}
-                  />
-                </div>
+                <ItemTitle
+                  item={item}
+                  context={context}
+                  hasBeenOnScreen={hasBeenOnScreen}
+                />
                 <div>
                   {item.isPending ? (
                     <div style={{ padding: "0.5rem 0" }}>
@@ -766,129 +802,72 @@ const FeedItem = React.memo(
             </div>
           </div>
           <div className="item-content-container">
-            {!isBoxedVariant && item.replies?.length > 0 && (
-              <ul
-                css={(t) =>
-                  css({
-                    margin: "0",
-                    "& > li": {
-                      listStyle: "none",
-                      ".text-input": {
-                        margin: "0.4rem 0 0",
-                        padding: "0.3rem 0",
-                      },
+            {
+              // This is for multi-replies only (single replies are rendered differently)
+              !isBoxedVariant && isMultiReply && (
+                <ul
+                  className="reply-list"
+                  style={{
+                    marginTop: "0.8rem",
+                    marginBottom: hasReposts || hasBody ? "1.6rem" : 0,
+                  }}
+                >
+                  {item.replies.map(
+                    ({ body, target, ...replyTargetVoteOrFeedback }) => {
+                      return (
+                        <li key={target.id}>
+                          <div css={css({ fontSize: "0.875em" })}>
+                            <QuotedVoteOrFeedbackPost
+                              item={target}
+                              href={(() => {
+                                const url = buildItemUrl(target);
+                                if (url != null) return url;
+                                console.error("Invalid reply target", target);
+                                return null;
+                              })()}
+                              isExpanded={isQuotedReplyTargetOrRepostExpanded(
+                                replyTargetVoteOrFeedback.id,
+                              )}
+                              onToggleExpanded={() => {
+                                toggleQuotedReplyTargetOrRepostExpanded(
+                                  replyTargetVoteOrFeedback.id,
+                                );
+                              }}
+                            />
+                          </div>
+                          <div className="reply-area">
+                            <div className="reply-line-container">
+                              <div className="reply-line" />
+                            </div>
+                            <div className="body-container">
+                              <CompactMarkdownRichText text={body} />
+                            </div>
+                          </div>
+                        </li>
+                      );
                     },
-                    "li + li": { marginTop: "1.6rem" },
-                    ".body-container": {
-                      padding: "0.4em 0 0 0.2em",
-                      margin: 0,
-                    },
-                    ".reply-area": {
-                      display: "grid",
-                      gridTemplateColumns: "auto minmax(0,1fr)",
-                      gap: "0.3rem",
-                    },
-                    ".reply-line-container": {
-                      width: "2.2rem",
-                      position: "relative",
-                    },
-                    ".reply-line": {
-                      position: "absolute",
-                      top: 0,
-                      right: "0.2rem",
-                      width: "0.6rem",
-                      height: "1.9rem",
-                      borderLeft: "0.1rem solid",
-                      borderBottom: "0.1rem solid",
-                      borderColor: t.colors.borderLight,
-                      borderBottomLeftRadius: "0.3rem",
-                    },
-                  })
-                }
-                style={{
-                  marginTop: "0.8rem",
-                  marginBottom: hasReposts || hasBody ? "1.6rem" : 0,
-                }}
-              >
-                {item.replies.map(({ body, target, ...replyTargetPost }) => {
-                  return (
-                    <li key={target.id}>
-                      <div css={css({ fontSize: "0.875em" })}>
-                        <QuotedVoteOrFeedbackPost
-                          item={target}
-                          href={(() => {
-                            if (isIsolatedContext) return `?item=${target.id}`;
-                            if (target.proposalId != null)
-                              return `/proposals/${target.proposalId}?tab=activity&item=${target.id}`;
-                            if (target.candidateId != null)
-                              return `/${isTopicCandidate ? "topics" : "candidates"}/${encodeURIComponent(
-                                makeCandidateUrlId(target.candidateId),
-                              )}?tab=activity&item=${target.id}`;
-                            console.error("Invalid reply target", target);
-                            return null;
-                          })()}
-                          isExpanded={expandedReplyTargetAndRepostIds.includes(
-                            replyTargetPost.id,
-                          )}
-                          onToggleExpanded={() => {
-                            setExpandedReplyTargetAndRepostIds((ids) =>
-                              ids.includes(replyTargetPost.id)
-                                ? ids.filter((id) => id !== replyTargetPost.id)
-                                : [...ids, replyTargetPost.id],
-                            );
-                          }}
-                        />
-                      </div>
-                      <div className="reply-area">
-                        <div className="reply-line-container">
-                          <div className="reply-line" />
-                        </div>
-                        <div className="body-container">
-                          <CompactMarkdownRichText text={body} />
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                  )}
+                </ul>
+              )
+            }
             {item.reposts?.length > 0 && (
-              <ul
-                css={css({
-                  listStyle: "none",
-                  fontSize: "0.875em",
-                  margin: "0.8rem -0.1rem",
-                  "li + li": { marginTop: "0.6rem" },
-                })}
-                // style={{ marginTop: hasMultiParagraphBody ? "0.8rem" : "0.4rem" }}
-              >
-                {item.reposts.map((voteOrFeedbackPost) => (
-                  <li key={voteOrFeedbackPost.id}>
+              <ul className="repost-list">
+                {item.reposts.map((voteOrFeedback) => (
+                  <li key={voteOrFeedback.id}>
                     <QuotedVoteOrFeedbackPost
-                      item={voteOrFeedbackPost}
+                      item={voteOrFeedback}
                       href={(() => {
-                        if (isIsolatedContext)
-                          return `?item=${voteOrFeedbackPost.id}`;
-                        if (voteOrFeedbackPost.proposalId != null)
-                          return `/proposals/${voteOrFeedbackPost.proposalId}?tab=activity&item=${voteOrFeedbackPost.id}`;
-                        if (voteOrFeedbackPost.candidateId != null)
-                          return `/${isTopicCandidate ? "topics" : "candidates"}/${encodeURIComponent(
-                            makeCandidateUrlId(voteOrFeedbackPost.candidateId),
-                          )}?tab=activity&item=${voteOrFeedbackPost.id}`;
-                        console.error(
-                          "Invalid repost target",
-                          voteOrFeedbackPost,
-                        );
+                        const url = buildItemUrl(voteOrFeedback);
+                        if (url != null) return url;
+                        console.error("Invalid repost target", voteOrFeedback);
                         return null;
                       })()}
-                      isExpanded={expandedReplyTargetAndRepostIds.includes(
-                        voteOrFeedbackPost.id,
+                      isExpanded={isQuotedReplyTargetOrRepostExpanded(
+                        voteOrFeedback.id,
                       )}
                       onToggleExpanded={() => {
-                        setExpandedReplyTargetAndRepostIds((ids) =>
-                          ids.includes(voteOrFeedbackPost.id)
-                            ? ids.filter((id) => id !== voteOrFeedbackPost.id)
-                            : [...ids, voteOrFeedbackPost.id],
+                        toggleQuotedReplyTargetOrRepostExpanded(
+                          voteOrFeedback.id,
                         );
                       }}
                     />
@@ -896,6 +875,15 @@ const FeedItem = React.memo(
                 ))}
               </ul>
             )}
+
+            {!isBoxedVariant && isReply && !isMultiReply && (
+              <ItemBody
+                text={item.replies[0].body}
+                displayImages={item.type === "event"}
+                truncateLines
+              />
+            )}
+
             {hasBody && (
               <ItemBody
                 text={itemBody}
@@ -1137,6 +1125,10 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
 
   const { open: openAuctionDialog } = useDialog("auction");
 
+  const isProposer =
+    item.authorAccount != null &&
+    item.authorAccount === (proposal ?? candidate)?.proposerId;
+
   const ContextLink = ({ proposalId, candidateId, short, children }) => {
     if (proposalId != null) {
       const title =
@@ -1186,7 +1178,17 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
       <AccountPreviewPopoverTrigger
         accountAddress={item.authorAccount}
         fallbackDisplayName={item.authorDisplayName}
-      />
+      >
+        {(displayName) => (
+          <span>
+            {displayName}
+            {["vote", "feedback-post"].includes(item.type) &&
+              // Show proposer indicator on votes/comments (not on topics)
+              isProposer &&
+              !isTopicCandidate && <> (proposer)</>}
+          </span>
+        )}
+      </AccountPreviewPopoverTrigger>
     </span>
   );
 
@@ -1239,6 +1241,21 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
 
           case "proposal-created":
           case "proposal-updated":
+            // Items with bodies are rendered with leading avatars, like votes & comments
+            if (item.body != null && item.body.trim().length > 0)
+              return (
+                <>
+                  {author}{" "}
+                  {item.eventType === "proposal-created"
+                    ? "created"
+                    : "updated"}{" "}
+                  {context === "proposal" ? (
+                    "proposal"
+                  ) : (
+                    <ContextLink {...item} />
+                  )}
+                </>
+              );
             return (
               <>
                 {context === "proposal" ? (
@@ -1488,8 +1505,11 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
 
       case "vote":
       case "feedback-post": {
+        const hasBody = item.body != null && item.body.trim() !== "";
+        const isReply = item.replies?.length > 0;
+        const isReplyWithAdditionalComment = isReply && hasBody;
+
         const signalWord = (() => {
-          const hasBody = item.body != null && item.body.trim() !== "";
           const isRepost =
             item.reposts?.length > 0 &&
             (!hasBody ||
@@ -1502,14 +1522,16 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
 
           switch (item.type) {
             case "vote":
-              return "voted";
+              return isReply ? "replied and voted" : "voted";
             case "feedback-post": {
-              if (!isTopicCandidate && item.support !== 2) return "signaled";
-
-              const isReplyWithoutAdditionalComment =
-                item.replies?.length > 0 && !hasBody;
-
-              return isReplyWithoutAdditionalComment ? "replied" : "commented";
+              // Don’t show proposer signals (looks off)
+              if (!isProposer && !isTopicCandidate && item.support !== 2)
+                return isReply ? "replied with signal" : "signaled";
+              return isReplyWithAdditionalComment
+                ? "replied and commented"
+                : isReply
+                  ? "replied"
+                  : "commented";
             }
             default:
               throw new Error();
@@ -1519,23 +1541,38 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
           <>
             {author}{" "}
             {(() => {
-              if (isTopicCandidate)
+              if (isTopicCandidate || isProposer)
                 return isIsolatedContext ? signalWord : <>{signalWord} on</>;
 
               switch (item.support) {
                 case 0:
-                  return (
+                  return item.type === "vote" ? (
                     <Signal negative>
                       {signalWord} against
                       {item.voteCount != null && <> ({item.voteCount})</>}
                     </Signal>
+                  ) : (
+                    <>
+                      {signalWord}{" "}
+                      <Signal negative>
+                        against
+                        {item.voteCount != null && <> ({item.voteCount})</>}
+                      </Signal>
+                    </>
                   );
                 case 1:
-                  return (
+                  return item.type === "vote" ? (
                     <Signal positive>
-                      {signalWord} for
+                      {signalWord} for{" "}
                       {item.voteCount != null && <> ({item.voteCount})</>}
                     </Signal>
+                  ) : (
+                    <>
+                      {signalWord}{" "}
+                      <Signal positive>
+                        for {item.voteCount != null && <> ({item.voteCount})</>}
+                      </Signal>
+                    </>
                   );
                 case 2:
                   return item.type === "vote" ? (
@@ -1698,19 +1735,34 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
   };
 
   return (
-    <>
-      {renderTitle()}
+    <span
+      data-wrap={
+        !["vote", "feedback-post", "farcaster-cast"].includes(item.type)
+      }
+      css={(t) =>
+        css({
+          ".timestamp": {
+            whiteSpace: "nowrap",
+            lineHeight: "calc(20/12)",
+            fontSize: t.text.sizes.small,
+            color: t.colors.textDimmed,
+          },
+          "@container (min-width: 28em)": {
+            '&[data-wrap="false"]': {
+              display: "inline-flex",
+              ".title-container": {
+                whiteSpace: "nowrap",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              },
+            },
+          },
+        })
+      }
+    >
+      <span className="title-container">{renderTitle()}</span>
       {item.timestamp != null && (
-        <span
-          className="nowrap"
-          css={(t) =>
-            css({
-              lineHeight: "calc(20/12)",
-              fontSize: t.text.sizes.small,
-              color: t.colors.textDimmed,
-            })
-          }
-        >
+        <span className="timestamp">
           &nbsp;&middot;&nbsp;
           <FormattedDateWithTooltip
             tinyRelative
@@ -1726,7 +1778,7 @@ const ItemTitle = ({ item, variant, context, hasBeenOnScreen }) => {
           />
         </span>
       )}
-    </>
+    </span>
   );
 };
 
@@ -2061,6 +2113,7 @@ const QuotedVoteOrFeedbackPost = ({
   item,
   isExpanded,
   onToggleExpanded,
+  ...props
 }) => {
   // Strip reposts (some risk of stripping unintened content here (it’s fine))
   const quotedText = item.reason.replaceAll(REPOST_REGEX, "");
@@ -2074,9 +2127,8 @@ const QuotedVoteOrFeedbackPost = ({
       css={(t) =>
         css({
           position: "relative",
-          border: "0.1rem solid",
           borderRadius: "0.5rem",
-          borderColor: t.colors.borderLighter,
+          boxShadow: `0 0 0 0.1rem ${t.colors.borderLight}`,
           padding: "0.4rem 0.6rem",
           whiteSpace: "nowrap",
           overflow: "hidden",
@@ -2086,18 +2138,17 @@ const QuotedVoteOrFeedbackPost = ({
           },
           ".expand-button": {
             position: "absolute",
-            top: 0,
-            right: 0,
-            padding: "0.8rem",
-            "@media(hover: hover)": {
-              cursor: "pointer",
-            },
+            top: "0.25rem",
+            right: "0.25rem",
+            ".icon": { width: "0.8em", height: "auto" },
           },
         })
       }
+      {...props}
     >
       {href != null && (
         <NextLink
+          className="link-overlay"
           href={href}
           style={{ display: "block", position: "absolute", inset: 0 }}
         />
@@ -2126,7 +2177,7 @@ const QuotedVoteOrFeedbackPost = ({
               case 1:
                 return <Signal positive>(for signal)</Signal>;
               case 2:
-                return <Signal>(comment)</Signal>;
+                return <Signal>(no signal)</Signal>;
             }
           }
 
@@ -2146,15 +2197,21 @@ const QuotedVoteOrFeedbackPost = ({
         text={quotedText}
       />
       {enableExpansion && (
-        <button className="expand-button" onClick={onToggleExpanded}>
-          <CaretDownIcon
-            style={{
-              width: "0.85em",
-              height: "auto",
-              transform: isExpanded ? "scaleY(-1)" : undefined,
-            }}
-          />
-        </button>
+        <Button
+          className="expand-button"
+          variant="transparent"
+          size="tiny"
+          onClick={onToggleExpanded}
+          icon={
+            <CaretDownIcon
+              className="icon"
+              style={{
+                transform: isExpanded ? "scaleY(-1)" : undefined,
+              }}
+            />
+          }
+          style={{ display: "block" }}
+        />
       )}
     </div>
   );
@@ -2434,7 +2491,7 @@ const FeedItemActionDropdown = ({
             <DotsIcon
               css={(t) =>
                 css({
-                  width: "1.5rem",
+                  width: "calc(15em/12)",
                   height: "auto",
                   color: t.colors.textDimmed,
                 })
@@ -2535,14 +2592,12 @@ const NestedReplyItem = ({
           )}
         </div>
         <div className="item-title-container">
-          <div>
-            <ItemTitle
-              variant="author-only"
-              item={item}
-              context={context}
-              hasBeenOnScreen={hasBeenOnScreen}
-            />
-          </div>
+          <ItemTitle
+            variant="author-only"
+            item={item}
+            context={context}
+            hasBeenOnScreen={hasBeenOnScreen}
+          />
           <div>
             {item.isPending ? (
               <div style={{ padding: "0.5rem 0" }}>
@@ -2799,5 +2854,69 @@ const CastItemAvatar = ({ item }) => (
     </span>
   </div>
 );
+
+const ItemAvatar = ({ item, ...props }) => {
+  switch (item.type) {
+    case "farcaster-cast":
+      return <CastItemAvatar item={item} />;
+
+    case "noun-transfer": {
+      const { nounTransferMeta } = props;
+
+      if (nounTransferMeta == null) return null;
+
+      const authorAccount = {
+        "fork-join": item.fromAccount,
+        "fork-escrow": item.fromAccount,
+        "fork-escrow-withdrawal": item.toAccount,
+        swap: nounTransferMeta.authorAccount,
+        sale: nounTransferMeta.authorAccount,
+        transfer: nounTransferMeta.authorAccount,
+      }[nounTransferMeta.transferType];
+
+      if (authorAccount == null) return <div className="timeline-symbol" />;
+
+      return (
+        <AccountPreviewPopoverTrigger accountAddress={authorAccount}>
+          <button className="avatar-button">
+            <AccountAvatar address={authorAccount} size="2rem" />
+          </button>
+        </AccountPreviewPopoverTrigger>
+      );
+    }
+
+    case "event":
+      if (item.eventType === "auction-settled")
+        return (
+          <AccountPreviewPopoverTrigger accountAddress={item.bidderAccount}>
+            <button className="avatar-button">
+              <AccountAvatar address={item.bidderAccount} size="2rem" />
+            </button>
+          </AccountPreviewPopoverTrigger>
+        );
+
+      if (item.body != null && item.body.length > 0)
+        return (
+          <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+            <button className="avatar-button">
+              <AccountAvatar address={item.authorAccount} size="2rem" />
+            </button>
+          </AccountPreviewPopoverTrigger>
+        );
+
+      return <div className="timeline-symbol" />;
+
+    default:
+      return item.authorAccount == null ? (
+        <div className="timeline-symbol" />
+      ) : (
+        <AccountPreviewPopoverTrigger accountAddress={item.authorAccount}>
+          <button className="avatar-button">
+            <AccountAvatar address={item.authorAccount} size="2rem" />
+          </button>
+        </AccountPreviewPopoverTrigger>
+      );
+  }
+};
 
 export default ActivityFeed;

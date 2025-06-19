@@ -49,7 +49,6 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
       customDisplayName,
       variant: buttonVariant = "link",
       popoverPlacement = "top",
-      children,
       ...props
     },
     triggerRef,
@@ -73,7 +72,9 @@ const AccountPreviewPopoverTrigger = React.forwardRef(
     ) : null;
 
     const renderTrigger = () => {
-      if (children != null) return children;
+      // Treat regular non-null children as custom trigger content
+      if (props.children != null && typeof props.children !== "function")
+        return props.children;
 
       if (avatar == null)
         return (
@@ -678,6 +679,13 @@ const InlineAccountButton = React.forwardRef(
         ? displayName
         : fallbackDisplayName;
 
+    const buttonLabel = [
+      variant === "button" && "@",
+      customDisplayName ?? displayNameOrFallback,
+    ]
+      .filter(Boolean)
+      .join("");
+
     return (
       // {children} need to be rendered to work in Slate editor
       <InlineButton
@@ -686,9 +694,14 @@ const InlineAccountButton = React.forwardRef(
         {...props}
         css={css({ userSelect: "text" })}
       >
-        {variant === "button" && "@"}
-        {customDisplayName ?? displayNameOrFallback}
-        {children}
+        {typeof children === "function" ? (
+          children(buttonLabel)
+        ) : (
+          <>
+            {buttonLabel}
+            {children}
+          </>
+        )}
       </InlineButton>
     );
   },
