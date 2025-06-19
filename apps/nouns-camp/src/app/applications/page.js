@@ -1,8 +1,16 @@
-"use client";
-
-import React from "react";
+import ClientAppProvider from "@/app/client-app-provider";
+import { build as buildMetadata } from "@/utils/metadata";
 import BrowseCandidatesScreen from "@/components/browse-candidates-screen";
 
+export const metadata = buildMetadata({
+  title: "Applications",
+  canonicalPathname: "/applications",
+});
+
 export default function Applications() {
-  return <BrowseCandidatesScreen candidateType="application" />;
+  return (
+    <ClientAppProvider>
+      <BrowseCandidatesScreen candidateType="application" />
+    </ClientAppProvider>
+  );
 }

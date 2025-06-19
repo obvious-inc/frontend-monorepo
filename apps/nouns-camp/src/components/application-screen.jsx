@@ -20,13 +20,14 @@ import {
   extractSlugFromId as extractSlugFromCandidateId,
 } from "@/utils/candidates";
 import { formatReply, formatRepost } from "@/utils/votes-and-feedbacks";
-import { extractAmounts as extractAmountsFromTransactions } from "@/utils/transactions";
 import {
   useProposalCandidate,
   useProposalCandidateFetch,
   useProposalFetch,
   useActiveProposalsFetch,
   useCandidateFeedItems,
+  useDelegate,
+  useProposals,
 } from "@/store";
 import useScrollToElement from "@/hooks/scroll-to-element";
 import { useSearchParamToggleState, useSearchParams } from "@/hooks/navigation";
@@ -39,6 +40,8 @@ import {
 import { useWallet } from "@/hooks/wallet";
 import useMatchDesktopLayout from "@/hooks/match-desktop-layout";
 import { useSubmitCandidateCast, useSubmitCastReply } from "@/hooks/farcaster";
+import { useProposalThreshold } from "@/hooks/dao-contract";
+import { getSponsorSignatures } from "@/utils/candidates";
 import {
   ProposalHeader,
   ProposalBody,
@@ -46,10 +49,8 @@ import {
 } from "@/components/proposal-screen";
 import ProposalActionForm from "@/components/proposal-action-form";
 import Layout, { MainContentContainer } from "@/components/layout";
-import Tag from "@/components/tag";
-import AccountPreviewPopoverTrigger from "./account-preview-popover-trigger";
-import FormattedDateWithTooltip from "./formatted-date-with-tooltip";
-import Callout from "./callout";
+import AccountPreviewPopoverTrigger from "@/components/account-preview-popover-trigger";
+import { extractAmounts as extractAmountsFromTransactions } from "@/utils/transactions";
 
 const ActivityFeed = React.lazy(() => import("@/components/activity-feed"));
 
@@ -59,6 +60,30 @@ const CandidateEditDialog = React.lazy(
 
 const ScreenContext = React.createContext();
 const useScreenContext = () => React.useContext(ScreenContext);
+
+const useActiveProposerIds = () => {
+  const activeProposals = useProposals({ filter: "active" });
+  return activeProposals.flatMap((p) => [
+    p.proposerId,
+    ...p.signers.map((s) => s.id),
+  ]);
+};
+
+const useSponsorsVotingPower = (candidateId) => {
+  const candidate = useProposalCandidate(candidateId);
+  const activeProposerIds = useActiveProposerIds();
+
+  const validSignatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+    activeProposerIds,
+  });
+
+  const sponsoringNouns = arrayUtils.unique(
+    validSignatures.flatMap((s) => s.signer.nounsRepresented.map((n) => n.id)),
+  );
+
+  return sponsoringNouns.length;
+};
 
 const AskAmounts = ({ candidateId }) => {
   const candidate = useProposalCandidate(candidateId);
@@ -78,6 +103,27 @@ const ApplicationScreenContent = ({ candidateId }) => {
   const actionFormInputRef = React.useRef();
 
   const candidate = useProposalCandidate(candidateId);
+  const proposerDelegate = useDelegate(proposerId);
+  const proposalThreshold = useProposalThreshold();
+  const sponsorsVotingPower = useSponsorsVotingPower(candidateId);
+  const activeProposerIds = useActiveProposerIds();
+
+  const validSignatures = getSponsorSignatures(candidate, {
+    excludeInvalid: true,
+    activeProposerIds,
+  });
+
+  const proposerVotingPower =
+    proposerDelegate == null ? 0 : proposerDelegate.nounsRepresented.length;
+
+  const totalVotingPower = proposerVotingPower + sponsorsVotingPower;
+  const isProposalThresholdMet = totalVotingPower > proposalThreshold;
+  const requiredVotes = proposalThreshold + 1;
+  const missingVotes = Math.max(0, requiredVotes - totalVotingPower);
+  const progressPercentage = Math.min(
+    100,
+    (totalVotingPower / requiredVotes) * 100,
+  );
 
   const feedItems = useCandidateFeedItems(candidateId).filter(
     (item) => item.eventType !== "candidate-created",
@@ -187,10 +233,6 @@ const ApplicationScreenContent = ({ candidateId }) => {
     replyTargetFeedItems,
     pendingRepliesByTargetItemId,
   ]);
-
-  const lastActivityTimestamp =
-    arrayUtils.sortBy((p) => p.timestamp, feedItems).slice(-1)[0]?.timestamp ??
-    candidate.createdTimestamp;
 
   const showAdminActions = isProposer && !isCanceled;
 
@@ -409,11 +451,6 @@ const ApplicationScreenContent = ({ candidateId }) => {
                     fontSize: t.text.sizes.small,
                     color: t.colors.textDimmed,
                     lineHeight: "calc(24/12)",
-
-                    // marginTop: "1.6rem",
-                    // paddingTop: "1.6rem",
-                    // borderTop: "0.1rem solid",
-                    // borderColor: t.colors.borderLight,
                   },
                   "dl:not([data-inline]) dd + dt": {
                     marginTop: "1.6rem",
@@ -434,19 +471,19 @@ const ApplicationScreenContent = ({ candidateId }) => {
                 <div
                   css={(t) =>
                     css({
-                      borderRadius: "0.4rem",
+                      borderRadius: "0.6rem",
                       overflow: "hidden",
                       background: t.colors.backgroundModifierStrong,
                       ".progress-indicator": {
                         background: t.colors.textPositive,
-                        height: "0.8rem",
+                        height: "1.2rem",
                       },
                     })
                   }
                 >
                   <div
                     className="progress-indicator"
-                    style={{ width: "30%" }}
+                    style={{ width: `max(0.6rem,${progressPercentage}%)` }}
                   />
                 </div>
                 <div
@@ -454,12 +491,33 @@ const ApplicationScreenContent = ({ candidateId }) => {
                     css({
                       fontSize: t.text.sizes.small,
                       color: t.colors.textDimmed,
-                      margin: "0.8rem 0 2.8rem",
+                      margin: "1.2rem 0 2.4rem",
+                      em: {
+                        fontStyle: "normal",
+                        fontWeight: t.text.weights.emphasis,
+                      },
                     })
                   }
                 >
-                  This application has 1 sponsoring noun, <em>2 more</em> are
-                  required to move application to vote.
+                  {isProposalThresholdMet ? (
+                    <>
+                      This application has met the sponsor threshold (
+                      {totalVotingPower}/{requiredVotes}).
+                    </>
+                  ) : (
+                    <>
+                      This application has <em>{totalVotingPower}</em>{" "}
+                      sponsoring {totalVotingPower === 1 ? "Noun" : "Nouns"}.
+                      {missingVotes > 0 && (
+                        <>
+                          {" "}
+                          <em>{missingVotes}</em> more{" "}
+                          {missingVotes === 1 ? "is" : "are"} required to move
+                          application to vote.
+                        </>
+                      )}
+                    </>
+                  )}
                 </div>
 
                 <Button
@@ -473,10 +531,10 @@ const ApplicationScreenContent = ({ candidateId }) => {
                 <div
                   css={(t) =>
                     css({
-                      fontSize: t.text.sizes.small,
+                      fontSize: t.text.sizes.base,
                       color: t.colors.textDimmed,
                       lineHeight: "1.5",
-                      marginTop: "1.6rem",
+                      marginTop: "2.4rem",
                       "p + p": { marginTop: "1em" },
                     })
                   }
@@ -486,11 +544,32 @@ const ApplicationScreenContent = ({ candidateId }) => {
                     proceed to an on-chain vote.
                   </p>
                   <p>
-                    A total of 3 sponsoring Nouns are required, which can come
-                    from multiple sponsors.
+                    A total of {requiredVotes} sponsoring{" "}
+                    {requiredVotes === 1 ? "Noun is" : "Nouns are"} required,
+                    which can come from multiple sponsors.
                   </p>
                 </div>
               </div>
+
+              {validSignatures.length > 0 && (
+                <>
+                  <hr />
+                  <dl data-inline>
+                    <dt>Sponsors</dt>
+                    <dd>
+                      {validSignatures.map((sig, index) => (
+                        <React.Fragment key={sig.signer.id}>
+                          {index > 0 && ", "}
+                          <AccountPreviewPopoverTrigger
+                            accountAddress={sig.signer.id}
+                            showAvatar={false}
+                          />
+                        </React.Fragment>
+                      ))}
+                    </dd>
+                  </dl>
+                </>
+              )}
               {/*
               <hr />
 
