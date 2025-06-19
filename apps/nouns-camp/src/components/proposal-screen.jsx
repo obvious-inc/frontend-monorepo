@@ -1648,6 +1648,7 @@ const StreamStatus = ({ transaction }) => {
     elapsedTime,
     remainingBalance,
     recipientBalance,
+    recipientCancelBalance,
   } = useStreamData({ streamContractAddress });
   const { toggleStreamsDialog } = useScreenContext();
 
@@ -1736,7 +1737,8 @@ const StreamStatus = ({ transaction }) => {
     connectedWalletAccountAddress?.toLowerCase() ===
     receiverAddress?.toLowerCase();
 
-  const showWithdrawButton = isStreamRecipient && recipientBalance > 0;
+  const showWithdrawButton =
+    isStreamRecipient && recipientBalance > 0 && recipientCancelBalance === 0;
 
   const streamStartsInFuture = Number(startTime) * 1000 > Date.now();
 
@@ -1758,7 +1760,24 @@ const StreamStatus = ({ transaction }) => {
         })
       }
     >
-      {streamStartsInFuture ? (
+      {recipientCancelBalance > 0 ? (
+        <>
+          Stream cancelled{" "}
+          {vestedAmount != null && vestedAmount > 0 && (
+            <span>
+              (
+              <a
+                href={buildEtherscanLink(`/address/${streamContractAddress}`)}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {formattedVestedAmount}
+              </a>{" "}
+              vested)
+            </span>
+          )}
+        </>
+      ) : streamStartsInFuture ? (
         <>
           Stream starts vesting on{" "}
           <FormattedDateWithTooltip

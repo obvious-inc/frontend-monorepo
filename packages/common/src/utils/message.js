@@ -517,6 +517,14 @@ export const toMarkdown = (blockElements) => {
         ].join("\n");
       }
 
+      case "video": {
+        const url = {
+          youtube: `https://www.youtube.com/watch?v=${el.ref}`,
+          loom: `https://www.loom.com/share/${el.ref}`,
+        }[el.provider];
+        return `[${url}](${url})`;
+      }
+
       default:
         throw new Error(`Unknown element type: "${el.type}"`);
     }

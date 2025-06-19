@@ -40,6 +40,7 @@ import createHorizontalDividerPlugin from "./slate/plugins/horizontal-divider.js
 import createEmojiPlugin from "./slate/plugins/emojis.js";
 import createInlineLinksPlugin from "./slate/plugins/inline-links.js";
 import createImagesPlugin from "./slate/plugins/images.js";
+import createVideosPlugin from "./slate/plugins/videos.js";
 import createHeadingsPlugin from "./slate/plugins/headings.js";
 import { search, mergePlugins, fromMessageBlocks } from "./slate/utils.js";
 
@@ -428,6 +429,7 @@ const RichTextEditor = React.forwardRef(
           createSensibleVoidsPlugin,
           createHorizontalDividerPlugin,
           createImagesPlugin,
+          createVideosPlugin,
           createControlledParagraphLineBreaksPlugin,
           createListsPlugin,
           // Headings, quotes, and code block breaks take precedence over list breaks

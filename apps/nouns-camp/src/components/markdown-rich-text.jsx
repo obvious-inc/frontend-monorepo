@@ -118,9 +118,9 @@ const MarkdownRichText = React.forwardRef(
             case "video": {
               switch (el.provider) {
                 case "youtube":
-                  return <YouTubeEmbed videoId={el.ref} />;
+                  return <YouTubeEmbed key={i} videoId={el.ref} />;
                 case "loom":
-                  return <LoomEmbed videoId={el.ref} />;
+                  return <LoomEmbed key={i} videoId={el.ref} />;
                 default:
                   return null;
               }
