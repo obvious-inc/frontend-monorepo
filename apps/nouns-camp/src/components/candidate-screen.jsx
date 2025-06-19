@@ -84,6 +84,7 @@ import { useProposalCandidateSimulation } from "@/hooks/simulation";
 import useScrollToElement from "@/hooks/scroll-to-element";
 import { useCachedCandidatePost } from "@/hooks/cached-post";
 import TopicScreen from "@/components/topic-screen";
+import ApplicationScreen from "@/components/application-screen";
 
 const ActivityFeed = React.lazy(() => import("@/components/activity-feed"));
 
@@ -1632,6 +1633,12 @@ const CandidateScreen = ({ candidateId: rawId }) => {
     candidate?.latestVersion.type === "topic"
   )
     return <TopicScreen candidateId={rawId} />;
+
+  if (
+    pathname.startsWith("/applications/") ||
+    candidate?.latestVersion.type === "application"
+  )
+    return <ApplicationScreen candidateId={rawId} />;
 
   return (
     <ScreenContext.Provider value={screenContextValue}>

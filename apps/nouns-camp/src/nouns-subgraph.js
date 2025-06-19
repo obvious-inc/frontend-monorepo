@@ -3,7 +3,7 @@ import {
   object as objectUtils,
 } from "@shades/common/utils";
 import { parse as parseTransactions } from "@/utils/transactions";
-import { matchTopicTransactions } from "@/utils/candidates";
+import { matchTopicTransactions, isApplicationSlug } from "@/utils/candidates";
 
 const customSubgraphEndpoint =
   typeof location === "undefined"
@@ -392,7 +392,10 @@ export const parseCandidate = (data) => {
   if (data.versions != null)
     parsedData.versions = data.versions.map(parseCandidateVersion);
 
-  if (data.latestVersion?.content?.transactions != null) {
+  // Set the type based on slug pattern or transactions
+  if (data.slug != null && isApplicationSlug(data.slug)) {
+    parsedData.latestVersion.type = "application";
+  } else if (data.latestVersion?.content?.transactions != null) {
     parsedData.latestVersion.type = matchTopicTransactions(
       data.latestVersion.content.transactions,
     )

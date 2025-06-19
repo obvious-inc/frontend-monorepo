@@ -1320,7 +1320,11 @@ export const ProposalHeader = ({
           })
         }
       >
-        {type === "topic" ? "Posted" : "Proposed"}{" "}
+        {type === "topic"
+          ? "Posted"
+          : type === "application"
+            ? "Submitted"
+            : "Proposed"}{" "}
         {createdAt != null && (
           <>
             <FormattedDateWithTooltip
@@ -1580,7 +1584,7 @@ export const ProposalBody = React.memo(({ markdownText, ...props }) => {
   );
 });
 
-const RequestedAmounts = ({ amounts }) => (
+export const RequestedAmounts = ({ amounts }) => (
   <>
     {amounts.map(({ currency, amount, tokens }, i) => {
       const formattedAmount = () => {
